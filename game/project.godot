@@ -9,7 +9,7 @@ config_version=5
 config/name="Revolutionaries"
 config/description="A modernized port of Liberal Crime Squad (GPL-2.0-or-later)."
 config/version="0.1.0-port"
-run/main_scene="res://ui/screens/boot.tscn"
+run/main_scene="res://ui/screens/base_screen.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [autoload]
