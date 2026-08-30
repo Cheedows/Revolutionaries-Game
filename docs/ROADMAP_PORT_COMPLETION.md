@@ -205,6 +205,24 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     standards of care, at a safehouse and at a clinic, half of them besieged,
     compared on draw counts and on every patient's blood, wounds, organs,
     attributes, skills and whether they were sent to a real clinic.
+- [x] The nightly dispersal check (`dispersalcheck()`) and the promotions it
+    triggers (`promotesubordinates()`). Everybody was recruited by somebody,
+    and that chain is the only way an order travels: a link that is dead, in
+    prison or in hiding cuts off everybody below it. The check walks the chain
+    down from the founder each night and cuts loose whoever it cannot reach,
+    promoting the keenest recruit into a dead link's place — or, if the
+    founder dies, whoever is Revolutionary enough to lead.
+  - Love slaves bleed juice on any night they are not on the same side of the
+    bars as their lover, and abandon the squad below -50.
+  - Also ports `cleangonesquads()`, which the check calls on its way out, and
+    completes the eviction path: losing a lease now loses the compound with it.
+  - Verified by the `dispersal` probe: chains one to four links deep, every
+    rung of each in turn dead and in prison, with and without a love slave,
+    somebody brainwashed and somebody already hiding indefinitely. Compared on
+    draw counts, who is left, who now reports to whom, and where the rest went.
+    The end-of-game check on the tail of `dispersalcheck()` is left out of the
+    transcription the probe drives: it belongs to the day around the check, and
+    it ends the run whenever a sample deliberately kills the last Liberal.
 - [ ] Safehouse/base actions not already covered by Commands.
 - [ ] Liberal agenda/review-management behavior that belongs to simulation rather than presentation.
 - [ ] Ensure a full `advanceday()` equivalent exists as composable systems rather than one monolith.

@@ -52,6 +52,10 @@ static func _evict(state: GameState, location: Location) -> Array[Event]:
 		var destination: Location = state.locations[shelter]
 		destination.ground_loot.append_array(location.ground_loot)
 		location.ground_loot.clear()
+	# Whatever was built here is lost with the lease.
+	location.compound_walls = 0
+	location.compound_stores = 0
+	location.front_business = -1
 
 	events.append(Event.new(Event.MAJOR_EVENT, {
 		"kind": &"evicted",

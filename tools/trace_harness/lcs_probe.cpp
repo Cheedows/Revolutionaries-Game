@@ -2499,6 +2499,373 @@ static void activation_write_loot(FILE *out, vector<Item *> &pile)
 }
 
 
+// The dispersal statuses, as daily.cpp declares them privately.
+enum ProbeDispersalTypes
+{
+   DISPERSAL_SAFE=-1,
+   DISPERSAL_BOSSSAFE,
+   DISPERSAL_NOCONTACT,
+   DISPERSAL_BOSSINPRISON,
+   DISPERSAL_HIDING,
+   DISPERSAL_BOSSINHIDING,
+   DISPERSAL_ABANDONLCS
+};
+
+// A transcription of dispersalcheck() from src/daily/daily.cpp, with the
+// end-of-game check and the empty-squad sweep taken off the end: both belong
+// to the day around it rather than to the check, and the first of them ends
+// the run when a sample deliberately kills the last Liberal.
+static void dispersal_block(char &clearformess)
+{
+   int p = 0;
+   //NUKE DISPERSED SQUAD MEMBERS WHOSE MASTERS ARE NOT AVAILABLE
+   if(len(pool))
+   {
+      // *JDS* I'm documenting this algorithm carefully because it
+      // took me awhile to figure out what exactly was going on here.
+      //
+      // dispersal_status tracks whether each person has a secure chain of command.
+      //
+      // if dispersal_status == NOCONTACT, no confirmation of contact has been made
+      // if dispersal_status == BOSSSAFE, confirmation that THEY are safe is given,
+      //    but it is still needed to check whether their subordinates
+      //    can reach them.
+      // if dispersal_status == SAFE, confirmation has been made that this squad
+      //    member is safe, and their immediate subordinates have also
+      //    checked.
+      //
+      // The way the algorithm works, everyone starts at dispersal_status = NOCONTACT.
+      // Then we start at the top of the chain of command and walk
+      // down it slowly, marking people BOSSSAFE and then SAFE as we sweep
+      // down the chain. If someone is dead or in an unreachable state,
+      // they block progression down the chain to their subordinates,
+      // preventing everyone who requires contact with that person
+      // from being marked safe. After everyone reachable has been
+      // reached and marked safe, all remaining squad members are nuked.
+      vector<int> dispersal_status;
+      dispersal_status.resize(len(pool));
+
+      bool promotion;
+      do
+      {
+         promotion=0;
+         for(p=0;p<len(pool);p++)
+         {
+            // Default: members are marked dispersal_status = NOCONTACT
+            //(no contact verified)
+            dispersal_status[p]=DISPERSAL_NOCONTACT;
+            // If member has no boss (founder level), mark
+            // them dispersal_status = BOSSSAFE, using them as a starting point
+            // at the top of the chain.
+            if(pool[p]->hireid==-1)
+            {
+               if(!disbanding)
+               {
+                  dispersal_status[p]=DISPERSAL_BOSSSAFE;
+                  if(pool[p]->hiding==-1)
+                     pool[p]->hiding=LCSrandom(10)+5;
+               }
+               else dispersal_status[p]=DISPERSAL_BOSSINHIDING;
+            }
+            // If they're dead, mark them dispersal_status = SAFE, so they
+            // don't ever have their subordinates checked
+            // and aren't lost themselves (they're a corpse,
+            // corpses don't lose contact)
+            if(!pool[p]->alive&&!disbanding)
+            {
+               dispersal_status[p]=DISPERSAL_SAFE;
+               //Attempt to promote their subordinates
+               if(promotesubordinates(*pool[p],clearformess)) promotion=1;
+
+               if(pool[p]->location==-1||location[pool[p]->location]->renting==RENTING_NOCONTROL)
+                  delete_and_remove(pool,p--);
+            }
+         }
+      } while(promotion);
+
+      char changed;
+
+      do // while(changed)
+      {
+         changed=0;
+
+         char inprison;
+
+         // Go through the entire pool to locate people at dispersal_status = BOSSSAFE,
+         // so we can verify that their subordinates can reach them.
+         for(p=len(pool)-1;p>=0;p--)
+         {
+            if(!pool[p]->alive) continue;
+            if(pool[p]->location!=-1&&
+               location[pool[p]->location]->type==SITE_GOVERNMENT_PRISON&&
+             !(pool[p]->flag & CREATUREFLAG_SLEEPER))
+            {
+               inprison=1;
+            }
+            else inprison=0;
+
+            // If your boss is in hiding
+            if(dispersal_status[p]==DISPERSAL_BOSSINHIDING)
+            {
+               dispersal_status[p]=DISPERSAL_HIDING;
+               for(int p2=len(pool)-1;p2>=0;p2--)
+               {
+                  if(pool[p2]->hireid==pool[p]->id && pool[p2]->alive)
+                  {
+                     dispersal_status[p2]=DISPERSAL_BOSSINHIDING; // Mark them as unreachable
+                     changed=1; // Need another iteration
+                  }
+               }
+            }
+
+            // If in prison or unreachable due to a member of the command structure
+            // above being in prison
+            else if((dispersal_status[p]==DISPERSAL_BOSSSAFE&&inprison)||dispersal_status[p]==DISPERSAL_BOSSINPRISON)
+            {
+               int dispersalval=DISPERSAL_SAFE;
+               if(pool[p]->flag&CREATUREFLAG_LOVESLAVE)
+               {
+                  if((dispersal_status[p]==DISPERSAL_BOSSINPRISON&&!inprison) ||
+                     (dispersal_status[p]==DISPERSAL_BOSSSAFE    && inprison))
+                  {
+                     pool[p]->juice--; // Love slaves bleed juice when not in prison with their lover
+                     if(pool[p]->juice<-50) dispersalval=DISPERSAL_ABANDONLCS;
+                  }
+               }
+               dispersal_status[p]=dispersalval; // Guaranteed contactable in prison
+
+               // Find all subordinates
+               for(int p2=len(pool)-1;p2>=0;p2--)
+               {
+                  if(pool[p2]->hireid==pool[p]->id && pool[p2]->alive)
+                  {
+                     if(inprison) dispersal_status[p2]=DISPERSAL_BOSSINPRISON;
+                     else dispersal_status[p2]=DISPERSAL_BOSSSAFE;
+                     changed=1; // Need another iteration
+                  }
+               }
+            }
+            // Otherwise, if they're reachable
+            else if(dispersal_status[p]==DISPERSAL_BOSSSAFE&&!inprison)
+            {
+               // Start looking through the pool again.
+               for(int p2=len(pool)-1;p2>=0;p2--)
+               {
+                  // Locate each of this person's subordinates.
+                  if(pool[p2]->hireid==pool[p]->id)
+                  {
+                     // Protect them from being dispersed -- their boss is
+                     // safe. Their own subordinates will then be considered
+                     // in the next loop iteration.
+                     dispersal_status[p2]=DISPERSAL_BOSSSAFE;
+                     // If they're hiding indefinitely and their boss isn't
+                     // hiding at all, then have them discreetly return in a
+                     // couple of weeks
+                     if(pool[p2]->hiding==-1&&!pool[p]->hiding)
+                        pool[p2]->hiding=LCSrandom(10)+3;
+                     changed=1; // Take note that another iteration is needed.
+                  }
+               }
+               // Now that we've dealt with this person's subordinates, mark
+               // them so that we don't look at them again in this loop.
+               dispersal_status[p]=DISPERSAL_SAFE;
+            }
+         }
+      } while(changed); // If another iteration is needed, continue the loop.
+
+      // After checking through the entire command structure, proceed
+      // to nuke all squad members who are unable to make contact with
+      // the LCS.
+      for(p=len(pool)-1;p>=0;p--)
+      {
+         if(dispersal_status[p]==DISPERSAL_NOCONTACT||dispersal_status[p]==DISPERSAL_HIDING||dispersal_status[p]==DISPERSAL_ABANDONLCS)
+         {
+            if(clearformess) erase();
+            else makedelimiter();
+
+            if(!disbanding)
+            {
+               if(!pool[p]->hiding&&dispersal_status[p]==DISPERSAL_HIDING)
+               {
+                  set_color(COLOR_WHITE,COLOR_BLACK,1);
+                  move(8,1);
+                  addstr(pool[p]->name, gamelog);
+                  addstr(" has lost touch with the Liberal Crime Squad.", gamelog);
+                  gamelog.nextMessage();
+
+                  getkey();
+
+                  set_color(COLOR_GREEN,COLOR_BLACK,1);
+                  move(9,1);
+                  addstr("The Liberal has gone into hiding...", gamelog);
+                  gamelog.nextMessage();
+
+                  getkey();
+               }
+               else if(dispersal_status[p]==DISPERSAL_ABANDONLCS)
+               {
+                  set_color(COLOR_WHITE,COLOR_BLACK,1);
+                  move(8,1);
+                  addstr(pool[p]->name, gamelog);
+                  addstr(" has abandoned the LCS.", gamelog);
+                  gamelog.nextMessage();
+
+                  getkey();
+               }
+               else if(dispersal_status[p]==DISPERSAL_NOCONTACT)
+               {
+                  set_color(COLOR_WHITE,COLOR_BLACK,1);
+                  move(8,1);
+                  addstr(pool[p]->name, gamelog);
+                  addstr(" has lost touch with the Liberal Crime Squad.", gamelog);
+                  gamelog.nextMessage();
+
+                  getkey();
+               }
+            }
+
+            removesquadinfo(*pool[p]);
+            if(dispersal_status[p]==DISPERSAL_NOCONTACT||dispersal_status[p]==DISPERSAL_ABANDONLCS)
+               delete_and_remove(pool,p);
+            else
+            {
+               pool[p]->location=-1;
+               if(!(pool[p]->flag & CREATUREFLAG_SLEEPER)) //Sleepers end up in shelter otherwise.
+                  pool[p]->base=find_homeless_shelter(*pool[p]);
+               pool[p]->activity.type=ACTIVITY_NONE;
+               pool[p]->hiding=-1; // Hide indefinitely
+            }
+         }
+      }
+   }
+
+}
+
+
+
+
+
+// The nightly dispersal check: who can still be reached down the chain of
+// command, who is promoted when a link in it dies, and who quietly loses touch
+// with the organisation for good.
+void probe_dispersal(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 71830271UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      int prison = -1, shelter = -1;
+      for (int l = 0; l < len(location); l++)
+      {
+         if (prison == -1 && location[l]->type == SITE_GOVERNMENT_PRISON)
+            prison = l;
+         if (shelter == -1 && location[l]->type == SITE_RESIDENTIAL_SHELTER)
+            shelter = l;
+      }
+
+      // depth  how long the chain of command is
+      // dead   which rung of it has just died (-1: nobody)
+      // jailed which rung is behind bars (-1: nobody)
+      // quirk  love slaves, brainwashing and indefinite hiding
+      for (int depth = 1; depth <= 4; depth++)
+      for (int dead = -1; dead < depth; dead++)
+      for (int jailed = -1; jailed < depth; jailed++)
+      for (int quirk = 0; quirk < 3; quirk++)
+      {
+         unsigned long seed_used = 5500013UL * (unsigned long)
+            ((depth * 256) + (dead + 1) * 32 + (jailed + 1) * 4 + quirk
+             + scenario * 131 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+
+         // A straight chain: each Liberal recruited by the one above, plus a
+         // second recruit at the bottom rung so a promotion has to choose.
+         int previous = -1;
+         for (int d = 0; d < depth; d++)
+         {
+            for (int twin = 0; twin < (d == depth - 1 ? 2 : 1); twin++)
+            {
+               Creature *cr = new Creature;
+               cr->id = 900000 + d * 10 + twin;
+               cr->align = ALIGN_LIBERAL;
+               cr->location = 1;
+               cr->base = 1;
+               cr->hireid = previous;
+               cr->juice = 30 * (d + 1) + twin * 17 + scenario * 5;
+               cr->activity.type = ACTIVITY_NONE;
+               if (d == dead) cr->alive = false;
+               if (d == jailed) cr->location = prison;
+               if (quirk == 1 && d == depth - 1 && twin == 0)
+                  cr->flag |= CREATUREFLAG_LOVESLAVE;
+               if (quirk == 2 && d == depth - 1 && twin == 0)
+                  cr->flag |= CREATUREFLAG_BRAINWASHED;
+               if (quirk == 2 && d == depth - 1 && twin == 1)
+                  cr->hiding = -1;
+               pool.push_back(cr);
+            }
+            previous = 900000 + d * 10;
+         }
+         // The founder sometimes starts hiding indefinitely, which is the one
+         // place the check rolls for the top of the chain.
+         if (quirk == 1 && len(pool)) pool[0]->hiding = -1;
+
+         fprintf(out, "{\"kind\":\"dispersal\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"depth\":%d,\"dead\":%d,\"jailed\":%d,\"quirk\":%d,"
+                      "\"prison\":%d,\"shelter\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, depth, dead, jailed, quirk, prison,
+                 shelter, run_seed);
+         fputs(",\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"hiding\":%d,\"loveslave\":%d,"
+                         "\"brainwashed\":%d,\"person\":",
+                    p ? "," : "", (int)pool[p]->hiding,
+                    (pool[p]->flag & CREATUREFLAG_LOVESLAVE) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_BRAINWASHED) ? 1 : 0);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         dispersal_block(clearformess);
+
+         fprintf(out, ",\"draws\":%lld", lcs_trace_draw_count() - before);
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"hiding\":%d,\"loveslave\":%d,"
+                         "\"brainwashed\":%d,\"person\":",
+                    p ? "," : "", (int)pool[p]->hiding,
+                    (pool[p]->flag & CREATUREFLAG_LOVESLAVE) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_BRAINWASHED) ? 1 : 0);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+      }
+   }
+}
+
+
 // The first clinic in the world, for the samples that want real medics.
 static int find_clinic_index_probe()
 {
@@ -3335,6 +3702,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "activities_day")) probe_activities_day(out);
    else if (!strcmp(which, "activation")) probe_activation_day(out);
    else if (!strcmp(which, "recovery")) probe_recovery(out);
+   else if (!strcmp(which, "dispersal")) probe_dispersal(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
