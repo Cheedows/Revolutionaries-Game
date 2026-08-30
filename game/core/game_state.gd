@@ -20,6 +20,7 @@ var law := Law.new()
 var government := Government.new()
 var opinion := PublicOpinion.new()
 var site := SiteState.new()
+var chase := ChaseState.new()
 
 ## Everyone the game is tracking, by creature id.
 var creatures: Dictionary = {}
@@ -48,7 +49,7 @@ var next_vehicle_id: int = 1
 
 ## Difficulty and mode flags chosen at the start of a game.
 var win_condition: StringName = &"elite_liberal"
-var field_skill_rate: int = 0
+var field_skill_rate: StringName = &"fast"
 var multiple_cities: bool = false
 var no_term_limits: bool = false
 var no_court_purge: bool = false
@@ -71,6 +72,9 @@ var ccs_exposure: int = 0
 ## How many of the Conservative Crime Squad's leaders have been killed, which
 ## decides who is left in charge when one is met.
 var ccs_kills: int = 0
+
+## How many Conservatives the squad has taken home for re-education.
+var kidnappings: int = 0
 var endgame_state: StringName = &"none"
 
 ## Lifetime tallies shown on the high-score screen.
@@ -110,6 +114,11 @@ func add_vehicle(vehicle: Vehicle) -> Vehicle:
 	next_vehicle_id += 1
 	vehicles[vehicle.id] = vehicle
 	return vehicle
+
+
+## Scraps a vehicle. A crashed car is gone for good, not parked somewhere.
+func remove_vehicle(vehicle_id: int) -> void:
+	vehicles.erase(vehicle_id)
 
 
 ## Every living member of the player's organisation.

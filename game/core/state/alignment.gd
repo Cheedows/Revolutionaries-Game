@@ -35,3 +35,28 @@ static func value_of(name: StringName) -> int:
 		if NAMES[value] == name:
 			return value
 	return MODERATE
+
+
+## Turns somebody Conservative, and renames the ones the change makes ironic.
+##
+## Ports conservatise() from src/creature/creature.cpp. Whatever standing they
+## had as a Liberal is forfeit; it was earned for something else.
+static func conservatise(creature: Creature) -> void:
+	if creature.alignment == &"liberal" and creature.juice > 0:
+		creature.juice = 0
+	creature.alignment = &"conservative"
+	match creature.type_key():
+		&"worker_factory_union":
+			creature.name = "Ex-Union Worker"
+		&"judge_liberal":
+			creature.name = "Jaded Liberal Judge"
+
+
+## Turns somebody Liberal. The mirror of [method conservatise], except that a
+## converted CEO is replaced rather than kept: the company finds another.
+static func liberalize(creature: Creature, rename: bool = true) -> void:
+	if creature.alignment == &"conservative" and creature.juice > 0:
+		creature.juice = 0
+	creature.alignment = &"liberal"
+	if rename and creature.type_key() == &"worker_factory_nonunion":
+		creature.name = "New Union Worker"

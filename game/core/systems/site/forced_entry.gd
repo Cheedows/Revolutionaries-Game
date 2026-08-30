@@ -13,11 +13,6 @@ const CHALLENGING := 7
 const HARD := 9
 const FORMIDABLE := 11
 
-## Field training rates, from the FieldSkillRate enum in src/includes.h.
-const RATE_FAST := 0
-const RATE_CLASSIC := 1
-const RATE_HARD := 2
-
 
 ## Tries the lock. Returns {opened, attempted, creature, events}.
 ##
@@ -158,8 +153,8 @@ static func _has_a_crowbar(squad: Squad, members: Array[Creature],
 static func _lesson(state: GameState, classic: int, fast: int,
 		hard: int = 0) -> int:
 	match state.field_skill_rate:
-		RATE_FAST:
+		&"fast":
 			return fast
-		RATE_HARD:
+		&"hard":
 			return hard
 	return classic

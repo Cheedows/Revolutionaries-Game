@@ -394,3 +394,25 @@ const ENDGAME_STATES: Array[StringName] = [
 	&"ccs_defeated",
 	&"martiallaw",
 ]
+
+## 4 entries, in enum order.
+const CHASE_OBSTACLES: Array[StringName] = [
+	&"fruitstand",
+	&"truckpullsout",
+	&"crosstraffic",
+	&"child",
+]
+
+## 3 entries, in enum order.
+const FIELD_SKILL_RATES: Array[StringName] = [
+	&"fast",
+	&"classic",
+	&"hard",
+]
+
+## 3 entries, in enum order.
+const ANIMAL_GLOSSES: Array[StringName] = [
+	&"none",
+	&"tank",
+	&"animal",
+]

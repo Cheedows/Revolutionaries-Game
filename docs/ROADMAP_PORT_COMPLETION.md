@@ -79,9 +79,10 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
     parity exception below.
 - [ ] Add any missing state fields discovered by the remaining systems without leaking UI concerns into `core/`.
 - [ ] Add targeted probes for currently unit-tested-but-unprobed arrest/prostitution branches where practical.
-  - Blocked on the chase system: in the original an arrest runs straight into
-    `footchase()`, so the branch cannot be recorded in isolation. Revisit with
-    Gate F, which is why F is being taken before the rest of B.
+  - Was blocked on the chase system: in the original an arrest runs straight
+    into `footchase()`, so the branch could not be recorded in isolation. The
+    foot chase now has its own probe, so the arrest branch can be probed once
+    the daily arrest path calls into it (Gate B).
 
 **Gate A:** all foundational primitives required by later modes are callable headlessly and green.
 
@@ -163,13 +164,38 @@ Port from `src/combat/` and remaining combat helpers.
 
 ### F. Port car and foot chases
 
-- [ ] Foot pursuit state and resolution.
-- [ ] Vehicle pursuit state and resolution.
-- [ ] Driving checks and vehicle stats/damage.
-- [ ] Escape/capture transitions.
-- [ ] Build deterministic pursuit fixtures so chase traces no longer depend on randomly provoking a chase in a normal playthrough.
+- [x] Raising a pursuit: who responds to trouble at each site type, how many of
+    them, in what, and whether they will take a surrender (`makechasers()`).
+- [x] Foot pursuit state and resolution (`evasiverun()`): speed rolls, chasers
+    dropping out, Liberals breaking away one at a time, and being caught by
+    police, a death squad or a tank.
+- [x] Vehicle pursuit state and resolution (`drivingupdate()`, `evasivedrive()`,
+    `dodgedrive()`, `obstacledrive()`), including the road obstacles.
+- [x] Driving checks and vehicle stats (`driveskill()`), and both crashes
+    (`crashfriendlycar()`, `crashenemycar()`).
+- [x] Escape/capture transitions: `chase_giveup()`, `capturecreature()`,
+    `freehostage()` and `kidnaptransfer()`.
+- [x] Build deterministic pursuit fixtures so chase traces no longer depend on
+    randomly provoking a chase in a normal playthrough. The `chase` probe
+    raises a pursuit at all 54 site types under three legal climates, then runs
+    single car-chase turns (reseating, evading, swerving, both crashes) and one
+    to three foot-chase rounds, comparing draw counts as well as outcomes. It
+    records the generator state at the start of each measured turn, because a
+    turn cannot be replayed from a seed: building the squad and raising the
+    pursuit draw first.
+- [ ] Wire the chase loop into site mode and base mode once encounters exist
+    (Gate G): the turn systems are complete, but nothing calls them yet because
+    `youattack()`/`enemyattack()`/`creatureadvance()` are not ported.
 
 **Gate F:** both chase types have repeatable parity tests and clean transitions into/out of combat/site/base state.
+
+**Known original bug preserved.** `drivingupdate()` picks a replacement driver
+by calling `driveskill()` three times per passenger — once to compare, once to
+store the best, and once more to find who has it — and every one of those
+rolls. The stored best is therefore a different number from the one that beat
+the previous best, and the third roll rarely matches it, so a car whose driver
+is incapacitated usually crashes rather than being reseated. Reproduced call
+for call in `core/systems/chase/driving.gd`.
 
 ### G. Finish site mode / infiltration
 

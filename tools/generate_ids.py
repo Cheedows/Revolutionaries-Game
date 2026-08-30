@@ -29,6 +29,11 @@ ENUMS = [
     ("SITE_SPECIALS", "src/locations/locations.h", "SpecialBlocks", "SPECIAL_", "SPECIALNUM"),
     ("CRIMES", "src/includes.h", "Crimes", "CRIME_", "CRIMENUM"),
     ("ENDGAME_STATES", "src/includes.h", "endgame", "ENDGAME_", "ENDGAMENUM"),
+    ("CHASE_OBSTACLES", "src/includes.h", "CarChaseObstacles", "CARCHASE_OBSTACLE_",
+     "CARCHASE_OBSTACLENUM"),
+    ("FIELD_SKILL_RATES", "src/includes.h", "FieldSkillRates", "FIELDSKILLRATE_", None),
+    ("ANIMAL_GLOSSES", "src/includes.h", "AnimalGlosses", "ANIMALGLOSS_",
+     "ANIMALGLOSSNUM"),
 ]
 
 

@@ -1390,6 +1390,338 @@ void probe_sitemaps(FILE *out)
 
 } // namespace
 
+// Building a squad of Liberals with a fixed spread of ability, so a chase can
+// be run over and over with the same people in it.
+static void chase_build_squad(squadst &squad, int scenario, int size,
+                              int wounded)
+{
+   for (int p = 0; p < 6; p++) squad.squad[p] = NULL;
+   // Registered globally, because removesquadinfo() looks the squad up there:
+   // a Liberal who breaks away from an unregistered squad is never taken out
+   // of it, and would keep being rolled for round after round.
+   squad.id = 1;
+   for (int i = len(::squad) - 1; i >= 0; i--) ::squad.erase(::squad.begin() + i);
+   ::squad.push_back(&squad);
+   for (int p = 0; p < size; p++)
+   {
+      Creature *cr = new Creature;
+      cr->id = 800000 + p;
+      cr->align = ALIGN_LIBERAL;
+      cr->squadid = squad.id = 1;
+      cr->hireid = p;
+      cr->set_skill(SKILL_DRIVING, (p + scenario) % 9);
+      cr->set_attribute(ATTRIBUTE_AGILITY, 2 + (p * 2 + scenario) % 8);
+      cr->set_attribute(ATTRIBUTE_HEALTH, 2 + (p * 3 + scenario) % 8);
+      cr->set_attribute(ATTRIBUTE_STRENGTH, 2 + (p + scenario) % 8);
+      cr->blood = 100 - (p * 13 + scenario * 7) % 60;
+      // A spread of conditions the driving rules read: a lost leg, a broken
+      // spine, and a wheelchair all change what somebody can do.
+      if (wounded && p == 0)
+      {  // The driver: both legs off, so the car needs a new one.
+         cr->wound[BODYPART_LEG_RIGHT] |= WOUND_CLEANOFF;
+         cr->wound[BODYPART_LEG_LEFT] |= WOUND_NASTYOFF;
+      }
+      if (wounded && p == 1) cr->wound[BODYPART_ARM_RIGHT] |= WOUND_CLEANOFF;
+      if (wounded && p == 2) cr->special[SPECIALWOUND_LOWERSPINE] = 0;
+      if (wounded && p == 3) cr->flag |= CREATUREFLAG_WHEELCHAIR;
+      squad.squad[p] = cr;
+   }
+}
+
+static void chase_free_squad(squadst &squad)
+{
+   for (int i = len(::squad) - 1; i >= 0; i--)
+      if (::squad[i] == &squad) ::squad.erase(::squad.begin() + i);
+   for (int p = 0; p < 6; p++)
+   {
+      if (squad.squad[p]) delete squad.squad[p];
+      squad.squad[p] = NULL;
+   }
+}
+
+// Writes one creature in full: everything a chase rolls against, so the port
+// can rebuild the same person without rebuilding the world that made them.
+static void chase_write_creature(FILE *out, Creature &cr, bool first)
+{
+   fprintf(out, "%s{\"id\":%d,\"type\":", first ? "" : ",", (int)cr.id);
+   write_string(out, getcreaturetype(cr.type)->get_idname().c_str());
+   fprintf(out, ",\"align\":%d,\"blood\":%d,"
+                "\"alive\":%d,\"car\":%d,\"driver\":%d,\"squadid\":%d,"
+                "\"location\":%d,\"wheelchair\":%d,\"animalgloss\":%d",
+           cr.align, cr.blood,
+           cr.alive ? 1 : 0, (int)cr.carid, cr.is_driver ? 1 : 0,
+           (int)cr.squadid, cr.location,
+           (cr.flag & CREATUREFLAG_WHEELCHAIR) ? 1 : 0, cr.animalgloss);
+   fprintf(out, ",\"age\":%d,\"juice\":%d", cr.age, cr.juice);
+   fputs(",\"attributes\":[", out);
+   for (int i = 0; i < ATTNUM; i++)
+      fprintf(out, "%s%d", i ? "," : "", cr.attribute_raw_probe(i));
+   fputs("],\"effective\":[", out);
+   for (int i = 0; i < ATTNUM; i++)
+      fprintf(out, "%s%d", i ? "," : "", cr.get_attribute(i, true));
+   fputs("],\"skills\":[", out);
+   for (int i = 0; i < SKILLNUM; i++)
+      fprintf(out, "%s%d", i ? "," : "", cr.get_skill(i));
+   fputs("],\"wounds\":[", out);
+   for (int i = 0; i < BODYPARTNUM; i++)
+      fprintf(out, "%s%d", i ? "," : "", (int)cr.wound[i]);
+   fputs("],\"special\":[", out);
+   for (int i = 0; i < SPECIALWOUNDNUM; i++)
+      fprintf(out, "%s%d", i ? "," : "", (int)cr.special[i]);
+   fputs("]}", out);
+}
+
+// Writes every car on the road, with the type the driving rules read off it.
+static void chase_write_cars(FILE *out, const char *key,
+                             vector<Vehicle *> &cars)
+{
+   fprintf(out, ",\"%s\":[", key);
+   for (int v = 0; v < len(cars); v++)
+   {
+      fprintf(out, "%s{\"id\":%ld,\"type\":", v ? "," : "", cars[v]->id());
+      write_string(out, cars[v]->vtypeidname().c_str());
+      fputs("}", out);
+   }
+   fputs("]", out);
+}
+
+// Writes the state a chase turn can be judged by: who is left on each side,
+// what they are riding in and how badly hurt they are. Written twice per
+// sample, before and after, so the port starts from the same people.
+static void chase_write_state(FILE *out, const char *key, squadst &squad)
+{
+   fprintf(out, ",\"%s_squad\":[", key);
+   bool first = true;
+   for (int p = 0; p < 6; p++)
+   {
+      if (!squad.squad[p]) continue;
+      chase_write_creature(out, *squad.squad[p], first);
+      first = false;
+   }
+   fprintf(out, "],\"%s_encounter\":[", key);
+   first = true;
+   for (int e = 0; e < ENCMAX; e++)
+   {
+      if (!encounter[e].exists) continue;
+      chase_write_creature(out, encounter[e], first);
+      first = false;
+   }
+   fputs("]", out);
+
+   char name[64];
+   snprintf(name, sizeof name, "%s_friendcars", key);
+   chase_write_cars(out, name, chaseseq.friendcar);
+   snprintf(name, sizeof name, "%s_enemycars", key);
+   chase_write_cars(out, name, chaseseq.enemycar);
+}
+
+// Puts the squad into cars of its own, one driver per car.
+static void chase_give_cars(squadst &squad, const char *type, int cars)
+{
+   delete_and_clear(chaseseq.friendcar, vehicle);
+   for (int c = 0; c < cars; c++)
+   {
+      Vehicle *v = new Vehicle(*vehicletype[getvehicletype(type)]);
+      vehicle.push_back(v);
+      chaseseq.friendcar.push_back(v);
+   }
+   for (int p = 0, c = 0; p < 6; p++)
+   {
+      if (!squad.squad[p]) continue;
+      squad.squad[p]->carid = chaseseq.friendcar[c % cars]->id();
+      squad.squad[p]->is_driver = (p == c && c < cars);
+      if (p == c && c < cars) c++;
+   }
+}
+
+// Chases: who turns up, who drives, who crashes and who gets away.
+//
+// Every step is measured by draw count as well as by outcome, because a chase
+// is a long sequence of small rolls and a missing one shows up as nothing more
+// than a fight that went slightly differently three rounds later.
+void probe_chase(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = scenario == 2 ? ENDGAME_CCS_ATTACKS : ENDGAME_NONE;
+
+      newsstoryst *ns = new newsstoryst;
+      ns->loc = 1;
+      newsstory.push_back(ns);
+      sitestory = ns;
+      cursite = 1;
+      mode = GAMEMODE_CHASECAR;
+
+      // Who responds, for every site type and a spread of how bad the visit
+      // was. makechasers() fills the encounter array and builds their cars.
+      for (int type = 0; type < SITENUM; type++)
+      for (int crime = 0; crime < 3; crime++)
+      {
+         unsigned long seed_used =
+            3000037UL * (unsigned long)(type * 4 + crime + scenario * 61 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+         delete_and_clear(chaseseq.enemycar);
+         chaseseq.location = 1;
+
+         long long before = lcs_trace_draw_count();
+         makechasers(type, crime * 17 + 1);
+         fprintf(out, "{\"kind\":\"chasers\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"type\":%d,\"crime\":%d,\"endgame\":%d,\"draws\":%lld,"
+                      "\"canpullover\":%d",
+                 scenario, seed_used, type, crime * 17 + 1, endgamestate,
+                 lcs_trace_draw_count() - before, chaseseq.canpullover ? 1 : 0);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         fprintf(out, ",\"world_seed\":%lu", run_seed);
+         squadst empty;
+         for (int p = 0; p < 6; p++) empty.squad[p] = NULL;
+         chase_write_state(out, "after", empty);
+         fputs("}\n", out);
+      }
+
+      // A full turn of a car chase: reseating drivers, running for it, and
+      // swerving around whatever is in the road.
+      static const char *TURNS[] = {"update", "evade", "dodge",
+                                    "crashfriend", "crashenemy"};
+      for (int turn = 0; turn < 5; turn++)
+      for (int wounded = 0; wounded < 2; wounded++)
+      for (int cars = 1; cars <= 2; cars++)
+      {
+         unsigned long seed_used = 5000011UL *
+            (unsigned long)(turn * 8 + wounded * 3 + cars + scenario * 97);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         squadst squad;
+         squad.id = 1;
+         chase_build_squad(squad, scenario, 5, wounded);
+         activesquad = &squad;
+         chaseseq.location = 1;
+         delete_and_clear(chaseseq.enemycar);
+         makechasers(SITE_GOVERNMENT_POLICESTATION, 40);
+         chase_give_cars(squad, "STATIONWAGON", cars);
+
+         fprintf(out, "{\"kind\":\"turn\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"turn\":\"%s\",\"wounded\":%d,\"cars\":%d,"
+                      "\"endgame\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, TURNS[turn], wounded, cars,
+                 endgamestate, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         chase_write_state(out, "before", squad);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         short obstacle = -1;
+         long long before = lcs_trace_draw_count();
+         int ended = 0;
+         if (!strcmp(TURNS[turn], "update")) ended = drivingupdate(obstacle);
+         else if (!strcmp(TURNS[turn], "evade")) evasivedrive();
+         else if (!strcmp(TURNS[turn], "dodge")) ended = dodgedrive();
+         else if (!strcmp(TURNS[turn], "crashfriend")) crashfriendlycar(0);
+         else if (len(chaseseq.enemycar)) crashenemycar(0);
+
+         fprintf(out, ",\"draws\":%lld,\"ended\":%d,\"obstacle\":%d",
+                 lcs_trace_draw_count() - before, ended, obstacle);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+
+         delete_and_clear(chaseseq.friendcar, vehicle);
+         delete_and_clear(chaseseq.enemycar);
+         chase_free_squad(squad);
+         activesquad = NULL;
+      }
+
+      // The same again on foot, where agility and health decide it instead.
+      for (int wounded = 0; wounded < 2; wounded++)
+      for (int round = 0; round < 3; round++)
+      {
+         unsigned long seed_used =
+            7000003UL * (unsigned long)(wounded * 5 + round + scenario * 31 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         squadst squad;
+         squad.id = 1;
+         chase_build_squad(squad, scenario, 5, wounded);
+         activesquad = &squad;
+         chaseseq.location = 1;
+         delete_and_clear(chaseseq.enemycar);
+         makechasers(SITE_GOVERNMENT_POLICESTATION, 40);
+         delete_and_clear(chaseseq.enemycar);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].carid = -1;
+         for (int p = 0; p < 6; p++)
+            if (squad.squad[p]) squad.squad[p]->carid = -1;
+         mode = GAMEMODE_CHASEFOOT;
+
+         fprintf(out, "{\"kind\":\"foot\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"wounded\":%d,\"rounds\":%d,\"endgame\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, wounded, round + 1, endgamestate,
+                 run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         chase_write_state(out, "before", squad);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         for (int r = 0; r <= round; r++) evasiverun();
+
+         fprintf(out, ",\"draws\":%lld", lcs_trace_draw_count() - before);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+
+         mode = GAMEMODE_CHASECAR;
+         chase_free_squad(squad);
+         activesquad = NULL;
+      }
+   }
+}
+
 void lcs_probe_run_if_requested()
 {
    const char *which = getenv("LCS_PROBE");
@@ -1423,6 +1755,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "sites")) probe_sites(out);
    else if (!strcmp(which, "context")) probe_context_checks(out);
    else if (!strcmp(which, "combat")) probe_combat(out);
+   else if (!strcmp(which, "chase")) probe_chase(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

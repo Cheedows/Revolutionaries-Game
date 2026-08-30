@@ -192,8 +192,8 @@ static func _believed(result: int, creature: Creature, context: Dictionary) -> i
 
 ## Whether a skill roll reaches [param difficulty].
 static func skill_check(rng: Rng, creature: Creature, skill: StringName,
-		difficulty: int) -> bool:
-	return skill_roll(rng, creature, skill) >= difficulty
+		difficulty: int, context: Dictionary = {}) -> bool:
+	return skill_roll(rng, creature, skill, context) >= difficulty
 
 
 ## Whether an attribute roll reaches [param difficulty].

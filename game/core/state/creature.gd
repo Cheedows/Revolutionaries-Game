@@ -70,6 +70,22 @@ var special_attack: StringName = &""
 ## Whether the authorities would deport rather than charge this person.
 var illegal_alien: bool = false
 
+## The rest of the original's CREATUREFLAG_ bits, as named fields. They are
+## independent states rather than a bitmask because nothing in the port reads
+## them as a set.
+## Whether this creature has been given a name yet. The original names a
+## Conservative only when the player has reason to know them.
+var named: bool = false
+
+var wheelchair: bool = false
+var just_escaped: bool = false
+var missing: bool = false
+var kidnapped: bool = false
+var sleeper: bool = false
+var love_slave: bool = false
+var brainwashed: bool = false
+var converted: bool = false
+
 ## Id of the person this one is dragging along, or 0 for nobody. A hostage or
 ## a body makes a squad conspicuous in every sense.
 var prisoner_id: int = 0
@@ -91,6 +107,11 @@ var death_penalty: int = 0
 
 ## Id of whoever recruited this creature, or -1. Reputation trickles up it.
 var recruiter_id: int = -1
+
+## The car this creature is in during a chase, or 0 for on foot, and whether
+## they are the one driving it.
+var vehicle_id: int = 0
+var is_driver: bool = false
 
 ## Set when a fight found this creature too hurt to act, so the next check does
 ## not have to roll for it again.
