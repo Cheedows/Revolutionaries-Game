@@ -109,6 +109,37 @@ void probe_blank(FILE *out)
    }
 }
 
+// Trains creatures and levels them up, so the experience curve can be
+// diffed. No randomness is involved beyond creating the creature itself.
+void probe_training(FILE *out)
+{
+   for (int sample = 0; sample < 120; sample++)
+   {
+      unsigned long seed = 15485863UL * (unsigned long)(sample + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      Creature cr;
+      // A spread of juice levels, since juice raises the attribute cap.
+      cr.juice = (sample % 6) * 40 - 40;
+      int skill = sample % SKILLNUM;
+      int lesson = 1 + (sample % 17) * 3;
+      int upto = (sample % 4 == 0) ? 4 : MAXATTRIBUTE;
+
+      fprintf(out, "{\"sample\":%d,\"seed\":%lu,\"juice\":%d,\"skill\":%d",
+              sample, seed, cr.juice, skill);
+      fprintf(out, ",\"lesson\":%d,\"upto\":%d,\"steps\":[", lesson, upto);
+      for (int step = 0; step < 12; step++)
+      {
+         cr.train(skill, lesson, upto);
+         cr.skill_up();
+         fprintf(out, "%s[%d,%d]", step ? "," : "",
+                 cr.get_skill(skill), cr.get_skill_ip(skill));
+      }
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -126,6 +157,7 @@ void lcs_probe_run_if_requested()
 
    if (!strcmp(which, "creatures")) probe_creatures(out);
    else if (!strcmp(which, "blank")) probe_blank(out);
+   else if (!strcmp(which, "training")) probe_training(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

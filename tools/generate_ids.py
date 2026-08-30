@@ -66,6 +66,48 @@ def members(source: str, enum_name: str, prefix: str, terminator: str):
     return names
 
 
+def skill_attributes(skills):
+    """Parses Skill::get_associated_attribute() into a skill -> attribute map.
+
+    The switch falls through case labels, so a run of labels shares the
+    attribute the run ends with; anything not listed falls to the default.
+    """
+    text = (ROOT / "src/creature/creature.cpp").read_text(errors="replace")
+    match = re.search(r"CreatureAttribute Skill::get_associated_attribute[^{]*\{(.*?)\n\}",
+                      text, re.S)
+    if not match:
+        raise SystemExit("get_associated_attribute not found")
+
+    mapping = {}
+    pending = []
+    default = None
+    for line in match.group(1).splitlines():
+        line = re.sub(r"//.*", "", line).strip()
+        case = re.fullmatch(r"case SKILL_([A-Z0-9_]+):", line)
+        if case:
+            pending.append(case.group(1).lower())
+            continue
+        if line == "default:":
+            pending.append(None)
+            continue
+        returned = re.fullmatch(r"return ATTRIBUTE_([A-Z0-9_]+);", line)
+        if returned:
+            attribute = returned.group(1).lower()
+            for skill in pending:
+                if skill is None:
+                    default = attribute
+                else:
+                    mapping[skill] = attribute
+            pending = []
+    if default is None:
+        raise SystemExit("get_associated_attribute has no default branch")
+
+    missing = [skill for skill in skills if skill not in mapping]
+    for skill in missing:
+        mapping[skill] = default
+    return mapping
+
+
 def main() -> int:
     groups = [(name, members(source, enum_name, prefix, terminator))
               for name, source, enum_name, prefix, terminator in ENUMS]
@@ -91,6 +133,16 @@ def main() -> int:
             lines.append(f'\t&"{value}",')
         lines.append("]")
         lines.append("")
+
+    skills = dict(groups)["SKILLS"]
+    mapping = skill_attributes(skills)
+    lines.append("## The attribute that caps each skill, from")
+    lines.append("## Skill::get_associated_attribute() in the original.")
+    lines.append("const SKILL_ATTRIBUTE: Dictionary = {")
+    for skill in skills:
+        lines.append(f'\t&"{skill}": &"{mapping[skill]}",')
+    lines.append("}")
+    lines.append("")
 
     OUT.write_text("\n".join(lines))
     print(f"wrote {OUT.relative_to(ROOT)}: " +
