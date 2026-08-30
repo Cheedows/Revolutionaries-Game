@@ -65,8 +65,13 @@ func _load_kind(directory: String) -> Dictionary:
 		var resource: Resource = load(directory.path_join(file))
 		if resource == null:
 			continue
-		var idname: StringName = resource.get(&"idname")
-		if idname == null or idname == &"":
+		# Most content names itself with an idname; shops use a name, and
+		# anything with neither is keyed by its file name.
+		var declared: Variant = resource.get(&"idname")
+		if declared == null:
+			declared = resource.get(&"name")
+		var idname := StringName(declared) if declared != null else &""
+		if idname == &"":
 			idname = StringName(file.get_basename())
 		entries[idname] = resource
 	return entries
