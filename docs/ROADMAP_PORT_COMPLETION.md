@@ -95,7 +95,22 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
 
 Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and shared actions.
 
-- [ ] Recruitment and recruit management.
+- [x] Recruitment: `recruitment_activity()` and `completerecruitmeeting()`,
+    with `recruitFindDifficulty()`, the subordinate limits from
+    `maxsubordinates()`/`subordinatesleft()`, and `Creature::talkreceptive()`.
+  - Verified by the `recruit` probe: every recruitable type at three levels of
+    street sense for the search, and both approaches against recruits of three
+    standings for the meetings — compared on draw counts, how many candidates a
+    day turns up, whether a meeting was missed or was the last one, the
+    eagerness and level it left behind, the funds spent, and what the recruiter
+    learned.
+  - **Known original quirk preserved.** Only the mutant's difficulty varies
+    with the law, and it is recalculated in `recruitSelect()` — the menu — not
+    when the search runs. A player who has not opened that menu since the laws
+    changed goes looking under the old number, so the difficulty table is
+    stored state in the port too, refreshed by the same step.
+- [ ] Recruit management: the meeting queue, recruits losing interest over
+    time, and lining a recruit up for a task rather than membership.
 - [ ] Complete activity assignment semantics and a reliable parity probe/trace.
 - [ ] Remaining daily activities: hacking, graffiti, prostitution, teaching, burial and other activity variants from the original.
 - [ ] Dating/relationship activity behavior used by the original.

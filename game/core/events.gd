@@ -65,7 +65,11 @@ const FUNDS_SPENT := &"funds_spent"                  # {amount, purpose}
 const DAY_ADVANCED := &"day_advanced"                # {day, month, year}
 const MONTH_ADVANCED := &"month_advanced"
 const ACTIVITY_RESOLVED := &"activity_resolved"      # {creature, activity, outcome}
-const RECRUIT_MET := &"recruit_met"
+const RECRUIT_MET := &"recruit_met"                  # {creature, recruit}
+const RECRUIT_MISSED := &"recruit_missed"            # {creature, recruit}
+const RECRUIT_DISCUSSED := &"recruit_discussed"      # {creature, recruit, topic, with_props}
+const RECRUIT_PERSUADED := &"recruit_persuaded"      # {recruit, warmly}
+const RECRUIT_LOST := &"recruit_lost"                # {creature, recruit, politely}
 const SLEEPER_REPORTED := &"sleeper_reported"
 const FINANCES_REPORTED := &"finances_reported"
 

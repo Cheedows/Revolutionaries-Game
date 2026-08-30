@@ -273,6 +273,7 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 	# The founder takes half damage and gets shielded, so which hire somebody
 	# is changes how a fight goes as much as their skills do.
 	creature.hire_id = int(entry["hireid"])
+	creature.meetings = int(entry["meetings"])
 	creature.body.stunned = int(entry["stunned"])
 	creature.cannot_bluff = int(entry["cantbluff"])
 	creature.forced_incapacitated = int(entry["forceinc"]) != 0

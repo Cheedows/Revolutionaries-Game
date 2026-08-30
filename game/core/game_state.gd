@@ -79,8 +79,16 @@ var kills: int = 0
 var dead: int = 0
 var ccs_boss_kills: int = 0
 
-## How many Conservatives the squad has taken home for re-education.
+## How many Conservatives the squad has taken home for re-education, and how
+## many Liberals it has talked into joining.
 var kidnappings: int = 0
+var recruits: int = 0
+
+## How hard each kind of person is to track down. Seeded from
+## [constant Recruiting.FINDABLE] and only recalculated when the player opens
+## the recruitment menu, which is what the original does — see
+## [method Recruiting.refresh_difficulties].
+var recruit_difficulty: Dictionary = Recruiting.FINDABLE.duplicate()
 var endgame_state: StringName = &"none"
 
 ## Lifetime tallies shown on the high-score screen.

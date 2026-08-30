@@ -1452,6 +1452,7 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
            cr.alive ? 1 : 0, (int)cr.carid, cr.is_driver ? 1 : 0,
            (int)cr.squadid, cr.location,
            (cr.flag & CREATUREFLAG_WHEELCHAIR) ? 1 : 0, cr.animalgloss);
+   fprintf(out, ",\"meetings\":%d", cr.meetings);
    fprintf(out, ",\"age\":%d,\"juice\":%d,\"hireid\":%d,\"stunned\":%d,"
                 "\"cantbluff\":%d,\"forceinc\":%d,\"converted\":%d",
            cr.age, cr.juice, (int)cr.hireid, (int)cr.stunned,
@@ -2186,6 +2187,288 @@ void probe_stealth(FILE *out)
    }
 }
 
+// Recruitment: a day's asking around, and then the meetings that follow.
+//
+// The meetings are driven directly rather than through
+// completerecruitmeeting(), which is a keystroke loop — but every roll that
+// function makes is made here in the same order, so the draw counts and the
+// outcomes are the ones the real meeting would have produced. The parts that
+// only ask the player a question are the parts left out.
+void probe_recruit(FILE *out)
+{
+   static const int TYPES[] = {
+      CREATURE_COLLEGESTUDENT, CREATURE_HIPPIE, CREATURE_GANGMEMBER,
+      CREATURE_PROSTITUTE, CREATURE_VETERAN, CREATURE_DOCTOR,
+      CREATURE_JUDGE_LIBERAL, CREATURE_LOCKSMITH, CREATURE_MUTANT,
+      CREATURE_TEACHER,
+   };
+   const int TYPE_COUNT = (int)(sizeof(TYPES) / sizeof(TYPES[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+
+      // Asking around: every recruitable type, at a spread of street sense.
+      for (int t = 0; t < TYPE_COUNT; t++)
+      for (int sense = 0; sense < 3; sense++)
+      {
+         unsigned long seed_used = 1200007UL * (unsigned long)
+            (t * 4 + sense + scenario * 61 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         Creature cr;
+         cr.id = 700000;
+         cr.align = ALIGN_LIBERAL;
+         cr.location = 1;
+         cr.set_skill(SKILL_STREETSENSE, sense * 4);
+         cr.set_attribute(ATTRIBUTE_INTELLIGENCE, 3 + sense * 3);
+
+         // Recorded before the search, since finding people changes nothing
+         // about the searcher but the skill it teaches.
+         char before_json[8192];
+         FILE *hold = tmpfile();
+         chase_write_creature(hold, cr, true);
+         long held = ftell(hold);
+         rewind(hold);
+         size_t got = fread(before_json, 1, sizeof(before_json) - 1, hold);
+         before_json[got] = 0;
+         fclose(hold);
+         (void)held;
+
+         // The generator is not at the start of its stream here: reseeding and
+         // then building the searcher has already drawn.
+         unsigned long rng_at[RNG_SIZE];
+         for (int i = 0; i < RNG_SIZE; i++) rng_at[i] = ::seed[i];
+
+         long long before = lcs_trace_draw_count();
+
+         int difficulty = recruitFindDifficulty(TYPES[t]);
+         int found = 0;
+         long long steps[6];
+         for (int i = 0; i < 6; i++) steps[i] = 0;
+         long long split_make = 0, split_name = 0;
+         if (difficulty < 10)
+            for (found = 0; found < 5; found++)
+            {
+               long long at = lcs_trace_draw_count();
+               if (found == 0 ||
+                   cr.skill_roll(SKILL_STREETSENSE) > (difficulty + found * 2))
+               {
+                  makecreature(encounter[found], TYPES[t]);
+                  long long made = lcs_trace_draw_count();
+                  encounter[found].namecreature();
+                  if (found == 0)
+                  {
+                     split_make = made - at;
+                     split_name = lcs_trace_draw_count() - made;
+                  }
+                  steps[found] = lcs_trace_draw_count() - at;
+               }
+               else { steps[found] = lcs_trace_draw_count() - at; break; }
+            }
+
+         fprintf(out, "{\"kind\":\"ask\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"type\":\"%s\",\"sense\":%d,\"difficulty\":%d,"
+                      "\"found\":%d,\"draws\":%lld,\"world_seed\":%lu",
+                 scenario, seed_used,
+                 getcreaturetype(TYPES[t])->get_idname().c_str(), sense * 4,
+                 difficulty, found, lcs_trace_draw_count() - before, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"streetsense_after\":", out);
+         fprintf(out, "%d", cr.get_skill(SKILL_STREETSENSE));
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", rng_at[i]);
+         fprintf(out, "],\"split_make\":%lld,\"split_name\":%lld",
+                 split_make, split_name);
+         fprintf(out, ",\"recruiter\":[%s],\"steps\":[", before_json);
+         for (int i = 0; i < 6; i++)
+            fprintf(out, "%s%lld", i ? "," : "", steps[i]);
+         fputs("]", out);
+         squadst empty;
+         for (int p = 0; p < 6; p++) empty.squad[p] = NULL;
+         chase_write_state(out, "after", empty);
+         fputs("}\n", out);
+      }
+
+      // The meetings. Every approach against a spread of recruits.
+      for (int t = 0; t < TYPE_COUNT; t++)
+      for (int approach = 0; approach < 2; approach++)
+      for (int standing = 0; standing < 3; standing++)
+      {
+         unsigned long seed_used = 1300021UL * (unsigned long)
+            (t * 8 + approach * 4 + standing + scenario * 97 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         Creature recruiter;
+         recruiter.id = 700001;
+         recruiter.align = ALIGN_LIBERAL;
+         recruiter.location = 1;
+         recruiter.hireid = -1;
+         recruiter.juice = 100 * standing;
+         recruiter.meetings = standing * 3;
+         recruiter.set_skill(SKILL_PERSUASION, 2 + standing * 3);
+         recruiter.set_skill(SKILL_BUSINESS, standing);
+         recruiter.set_skill(SKILL_SCIENCE, standing * 2);
+         recruiter.set_skill(SKILL_RELIGION, standing);
+         recruiter.set_skill(SKILL_LAW, standing);
+         recruiter.set_attribute(ATTRIBUTE_INTELLIGENCE, 4 + standing * 2);
+
+         makecreature(encounter[0], TYPES[t]);
+         encounter[0].namecreature();
+         encounter[0].juice = standing * 250;
+         Creature &recruit = encounter[0];
+
+         ledger.force_funds(approach ? 500 : 10);
+
+         // recruitst's constructor decides how eager they are before anybody
+         // has met them; it draws, so it is built inside the measured window.
+         unsigned long rng_at[RNG_SIZE];
+         for (int i = 0; i < RNG_SIZE; i++) rng_at[i] = ::seed[i];
+
+         long long before = lcs_trace_draw_count();
+         recruitst meeting;
+         int eagerness_raw = meeting.eagerness1;
+
+         fprintf(out, "{\"kind\":\"meet\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"type\":\"%s\",\"approach\":%d,\"standing\":%d,"
+                      "\"world_seed\":%lu,\"eagerness\":%d,\"funds\":%d",
+                 scenario, seed_used,
+                 getcreaturetype(TYPES[t])->get_idname().c_str(), approach,
+                 standing, run_seed, eagerness_raw, ledger.get_funds());
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", rng_at[i]);
+         fputs("],\"recruiter\":[", out);
+         chase_write_creature(out, recruiter, true);
+         fputs("],\"recruit\":[", out);
+         chase_write_creature(out, recruit, true);
+         fputs("]", out);
+
+         // The meeting itself, roll for roll.
+         int missed = 0;
+         int outcome = 0;   // 0 continues, 1 over
+         if (recruiter.meetings++ > 5 &&
+             LCSrandom(recruiter.meetings - 5))
+         {
+            missed = 1;
+         }
+         else
+         {
+            if (approach) ledger.subtract_funds(50, EXPENSE_RECRUITMENT);
+            recruiter.train(SKILL_PERSUASION,
+               max(12 - recruiter.get_skill(SKILL_PERSUASION), 5));
+            recruiter.train(SKILL_SCIENCE,
+               max(recruit.get_skill(SKILL_SCIENCE) - recruiter.get_skill(SKILL_SCIENCE), 0));
+            recruiter.train(SKILL_RELIGION,
+               max(recruit.get_skill(SKILL_RELIGION) - recruiter.get_skill(SKILL_RELIGION), 0));
+            recruiter.train(SKILL_LAW,
+               max(recruit.get_skill(SKILL_LAW) - recruiter.get_skill(SKILL_LAW), 0));
+            recruiter.train(SKILL_BUSINESS,
+               max(recruit.get_skill(SKILL_BUSINESS) - recruiter.get_skill(SKILL_BUSINESS), 0));
+
+            int lib = recruiter.get_skill(SKILL_BUSINESS) +
+                      recruiter.get_skill(SKILL_SCIENCE) +
+                      recruiter.get_skill(SKILL_RELIGION) +
+                      recruiter.get_skill(SKILL_LAW) +
+                      recruiter.get_attribute(ATTRIBUTE_INTELLIGENCE, true);
+            int reluctance = 5 + recruit.get_skill(SKILL_BUSINESS) +
+                             recruit.get_skill(SKILL_SCIENCE) +
+                             recruit.get_skill(SKILL_RELIGION) +
+                             recruit.get_skill(SKILL_LAW) +
+                             recruit.get_attribute(ATTRIBUTE_WISDOM, true) +
+                             recruit.get_attribute(ATTRIBUTE_INTELLIGENCE, true);
+            if (lib > reluctance) reluctance = 0; else reluctance -= lib;
+            int difficulty = reluctance;
+
+            // Both approaches roll for which issue came up: the props branch
+            // through getissueeventstring(), the other through getview().
+            // Only the draw matters here.
+            if (approach) difficulty -= 5;
+            LCSrandom(VIEWNUM - 3);
+
+            if (recruit.juice >= 10)
+            {
+               if (recruit.juice < 50) difficulty += 1;
+               else if (recruit.juice < 100)
+                  difficulty += (int)(2 + 0.1 * recruit.get_attribute(ATTRIBUTE_WISDOM, false));
+               else if (recruit.juice < 200)
+                  difficulty += (int)(3 + 0.2 * recruit.get_attribute(ATTRIBUTE_WISDOM, false));
+               else if (recruit.juice < 500)
+                  difficulty += (int)(4 + 0.3 * recruit.get_attribute(ATTRIBUTE_WISDOM, false));
+               else if (recruit.juice < 1000)
+                  difficulty += (int)(5 + 0.4 * recruit.get_attribute(ATTRIBUTE_WISDOM, false));
+               else
+                  difficulty += (int)(6 + 0.5 * recruit.get_attribute(ATTRIBUTE_WISDOM, false));
+            }
+            if (difficulty > 18) difficulty = 18;
+
+            if (recruiter.skill_check(SKILL_PERSUASION, difficulty))
+            {
+               if (meeting.level < 127) meeting.level++;
+               if (meeting.eagerness1 < 127) meeting.eagerness1++;
+            }
+            else if (recruiter.skill_check(SKILL_PERSUASION, difficulty))
+            {
+               if (meeting.level < 127) meeting.level++;
+               if (meeting.eagerness1 > -128) meeting.eagerness1--;
+            }
+            else outcome = 1;
+         }
+
+         fprintf(out, ",\"draws\":%lld,\"missed\":%d,\"outcome\":%d,"
+                      "\"level\":%d,\"eagerness_after\":%d,\"funds_after\":%d,"
+                      "\"subordinates\":%d",
+                 lcs_trace_draw_count() - before, missed, outcome,
+                 (int)meeting.level, (int)meeting.eagerness1,
+                 ledger.get_funds(), subordinatesleft(recruiter));
+         fputs(",\"recruiter_after\":[", out);
+         chase_write_creature(out, recruiter, true);
+         fputs("]}\n", out);
+
+         meeting.recruit = NULL;
+      }
+   }
+}
+
 void lcs_probe_run_if_requested()
 {
    const char *which = getenv("LCS_PROBE");
@@ -2223,6 +2506,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "fight")) probe_fight(out);
    else if (!strcmp(which, "encounters")) probe_encounters(out);
    else if (!strcmp(which, "stealth")) probe_stealth(out);
+   else if (!strcmp(which, "recruit")) probe_recruit(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

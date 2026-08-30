@@ -126,6 +126,10 @@ var cannot_bluff: int = 0
 ## damage and gets shielded, which is what this is read for.
 var hire_id: int = -1
 
+## Recruitment meetings this Liberal has booked. Past a handful they start
+## turning up to the wrong ones.
+var meetings: int = 0
+
 ## Days since joining, and since dying.
 var join_days: int = 0
 var death_days: int = 0
