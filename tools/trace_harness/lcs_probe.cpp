@@ -2753,6 +2753,249 @@ static int find_clinic_index_probe()
    return 1;
 }
 
+// A transcription of the graffiti, natural-opinion-drift and seduction-stipend
+// blocks of passmonth(), which are inline in a function that also runs
+// elections, Congress and the whole justice system.
+static void monthly_drift_block(int *libpower)
+{
+   int v;
+   int conspower=200-attitude[VIEW_AMRADIO]-attitude[VIEW_CABLENEWS];
+
+   for(int l=0;l<len(location);l++)
+   {
+      for(int c=len(location[l]->changes)-1;c>=0;c--)
+      {
+         if(location[l]->changes[c].flag==SITEBLOCK_GRAFFITI||
+            location[l]->changes[c].flag==SITEBLOCK_GRAFFITI_CCS||
+            location[l]->changes[c].flag==SITEBLOCK_GRAFFITI_OTHER)
+         {
+            int power=0,align=0;
+            if(location[l]->changes[c].flag==SITEBLOCK_GRAFFITI) align=1;
+            if(location[l]->changes[c].flag==SITEBLOCK_GRAFFITI_CCS) align=-1;
+            if(securityable(location[l]->type))
+            {
+               location[l]->changes.erase(location[l]->changes.begin()+c);
+               power=5;
+            }
+            else
+            {
+               if(location[l]->renting==RENTING_CCS)
+                  location[l]->changes[c].flag=SITEBLOCK_GRAFFITI_CCS;
+               else if(location[l]->renting==RENTING_PERMANENT)
+                  location[l]->changes[c].flag=SITEBLOCK_GRAFFITI;
+               else
+               {
+                  power=1;
+                  if(!LCSrandom(10))
+                     location[l]->changes[c].flag=SITEBLOCK_GRAFFITI_OTHER;
+                  if(!LCSrandom(10)&&endgamestate<ENDGAME_CCS_DEFEATED&&endgamestate>0)
+                     location[l]->changes[c].flag=SITEBLOCK_GRAFFITI_CCS;
+                  if(!LCSrandom(30))
+                     location[l]->changes.erase(location[l]->changes.begin()+c);
+               }
+            }
+            if(align==1)
+            {
+               background_liberal_influence[VIEW_LIBERALCRIMESQUAD]+=power;
+               background_liberal_influence[VIEW_CONSERVATIVECRIMESQUAD]+=power;
+            }
+            else if(align==-1)
+            {
+               background_liberal_influence[VIEW_LIBERALCRIMESQUAD]-=power;
+               background_liberal_influence[VIEW_CONSERVATIVECRIMESQUAD]-=power;
+            }
+         }
+      }
+   }
+
+   int mediabalance=0;
+   int issuebalance[VIEWNUM-5];
+   for(v=0;v<VIEWNUM;v++)
+   {
+      libpower[v]+=background_liberal_influence[v];
+      background_liberal_influence[v]=static_cast<short>(background_liberal_influence[v]*0.66);
+
+      if(v==VIEW_LIBERALCRIMESQUADPOS) continue;
+      if(v==VIEW_LIBERALCRIMESQUAD) continue;
+      if(v==VIEW_CONSERVATIVECRIMESQUAD) continue;
+      if(v!=VIEW_AMRADIO&&v!=VIEW_CABLENEWS)
+      {
+         issuebalance[v] = libpower[v] - conspower;
+         mediabalance += issuebalance[v];
+         int roll = issuebalance[v] + LCSrandom(400)-200;
+         if(roll < -50) change_public_opinion(v,-1,0);
+         else if(roll > 50) change_public_opinion(v,1,0);
+         else change_public_opinion(v,LCSrandom(2)*2-1,0);
+      }
+      else if(v==VIEW_AMRADIO||v==VIEW_CABLENEWS)
+      {
+         if(publicmood(-1)<attitude[v])change_public_opinion(v,-1);
+         else change_public_opinion(v,1);
+      }
+   }
+
+   for(int s=0;s<len(pool);s++)
+   {
+      pool[s]->train(SKILL_SEDUCTION,loveslaves(*pool[s])*5);
+      if(pool[s]->flag & CREATUREFLAG_LOVESLAVE)
+         pool[s]->train(SKILL_SEDUCTION,5);
+   }
+}
+
+// A month of tags on walls and opinion drifting on its own.
+void probe_monthly_drift(FILE *out)
+{
+   static const int TAGS[] = {
+      SITEBLOCK_GRAFFITI, SITEBLOCK_GRAFFITI_CCS, SITEBLOCK_GRAFFITI_OTHER,
+   };
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 83719913UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int endgame = 0; endgame < 3; endgame++)
+      for (int tagged = 0; tagged < 3; tagged++)
+      for (int slaves = 0; slaves < 3; slaves++)
+      {
+         unsigned long seed_used = 7700019UL * (unsigned long)
+            (endgame * 64 + tagged * 8 + slaves + scenario * 173 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         endgamestate = (endgame == 0) ? ENDGAME_NONE
+                      : (endgame == 1) ? ENDGAME_CCS_APPEARANCE
+                                       : ENDGAME_CCS_DEFEATED;
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->changes.clear();
+            // Tags on the first several sites of every kind, so the secure,
+            // the squad's own, the enemy's and the ownerless are all covered.
+            if (l % (tagged + 2) == 0)
+               for (int t = 0; t <= tagged; t++)
+               {
+                  sitechangest change;
+                  change.x = t; change.y = l % 5; change.z = 0;
+                  change.flag = TAGS[(l + t) % 3];
+                  location[l]->changes.push_back(change);
+               }
+         }
+         location[1]->renting = RENTING_PERMANENT;
+         if (len(location) > 3) location[3]->renting = RENTING_CCS;
+
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 13 + scenario * 19) % 101;
+            public_interest[v] = (v * 7 + scenario * 11) % 40;
+            background_liberal_influence[v] = (v * 3 - 20 + scenario * 4);
+         }
+
+         for (int n = 0; n < 3; n++)
+         {
+            Creature *cr = new Creature;
+            cr->id = 970000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = 1;
+            cr->base = 1;
+            cr->hireid = n ? 970000 : -1;
+            if (slaves && n) cr->flag |= CREATUREFLAG_LOVESLAVE;
+            if (slaves == 2 && n == 2) cr->alive = false;
+            cr->set_skill(SKILL_SEDUCTION, n);
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"drift\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"endgame\":%d,\"tagged\":%d,\"slaves\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, endgame, tagged, slaves, run_seed);
+         fputs(",\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"influence\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", background_liberal_influence[i]);
+         fputs("],\"renting\":[", out);
+         for (int l = 0; l < len(location); l++)
+            fprintf(out, "%s%d", l ? "," : "", location[l]->renting);
+         fputs("],\"tags\":[", out);
+         {
+            bool first = true;
+            for (int l = 0; l < len(location); l++)
+               for (int c = 0; c < len(location[l]->changes); c++)
+               {
+                  fprintf(out, "%s{\"loc\":%d,\"x\":%d,\"y\":%d,\"z\":%d,"
+                               "\"flag\":%d}",
+                          first ? "" : ",", l, location[l]->changes[c].x,
+                          location[l]->changes[c].y, location[l]->changes[c].z,
+                          location[l]->changes[c].flag);
+                  first = false;
+               }
+         }
+         fputs("],\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"loveslave\":%d,\"person\":", p ? "," : "",
+                    (pool[p]->flag & CREATUREFLAG_LOVESLAVE) ? 1 : 0);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int libpower[VIEWNUM] = {0};
+         long long before = lcs_trace_draw_count();
+         monthly_drift_block(libpower);
+
+         fprintf(out, ",\"draws\":%lld", lcs_trace_draw_count() - before);
+         fputs(",\"attitude_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"influence_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", background_liberal_influence[i]);
+         fputs("],\"tags_after\":[", out);
+         {
+            bool first = true;
+            for (int l = 0; l < len(location); l++)
+               for (int c = 0; c < len(location[l]->changes); c++)
+               {
+                  fprintf(out, "%s{\"loc\":%d,\"x\":%d,\"y\":%d,\"z\":%d,"
+                               "\"flag\":%d}",
+                          first ? "" : ",", l, location[l]->changes[c].x,
+                          location[l]->changes[c].y, location[l]->changes[c].z,
+                          location[l]->changes[c].flag);
+                  first = false;
+               }
+         }
+         fputs("],\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"person\":", p ? "," : "");
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+      }
+   }
+}
+
+
 // A transcription of the "AGE THINGS" pass of advanceday() and the "HEAL
 // CLINIC PEOPLE" pass of passmonth(), both of which are inline in functions
 // that do far more than the probe wants to measure.
@@ -3968,6 +4211,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "recovery")) probe_recovery(out);
    else if (!strcmp(which, "dispersal")) probe_dispersal(out);
    else if (!strcmp(which, "ageing")) probe_ageing(out);
+   else if (!strcmp(which, "drift")) probe_monthly_drift(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

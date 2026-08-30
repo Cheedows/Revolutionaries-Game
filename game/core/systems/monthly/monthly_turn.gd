@@ -32,10 +32,19 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 	# the month does.
 	events.append_array(ClinicStay.run(state, rng))
 	events.append_array(_escalate_opposition(state))
-	_stale_the_news(state)
 	# A lease signed last month is an ordinary one now.
 	for location: Location in state.locations.values():
 		location.new_rental = false
+	events.append_array(DispersalCheck.run(state, rng))
+	_stale_the_news(state)
+
+	# What the month's tags argued for feeds straight into the drift, along
+	# with the essays already banked as background influence.
+	events.append_array(GraffitiUpkeep.run(state, rng))
+	var liberal_power := PackedInt32Array()
+	liberal_power.resize(Ids.VIEWS.size())
+	events.append_array(OpinionDrift.run(state, rng, liberal_power))
+	OpinionDrift.stipends(state)
 	state.ledger.reset_monthly()
 
 	if state.calendar.month == ELECTION_MONTH:

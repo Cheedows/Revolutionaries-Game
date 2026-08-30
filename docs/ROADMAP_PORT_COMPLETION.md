@@ -256,7 +256,23 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
 
 Port the remaining behavior primarily from `src/monthly/` plus missing political integration.
 
-- [ ] Monthly finances and organization expenses/income.
+- [x] The month's opinion drift and graffiti upkeep. Conservative talk radio
+    and cable news push every issue rightward every month and sleepers, essays
+    and tags push back — but the tug-of-war is settled with a
+    four-hundred-sided die, so a month of hard work is a bias and not a result.
+    A tag somewhere with guards is scrubbed off within the month and is worth
+    five times a lasting one for having been seen on the way out; a tag on the
+    squad's own wall becomes theirs, and one on the enemy's becomes theirs.
+    Also the seduction stipends that follow.
+  - The monthly `dispersalcheck()` is wired in here too: the original runs it
+    twice a month-end, once daily and once monthly.
+  - Verified by the `drift` probe: three stages of the endgame against three
+    densities of graffiti and three arrangements of love slaves, compared on
+    draw counts, both opinion arrays, every tag left on every wall, and the
+    practice everybody came out of the month with.
+- [ ] Monthly finances: the original has no separate pass — income and expenses
+    accrue as they happen and the month only resets the totals and prints
+    `fundreport()`. The reset is ported; the report is Gate I.
 - [ ] Sleeper updates and sleeper actions.
 - [ ] Justice pipeline: charges, attorneys, trials, sentencing and prison consequences.
 - [ ] Attorney side-RNG behavior and any other RNG splice points.
