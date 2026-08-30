@@ -19,6 +19,10 @@
 
 // Not declared in includes.h; the probe needs them to diff the political model.
 int getsimplevoter(int leaning);
+void doActivitySolicitDonations(std::vector<Creature *> &solicit, char &clearformess);
+void doActivitySellTshirts(std::vector<Creature *> &tshirts, char &clearformess);
+void doActivitySellArt(std::vector<Creature *> &art, char &clearformess);
+void doActivitySellMusic(std::vector<Creature *> &music, char &clearformess);
 int presidentapproval();
 char determine_politician_vote(char alignment, int law);
 
@@ -318,6 +322,79 @@ void probe_politics(FILE *out)
    }
 }
 
+// Runs the money-earning street activities. Needs LCS_TRACE_SCRIPT set as
+// well, because an arrest reports itself through getkey().
+void probe_activities(FILE *out)
+{
+   for (int scenario = 0; scenario < 8; scenario++)
+   {
+      unsigned long seed = 122949829UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 11 + scenario * 9) % 101;
+         public_interest[v] = (v * 5 + scenario * 3) % 40;
+         background_liberal_influence[v] = 0;
+      }
+      ledger.force_funds(0);
+
+      Creature cr;
+      cr.set_skill(SKILL_PERSUASION, scenario % 8);
+      cr.set_skill(SKILL_TAILORING, (scenario + 2) % 8);
+      cr.set_skill(SKILL_BUSINESS, (scenario + 4) % 8);
+      cr.set_skill(SKILL_ART, (scenario + 1) % 8);
+      cr.set_skill(SKILL_MUSIC, (scenario + 3) % 8);
+      cr.set_skill(SKILL_STREETSENSE, scenario % 4);
+      // Heat stays at zero: an arrest reaches criminalize() and the news
+      // system, which need a world this probe does not build. The arrest rule
+      // itself is simple enough to check without the original.
+      cr.heat = 0;
+      cr.give_armor(*armortype[getarmortype("ARMOR_CHEAPSUIT")], NULL);
+      if (scenario % 2) cr.give_weapon(*weapontype[getweapontype("WEAPON_GUITAR")], NULL);
+
+      fprintf(out, "{\"kind\":\"activities\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fprintf(out, ",\"heat\":%d,\"instrument\":%d", cr.heat, scenario % 2);
+      fputs(",\"skills\":[", out);
+      for (int i = 0; i < SKILLNUM; i++)
+         fprintf(out, "%s%d", i ? "," : "", cr.get_skill(i));
+      fputs("],\"attitude\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", attitude[v]);
+      fputs("],\"interest\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", public_interest[v]);
+
+      char clearformess = 0;
+      std::vector<Creature *> one;
+      one.push_back(&cr);
+
+      fputs("],\"runs\":[", out);
+      for (int day = 0; day < 4; day++)
+      {
+         doActivitySolicitDonations(one, clearformess);
+         long after_donations = ledger.get_funds();
+         doActivitySellTshirts(one, clearformess);
+         long after_tshirts = ledger.get_funds();
+         doActivitySellArt(one, clearformess);
+         long after_art = ledger.get_funds();
+         doActivitySellMusic(one, clearformess);
+         long after_music = ledger.get_funds();
+         fprintf(out, "%s[%ld,%ld,%ld,%ld]", day ? "," : "",
+                 after_donations, after_tshirts, after_art, after_music);
+      }
+      fputs("],\"influence\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", background_liberal_influence[v]);
+      fputs("],\"skills_after\":[", out);
+      for (int i = 0; i < SKILLNUM; i++)
+         fprintf(out, "%s%d", i ? "," : "", cr.get_skill(i));
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -339,6 +416,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "checks")) probe_checks(out);
    else if (!strcmp(which, "equipment")) probe_equipment(out);
    else if (!strcmp(which, "politics")) probe_politics(out);
+   else if (!strcmp(which, "activities")) probe_activities(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

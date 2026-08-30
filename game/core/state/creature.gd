@@ -56,6 +56,11 @@ var heat: int = 0
 ## Crimes the authorities suspect, per entry in Ids.LAWS.
 var crimes_suspected: PackedInt32Array = PackedInt32Array()
 
+## Whether this is an animal rather than a person. The original tracks it
+## because animals are exempt from a few human rules — nobody arrests a dog for
+## indecency — and because they are described differently.
+var animal: bool = false
+
 ## Current assignment, from [constant Ids.ACTIVITIES].
 var activity: StringName = &"none"
 

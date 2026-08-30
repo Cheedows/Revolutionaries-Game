@@ -10,13 +10,20 @@ GAME="${LCS_BUILD:-/tmp/lcsbuild}/src/crimesquad"
 mkdir -p "$OUT"
 cd "$ROOT"
 
-for probe in blank creatures training checks equipment politics; do
+for probe in blank creatures training checks equipment politics activities; do
 	tmp="$(mktemp)"
 	home="$(mktemp -d)"
 	screen="$(mktemp)"
+	# Some probes reach code that reports through getkey(); giving them a
+	# keystroke script keeps that from blocking. Frames go to /dev/null: the
+	# probe's own output is what matters.
+	keys="$(mktemp)"
+	i=0
+	while [ $i -lt 4000 ]; do echo "[space]" >> "$keys"; i=$((i + 1)); done
 	HOME="$home" TERM=xterm LCS_PROBE="$probe" LCS_PROBE_OUT="$tmp" \
+		LCS_TRACE_SCRIPT="$keys" LCS_TRACE_OUT=/dev/null \
 		timeout 120 "$GAME" >"$screen" 2>&1 </dev/null
 	gzip -9 -c "$tmp" > "$OUT/$probe.jsonl.gz"
 	echo "$probe: $(wc -l < "$tmp") samples -> $OUT/$probe.jsonl.gz"
-	rm -rf "$tmp" "$home" "$screen"
+	rm -rf "$tmp" "$home" "$screen" "$keys"
 done
