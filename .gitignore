@@ -1,28 +1,28 @@
-Makefile*
-config.h
-crimesquad
-*.o
-*.dirstamp
+# Godot
+game/.godot/
+game/android/
+*.translation
 
+# Autotools build products from the original C++ tree (kept only for the
+# parity trace harness — see docs/port/GODOT-PORT-PLAN.md §5)
+Makefile.in
 aclocal.m4
 autom4te.cache/
-
+config.h.in
 configure
 depcomp
 install-sh
 missing
-.deps/
-stamp-h1
 compile
+config.guess
+config.sub
+config.h
 config.log
 config.status
-config.h.in
-*~
+stamp-h1
+.deps/
+*.o
+src/crimesquad
 
-/workspaces/Release/*.obj
-/workspaces/Release/*.tlog
-/workspaces/game.sdf
-/workspaces/game.v11.suo
-/workspaces/Release/*.pdb
-game.layout
-game.depend
+# Trace harness build output
+tools/trace_harness/build/

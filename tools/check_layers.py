@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Enforces the layer rules in docs/port/ARCHITECTURE.md §1.
+
+Dependencies point down only: data <- core <- app <- ui. The simulation core is
+headless and deterministic, so it may not touch the scene tree, the clock, or
+the engine RNG. This runs in CI; a violation is a build failure, not a warning.
+
+If a rule genuinely needs to change, change it in ARCHITECTURE.md first.
+"""
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+GAME = ROOT / "game"
+
+# (layer glob, compiled pattern, human explanation)
+RULES = [
+    ("core/**/*.gd", r"\bextends\s+Node\b|\bextends\s+Control\b|\bextends\s+Node2D\b|\bextends\s+SceneTree\b",
+     "core/ must not extend engine node types — the sim is headless"),
+    ("core/**/*.gd", r"\bget_tree\(\)|\bget_node\(|\$[A-Za-z_]",
+     "core/ must not reach into the scene tree"),
+    ("core/**/*.gd", r"\bprint\(|\bprint_rich\(|\bprinterr\(",
+     "core/ must not print — emit an Event instead"),
+    ("core/**/*.gd", r"\brandf\(|\brandi\(|\brand_from_seed\(|\bRandomNumberGenerator\b",
+     "core/ must use core/rng.gd, never the engine RNG (breaks trace parity)"),
+    ("core/**/*.gd", r"\bTime\.|\bOS\.get_ticks|\bEngine\.get_frames",
+     "core/ must not read the clock — it breaks determinism"),
+    ("core/**/*.gd", r"\bawait\b",
+     "core/ must not await — return a PendingIntent instead of blocking"),
+    ("data/**/*.gd", r"^\s*func\s+(?!_init|_get|_set|_to_string)",
+     "data/ holds content and schema, not behaviour"),
+    ("ui/**/*.gd", r"\bGameState\b[^\n]*=[^=]",
+     "ui/ must not mutate GameState — send an Intent"),
+]
+
+# core/ may name these engine types: they are pure data containers.
+ALLOWED_CORE_ENGINE = re.compile(r"\bextends\s+(RefCounted|Resource|Object)\b")
+
+
+def main() -> int:
+    violations = []
+    for glob, pattern, explanation in RULES:
+        regex = re.compile(pattern, re.MULTILINE)
+        for path in sorted(GAME.glob(glob)):
+            if not path.is_file():
+                continue
+            text = path.read_text(errors="replace")
+            for number, line in enumerate(text.splitlines(), 1):
+                stripped = line.strip()
+                if stripped.startswith("#") or stripped.startswith("##"):
+                    continue
+                if regex.search(line):
+                    rel = path.relative_to(ROOT)
+                    violations.append(f"{rel}:{number}: {explanation}\n    {stripped}")
+
+    # Size rule: no file over 300 lines (ARCHITECTURE.md §3).
+    for path in sorted(GAME.rglob("*.gd")):
+        if "/tests/" in str(path):
+            continue
+        lines = len(path.read_text(errors="replace").splitlines())
+        if lines > 300:
+            violations.append(f"{path.relative_to(ROOT)}: {lines} lines, limit is 300 — split it")
+
+    # Naming rule: no dumping-ground modules (ARCHITECTURE.md §3).
+    for path in sorted(GAME.rglob("*.gd")):
+        if path.stem in {"misc", "common", "utils", "util", "helpers", "helper", "manager"}:
+            violations.append(f"{path.relative_to(ROOT)}: banned catch-all filename — fix the module boundary")
+
+    if violations:
+        print("Layer check failed:\n")
+        for violation in violations:
+            print(f"  {violation}")
+        print(f"\n{len(violations)} violation(s). See docs/port/ARCHITECTURE.md")
+        return 1
+    print("Layer check passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

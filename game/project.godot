@@ -1,0 +1,27 @@
+; Revolutionaries — Godot 4.6 project.
+; Engine configuration only. Game-facing naming lives in branding.gd; see
+; docs/port/ARCHITECTURE.md §6 before changing config/name here.
+
+config_version=5
+
+[application]
+
+config/name="Revolutionaries"
+config/description="A modernized port of Liberal Crime Squad (GPL-2.0-or-later)."
+config/version="0.1.0-port"
+run/main_scene="res://ui/screens/boot.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[autoload]
+
+Branding="*res://branding.gd"
+
+[debug]
+
+gdscript/warnings/untyped_declaration=1
+gdscript/warnings/unsafe_property_access=1
+gdscript/warnings/unsafe_method_access=1
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
