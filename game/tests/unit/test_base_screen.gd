@@ -59,3 +59,39 @@ func test_events_become_readable_lines() -> void:
 
 	equal(EventText.describe(Event.new(Event.DAY_ADVANCED, {}), state), "",
 			"the date is not worth a line — it is already on screen")
+
+
+func test_a_member_can_be_put_to_work_and_earns() -> void:
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	screen.call("setup", 20250830)
+
+	var session: Session = screen.get("_session")
+	var members := session.state.members()
+	check(members.size() == 1, "the game starts with a founder, got %d" % members.size())
+
+	var founder: Creature = members[0]
+	Commands.assign_activity(session, founder, &"solicit_donations")
+	equal(founder.activity, &"solicit_donations", "the order was given")
+
+	session.state.ledger.funds = 0
+	for day in 20:
+		screen.call("_advance_one_day")
+
+	check(session.state.ledger.funds > 0,
+			"twenty days of soliciting raised something, got $%d" % session.state.ledger.funds)
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
+func test_assigning_the_same_activity_twice_says_nothing() -> void:
+	var session := Session.new(1)
+	var creature := session.state.add_creature(Creature.new())
+	creature.activity = &"sell_art"
+	equal(Commands.assign_activity(session, creature, &"sell_art").size(), 0,
+			"no event for an order that changes nothing")
+	equal(Commands.assign_activity(session, creature, &"sell_music").size(), 1,
+			"but one for an order that does")

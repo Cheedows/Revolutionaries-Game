@@ -36,6 +36,7 @@ Two kinds of evidence are used:
 | Monthly turn (political spine) | `passmonth()` | a simulated year runs the cycle |
 | World building | `make_classic_world()`, `initlocation()` | 6 scenarios x 44 locations |
 | Rent and eviction | the rent pass in `advanceday()` | unit-tested against a built world |
+| Activity dispatch | `funds_and_trouble()` | the ported activities, run from the loop |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |

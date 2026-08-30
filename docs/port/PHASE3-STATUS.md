@@ -35,14 +35,23 @@ to choose. That is the modernization the port is for, in its smallest form.
   news, the review screens and the title sequence are not built. They wait on
   the systems behind them.
 - **Intents are not yet rendered.** The seam exists and is tested, but no
-  ported system asks a question yet, so nothing puts one to the player.
-- **No new-game sequence.** The screen seats a plausible starting country so
-  the political systems have something to act on; the original's character
-  creation is not ported.
+  ported system asks a question yet, so nothing puts one to the player. Player
+  *commands* — orders that start with the player rather than the simulation —
+  go through app/commands.gd, which returns events like any system.
+- **No new-game sequence.** The screen seats a plausible starting country and
+  rolls one founder from a creature type so there is somebody to give orders to.
+  The original's character creation is not ported.
 - **Nothing is styled beyond the theme.** No art, no fonts, no layout polish.
 - **The screen is built in code**, not laid out in the editor. That is
   deliberate for now: it keeps the palette authoritative and makes the screen
   testable headlessly. A designed layout can replace it once the shape settles.
+
+## What can actually be played
+
+Enough for a loop: put the founder on an activity, watch the days go by, see
+the money come in and the country's laws move under Congress, the courts and
+the elections. It is a political simulation you can sit and watch — the crime
+half waits on site mode.
 
 ## How it is checked
 

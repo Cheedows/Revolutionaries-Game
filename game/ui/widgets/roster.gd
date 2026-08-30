@@ -5,6 +5,9 @@ extends PanelContainer
 ## The original lists six at a time in a fixed grid because that is what fits a
 ## terminal. This scrolls, so the limit is the squad size rather than the screen.
 
+## Emitted when the player puts someone on a different activity.
+signal activity_chosen(creature: Creature, activity: StringName)
+
 var _rows: VBoxContainer
 
 
@@ -65,9 +68,22 @@ func _row(creature: Creature) -> Control:
 
 	var condition := Label.new()
 	condition.text = _condition(creature)
+	condition.custom_minimum_size = Vector2(130, 0)
 	condition.add_theme_color_override("font_color",
 			Palette.TEXT_DIM if creature.body.blood > 50 else Palette.CONSERVATIVE)
 	row.add_child(condition)
+
+	# What they are doing is a choice, so it is a control rather than a label.
+	var activities := OptionButton.new()
+	activities.custom_minimum_size = Vector2(190, 0)
+	for index in ActivityAssignment.AVAILABLE.size():
+		var activity: StringName = ActivityAssignment.AVAILABLE[index]
+		activities.add_item(ActivityAssignment.LABELS.get(activity, String(activity)), index)
+		if creature.activity == activity:
+			activities.select(index)
+	activities.item_selected.connect(func(index: int):
+		activity_chosen.emit(creature, ActivityAssignment.AVAILABLE[index]))
+	row.add_child(activities)
 	return row
 
 

@@ -11,7 +11,7 @@ extends RefCounted
 ## interrogation, dating and the news pass are not, and are named in
 ## docs/port/PHASE2-STATUS.md rather than silently skipped.
 
-static func run(state: GameState, rng: Rng) -> Array[Event]:
+static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Array[Event]:
 	var events: Array[Event] = []
 
 	var month_rolled := state.calendar.advance()
@@ -27,6 +27,8 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 			continue
 		events.append_array(_tick_creature(creature))
 
+	if catalog != null:
+		events.append_array(ActivityAssignment.run(state, rng, catalog))
 	events.append_array(RentRules.run(state))
 	state.ledger.reset_daily()
 

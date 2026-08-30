@@ -34,6 +34,7 @@ func setup(seed_value: int) -> void:
 	_session = Session.new(seed_value)
 	WorldBuilder.build(_session.state, _session.rng)
 	_seed_a_starting_country()
+	_recruit_a_founder()
 
 	theme = UiTheme.build()
 	_build()
@@ -85,7 +86,8 @@ func _build() -> void:
 	columns.add_child(right)
 
 	_roster = Roster.new()
-	_roster.custom_minimum_size = Vector2(0, 160)
+	_roster.custom_minimum_size = Vector2(0, 200)
+	_roster.activity_chosen.connect(_on_activity_chosen)
 	right.add_child(_roster)
 
 	_log = LogView.new()
@@ -115,7 +117,7 @@ func _controls() -> Control:
 
 
 func _advance_one_day() -> void:
-	_session.emit(DailyTurn.run(_session.state, _session.rng))
+	_session.emit(DailyTurn.run(_session.state, _session.rng, _session.catalog))
 	for event in _session.drain_events():
 		_log.append(EventText.describe(event, _session.state),
 				EventText.colour_of(event))
@@ -127,10 +129,35 @@ func _advance_one_day() -> void:
 		_wait_button.disabled = true
 
 
+func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
+	for event in Commands.assign_activity(_session, creature, activity):
+		_log.append("%s will %s." % [creature.name,
+				ActivityAssignment.LABELS.get(activity, String(activity)).to_lower()],
+				Palette.TEXT_DIM)
+
+
 func _refresh() -> void:
 	_status.refresh(_session.state)
 	_laws.refresh(_session.state)
 	_roster.refresh(_session.state)
+
+
+## Puts one person in the organisation, so there is somebody to give orders to.
+##
+## The original's character creation is not ported; until it is, the founder is
+## rolled from a creature type like anyone else.
+func _recruit_a_founder() -> void:
+	var state := _session.state
+	var type: CreatureType = _session.catalog.get_entry(&"creature", &"CREATURE_WORKER_SERVANT")
+	if type == null:
+		type = _session.catalog.all_of(&"creature")[0]
+	var founder := CreatureFactory.create(type, _session.rng, state.law,
+			_session.catalog, OpinionRules.public_mood(state.opinion, &"mood"))
+	founder.name = NamingRules.full_name(_session.rng)
+	founder.alignment = &"liberal"
+	founder.join_days = 1
+	founder.recruiter_id = -1
+	state.add_creature(founder)
 
 
 ## Gives the country a government and an opinion to start from.
