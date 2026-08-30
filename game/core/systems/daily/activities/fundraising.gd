@@ -21,10 +21,13 @@ const INFLUENCE_WITH_INSTRUMENT := 10
 ## Soliciting donations. The most mood-sensitive of the four: an
 ## Arch-Conservative country gives generously to anyone who asks.
 static func solicit_donations(state: GameState, rng: Rng, creature: Creature,
-		catalog: Catalog) -> Array[Event]:
+		catalog: Catalog) -> Variant:
 	var events: Array[Event] = []
-	if ArrestRules.check(rng, creature, &"soliciting_donations", events):
-		return events
+	var arrested: Variant = ArrestChase.check(state, rng, creature,
+			&"soliciting_donations", catalog, events)
+	if arrested != null:
+		# Picked up before any work was done: the day is the chase.
+		return _chased(events, arrested)
 
 	var professionalism := _professionalism(creature, catalog)
 	var income := CheckRules.skill_roll(rng, creature, &"persuasion") * professionalism + 1
@@ -41,10 +44,14 @@ static func solicit_donations(state: GameState, rng: Rng, creature: Creature,
 
 
 ## Selling shirts: tailoring and business, averaged.
-static func sell_tshirts(state: GameState, rng: Rng, creature: Creature) -> Array[Event]:
+static func sell_tshirts(state: GameState, rng: Rng, creature: Creature,
+		catalog: Catalog = null) -> Variant:
 	var events: Array[Event] = []
-	if ArrestRules.check(rng, creature, &"selling_shirts", events):
-		return events
+	var arrested: Variant = ArrestChase.check(state, rng, creature,
+			&"selling_shirts", catalog, events)
+	if arrested != null:
+		# Picked up before any work was done: the day is the chase.
+		return _chased(events, arrested)
 
 	var money := (CheckRules.skill_roll(rng, creature, &"tailoring")
 			+ CheckRules.skill_roll(rng, creature, &"business")) / 2
@@ -66,10 +73,14 @@ static func sell_tshirts(state: GameState, rng: Rng, creature: Creature) -> Arra
 
 
 ## Sketching portraits.
-static func sell_art(state: GameState, rng: Rng, creature: Creature) -> Array[Event]:
+static func sell_art(state: GameState, rng: Rng, creature: Creature,
+		catalog: Catalog = null) -> Variant:
 	var events: Array[Event] = []
-	if ArrestRules.check(rng, creature, &"sketching_portraits", events):
-		return events
+	var arrested: Variant = ArrestChase.check(state, rng, creature,
+			&"sketching_portraits", catalog, events)
+	if arrested != null:
+		# Picked up before any work was done: the day is the chase.
+		return _chased(events, arrested)
 
 	var money := CheckRules.skill_roll(rng, creature, &"art")
 	money = _halve_by_mood(money, state, [65, 35])
@@ -89,10 +100,13 @@ static func sell_art(state: GameState, rng: Rng, creature: Creature) -> Array[Ev
 ## Busking. An instrument quadruples the take and doubles the influence of a
 ## good protest song.
 static func sell_music(state: GameState, rng: Rng, creature: Creature,
-		catalog: Catalog) -> Array[Event]:
+		catalog: Catalog) -> Variant:
 	var events: Array[Event] = []
-	if ArrestRules.check(rng, creature, &"playing_music", events):
-		return events
+	var arrested: Variant = ArrestChase.check(state, rng, creature,
+			&"playing_music", catalog, events)
+	if arrested != null:
+		# Picked up before any work was done: the day is the chase.
+		return _chased(events, arrested)
 
 	var money := CheckRules.skill_roll(rng, creature, &"music") / 2
 	var has_instrument := _has_instrument(creature, catalog)
@@ -145,3 +159,15 @@ static func _has_instrument(creature: Creature, catalog: Catalog) -> bool:
 		return false
 	var type: WeaponType = catalog.get_entry(&"weapon", creature.weapon.type)
 	return type != null and type.instrument
+
+
+## Folds a chase into the day's events, asking on through however many rounds
+## it takes.
+static func _chased(events: Array[Event], chase: Variant) -> Variant:
+	if chase is PendingIntent:
+		var asked: PendingIntent = chase
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					return _chased(events, asked.resume.call(answer)),
+				events + asked.events)
+	return events + (chase as Array[Event])

@@ -12,14 +12,6 @@ const UNREMARKABLE := 0
 const IN_CHARACTER := 1
 const TROUBLE := 2
 
-## Difficulty tiers, from the Difficulty enum in src/includes.h.
-const VERY_EASY := 3
-const EASY := 5
-const AVERAGE := 7
-const HARD := 9
-const FORMIDABLE := 11
-const HEROIC := 13
-
 ## How much a squad already under suspicion adds to every check: more when the
 ## Conservatives are one turn from calling it in.
 const NEARLY_CAUGHT := 6
@@ -52,22 +44,22 @@ const HOMES: Array[StringName] = [
 
 ## How hard each kind of Conservative is to sneak past, and to fool.
 const WATCHFULNESS: Dictionary = {
-	&"CREATURE_SWAT": [EASY, EASY],
-	&"CREATURE_COP": [EASY, EASY],
-	&"CREATURE_GANGUNIT": [EASY, EASY],
-	&"CREATURE_DEATHSQUAD": [EASY, EASY],
-	&"CREATURE_PRISONGUARD": [AVERAGE, EASY],
-	&"CREATURE_BOUNCER": [AVERAGE, EASY],
-	&"CREATURE_SECURITYGUARD": [AVERAGE, EASY],
-	&"CREATURE_AGENT": [AVERAGE, AVERAGE],
-	&"CREATURE_NEWSANCHOR": [EASY, HARD],
-	&"CREATURE_RADIOPERSONALITY": [EASY, HARD],
-	&"CREATURE_CORPORATE_CEO": [EASY, HARD],
-	&"CREATURE_JUDGE_CONSERVATIVE": [EASY, HARD],
-	&"CREATURE_CCS_ARCHCONSERVATIVE": [EASY, HARD],
-	&"CREATURE_SCIENTIST_EMINENT": [EASY, HARD],
-	&"CREATURE_GUARDDOG": [HEROIC, AVERAGE],
-	&"CREATURE_SECRET_SERVICE": [FORMIDABLE, FORMIDABLE],
+	&"CREATURE_SWAT": [Difficulty.EASY, Difficulty.EASY],
+	&"CREATURE_COP": [Difficulty.EASY, Difficulty.EASY],
+	&"CREATURE_GANGUNIT": [Difficulty.EASY, Difficulty.EASY],
+	&"CREATURE_DEATHSQUAD": [Difficulty.EASY, Difficulty.EASY],
+	&"CREATURE_PRISONGUARD": [Difficulty.AVERAGE, Difficulty.EASY],
+	&"CREATURE_BOUNCER": [Difficulty.AVERAGE, Difficulty.EASY],
+	&"CREATURE_SECURITYGUARD": [Difficulty.AVERAGE, Difficulty.EASY],
+	&"CREATURE_AGENT": [Difficulty.AVERAGE, Difficulty.AVERAGE],
+	&"CREATURE_NEWSANCHOR": [Difficulty.EASY, Difficulty.HARD],
+	&"CREATURE_RADIOPERSONALITY": [Difficulty.EASY, Difficulty.HARD],
+	&"CREATURE_CORPORATE_CEO": [Difficulty.EASY, Difficulty.HARD],
+	&"CREATURE_JUDGE_CONSERVATIVE": [Difficulty.EASY, Difficulty.HARD],
+	&"CREATURE_CCS_ARCHCONSERVATIVE": [Difficulty.EASY, Difficulty.HARD],
+	&"CREATURE_SCIENTIST_EMINENT": [Difficulty.EASY, Difficulty.HARD],
+	&"CREATURE_GUARDDOG": [Difficulty.HEROIC, Difficulty.AVERAGE],
+	&"CREATURE_SECRET_SERVICE": [Difficulty.FORMIDABLE, Difficulty.FORMIDABLE],
 }
 
 ## What a Liberal does when they lose their nerve. Only ever a phrase, but the

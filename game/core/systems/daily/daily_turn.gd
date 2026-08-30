@@ -30,38 +30,38 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
 			continue
 		events.append_array(_tick_creature(creature))
 
-	if catalog != null:
-		events.append_array(ActivityAssignment.run(state, rng, catalog))
+	if catalog == null:
+		events.append_array(_close_the_day(state, month_rolled, rng))
+		return events
 
-		# The evening's recruitment meetings, each of which asks the player how
-		# to play it. The rest of the day is finished first, on the way back.
-		var meetings: Variant = RecruitQueue.advance(state, rng, catalog)
-		if meetings is PendingIntent:
-			var asked: PendingIntent = meetings
-			return PendingIntent.new(asked.intent,
-					func(answer: Variant) -> Variant:
-						return _after_meetings(state, month_rolled, rng,
-								asked.resume.call(answer)),
-					events + asked.events)
-		events.append_array(meetings as Array[Event])
-
-	events.append_array(_close_the_day(state, month_rolled, rng))
-	return events
+	# The day's work, and then the evening's recruitment meetings. Both can
+	# stop to ask the player something, so both are resumed through
+	# _continue(), which finishes the day once the questions run out.
+	return _continue(state, month_rolled, rng, catalog, &"activities", events,
+			ActivityAssignment.run(state, rng, catalog))
 
 
-## Picks the day back up once the last meeting has been answered.
-static func _after_meetings(state: GameState, month_rolled: bool, rng: Rng,
+## Picks the day back up after whatever it stopped to ask.
+##
+## [param stage] is which part of the day was running, so the next part starts
+## once this one is answered.
+static func _continue(state: GameState, month_rolled: bool, rng: Rng,
+		catalog: Catalog, stage: StringName, events: Array[Event],
 		result: Variant) -> Variant:
 	if result is PendingIntent:
 		var asked: PendingIntent = result
 		return PendingIntent.new(asked.intent,
 				func(answer: Variant) -> Variant:
-					return _after_meetings(state, month_rolled, rng,
-							asked.resume.call(answer)),
-				asked.events)
-	var events: Array[Event] = result
-	events.append_array(_close_the_day(state, month_rolled, rng))
-	return events
+					return _continue(state, month_rolled, rng, catalog, stage,
+							events, asked.resume.call(answer)),
+				events + asked.events)
+
+	var done: Array[Event] = events + (result as Array[Event])
+	if stage == &"activities":
+		return _continue(state, month_rolled, rng, catalog, &"meetings", done,
+				RecruitQueue.advance(state, rng, catalog))
+	done.append_array(_close_the_day(state, month_rolled, rng))
+	return done
 
 
 ## Rent, the books, and the month rolling over.

@@ -274,6 +274,9 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 	# is changes how a fight goes as much as their skills do.
 	creature.hire_id = int(entry["hireid"])
 	creature.meetings = int(entry["meetings"])
+	# Where they are and where they live: a day's activity reads both.
+	creature.location = int(entry["location"])
+	creature.base = int(entry["base"])
 	creature.body.stunned = int(entry["stunned"])
 	creature.cannot_bluff = int(entry["cantbluff"])
 	creature.forced_incapacitated = int(entry["forceinc"]) != 0

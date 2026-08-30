@@ -7,12 +7,6 @@ extends RefCounted
 ## in is the strongest arm, unless somebody brought a crowbar, in which case
 ## the door simply loses.
 
-## Difficulty tiers, from the Difficulty enum in src/includes.h.
-const EASY := 3
-const CHALLENGING := 7
-const HARD := 9
-const FORMIDABLE := 11
-
 
 ## Tries the lock. Returns {opened, attempted, creature, events}.
 ##
@@ -71,13 +65,13 @@ static func pick_lock(state: GameState, squad: Squad, at: Vector3i,
 ## intelligence headquarters, where the doors expect it.
 static func force_door(state: GameState, squad: Squad, catalog: Catalog,
 		rng: Rng) -> Dictionary:
-	var difficulty := CHALLENGING
+	var difficulty := Difficulty.CHALLENGING
 	var crowbarable := true
 	if SitePlans.SECURITY.get(state.site.type, 0) == 0:
-		difficulty = EASY
+		difficulty = Difficulty.EASY
 	elif state.site.type == &"government_prison" \
 			or state.site.type == &"government_intelligencehq":
-		difficulty = FORMIDABLE
+		difficulty = Difficulty.FORMIDABLE
 		crowbarable = false
 
 	var members := state.squad_members(squad)
@@ -111,10 +105,10 @@ static func force_door(state: GameState, squad: Squad, catalog: Catalog,
 static func _lock_difficulty(type: StringName) -> int:
 	match SitePlans.SECURITY.get(type, 0):
 		1:
-			return CHALLENGING
+			return Difficulty.CHALLENGING
 		2:
-			return HARD
-	return EASY
+			return Difficulty.HARD
+	return Difficulty.EASY
 
 
 ## Everyone tied for the best security skill in the squad.

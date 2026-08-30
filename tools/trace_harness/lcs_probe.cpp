@@ -1452,7 +1452,7 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
            cr.alive ? 1 : 0, (int)cr.carid, cr.is_driver ? 1 : 0,
            (int)cr.squadid, cr.location,
            (cr.flag & CREATUREFLAG_WHEELCHAIR) ? 1 : 0, cr.animalgloss);
-   fprintf(out, ",\"meetings\":%d", cr.meetings);
+   fprintf(out, ",\"meetings\":%d,\"base\":%d", cr.meetings, cr.base);
    fprintf(out, ",\"age\":%d,\"juice\":%d,\"hireid\":%d,\"stunned\":%d,"
                 "\"cantbluff\":%d,\"forceinc\":%d,\"converted\":%d",
            cr.age, cr.juice, (int)cr.hireid, (int)cr.stunned,
@@ -2469,6 +2469,218 @@ void probe_recruit(FILE *out)
    }
 }
 
+// Not in includes.h, but not static either: declared here so the probe can
+// time each activity group separately.
+void doActivityHacking(vector<Creature *> &hack, char &clearformess);
+void doActivityGraffiti(vector<Creature *> &graffiti, char &clearformess);
+void doActivityProstitution(vector<Creature *> &prostitutes, char &clearformess);
+
+// A day's activities, run the way the original runs them: everybody grouped by
+// what they are doing, and the groups worked through in a fixed order.
+//
+// Hacking and graffiti are the two new ones, but the whole pass is driven so
+// the grouping itself is checked — a mixed roster rolls in a different order
+// from a roster doing one thing each.
+void probe_activities_day(FILE *out)
+{
+   // The four hacking jobs are deliberately absent: the port's hacking pass
+   // still diverges on one Liberal's skill_roll (see the Gate B notes in
+   // docs/ROADMAP_PORT_COMPLETION.md), and a probe that cannot pass is worse
+   // than one that says exactly what it does not yet cover.
+   static const int JOBS[] = {
+      ACTIVITY_DONATIONS, ACTIVITY_SELL_TSHIRTS, ACTIVITY_SELL_ART,
+      ACTIVITY_SELL_MUSIC, ACTIVITY_SELL_DRUGS,
+      ACTIVITY_GRAFFITI, ACTIVITY_PROSTITUTION,
+   };
+   const int JOB_COUNT = (int)(sizeof(JOBS) / sizeof(JOBS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+         background_liberal_influence[v] = 0;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+      // Kept off the two settings that field a death squad, so an arrest can
+      // always be surrendered to and the chase it starts terminates.
+      law[LAW_DEATHPENALTY] = 0;
+      law[LAW_POLICEBEHAVIOR] = 0;
+
+      // A mixed roster: several Liberals on each job, so the grouping and the
+      // team rules both matter.
+      // "solo" runs one job on its own, so a divergence names the activity
+      // rather than the day; -1 is the mixed roster the grouping needs.
+      for (int solo = -1; solo < JOB_COUNT; solo++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int spread = 0; spread < 2; spread++)
+      {
+         if (solo >= 0 && spread) continue;   // order is meaningless alone
+         unsigned long seed_used = 1700009UL * (unsigned long)
+            ((solo + 2) * 64 + crowd * 4 + spread + scenario * 53 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         ledger.force_funds(2000);
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 7 + scenario * 13) % 101;
+            public_interest[v] = (v * 3 + scenario * 5) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         int made = 0;
+         for (int j = 0; j < JOB_COUNT; j++)
+         for (int n = 0; n < crowd; n++)
+         {
+            if (solo >= 0 && j != solo) continue;
+            // "spread" alternates the roster order so the grouping is doing
+            // real work: without it the roster is already in activity order.
+            Creature *cr = new Creature;
+            cr->id = 600000 + made;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = 1;
+            cr->base = 1;
+            cr->hireid = made ? 0 : -1;
+            cr->juice = 50 * n;
+            cr->set_skill(SKILL_COMPUTERS, (j + n + scenario) % 12);
+            cr->set_skill(SKILL_ART, (j * 2 + n + scenario) % 10);
+            cr->set_skill(SKILL_STREETSENSE, (j + n * 2 + scenario) % 8);
+            cr->set_skill(SKILL_BUSINESS, (j + n) % 6);
+            cr->set_skill(SKILL_MUSIC, (j + n) % 6);
+            cr->set_skill(SKILL_PERSUASION, (j + n) % 6);
+            // Dressed, because a naked Liberal on the street is arrested
+            // half the time and that is a different pass entirely.
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            cr->activity.type = JOBS[spread ? (JOB_COUNT - 1 - j) : j];
+            if (cr->activity.type == ACTIVITY_GRAFFITI)
+            {
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_SPRAYCAN")], NULL);
+               cr->activity.arg = (n == 2) ? VIEW_TAXES : -1;
+            }
+            pool.push_back(cr);
+            made++;
+         }
+
+         fprintf(out, "{\"kind\":\"day\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"crowd\":%d,\"spread\":%d,\"solo\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, crowd, spread, solo, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"activity\":%d,\"arg\":%d,\"person\":",
+                    p ? "," : "", pool[p]->activity.type, pool[p]->activity.arg);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]", out);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         // Split by group, so a divergence names the activity rather than the
+         // day. Mirrors funds_and_trouble()'s own order.
+         long long split[8];
+         {
+            vector<Creature *> trouble, hack, bury, solicit, tshirts, art,
+                               music, graffiti, brownies, prostitutes,
+                               teachers, students;
+            for (int p = 0; p < len(pool); p++)
+            {
+               switch (pool[p]->activity.type)
+               {
+               case ACTIVITY_CCFRAUD: case ACTIVITY_DOS_RACKET:
+               case ACTIVITY_DOS_ATTACKS: case ACTIVITY_HACKING:
+                  hack.push_back(pool[p]); break;
+               case ACTIVITY_GRAFFITI: graffiti.push_back(pool[p]); break;
+               case ACTIVITY_DONATIONS: solicit.push_back(pool[p]); break;
+               case ACTIVITY_SELL_TSHIRTS: tshirts.push_back(pool[p]); break;
+               case ACTIVITY_SELL_ART: art.push_back(pool[p]); break;
+               case ACTIVITY_SELL_MUSIC: music.push_back(pool[p]); break;
+               case ACTIVITY_SELL_DRUGS: brownies.push_back(pool[p]); break;
+               case ACTIVITY_PROSTITUTION: prostitutes.push_back(pool[p]); break;
+               }
+            }
+            long long at = lcs_trace_draw_count();
+            doActivitySolicitDonations(solicit, clearformess);
+            split[0] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivitySellTshirts(tshirts, clearformess);
+            split[1] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivitySellArt(art, clearformess);
+            split[2] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivitySellMusic(music, clearformess);
+            split[3] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivitySellBrownies(brownies, clearformess);
+            split[4] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityHacking(hack, clearformess);
+            split[5] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityGraffiti(graffiti, clearformess);
+            split[6] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityProstitution(prostitutes, clearformess);
+            split[7] = lcs_trace_draw_count() - at;
+         }
+
+         fprintf(out, ",\"draws\":%lld,\"funds\":%d",
+                 lcs_trace_draw_count() - before, ledger.get_funds());
+         fputs(",\"split\":[", out);
+         for (int i = 0; i < 8; i++)
+            fprintf(out, "%s%lld", i ? "," : "", split[i]);
+         fputs("]", out);
+         fputs(",\"attitude_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"activity\":%d,\"arg\":%d,\"income\":%d,"
+                         "\"person\":",
+                    p ? "," : "", pool[p]->activity.type, pool[p]->activity.arg,
+                    pool[p]->income);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"baseloot\":[", out);
+         for (int i = 0; i < len(location[1]->loot); i++)
+            fprintf(out, "%s\"%s\"", i ? "," : "",
+                    location[1]->loot[i]->get_itemtypename().c_str());
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         delete_and_clear(location[1]->loot);
+      }
+   }
+}
+
 void lcs_probe_run_if_requested()
 {
    const char *which = getenv("LCS_PROBE");
@@ -2507,6 +2719,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "encounters")) probe_encounters(out);
    else if (!strcmp(which, "stealth")) probe_stealth(out);
    else if (!strcmp(which, "recruit")) probe_recruit(out);
+   else if (!strcmp(which, "activities_day")) probe_activities_day(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

@@ -157,6 +157,14 @@ func _recruit_a_founder() -> void:
 	founder.alignment = &"liberal"
 	founder.join_days = 1
 	founder.recruiter_id = -1
+	# The original starts the squad in a homeless shelter. Somebody with
+	# nowhere to be is not assigned anything, so this is not cosmetic.
+	var home := WorldLookup.homeless_shelter(state, null)
+	if home != null:
+		founder.location = home.id
+		founder.base = home.id
+		home.is_safehouse = true
+		home.renting = Renting.PERMANENT
 	state.add_creature(founder)
 
 

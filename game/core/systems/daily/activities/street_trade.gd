@@ -29,7 +29,8 @@ const ARREST_JUICE_FLOOR := -30
 
 ## Selling drugged brownies. Illegality is the whole business model: the take
 ## multiplies as the drug laws tighten and collapses as they loosen.
-static func sell_brownies(state: GameState, rng: Rng, creature: Creature) -> Array[Event]:
+static func sell_brownies(state: GameState, rng: Rng, creature: Creature,
+		catalog: Catalog = null) -> Variant:
 	var events: Array[Event] = []
 	var drug_law := state.law.get_value(&"drugs")
 
@@ -41,13 +42,38 @@ static func sell_brownies(state: GameState, rng: Rng, creature: Creature) -> Arr
 				Difficulty.AVERAGE) else 0
 
 	if dodged == 0 and drug_law <= 0:
+		events.append(CrimeRules.charge(state, creature, &"brownies"))
 		events.append(Event.new(Event.CREATURE_ARRESTED, {
 			"creature": creature.id,
 			"doing": &"selling_brownies",
 			"charge": &"brownies",
 			"reason": &"police_search",
 		}))
+		# Busted means a foot chase, and the sale still happens afterwards —
+		# whatever is left of the evening is still the evening.
+		var chase: Variant = ArrestChase.attempt(state, rng, creature, catalog)
+		return _after_the_police(state, rng, creature, drug_law, events, chase)
 
+	return _make_the_sale(state, rng, creature, drug_law, events)
+
+
+## Picks the evening back up once the chase is over.
+static func _after_the_police(state: GameState, rng: Rng, creature: Creature,
+		drug_law: int, events: Array[Event], chase: Variant) -> Variant:
+	if chase is PendingIntent:
+		var asked: PendingIntent = chase
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					return _after_the_police(state, rng, creature, drug_law,
+							events, asked.resume.call(answer)),
+				events + asked.events)
+	return _make_the_sale(state, rng, creature, drug_law,
+			events + (chase as Array[Event]))
+
+
+## The takings, and what the evening taught.
+static func _make_the_sale(state: GameState, rng: Rng, creature: Creature,
+		drug_law: int, events: Array[Event]) -> Array[Event]:
 	var money := (CheckRules.skill_roll(rng, creature, &"persuasion")
 			+ CheckRules.skill_roll(rng, creature, &"business")
 			+ CheckRules.skill_roll(rng, creature, &"streetsense"))

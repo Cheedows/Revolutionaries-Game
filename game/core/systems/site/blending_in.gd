@@ -67,7 +67,7 @@ static func _run_the_gauntlet(state: GameState, rng: Rng, squad: Squad,
 		watchers.erase(watcher)
 
 		var tiers: Array = Suspicion.WATCHFULNESS.get(watcher.type,
-				[Suspicion.VERY_EASY, Suspicion.VERY_EASY])
+				[Difficulty.VERY_EASY, Difficulty.VERY_EASY])
 		var to_sneak: int = tiers[0]
 		var to_pass: int = tiers[1]
 		if state.site.alarm_timer == 1:

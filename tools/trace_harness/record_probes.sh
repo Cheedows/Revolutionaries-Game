@@ -10,16 +10,24 @@ GAME="${LCS_BUILD:-/tmp/lcsbuild}/src/crimesquad"
 mkdir -p "$OUT"
 cd "$ROOT"
 
-for probe in blank creatures training checks equipment politics activities damage congress elections court names opinion wincheck world spawn sitemaps sites context combat chase fight encounters stealth recruit; do
+for probe in blank creatures training checks equipment politics activities damage congress elections court names opinion wincheck world spawn sitemaps sites context combat chase fight encounters stealth recruit activities_day; do
 	tmp="$(mktemp)"
 	home="$(mktemp -d)"
 	screen="$(mktemp)"
 	# Some probes reach code that reports through getkey(); giving them a
 	# keystroke script keeps that from blocking. Frames go to /dev/null: the
 	# probe's own output is what matters.
+	#
+	# The script alternates a space with "g": a probe that provokes an arrest
+	# lands in a foot chase, which is a menu rather than a prompt and ignores a
+	# space forever. "g" gives up, which ends it.
 	keys="$(mktemp)"
 	i=0
-	while [ $i -lt 4000 ]; do echo "[space]" >> "$keys"; i=$((i + 1)); done
+	while [ $i -lt 4000 ]; do
+		echo "[space]" >> "$keys"
+		echo "g" >> "$keys"
+		i=$((i + 1))
+	done
 	HOME="$home" TERM=xterm LCS_PROBE="$probe" LCS_PROBE_OUT="$tmp" \
 		LCS_TRACE_SCRIPT="$keys" LCS_TRACE_OUT=/dev/null \
 		timeout 120 "$GAME" >"$screen" 2>&1 </dev/null

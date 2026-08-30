@@ -121,12 +121,35 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     question never arrived. Answers now go back through `Session.submit()`.
 - [ ] Lining a recruit up for a task rather than for membership
     (`recruitst::task`), and the meeting-queue entry points in `talk.cpp`.
-- [ ] Complete activity assignment semantics and a reliable parity probe/trace.
-- [ ] Remaining daily activities: hacking, graffiti, prostitution, teaching, burial and other activity variants from the original.
+- [x] Activity assignment semantics: the original groups Liberals by what they
+    are doing and runs the groups in a fixed order, so a mixed roster rolls in
+    an order that has nothing to do with the roster. The port was dispatching
+    per creature; it now groups. Prostitution's group is walked from the back,
+    which is how its loop happens to be written and decides who rolls first.
+  - Verified by the `activities_day` probe: a whole day at three crowd sizes,
+    each job isolated as well as mixed, and the mixed roster handed in forwards
+    and reversed so the grouping is doing real work. Compared on draw counts,
+    funds, both opinion arrays, and every Liberal's skills, standing, income
+    and unfinished mural.
+- [x] Graffiti, including murals across several nights and being caught.
+- [x] Daily arrests: `checkforarrest()` and `attemptarrest()`, wired into the
+    four street-fundraising activities, brownies and graffiti. Being noticed is
+    not a note in a file — it is a foot chase, and the player runs it.
+- [ ] Remaining daily activities: teaching, study, community service, burial,
+    trouble, letters and Guardian essays.
+- [ ] Hacking is ported (`core/systems/daily/activities/hacking.gd`) but is
+    **not yet probe-verified**, and is excluded from the `activities_day` probe
+    for that reason. One Liberal in a three-hacker team consumes a different
+    number of draws in `skill_roll(SKILL_COMPUTERS)` than the port does — five
+    against four, for a Liberal with skill 10 and effective intelligence 4,
+    where the port's `min(intelligence / 2, skill + 3)` gives an ability of 12
+    and the original evidently rolls on 13 or 14. The other two hackers in the
+    same team agree exactly. Resolve before re-enabling the four hacking jobs
+    in `tools/trace_harness/lcs_probe.cpp`.
 - [ ] Dating/relationship activity behavior used by the original.
 - [ ] Interrogation.
 - [ ] Siege daily processing and safehouse consequences.
-- [ ] Daily arrests/criminalization integration with built world and news hooks.
+- [ ] News hooks for daily arrests (the story types the original queues).
 - [ ] Injury recovery, hospital/time-served/levelling edge cases not yet represented.
 - [ ] Safehouse/base actions not already covered by Commands.
 - [ ] Liberal agenda/review-management behavior that belongs to simulation rather than presentation.
@@ -231,9 +254,14 @@ far up the building the fire is simulated at all. Both reproduced in
     records the generator state at the start of each measured turn, because a
     turn cannot be replayed from a seed: building the squad and raising the
     pursuit draw first.
-- [ ] Wire the chase loop into site mode and base mode. The turn systems and
-    the combat rounds both exist now; what is missing is the caller — leaving a
-    site, and the base-mode consequences of surrendering or being caught.
+- [x] Wire the chase loop into base mode: `core/systems/chase/chase_loop.gd`
+    runs a chase round by round as a question the player answers, and
+    `core/systems/daily/arrest_chase.gd` starts one from an activity with the
+    one-person fictitious squad the original builds. Exercised end to end by
+    the `activities_day` probe, where a Liberal busted selling brownies is
+    chased and surrenders.
+- [ ] Wire the chase loop into site mode: leaving a site with the police
+    outside.
 
 **Gate F:** both chase types have repeatable parity tests and clean transitions into/out of combat/site/base state.
 

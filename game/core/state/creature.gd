@@ -97,6 +97,10 @@ var animal_gloss: StringName = &"none"
 ## Current assignment, from [constant Ids.ACTIVITIES].
 var activity: StringName = &"none"
 
+## The issue of the mural this creature is part-way through, or &"" for none.
+## The original keeps it in the activity's spare argument.
+var mural: StringName = &""
+
 ## Days spent laying low, in hospital, in court, or dating.
 var hiding: int = 0
 var clinic: int = 0

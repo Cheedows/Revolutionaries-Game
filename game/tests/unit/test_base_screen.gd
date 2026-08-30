@@ -73,8 +73,8 @@ func test_a_member_can_be_put_to_work_and_earns() -> void:
 	check(members.size() == 1, "the game starts with a founder, got %d" % members.size())
 
 	var founder: Creature = members[0]
-	Commands.assign_activity(session, founder, &"solicit_donations")
-	equal(founder.activity, &"solicit_donations", "the order was given")
+	Commands.assign_activity(session, founder, &"donations")
+	equal(founder.activity, &"donations", "the order was given")
 
 	session.state.ledger.funds = 0
 	for day in 20:
