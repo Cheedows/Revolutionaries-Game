@@ -56,7 +56,17 @@ static func blank(rng: Rng) -> Creature:
 static func create(type: CreatureType, rng: Rng, law: Law, catalog: Catalog,
 		public_mood: int = 50) -> Creature:
 	var creature := blank(rng)
+	populate(creature, type, rng, law, catalog, public_mood)
+	return creature
 
+
+## Applies a creature type to an already-blank creature.
+##
+## Split out from [method create] because the original does other things between
+## the two — placing the creature and choosing where it works — and those
+## consume randomness, so the halves cannot be run back to back.
+static func populate(creature: Creature, type: CreatureType, rng: Rng, law: Law,
+		catalog: Catalog, public_mood: int = 50) -> void:
 	creature.type = type.idname
 	creature.alignment = _roll_alignment(type, rng, public_mood)
 	creature.age = Roll.interval(rng, type.age)
@@ -66,7 +76,7 @@ static func create(type: CreatureType, rng: Rng, law: Law, catalog: Catalog,
 	creature.gender_conservative = creature.gender_liberal
 	creature.infiltration = float(Roll.interval(rng, type.infiltration)) / 100.0
 	creature.money = Roll.interval(rng, type.money)
-	creature.name = type.encounter_name if not type.encounter_name.is_empty() else type.type_name
+	creature.name = encounter_name(type, law)
 
 	# Every skill is rolled, not just the ones the type names: the original
 	# loops over all of them, and an unnamed skill still rolls its default
@@ -78,7 +88,41 @@ static func create(type: CreatureType, rng: Rng, law: Law, catalog: Catalog,
 
 	_give_armor(creature, type, rng)
 	_give_weapon(creature, type, rng, law, catalog)
-	return creature
+
+
+## What this kind of person is called when you meet one.
+##
+## A handful of professions are renamed by the law: a servant becomes a slave
+## where labour and corporate regulation have both collapsed, a sweatshop worker
+## becomes a migrant worker where labour and immigration are both protected, a
+## firefighter becomes a fireman where there is no free speech left to defend.
+static func encounter_name(type: CreatureType, law: Law) -> String:
+	var renamed := _renamed_by_law(type.idname, law)
+	if not renamed.is_empty():
+		return renamed
+	if not type.encounter_name.is_empty():
+		return type.encounter_name
+	return type.type_name
+
+
+static func _renamed_by_law(idname: StringName, law: Law) -> String:
+	match idname:
+		&"CREATURE_WORKER_SERVANT":
+			if law.get_value(&"labor") == -2 and law.get_value(&"corporate") == -2:
+				return "Slave"
+		&"CREATURE_WORKER_JANITOR":
+			if law.get_value(&"labor") == 2:
+				return "Custodian"
+		&"CREATURE_WORKER_SWEATSHOP":
+			if law.get_value(&"labor") == 2 and law.get_value(&"immigration") == 2:
+				return "Migrant Worker"
+		&"CREATURE_CARSALESMAN":
+			if law.get_value(&"women") == -2:
+				return "Car Salesman"
+		&"CREATURE_FIREFIGHTER":
+			if law.get_value(&"freespeech") == -2:
+				return "Fireman"
+	return ""
 
 
 static func _roll_alignment(type: CreatureType, rng: Rng, public_mood: int) -> StringName:
@@ -148,7 +192,7 @@ static func _give_weapon(creature: Creature, type: CreatureType, rng: Rng,
 	if choice == null:
 		return
 	if choice.type == &"CIVILIAN":
-		_give_civilian_weapon(creature, rng, law)
+		give_civilian_weapon(creature, rng, law)
 		return
 	if choice.type == &"WEAPON_NONE":
 		return
@@ -167,7 +211,9 @@ static func _give_weapon(creature: Creature, type: CreatureType, rng: Rng,
 		creature.clips.append(clip)
 
 
-static func _give_civilian_weapon(creature: Creature, rng: Rng, law: Law) -> void:
+## Whatever an ordinary person might be carrying, which depends entirely on how
+## loose the gun laws are.
+static func give_civilian_weapon(creature: Creature, rng: Rng, law: Law) -> void:
 	var guns := law.get_value(&"guncontrol")
 	if guns == -1 and rng.one_in(30):
 		_arm(creature, &"WEAPON_REVOLVER_38", &"CLIP_38")

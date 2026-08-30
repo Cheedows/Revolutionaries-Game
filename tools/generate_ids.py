@@ -124,6 +124,35 @@ def crime_heat():
     return heat
 
 
+def worksites():
+    """Parses verifyworklocation() into a creature -> allowed site types map.
+
+    The switch falls through, so a run of creature labels shares the sites the
+    run ends with.
+    """
+    text = (ROOT / "src/creature/creaturetypes.cpp").read_text(errors="replace")
+    body = re.search(r"bool verifyworklocation\(Creature &cr[^{]*\{(.*?)\n\}", text, re.S)
+    if not body:
+        raise SystemExit("verifyworklocation not found")
+
+    mapping = {}
+    pending = []
+    for line in body.group(1).splitlines():
+        line = re.sub(r"//.*", "", line).strip()
+        case = re.fullmatch(r"case CREATURE_([A-Z0-9_]+):", line)
+        if case:
+            pending.append(case.group(1).lower())
+            continue
+        site = re.fullmatch(r"okaysite\[SITE_([A-Z0-9_]+)\]\s*=\s*1;", line)
+        if site and pending:
+            for creature in pending:
+                mapping.setdefault(creature, []).append(site.group(1).lower())
+            continue
+        if line == "break;":
+            pending = []
+    return mapping
+
+
 def politics_tables():
     """Parses the public-mood and Stalinist-opinion tables out of politics.cpp.
 
@@ -225,6 +254,13 @@ def main() -> int:
         "const CRIME_HEAT: Dictionary = {"]
     for crime, value in sorted(crime_heat().items()):
         table_lines.append(f'\t&"{crime}": {value},')
+    table_lines += ["}", "",
+        "## Where each creature type can plausibly be found working, from",
+        "## verifyworklocation(). Types not listed can be found anywhere.",
+        "const CREATURE_WORKSITES: Dictionary = {"]
+    for creature, sites in sorted(worksites().items()):
+        listed = ", ".join(f'&"{site}"' for site in sites)
+        table_lines.append(f'\t&"{creature}": [{listed}],')
     table_lines += ["}", ""]
     TABLES.write_text("\n".join(table_lines))
     print(f"wrote {TABLES.relative_to(ROOT)}: "

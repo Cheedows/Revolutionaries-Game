@@ -105,7 +105,7 @@ static func take_clips(creature: Creature, clip_type: StringName, number: int,
 ##
 ## [param wasteful] reloads even when rounds remain, discarding them, which is
 ## what the original does when a squad is told to top up before a fight.
-static func reload(creature: Creature, catalog: Catalog, wasteful: bool = false) -> bool:
+static func reload_weapon(creature: Creature, catalog: Catalog, wasteful: bool = false) -> bool:
 	var weapon := creature.weapon
 	if weapon == null or creature.clips.is_empty():
 		return false

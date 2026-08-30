@@ -37,6 +37,7 @@ Two kinds of evidence are used:
 | World building | `make_classic_world()`, `initlocation()` | 6 scenarios x 44 locations |
 | Rent and eviction | the rent pass in `advanceday()` | unit-tested against a built world |
 | Activity dispatch | `funds_and_trouble()` | the ported activities, run from the loop |
+| Spawning people | `makecreature()`, `verifyworklocation()` | 4 scenarios x 23 kinds of person |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -48,6 +49,10 @@ Two kinds of evidence are used:
 
 Named rather than skipped. Each is work, not a decision to leave it out.
 
+- **Spawn kits for the rarer types** are not ported: the Conservative Crime
+  Squad members, police and agents, hicks with guns, prisoners (which recurse
+  into other types), thieves, and the rest of the long tail. The probe covers
+  the 23 types that are done; adding one is a row in SpawnKits.
 - **Daily turn** is a skeleton: the date, time served, wounds and levelling.
   Recruitment, sieges, interrogation, dating, hacking, graffiti, prostitution,
   teaching, burial and the news pass are not ported.

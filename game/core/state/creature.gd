@@ -63,6 +63,13 @@ var crimes_suspected: PackedInt32Array = PackedInt32Array()
 ## indecency — and because they are described differently.
 var animal: bool = false
 
+## A special attack the creature can make instead of a normal one, or &"" for
+## none — a tank's cannon, a mosquito's proboscis.
+var special_attack: StringName = &""
+
+## Whether the authorities would deport rather than charge this person.
+var illegal_alien: bool = false
+
 ## &"none", &"animal" or &"tank". The original folds tanks into the same field,
 ## since a tank is another thing that is not a person and is armored by nature.
 var animal_gloss: StringName = &"none"
@@ -96,6 +103,12 @@ var augmentations: Array[StringName] = []
 
 func _init() -> void:
 	crimes_suspected.resize(Ids.LAW_FLAGS.size())
+
+
+## The type's idname with its CREATURE_ prefix dropped, which is how the
+## generated tables key it.
+func type_key() -> StringName:
+	return StringName(String(type).to_lower().trim_prefix("creature_"))
 
 
 func is_armed() -> bool:

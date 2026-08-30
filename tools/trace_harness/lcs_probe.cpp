@@ -24,6 +24,8 @@ void elections_house(char canseethings);
 void supremecourt(char clearformess, char canseethings);
 char wincheck();
 void make_world(bool hasmaps);
+void makecreature(Creature &cr, short type);
+short creaturetype_string_to_enum(const std::string &ctname);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
 void damagemod(Creature &t, char &damtype, int &damamount, char hitlocation,
@@ -817,6 +819,83 @@ void probe_world(FILE *out)
    }
 }
 
+// Spawning people into a built world: the path a site population, a
+// recruitment meeting and a squad of enemies all come through.
+void probe_spawn(FILE *out)
+{
+   // Types whose equipment is ported; the rest fall through with nothing extra.
+   static const char *TYPES[] = {
+      "CREATURE_BOUNCER", "CREATURE_SECURITYGUARD", "CREATURE_LAWYER",
+      "CREATURE_DOCTOR", "CREATURE_NURSE", "CREATURE_PSYCHOLOGIST",
+      "CREATURE_SCIENTIST_LABTECH", "CREATURE_SCIENTIST_EMINENT",
+      "CREATURE_CORPORATE_CEO", "CREATURE_WORKER_SWEATSHOP", "CREATURE_TANK",
+      "CREATURE_GUARDDOG", "CREATURE_MERC", "CREATURE_SOCIALITE",
+      "CREATURE_FOOTBALLCOACH", "CREATURE_TEACHER", "CREATURE_OFFICEWORKER",
+      "CREATURE_MAILMAN", "CREATURE_NUN", "CREATURE_RETIREE",
+      "CREATURE_PROGRAMMER", "CREATURE_CHEF", "CREATURE_PLUMBER",
+   };
+   const int TYPE_COUNT = (int)(sizeof(TYPES) / sizeof(TYPES[0]));
+
+   for (int scenario = 0; scenario < 4; scenario++)
+   {
+      unsigned long seed = 217645177UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 13 + scenario * 5) % 101;
+         public_interest[v] = 5;
+      }
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_BASE;
+      sitealienate = 0;
+
+      fprintf(out, "{\"kind\":\"spawn\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fputs(",\"law\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", law[l]);
+      fputs("],\"attitude\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", attitude[v]);
+
+      // One creature, reused — which is how the game does it, since the
+      // encounter slots are constructed once and refilled. Constructing a
+      // fresh one per spawn would run creatureinit() twice each time.
+      Creature cr;
+      fputs("],\"people\":[", out);
+      for (int t = 0; t < TYPE_COUNT; t++)
+      {
+         cursite = 1 + (t % 8);
+         makecreature(cr, creaturetype_string_to_enum(TYPES[t]));
+
+         fprintf(out, "%s{\"type\":", t ? "," : "");
+         write_string(out, TYPES[t]);
+         fprintf(out, ",\"site\":%d,\"worklocation\":%d,\"align\":%d,\"age\":%d",
+                 cursite, cr.worklocation, cr.align, cr.age);
+         fprintf(out, ",\"money\":%d,\"infiltration\":%lld",
+                 cr.money, (long long)(cr.infiltration * 1000000.0f));
+         fputs(",\"name\":", out);
+         write_string(out, cr.name);
+         fputs(",\"weapon\":", out);
+         write_string(out, cr.is_armed() ? cr.get_weapon().get_itemtypename().c_str() : "");
+         fputs(",\"armor\":", out);
+         write_string(out, cr.is_naked() ? "" : cr.get_armor().get_itemtypename().c_str());
+         fputs(",\"attributes\":[", out);
+         for (int i = 0; i < ATTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.get_attribute(i, false));
+         fputs("],\"skills\":[", out);
+         for (int i = 0; i < SKILLNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.get_skill(i));
+         fputs("]}", out);
+      }
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -847,6 +926,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "opinion")) probe_opinion_change(out);
    else if (!strcmp(which, "wincheck")) probe_wincheck(out);
    else if (!strcmp(which, "world")) probe_world(out);
+   else if (!strcmp(which, "spawn")) probe_spawn(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

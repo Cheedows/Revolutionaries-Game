@@ -74,7 +74,7 @@ func test_loading_matches_the_original() -> void:
 		var reloads: Array = sample["reloads"]
 		for index in reloads.size():
 			var expected: Array = reloads[index]
-			var loaded := EquipmentRules.reload(creature, _catalog, true)
+			var loaded := EquipmentRules.reload_weapon(creature, _catalog, true)
 			if int(loaded) != int(expected[0]):
 				fail("%s reload %d: expected %s, got %s"
 						% [sample["weapon"], index, expected[0], loaded])

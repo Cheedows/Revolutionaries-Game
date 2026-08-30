@@ -51,6 +51,9 @@ var upgradable: bool = false
 var heat: int = 0
 var secrecy: int = 100
 
+## Whether the place keeps armed staff and locked doors.
+var high_security: bool = false
+
 ## Whether the site has been closed down after a raid.
 var closed: int = 0
 
