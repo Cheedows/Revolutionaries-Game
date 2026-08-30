@@ -140,6 +140,64 @@ void probe_training(FILE *out)
    }
 }
 
+// Rolls the dice system across a spread of abilities, and runs skill and
+// attribute rolls on real creatures.
+void probe_checks(FILE *out)
+{
+   // The raw dice system, ability by ability.
+   for (int ability = 0; ability <= 40; ability++)
+   {
+      unsigned long seed = 32452843UL * (unsigned long)(ability + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+      fprintf(out, "{\"kind\":\"roll\",\"ability\":%d,\"seed\":%lu,\"rolls\":[",
+              ability, seed);
+      for (int i = 0; i < 20; i++)
+         fprintf(out, "%s%d", i ? "," : "", Creature::roll_check_probe(ability));
+      fputs("]}\n", out);
+   }
+
+   // Skill and attribute rolls on creatures, which fold in the attribute rules.
+   for (int sample = 0; sample < 80; sample++)
+   {
+      unsigned long seed = 49979687UL * (unsigned long)(sample + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      // Stealth, disguise and driving read armor, a disguise and the current
+      // vehicle, none of which exist outside a game; they are probed with the
+      // site and chase systems instead.
+      static const int SAFE_SKILLS[] = {
+         SKILL_PSYCHOLOGY, SKILL_LAW, SKILL_SECURITY, SKILL_COMPUTERS,
+         SKILL_MUSIC, SKILL_ART, SKILL_RELIGION, SKILL_SCIENCE, SKILL_BUSINESS,
+         SKILL_TEACHING, SKILL_FIRSTAID, SKILL_PERSUASION, SKILL_SEDUCTION,
+         SKILL_WRITING, SKILL_STREETSENSE, SKILL_TAILORING, SKILL_KNIFE,
+         SKILL_PISTOL, SKILL_RIFLE, SKILL_SHOTGUN, SKILL_SMG, SKILL_AXE,
+         SKILL_CLUB, SKILL_SWORD, SKILL_HANDTOHAND, SKILL_HEAVYWEAPONS,
+         SKILL_THROWING, SKILL_DODGE,
+      };
+      const int SAFE_COUNT = (int)(sizeof(SAFE_SKILLS) / sizeof(SAFE_SKILLS[0]));
+
+      Creature cr;
+      cr.juice = (sample % 5) * 60 - 60;
+      int skill = SAFE_SKILLS[sample % SAFE_COUNT];
+      cr.set_skill(skill, sample % 12);
+      int attribute = sample % ATTNUM;
+
+      fprintf(out, "{\"kind\":\"creature\",\"sample\":%d,\"seed\":%lu",
+              sample, seed);
+      fprintf(out, ",\"juice\":%d,\"skill\":%d,\"skill_value\":%d,\"attribute\":%d",
+              cr.juice, skill, sample % 12, attribute);
+      fputs(",\"skill_rolls\":[", out);
+      for (int i = 0; i < 10; i++)
+         fprintf(out, "%s%d", i ? "," : "", cr.skill_roll(skill));
+      fputs("],\"attribute_rolls\":[", out);
+      for (int i = 0; i < 10; i++)
+         fprintf(out, "%s%d", i ? "," : "", cr.attribute_roll(attribute));
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -158,6 +216,7 @@ void lcs_probe_run_if_requested()
    if (!strcmp(which, "creatures")) probe_creatures(out);
    else if (!strcmp(which, "blank")) probe_blank(out);
    else if (!strcmp(which, "training")) probe_training(out);
+   else if (!strcmp(which, "checks")) probe_checks(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

@@ -297,6 +297,11 @@ private:
    class Augmentation augmentations[AUGMENTATIONNUM];
    int skill_experience[SKILLNUM];
    static int roll_check(int skill);
+public:
+   /* Exposes roll_check() to the trace harness probes, which diff the dice
+      system directly. See tools/trace_harness/lcs_probe.cpp. */
+   static int roll_check_probe(int skill) { return roll_check(skill); }
+private:
    static Weapon& weapon_none();
    static Armor& armor_none();
    Weapon* weapon;
