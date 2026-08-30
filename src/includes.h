@@ -991,13 +991,18 @@ void printwoundstat(Creature &cr,int y,int x);
 void printfunds(int y=0,int offset=1,const char* prefix="Money: ");
 /* prints a short blurb showing how to page forward */
 void addnextpagestr();
+#include "../tools/trace_harness/lcs_trace.h"
+
 /* prints a short blurb showing how to page back */
 void addprevpagestr();
 /* prints a long blurb showing how to page forward and back */
 void addpagestr();
 /* Variants of addch and mvaddch that work on chars and use translateGraphicsChar(), fixing display of extended characters */
-inline int addchar(char ch) { return addch(translateGraphicsChar(ch)); }
-inline int mvaddchar(int y,int x,char ch) { return mvaddch(y,x,translateGraphicsChar(ch)); }
+/* Golden-trace hook: every addstr()/mvaddstr() in the game funnels through
+   these two, so one call each captures all screen output. Inert unless the
+   trace harness is driving the run. See tools/trace_harness/lcs_trace.h */
+inline int addchar(char ch) { lcs_trace_char(ch); return addch(translateGraphicsChar(ch)); }
+inline int mvaddchar(int y,int x,char ch) { lcs_trace_char(ch); return mvaddch(y,x,translateGraphicsChar(ch)); }
 inline int addchar(char ch,Log &log) { log.record(ch); return addchar(ch); }
 inline int mvaddchar(int y,int x,char ch,Log &log) { log.record(ch); return mvaddchar(y,x,ch); }
 /* Redefining addstr() and mvaddstr() so they use addchar() and mvaddchar(), fixing display of extended characters */

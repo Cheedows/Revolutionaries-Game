@@ -1,0 +1,18 @@
+# Creates a game: title, the three option screens, then the founder's
+# childhood questionnaire (ten A answers), and stops in base mode.
+a
+z
+z
+z
+z
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+[enter]

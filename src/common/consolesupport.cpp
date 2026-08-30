@@ -149,6 +149,12 @@ void translategetch_cap(int &c)
 int getkey()
 {
    refresh();
+   if(lcs_trace_active()) // trace harness drives input; see lcs_trace.h
+   {
+      int scripted=lcs_trace_next_key("getkey");
+      if(scripted<0) { endwin(); exit(0); } // script exhausted: a clean stop
+      return scripted;
+   }
    nodelay(stdscr,TRUE);
    while(getch()!=ERR);
    nodelay(stdscr,FALSE);
@@ -163,6 +169,12 @@ int getkey()
 int getkey_cap()
 {
    refresh();
+   if(lcs_trace_active()) // trace harness drives input; see lcs_trace.h
+   {
+      int scripted=lcs_trace_next_key("getkey_cap");
+      if(scripted<0) { endwin(); exit(0); } // script exhausted: a clean stop
+      return scripted;
+   }
    nodelay(stdscr,TRUE);
    while(getch()!=ERR);
    nodelay(stdscr,FALSE);
@@ -176,6 +188,10 @@ int getkey_cap()
 /* Empties the keyboard buffer, and returns most recent key pressed, if any */
 int checkkey()
 {
+   // Under the trace harness there is no interactive keyboard: polling a
+   // non-terminal stdin returns unpredictable values, which let cutscenes end
+   // at different points and desynchronised otherwise identical runs.
+   if(lcs_trace_active()) return ERR;
    int c=ERR,ret=ERR;
    nodelay(stdscr,TRUE);
    do

@@ -124,6 +124,17 @@ void CursesMoviest::loadmovie(const char *filename)
 {
    clean();
 
+   // The trace harness loads no cutscenes, leaving playmovie() with nothing to
+   // draw. They are pure presentation — no randomness, no state change — and
+   // they are unreadable in a 64-bit build anyway: the reads below take each
+   // frame's start/stop as sizeof(long), but the .cmv files were written where
+   // long was 4 bytes. On LP64 that misaligns the whole frame table, so the
+   // count is garbage, the trailing reads run past the end of the file leaving
+   // fields at whatever the heap held, and a cutscene played to the end (rather
+   // than cut short by a keypress, as a human always does) hangs or reads out
+   // of bounds, differently on each run.
+   if(lcs_trace_active()) return;
+
    FILE* h;
    h=LCSOpenFile(filename,"rb", LCSIO_PRE_ART);
 

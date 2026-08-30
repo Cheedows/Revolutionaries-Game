@@ -132,6 +132,11 @@ void alarmset(int t)
 
 void alarmwait()
 {
+   // Under the trace harness nothing waits on the clock. Beyond making runs
+   // faster this closes the race the comment below describes: if the timer
+   // fires before pause() is reached, the process blocks forever, which showed
+   // up as recordings that intermittently hung instead of finishing.
+   if(lcs_trace_active()) return;
    #ifdef WIN32
    while(ptime>(int)GetTickCount());
    #else
@@ -147,6 +152,10 @@ void alarmwait()
 
 void pause_ms(int t)
 {
+   // Animation delays are presentation, not game logic, and alarmwait() can
+   // block forever if the timer fires before pause() is reached (see the
+   // comment there). The trace harness skips them so runs are reproducible.
+   if(lcs_trace_active()) { refresh(); return; }
    alarmset(t);
    refresh();
    alarmwait();
@@ -215,7 +224,7 @@ unsigned long r_num()
 #endif // MORERANDOM
       seed[0]=seed[1]; seed[1]=seed[2]; seed[2]=seed[3]; // shift variables
       seed[3]=seed[3]^(seed[3]>>19)^t^(t>>8); // calculate random number
-      if(seed[3]) return seed[3]; // return a number unless it's zero, in which case it was initialized wrong
+      if(seed[3]) { lcs_trace_draw(); return seed[3]; } // return a number unless it's zero, in which case it was initialized wrong
       initMainRNG(); // recovery mechanism in case things were badly initialized
    }
 }
@@ -238,13 +247,15 @@ unsigned long r_num2()
 // Initializes the xorshift Random Number Generator with help getSeed() and r_num2()
 void initMainRNG()
 {  // we got 4 integers to initialize, which we'll get from a well-seeded linear congruential generator
-   seed[0]=getSeed(); // seed the linear congruential generator
+   // The trace harness supplies a fixed seed so runs are reproducible.
+   seed[0]=lcs_trace_active()?lcs_trace_seed():getSeed(); // seed the linear congruential generator
    for(int i=RNG_SIZE-1;i>=0;i--) seed[i]=r_num2(); // initialize all the integers
 }
 
 // Copies a xorshift Random Number Generator from src to dest
 void copyRNG(unsigned long(&dest)[RNG_SIZE],unsigned long(&src)[RNG_SIZE])
 {
+   lcs_trace_swap(); // a spliced stream breaks draw-sequence continuity
    for(int i=0;i<RNG_SIZE;i++) dest[i]=src[i]; // copy all the integers
 }
 
