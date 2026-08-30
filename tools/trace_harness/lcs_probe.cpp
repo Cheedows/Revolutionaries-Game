@@ -20,6 +20,8 @@
 // Not declared in includes.h; the probe needs them to diff the political model.
 int getsimplevoter(int leaning);
 void congress(char clearformess, char canseethings);
+void elections_house(char canseethings);
+void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
 void damagemod(Creature &t, char &damtype, int &damamount, char hitlocation,
                char armorpenetration, int mod, int extraarmor);
@@ -536,6 +538,57 @@ void probe_congress(FILE *out)
    }
 }
 
+// Congressional elections, with the presentation switched off.
+void probe_elections(FILE *out)
+{
+   for (int scenario = 0; scenario < 10; scenario++)
+   {
+      unsigned long seed = 236887691UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int v = 0; v < VIEWNUM; v++)
+         attitude[v] = (v * 19 + scenario * 11) % 101;
+      for (int l = 0; l < LAWNUM; l++)
+         law[l] = ((l + scenario) % 5) - 2;
+      law[LAW_ELECTIONS] = (scenario % 5) - 2;
+      for (int h = 0; h < HOUSENUM; h++)
+         house[h] = ((h * 2 + scenario) % 5) - 2;
+      for (int s = 0; s < SENATENUM; s++)
+         senate[s] = ((s + scenario) % 5) - 2;
+      termlimits = (scenario % 4) == 3;
+      stalinmode = (scenario % 3) == 2;
+
+      fprintf(out, "{\"kind\":\"elections\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fprintf(out, ",\"election_law\":%d,\"termlimits\":%d,\"stalinmode\":%d",
+              law[LAW_ELECTIONS], termlimits ? 1 : 0, stalinmode ? 1 : 0);
+      fputs(",\"attitude\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", attitude[v]);
+      fputs("],\"law\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", law[l]);
+      fputs("],\"house_before\":[", out);
+      for (int h = 0; h < HOUSENUM; h++)
+         fprintf(out, "%s%d", h ? "," : "", house[h]);
+      fputs("],\"senate_before\":[", out);
+      for (int s = 0; s < SENATENUM; s++)
+         fprintf(out, "%s%d", s ? "," : "", senate[s]);
+
+      elections_house(0);
+      elections_senate(scenario % 3, 0);
+
+      fputs("],\"house_after\":[", out);
+      for (int h = 0; h < HOUSENUM; h++)
+         fprintf(out, "%s%d", h ? "," : "", house[h]);
+      fputs("],\"senate_after\":[", out);
+      for (int s = 0; s < SENATENUM; s++)
+         fprintf(out, "%s%d", s ? "," : "", senate[s]);
+      fprintf(out, "],\"senate_class\":%d}\n", scenario % 3);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -560,6 +613,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "activities")) probe_activities(out);
    else if (!strcmp(which, "damage")) probe_damage(out);
    else if (!strcmp(which, "congress")) probe_congress(out);
+   else if (!strcmp(which, "elections")) probe_elections(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

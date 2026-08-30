@@ -52,6 +52,10 @@ var field_skill_rate: int = 0
 var multiple_cities: bool = false
 var no_term_limits: bool = false
 var no_court_purge: bool = false
+
+## Set once a term-limits amendment passes: every seat is then contested
+## with no incumbent advantage.
+var term_limits: bool = false
 var stalin_mode: bool = false
 var classic_mode: bool = false
 

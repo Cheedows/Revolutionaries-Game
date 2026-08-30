@@ -27,6 +27,7 @@ Two kinds of evidence are used:
 | Public opinion | `publicmood()`, `stalinview()`, `randomissue()` | 6 scenarios x 22 laws |
 | Voters and legislators | `getswingvoter()`, `presidentapproval()`, … | 6 scenarios, 1,000-voter approval |
 | Congress | `congress()` | 10 scenarios: 435 House and 100 Senate votes each |
+| Elections | `elections_house()`, `elections_senate()` | 10 scenarios, every election law |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
