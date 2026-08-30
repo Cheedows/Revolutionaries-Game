@@ -9,9 +9,9 @@ extends RefCounted
 ## A plan may inherit another with USE, which is built first and then painted
 ## over — a bank is a front door with a vault behind it.
 ##
-## Scope: TILE steps and the ROOM, HALLWAY_YAXIS and STAIRS scripts are built.
-## SPECIAL, UNIQUE, LOOT and STAIRS_RANDOM are not; they need the loot and
-## encounter systems, and are named in docs/port/PHASE2-STATUS.md.
+## Every step the plan language has is built here except LOOT, which places
+## nothing in the original either — its build() is an empty body waiting on a
+## revised loot system.
 
 ## The original writes plans with x measured from the middle of the map.
 const X_ORIGIN := LevelMap.WIDTH >> 1
@@ -45,7 +45,14 @@ static func build_into(map: LevelMap, plan_name: StringName, rng: Rng) -> void:
 				_paint(map, step)
 			&"script":
 				_run_script(map, rng, step)
-			# special, unique and loot are not built yet.
+			&"special":
+				MapFeatures.scatter(map, rng, step["special"],
+						_bounds(step["params"]),
+						_number(step["params"], &"freq", 1))
+			&"unique":
+				MapFeatures.place_unique(map, rng, step["special"],
+						_unique_bounds(step["params"]))
+			# LOOT is carried by the plans and builds nothing.
 
 
 ## Lays a rectangle of tiles.
@@ -85,14 +92,22 @@ static func _run_script(map: LevelMap, rng: Rng, step: Dictionary) -> void:
 				MapScripts.hallway_y(map, rng, x, y, width, height, level)
 		&"STAIRS":
 			MapScripts.stairs(map, x, y, z, width, height, depth)
+		&"STAIRS_RANDOM":
+			MapScripts.stairs_random(map, rng, x, y, z, width, height, depth)
 
 
 ## The rectangle a step covers, as [x0, x1, y0, y1, z0, z1].
 ##
-## X is measured from the middle of the map in the plans, so it is shifted here.
+## X is measured from the middle of the map in the plans, so it is shifted here
+## — but only where the plan gives a number. A step that names no x sits at
+## column zero, which is what the original's unshifted default comes to.
 static func _bounds(params: Dictionary) -> Array:
-	var x_start := _number(params, &"xstart") + X_ORIGIN
-	var x_end := _number(params, &"xend") + X_ORIGIN
+	var x_start := 0
+	var x_end := 0
+	if params.has(&"xstart"):
+		x_start = _number(params, &"xstart") + X_ORIGIN
+	if params.has(&"xend"):
+		x_end = _number(params, &"xend") + X_ORIGIN
 	if params.has(&"x"):
 		x_start = _number(params, &"x") + X_ORIGIN
 		x_end = x_start
@@ -112,6 +127,15 @@ static func _bounds(params: Dictionary) -> Array:
 	return [x_start, x_end, y_start, y_end, z_start, z_end]
 
 
+## Where a UNIQUE looks for somewhere to sit.
+##
+## A UNIQUE takes no rectangle of its own — only a floor — so the search box is
+## a fixed one around the middle of the map.
+static func _unique_bounds(params: Dictionary) -> Array:
+	var level := _number(params, &"z")
+	return [X_ORIGIN - 5, X_ORIGIN + 5, 10, 20, level, level]
+
+
 static func _mode(params: Dictionary) -> int:
 	match params.get(&"note", ""):
 		"ADD":
@@ -121,5 +145,5 @@ static func _mode(params: Dictionary) -> int:
 	return REPLACE
 
 
-static func _number(params: Dictionary, key: StringName) -> int:
-	return int(params.get(key, "0"))
+static func _number(params: Dictionary, key: StringName, fallback: int = 0) -> int:
+	return int(params.get(key, str(fallback)))

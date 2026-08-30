@@ -42,52 +42,52 @@ const PLANS: Dictionary = {
 	&"BUSINESS_CAFE": {
 		"parent": &"GENERIC_ONEROOM",
 		"steps": [
-			{"kind": &"special", "value": &"RESTAURANT_TABLE", "params": {&"xstart": "-4", &"xend": "4", &"ystart": "3", &"yend": "10", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"RESTAURANT_TABLE", "special": 20, "params": {&"xstart": "-4", &"xend": "4", &"ystart": "3", &"yend": "10", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 		],
 	},
 	&"BUSINESS_INTERNETCAFE": {
 		"parent": &"BUSINESS_CAFE",
 		"steps": [
-			{"kind": &"special", "value": &"CAFE_COMPUTER", "params": {&"xstart": "-4", &"xend": "4", &"ystart": "3", &"yend": "10", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"CAFE_COMPUTER", "special": 21, "params": {&"xstart": "-4", &"xend": "4", &"ystart": "3", &"yend": "10", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 		],
 	},
 	&"BUSINESS_RESTRICTEDCAFE": {
 		"parent": &"BUSINESS_CAFE",
 		"steps": [
-			{"kind": &"special", "value": &"CLUB_BOUNCER", "params": {&"x": "0", &"y": "1", &"z": "0"}},
+			{"kind": &"special", "value": &"CLUB_BOUNCER", "special": 25, "params": {&"x": "0", &"y": "1", &"z": "0"}},
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "-4", &"xend": "4", &"ystart": "3", &"yend": "10", &"zstart": "0", &"zend": "0"}},
 		],
 	},
 	&"INDUSTRY_SWEATSHOP": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"special", "value": &"SWEATSHOP_EQUIPMENT", "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"SWEATSHOP_EQUIPMENT", "special": 10, "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 			{"kind": &"loot", "value": &"FINECLOTH", "params": {&"weight": "100"}},
 		],
 	},
 	&"INDUSTRY_POLLUTER": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"special", "value": &"POLLUTER_EQUIPMENT", "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"POLLUTER_EQUIPMENT", "special": 11, "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 			{"kind": &"loot", "value": &"CHEMICAL", "params": {&"weight": "100"}},
 		],
 	},
 	&"INDUSTRY_NUCLEAR": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"unique", "value": &"NUCLEAR_ONOFF", "params": {}},
+			{"kind": &"unique", "value": &"NUCLEAR_ONOFF", "special": 12, "params": {}},
 		],
 	},
 	&"GOVERNMENT_INTELLIGENCEHQ": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"unique", "value": &"INTEL_SUPERCOMPUTER", "params": {}},
+			{"kind": &"unique", "value": &"INTEL_SUPERCOMPUTER", "special": 9, "params": {}},
 		],
 	},
 	&"CORPORATE_HEADQUARTERS": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"unique", "value": &"CORPORATE_FILES", "params": {}},
+			{"kind": &"unique", "value": &"CORPORATE_FILES", "special": 15, "params": {}},
 		],
 	},
 	&"CORPORATE_HOUSE": {
@@ -130,8 +130,8 @@ const PLANS: Dictionary = {
 			{"kind": &"tile", "value": &"OUTDOOR", "params": {&"xstart": "-4", &"xend": "4", &"ystart": "3", &"yend": "5", &"note": "ADD"}},
 			{"kind": &"tile", "value": &"OUTDOOR", "params": {&"xstart": "-4", &"yend": "12", &"ystart": "11", &"note": "ADD"}},
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "-4", &"xend": "4", &"ystart": "13", &"yend": "18", &"note": "ADD"}},
-			{"kind": &"unique", "value": &"HOUSE_PHOTOS", "params": {}},
-			{"kind": &"unique", "value": &"HOUSE_CEO", "params": {}},
+			{"kind": &"unique", "value": &"HOUSE_PHOTOS", "special": 13, "params": {}},
+			{"kind": &"unique", "value": &"HOUSE_CEO", "special": 14, "params": {}},
 		],
 	},
 	&"GOVERNMENT_ARMYBASE": {
@@ -156,19 +156,19 @@ const PLANS: Dictionary = {
 			{"kind": &"tile", "value": &"DOOR", "params": {&"x": "-16", &"y": "11"}},
 			{"kind": &"tile", "value": &"DOOR", "params": {&"x": "16", &"y": "11"}},
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "-28", &"xend": "28", &"ystart": "3", &"yend": "19", &"note": "ADD"}},
-			{"kind": &"unique", "value": &"ARMYBASE_ARMORY", "params": {}},
+			{"kind": &"unique", "value": &"ARMYBASE_ARMORY", "special": 27, "params": {}},
 		],
 	},
 	&"LABORATORY_GENETICS": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"special", "value": &"LAB_GENETIC_CAGEDANIMALS", "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"LAB_GENETIC_CAGEDANIMALS", "special": 1, "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 		],
 	},
 	&"LABORATORY_COSMETICS": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"special", "value": &"LAB_COSMETICS_CAGEDANIMALS", "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"LAB_COSMETICS_CAGEDANIMALS", "special": 0, "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 		],
 	},
 	&"GENERIC_LOBBY": {
@@ -180,37 +180,37 @@ const PLANS: Dictionary = {
 	&"GOVERNMENT_POLICESTATION": {
 		"parent": &"GENERIC_LOBBY",
 		"steps": [
-			{"kind": &"unique", "value": &"POLICESTATION_LOCKUP", "params": {}},
+			{"kind": &"unique", "value": &"POLICESTATION_LOCKUP", "special": 2, "params": {}},
 		],
 	},
 	&"GOVERNMENT_COURTHOUSE": {
 		"parent": &"GENERIC_LOBBY",
 		"steps": [
-			{"kind": &"unique", "value": &"COURTHOUSE_LOCKUP", "params": {}},
-			{"kind": &"unique", "value": &"COURTHOUSE_JURYROOM", "params": {}},
+			{"kind": &"unique", "value": &"COURTHOUSE_LOCKUP", "special": 3, "params": {}},
+			{"kind": &"unique", "value": &"COURTHOUSE_JURYROOM", "special": 4, "params": {}},
 		],
 	},
 	&"GOVERNMENT_PRISON": {
 		"parent": &"GENERIC_LOBBY",
 		"steps": [
-			{"kind": &"unique", "value": &"PRISON_CONTROL_LOW", "params": {}},
+			{"kind": &"unique", "value": &"PRISON_CONTROL_LOW", "special": 6, "params": {}},
 			{"kind": &"script", "value": &"ROOM", "params": {&"xstart": "-12", &"xend": "12", &"ystart": "3", &"yend": "15", &"zstart": "1", &"zend": "2"}},
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "-28", &"xend": "28", &"ystart": "3", &"yend": "19", &"zstart": "1", &"zend": "2", &"note": "ADD"}},
-			{"kind": &"unique", "value": &"PRISON_CONTROL_MEDIUM", "params": {&"z": "1"}},
-			{"kind": &"unique", "value": &"PRISON_CONTROL_HIGH", "params": {&"z": "2"}},
+			{"kind": &"unique", "value": &"PRISON_CONTROL_MEDIUM", "special": 7, "params": {&"z": "1"}},
+			{"kind": &"unique", "value": &"PRISON_CONTROL_HIGH", "special": 8, "params": {&"z": "2"}},
 			{"kind": &"script", "value": &"STAIRS_RANDOM", "params": {&"xstart": "-28", &"xend": "28", &"ystart": "3", &"yend": "19", &"zstart": "0", &"zend": "2"}},
 		],
 	},
 	&"MEDIA_AMRADIO": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"unique", "value": &"RADIO_BROADCASTSTUDIO", "params": {}},
+			{"kind": &"unique", "value": &"RADIO_BROADCASTSTUDIO", "special": 16, "params": {}},
 		],
 	},
 	&"MEDIA_CABLENEWS": {
 		"parent": &"GENERIC_SECURE",
 		"steps": [
-			{"kind": &"unique", "value": &"NEWS_BROADCASTSTUDIO", "params": {}},
+			{"kind": &"unique", "value": &"NEWS_BROADCASTSTUDIO", "special": 17, "params": {}},
 		],
 	},
 	&"RESIDENTIAL_APARTMENT": {
@@ -223,8 +223,8 @@ const PLANS: Dictionary = {
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "-9", &"xend": "-1", &"ystart": "3", &"yend": "18", &"zstart": "0", &"zend": "6", &"note": "ADD"}},
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "1", &"xend": "9", &"ystart": "6", &"yend": "18", &"zstart": "0", &"zend": "0", &"note": "ADD"}},
 			{"kind": &"tile", "value": &"RESTRICTED", "params": {&"xstart": "1", &"xend": "9", &"ystart": "3", &"yend": "18", &"zstart": "1", &"zend": "6", &"note": "ADD"}},
-			{"kind": &"special", "value": &"APARTMENT_LANDLORD", "params": {&"x": "2", &"y": "5", &"z": "0"}},
-			{"kind": &"special", "value": &"APARTMENT_SIGN", "params": {&"x": "0", &"y": "2", &"z": "0"}},
+			{"kind": &"special", "value": &"APARTMENT_LANDLORD", "special": 18, "params": {&"x": "2", &"y": "5", &"z": "0"}},
+			{"kind": &"special", "value": &"APARTMENT_SIGN", "special": 19, "params": {&"x": "0", &"y": "2", &"z": "0"}},
 		],
 	},
 	&"OUTDOOR_OPEN": {
@@ -256,7 +256,7 @@ const PLANS: Dictionary = {
 	&"OUTDOOR_LATTESTAND": {
 		"parent": &"OUTDOOR_OPEN",
 		"steps": [
-			{"kind": &"special", "value": &"RESTAURANT_TABLE", "params": {&"xstart": "-2", &"xend": "2", &"ystart": "1", &"yend": "5", &"zstart": "0", &"zend": "0", &"freq": "10"}},
+			{"kind": &"special", "value": &"RESTAURANT_TABLE", "special": 20, "params": {&"xstart": "-2", &"xend": "2", &"ystart": "1", &"yend": "5", &"zstart": "0", &"zend": "0", &"freq": "10"}},
 		],
 	},
 }

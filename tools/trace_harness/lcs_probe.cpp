@@ -900,13 +900,17 @@ void probe_spawn(FILE *out)
 // Building floor plans from art/sitemaps.txt.
 void probe_sitemaps(FILE *out)
 {
-   // Plans whose steps are ported: tiles and the room, hallway and stairs
-   // scripts. Anything using SPECIAL, UNIQUE, LOOT or STAIRS_RANDOM is left
-   // out until those are done.
+   // Every plan in art/sitemaps.txt, in file order.
    static const char *PLANS[] = {
       "GENERIC_FRONTDOOR", "GENERIC_UNSECURE", "GENERIC_SECURE",
-      "GENERIC_ONEROOM", "GENERIC_LOBBY", "OUTDOOR_OPEN",
-      "OUTDOOR_PUBLICPARK",
+      "GENERIC_ONEROOM", "BUSINESS_CAFE", "BUSINESS_INTERNETCAFE",
+      "BUSINESS_RESTRICTEDCAFE", "INDUSTRY_SWEATSHOP", "INDUSTRY_POLLUTER",
+      "INDUSTRY_NUCLEAR", "GOVERNMENT_INTELLIGENCEHQ",
+      "CORPORATE_HEADQUARTERS", "CORPORATE_HOUSE", "GOVERNMENT_ARMYBASE",
+      "LABORATORY_GENETICS", "LABORATORY_COSMETICS", "GENERIC_LOBBY",
+      "GOVERNMENT_POLICESTATION", "GOVERNMENT_COURTHOUSE", "GOVERNMENT_PRISON",
+      "MEDIA_AMRADIO", "MEDIA_CABLENEWS", "RESIDENTIAL_APARTMENT",
+      "OUTDOOR_OPEN", "OUTDOOR_PUBLICPARK", "OUTDOOR_LATTESTAND",
    };
    const int PLAN_COUNT = (int)(sizeof(PLANS) / sizeof(PLANS[0]));
 
@@ -918,13 +922,15 @@ void probe_sitemaps(FILE *out)
 
       for (int p = 0; p < PLAN_COUNT; p++)
       {
-         // A blank map, as initsite() starts from.
+         // Solid rock, as initsite() starts from: a plan carves rooms out of
+         // it rather than building walls on empty ground.
          for (int x = 0; x < MAPX; x++)
          for (int y = 0; y < MAPY; y++)
          for (int z = 0; z < MAPZ; z++)
          {
-            levelmap[x][y][z].flag = 0;
+            levelmap[x][y][z].flag = SITEBLOCK_BLOCK;
             levelmap[x][y][z].special = SPECIAL_NONE;
+            levelmap[x][y][z].siegeflag = 0;
          }
 
          build_site(PLANS[p]);
@@ -932,11 +938,11 @@ void probe_sitemaps(FILE *out)
          fprintf(out, "{\"kind\":\"sitemap\",\"scenario\":%d,\"seed\":%lu,\"plan\":",
                  scenario, seed);
          write_string(out, PLANS[p]);
-         // Only the ground floor and the first two above it carry anything in
-         // these plans; recording all ten would be mostly zeroes.
+         // The tallest plan is seven floors; the three above that are empty
+         // in every plan, so recording them would be all zeroes.
          fputs(",\"flags\":[", out);
          bool first = true;
-         for (int z = 0; z < 3; z++)
+         for (int z = 0; z < 7; z++)
          for (int y = 0; y < MAPY; y++)
          for (int x = 0; x < MAPX; x++)
          {
@@ -945,7 +951,7 @@ void probe_sitemaps(FILE *out)
          }
          fputs("],\"specials\":[", out);
          first = true;
-         for (int z = 0; z < 3; z++)
+         for (int z = 0; z < 7; z++)
          for (int y = 0; y < MAPY; y++)
          for (int x = 0; x < MAPX; x++)
          {

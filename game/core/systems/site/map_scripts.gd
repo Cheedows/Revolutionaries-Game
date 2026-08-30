@@ -7,8 +7,8 @@ extends RefCounted
 ## would be tedious and where variety between visits is wanted — the rooms of an
 ## office are different every time, its front door is not.
 ##
-## Not ported: STAIRS_RANDOM, which searches both floors for a free tile and
-## carries a bug in its own search. See docs/port/PHASE2-STATUS.md.
+## STAIRS_RANDOM is here too, and carries the original's bug in its own search;
+## see stairs_random() and docs/port/PHASE2-STATUS.md.
 
 ## The smallest a room can be before the generator stops dividing it.
 const ROOM_DIMENSION := 3
@@ -118,3 +118,93 @@ static func _place(map: LevelMap, x: int, y: int, width: int, height: int,
 	var at_y := y + height if far_corner else y
 	map.keep_flag(at_x, at_y, level, restricted)
 	map.set_special(at_x, at_y, level, special)
+
+
+## Threads a staircase up through the floors, one flight per level, landing
+## wherever there is room.
+##
+## Each flight has to arrive somewhere usable, so both floors are searched and
+## the candidates on the lower floor that have nothing above them are dropped.
+## Security is respected: a staircase inside a restricted wing leads up into
+## the restricted wing, never out into the public part of the floor above.
+##
+## Carries a bug from the original, deliberately: the pass that filters the
+## secure candidates counts the *unsecure* list, so it visits the wrong number
+## of them. Where that count runs past the end of the secure list the original
+## reads off the end of a vector, which has no defined behaviour to reproduce;
+## the port skips those indices instead. See docs/port/PHASE2-STATUS.md.
+static func stairs_random(map: LevelMap, rng: Rng, x: int, y: int, z: int,
+		width: int, height: int, depth: int) -> void:
+	var down: int = Ids.SITE_SPECIALS.find(&"stairs_down")
+	var up: int = Ids.SITE_SPECIALS.find(&"stairs_up")
+	var restricted: int = Tables.SITE_BLOCKS[&"restricted"]
+
+	# The original scans the ground floor here whatever level the step names.
+	var found := _free_squares(map, x, y, width, height, 0, restricted)
+	var secure: Array[Vector2i] = found[0]
+	var unsecure: Array[Vector2i] = found[1]
+
+	for level in range(z + 1, z + depth + 1):
+		var above := _free_squares(map, x, y, width, height, level, restricted)
+		var secure_above: Array[Vector2i] = above[0]
+		var unsecure_above: Array[Vector2i] = above[1]
+
+		_drop_unreachable(secure, secure_above, unsecure.size())
+		_drop_unreachable(unsecure, unsecure_above, unsecure.size())
+
+		var choices := secure if not secure.is_empty() else unsecure
+		var landings := secure_above if not secure.is_empty() else unsecure_above
+		if choices.is_empty():
+			# Nowhere to put this flight. The original moves on without
+			# stepping up to the floor above, so the next pass filters this
+			# floor's leftovers again; kept as it stands.
+			continue
+
+		var at: Vector2i = choices[rng.below(choices.size())]
+		map.set_special(at.x, at.y, level - 1, up)
+		map.set_special(at.x, at.y, level, down)
+		# The square the flight arrives on cannot also start the next one.
+		landings.erase(at)
+
+		secure = secure_above
+		unsecure = unsecure_above
+
+
+## Every square on a level that could take a staircase, split by security.
+static func _free_squares(map: LevelMap, x: int, y: int, width: int,
+		height: int, level: int, restricted: int) -> Array:
+	var secure: Array[Vector2i] = []
+	var unsecure: Array[Vector2i] = []
+	for at_x in range(x, x + width + 1):
+		for at_y in range(y, y + height + 1):
+			if not MapFeatures.is_free(map, at_x, at_y, level):
+				continue
+			if map.get_flag(at_x, at_y, level) & restricted:
+				secure.append(Vector2i(at_x, at_y))
+			else:
+				unsecure.append(Vector2i(at_x, at_y))
+	return [secure, unsecure]
+
+
+## Removes candidates with no matching square on the floor above.
+##
+## Both lists are gathered in the same order, so the search below stops at the
+## first entry that has sorted past the one it is looking for.
+##
+## [param count] is how many candidates to visit, which is the caller's bug to
+## own rather than this function's: it is not always the length of [param from].
+static func _drop_unreachable(from: Array[Vector2i], above: Array[Vector2i],
+		count: int) -> void:
+	for i in range(count - 1, -1, -1):
+		if i >= from.size():
+			continue
+		var erase := true
+		for candidate in above:
+			if candidate == from[i]:
+				erase = false
+				break
+			if (candidate.x == from[i].x and candidate.y > from[i].y) \
+					or candidate.x > from[i].x:
+				break
+		if erase:
+			from.remove_at(i)

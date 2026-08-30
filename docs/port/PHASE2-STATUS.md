@@ -38,7 +38,7 @@ Two kinds of evidence are used:
 | Rent and eviction | the rent pass in `advanceday()` | unit-tested against a built world |
 | Activity dispatch | `funds_and_trouble()` | the ported activities, run from the loop |
 | Spawning people | `makecreature()`, `verifyworklocation()` | 4 scenarios x 23 kinds of person |
-| Floor plans | `art/sitemaps.txt`, `configSite*::build()` | 3 seeds x 7 plans, 4,830 cells each |
+| Floor plans | `art/sitemaps.txt`, `configSite*::build()` | 3 seeds x all 26 plans, 11,270 cells each |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -50,11 +50,10 @@ Two kinds of evidence are used:
 
 Named rather than skipped. Each is work, not a decision to leave it out.
 
-- **Site map steps SPECIAL, UNIQUE, LOOT and STAIRS_RANDOM** are not built.
-  The first three place features and items that need the loot and encounter
-  systems; the fourth searches both floors for a free tile and carries a bug in
-  its own search (it iterates one list while indexing another). Nineteen of the
-  twenty-six plans use at least one of them.
+- **The site map step LOOT** builds nothing, which is parity: the original's
+  `configSiteLoot::build()` is an empty body with a comment saying the loot
+  system is due a revision. The plans still carry the loot types they name, so
+  wiring them up later is a change here and nothing upstream.
 - **Spawn kits for the rarer types** are not ported: the Conservative Crime
   Squad members, police and agents, hicks with guns, prisoners (which recurse
   into other types), thieves, and the rest of the long tail. The probe covers
@@ -108,5 +107,13 @@ Recorded because a port has to decide what to do about each, and because
    the strict condition the relaxed block runs redundantly inside the loop.
    Reproduced deliberately; this is the clearest candidate so far for a bug to
    fix rather than keep, once parity is established.
-7. `alarmwait()` can block forever if its timer fires before `pause()` is
+7. `generatestairsrandom()` filters its list of secure staircase sites by
+   counting the *unsecure* list — it walks `unsecure`'s indices but reads and
+   erases from `secure`. When the unsecure list is the longer of the two the
+   original reads past the end of a vector, and it does crash: a prison built
+   on an empty map segfaults reliably. It survives in the real game only
+   because a site starts as solid rock, which keeps the free-square lists
+   small enough. Reproduced as far as defined behaviour allows — the port
+   skips the out-of-range indices — and a candidate to fix once parity holds.
+8. `alarmwait()` can block forever if its timer fires before `pause()` is
    reached — the original's own comment says so. The port has no such wait.

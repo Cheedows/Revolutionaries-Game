@@ -14,10 +14,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "art" / "sitemaps.txt"
+SITEMAP_CPP = ROOT / "src" / "sitemode" / "sitemap.cpp"
+LOCATIONS_H = ROOT / "src" / "locations" / "locations.h"
 OUT = ROOT / "game" / "core" / "site_maps.gd"
 
 ## Commands that start a new step; anything else configures the current one.
 STEP_COMMANDS = {"TILE", "SCRIPT", "SPECIAL", "UNIQUE", "LOOT"}
+
+
+def special_order():
+    """The SpecialBlocks enum, in order, as the port's indices."""
+    text = LOCATIONS_H.read_text(errors="replace")
+    body = re.search(r"enum\s+SpecialBlocks\s*\{(.*?)\};", text, re.S).group(1)
+    names = []
+    for name in re.findall(r"SPECIAL_[A-Z0-9_]+", body):
+        if name == "SPECIAL_NONE" or name in names:
+            continue
+        names.append(name)
+    return names
+
+
+def special_aliases(constructor):
+    """Maps the names a plan writes onto the enum members they select.
+
+    The plan language does not use the enum's own names — a plan asks for
+    ARMYBASE_ARMORY and gets SPECIAL_ARMORY — so the mapping is read out of the
+    constructor that does the translating rather than copied by hand.
+    """
+    text = SITEMAP_CPP.read_text(errors="replace")
+    start = text.index(f"{constructor}::{constructor}(")
+    body = text[start:text.index("\n}\n", start)]
+    return dict(re.findall(r'value=="([A-Z0-9_]+)"\s*\)\s*\w+=(SPECIAL_[A-Z0-9_]+)', body))
 
 
 def read_lines(text):
@@ -33,6 +60,12 @@ def read_lines(text):
 
 
 def main() -> int:
+    order = special_order()
+    aliases = {
+        "special": special_aliases("configSiteSpecial"),
+        "unique": special_aliases("configSiteUnique"),
+    }
+
     maps = []
     current = None
     step = None
@@ -53,7 +86,13 @@ def main() -> int:
         elif command == "USE":
             current["parent"] = value
         elif command in STEP_COMMANDS:
-            step = {"kind": command.lower(), "value": value, "params": {}}
+            kind = command.lower()
+            step = {"kind": kind, "value": value, "params": {}}
+            if kind in aliases:
+                member = aliases[kind].get(value)
+                if member is None:
+                    raise SystemExit(f"{command} {value} names no special")
+                step["special"] = order.index(member)
             current["steps"].append(step)
         elif step is not None:
             step["params"][command.lower()] = value
@@ -82,8 +121,11 @@ def main() -> int:
         lines.append('\t\t"steps": [')
         for step in entry["steps"]:
             params = ", ".join(f'&"{k}": "{v}"' for k, v in step["params"].items())
-            lines.append('\t\t\t{"kind": &"%s", "value": &"%s", "params": {%s}},'
-                         % (step["kind"], step["value"], params))
+            special = ""
+            if "special" in step:
+                special = ', "special": %d' % step["special"]
+            lines.append('\t\t\t{"kind": &"%s", "value": &"%s"%s, "params": {%s}},'
+                         % (step["kind"], step["value"], special, params))
         lines.append("\t\t],")
         lines.append("\t},")
     lines += ["}", ""]

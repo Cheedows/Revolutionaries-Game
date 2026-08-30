@@ -24,12 +24,16 @@ func _init() -> void:
 	clear()
 
 
-## Empties every cell.
+## Resets every cell to solid rock.
+##
+## A floor plan carves rooms out of a solid block rather than raising walls on
+## open ground, so this is where every site starts — see initsite() in
+## src/sitemode/sitemap.cpp.
 func clear() -> void:
 	var cells := WIDTH * HEIGHT * LEVELS
 	flags.resize(cells)
 	specials.resize(cells)
-	flags.fill(0)
+	flags.fill(Tables.SITE_BLOCKS[&"block"])
 	specials.fill(NO_SPECIAL)
 
 

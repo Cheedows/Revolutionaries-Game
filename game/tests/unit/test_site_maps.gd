@@ -1,15 +1,18 @@
 extends TestCase
 ## Diffs generated floor plans against the original.
 ##
-## Three seeds x seven plans. The whole ground floor and the two above it are
-## compared cell by cell — 4,830 cells a plan — which is about as strict as a
-## check gets: the room generator is recursive and randomised, so one draw out
-## of place rearranges the building.
+## Three seeds x every plan in the game. Seven floors are compared cell by cell
+## — 11,270 cells a plan — which is about as strict as a check gets: the room
+## generator is recursive and randomised, so one draw out of place rearranges
+## the building and everything built after it.
 
 const PROBE := "res://tests/golden/probes/sitemaps.jsonl.gz"
 
-## Levels the probe records.
-const LEVELS := 3
+## Levels the probe records: the tallest plan is seven floors.
+const LEVELS := 7
+
+## Seeds the probe builds every plan under.
+const SCENARIOS := 3
 
 
 func test_floor_plans_match_the_original() -> void:
@@ -20,6 +23,7 @@ func test_floor_plans_match_the_original() -> void:
 
 	var rng: Rng = null
 	var seed_used := -1
+	var compared := 0
 	for sample: Dictionary in samples:
 		# The probe seeds once per scenario and builds each plan in turn, so
 		# the generator carries across plans.
@@ -30,6 +34,10 @@ func test_floor_plans_match_the_original() -> void:
 		var map := MapBuilder.build(StringName(sample["plan"]), rng)
 		if not _same(map, sample):
 			return
+		compared += 1
+
+	check(compared == SiteMaps.PLANS.size() * SCENARIOS,
+			"every plan was compared under every seed")
 
 
 func _same(map: LevelMap, sample: Dictionary) -> bool:
