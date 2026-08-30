@@ -46,15 +46,31 @@ static func spawn(state: GameState, rng: Rng, type_name: StringName, site: int,
 	# The original blanks the creature, places it, chooses where it works, and
 	# only then applies the type — and the middle step draws, so the halves
 	# cannot be run back to back.
-	var creature := CreatureFactory.blank(rng)
+	var creature := Creature.new()
+	creature.location = site
+	creature.work_location = site
+	_build(state, rng, creature, type, type_name, catalog)
+	return creature
+
+
+## Everything makecreature() does, on a creature that may already exist.
+##
+## [param creature] keeps its location, because the original assigns
+## [code]cursite[/code] to it here and a rebuilt prisoner is in the same place
+## either way.
+static func _build(state: GameState, rng: Rng, creature: Creature,
+		type: CreatureType, type_name: StringName, catalog: Catalog) -> void:
+	# The original blanks the creature, places it, chooses where it works, and
+	# only then applies the type — and the middle step draws, so the halves
+	# cannot be run back to back.
+	CreatureFactory.reset(creature, rng)
 	# The type is set before the workplace is chosen, because the choice
 	# depends on it.
 	creature.type = type_name
 	creature.exists = true
 	creature.squad_id = 0
 	creature.infiltration = 0.0
-	creature.location = site
-	creature.work_location = site
+	creature.work_location = creature.location
 	assign_work_location(state, rng, creature)
 
 	var mood := OpinionRules.public_mood(state.opinion, &"mood")
@@ -69,20 +85,71 @@ static func spawn(state: GameState, rng: Rng, type_name: StringName, site: int,
 		creature.attributes.values[index] = range.min if range != null else 1
 		caps[index] = range.max if range != null else 10
 
-	SpawnKits.equip(state, rng, creature, type, caps, catalog)
-	spare = _spread_attributes(rng, creature, caps, spare)
+	if creature.type_key() == &"prisoner":
+		_rebuild_as_a_convict(state, rng, creature, type, catalog)
+	else:
+		SpawnKits.equip(state, rng, creature, type, caps, catalog)
+	_spread_attributes(rng, creature, caps, spare)
 	_roll_infiltration(rng, creature)
 	_roll_starting_skills(rng, creature)
-	return creature
+
+
+## What a prisoner was before they were a prisoner.
+const CONVICT_PASTS: Array[StringName] = [
+	&"CREATURE_GANGMEMBER", &"CREATURE_PROSTITUTE", &"CREATURE_CRACKHEAD",
+	&"CREATURE_TEENAGER", &"CREATURE_HSDROPOUT",
+]
+
+
+## Who is actually in the cells.
+##
+## The original builds a prisoner as somebody else entirely — a gang member, a
+## prostitute, a teenager — and then dresses them as a prisoner, so that
+## recruiting one gets you a person with a history rather than "a prisoner".
+## The type stays whatever they were built as; only the outward parts are
+## overwritten.
+static func _rebuild_as_a_convict(state: GameState, rng: Rng, creature: Creature,
+		type: CreatureType, catalog: Catalog) -> void:
+	var became: StringName = &"CREATURE_THIEF" if rng.one_in(10) \
+			else CONVICT_PASTS[rng.below(CONVICT_PASTS.size())]
+	respawn(state, rng, creature, became, catalog)
+
+	creature.weapon = null
+	creature.clips.clear()
+	CreatureFactory.give_weapon(creature, type, rng, state.law, catalog)
+	creature.armor = null
+	CreatureFactory.give_armor(creature, type, rng)
+	creature.money = Roll.interval(rng, type.money)
+	creature.juice = Roll.interval(rng, type.juice)
+	creature.gender_liberal = Gender.name_of(
+			CreatureFactory.roll_gender(type, rng, state.law))
+	creature.gender_conservative = creature.gender_liberal
+	creature.name = CreatureFactory.encounter_name(type, state.law)
+	# Nobody comes out of prison defending the system that put them there.
+	if creature.alignment == &"conservative":
+		creature.alignment = Alignment.name_of(rng.below(2))
+
+
+## Rebuilds [param creature] in place as [param type_name], from the top.
+##
+## The original reaches this by calling makecreature() on a creature it is
+## already inside, so everything the outer call had done is done again.
+static func respawn(state: GameState, rng: Rng, creature: Creature,
+		type_name: StringName, catalog: Catalog) -> void:
+	var type: CreatureType = catalog.get_entry(&"creature", type_name)
+	if type == null:
+		return
+	_build(state, rng, creature, type, type_name, catalog)
 
 
 ## Sends the creature to a workplace that suits their profession.
 ##
 ## Only moves them if where they already are will not do — which matters beyond
-## tidiness, because the move draws and the stay does not. A type with no listed
-## workplaces is sent to location zero without drawing at all.
+## tidiness, because the move draws and the stay does not. A type nobody thought
+## to list works at a homeless shelter, which is the original's default case and
+## a real place: the choice still costs a draw.
 static func assign_work_location(state: GameState, rng: Rng, creature: Creature) -> void:
-	var allowed: Array = Tables.CREATURE_WORKSITES.get(creature.type_key(), [])
+	var allowed := _worksites(state, creature)
 
 	var current: Location = state.locations.get(creature.work_location)
 	if current != null and current.type in allowed:
@@ -96,6 +163,18 @@ static func assign_work_location(state: GameState, rng: Rng, creature: Creature)
 		creature.work_location = 0
 		return
 	creature.work_location = Roll.pick(rng, candidates)
+
+
+## Where this kind of person can be found working.
+##
+## The Conservative Crime Squad is the exception: it moves house as the
+## organisation kills its leaders, from a bar to a bomb shelter to a bunker.
+static func _worksites(state: GameState, creature: Creature) -> Array:
+	var key := creature.type_key()
+	if Tables.CCS_WORKSITES.has(key):
+		var by_kills: Dictionary = Tables.CCS_WORKSITES[key]
+		return by_kills.get(state.ccs_kills, [])
+	return Tables.CREATURE_WORKSITES.get(key, Tables.CREATURE_WORKSITES[&"*"])
 
 
 ## Spreads the points the type allows across the attributes.

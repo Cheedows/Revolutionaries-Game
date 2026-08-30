@@ -167,8 +167,12 @@ const CRIME_HEAT: Dictionary = {
 }
 
 ## Where each creature type can plausibly be found working, from
-## verifyworklocation(). Types not listed can be found anywhere.
+## verifyworklocation(). The &"*" entry is the switch's default case,
+## which every unlisted type falls through to — and it is a real place,
+## so an unlisted person is still sent somewhere and the choice still
+## costs a draw.
 const CREATURE_WORKSITES: Dictionary = {
+	&"*": [&"residential_shelter"],
 	&"actor": [&"downtown", &"udistrict", &"industrial"],
 	&"agent": [&"government_intelligencehq"],
 	&"amateurmagician": [&"downtown", &"udistrict", &"industrial"],
@@ -269,6 +273,15 @@ const CREATURE_WORKSITES: Dictionary = {
 	&"worker_servant": [&"corporate_house"],
 	&"worker_sweatshop": [&"industry_sweatshop"],
 	&"yogainstructor": [&"business_vegancoop"],
+}
+
+## Where the Conservative Crime Squad works out of, which moves as the
+## organisation kills its leaders. Keyed by creature, then by kills.
+const CCS_WORKSITES: Dictionary = {
+	&"ccs_archconservative": {0: [&"business_barandgrill"], 1: [&"residential_bombshelter"], 2: [&"outdoor_bunker"]},
+	&"ccs_molotov": {0: [&"business_barandgrill"], 1: [&"residential_bombshelter"], 2: [&"outdoor_bunker"]},
+	&"ccs_sniper": {0: [&"business_barandgrill"], 1: [&"residential_bombshelter"], 2: [&"outdoor_bunker"]},
+	&"ccs_vigilante": {0: [&"business_barandgrill"], 1: [&"residential_bombshelter"], 2: [&"outdoor_bunker"]},
 }
 
 ## The bit flags a map tile can carry, from the SITEBLOCK_ defines.

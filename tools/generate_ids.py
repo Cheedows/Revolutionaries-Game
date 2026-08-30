@@ -28,6 +28,7 @@ ENUMS = [
     ("SIEGE_TYPES", "src/locations/locations.h", "SiegeTypes", "SIEGE_", "SIEGENUM"),
     ("SITE_SPECIALS", "src/locations/locations.h", "SpecialBlocks", "SPECIAL_", "SPECIALNUM"),
     ("CRIMES", "src/includes.h", "Crimes", "CRIME_", "CRIMENUM"),
+    ("ENDGAME_STATES", "src/includes.h", "endgame", "ENDGAME_", "ENDGAMENUM"),
 ]
 
 
@@ -149,21 +150,50 @@ def worksites():
         raise SystemExit("verifyworklocation not found")
 
     mapping = {}
+    conditional = {}
     pending = []
+    in_default = False
     for line in body.group(1).splitlines():
         line = re.sub(r"//.*", "", line).strip()
         case = re.fullmatch(r"case CREATURE_([A-Z0-9_]+):", line)
         if case:
             pending.append(case.group(1).lower())
             continue
+        if line == "default:":
+            in_default = True
+            continue
+        # The Conservative Crime Squad works out of a different hideout as it
+        # loses leaders, which is the one place this switch tests something.
+        guarded = re.fullmatch(
+            r"if\(ccs_kills==(\d+)\)okaysite\[SITE_([A-Z0-9_]+)\]\s*=\s*1;", line)
+        if guarded:
+            if not pending:
+                raise SystemExit("guarded worksite outside any case")
+            for creature in pending:
+                conditional.setdefault(creature, {}).setdefault(
+                    int(guarded.group(1)), []).append(guarded.group(2).lower())
+            continue
+        # Anything else that marks a site allowed is a rule this parser does
+        # not know about, and silently dropping one puts people in the wrong
+        # buildings for the rest of the game.
+        if re.search(r"okaysite\[SITE_[A-Z0-9_]+\]\s*=\s*1;", line) \
+                and not re.fullmatch(r"okaysite\[SITE_[A-Z0-9_]+\]\s*=\s*1;", line):
+            raise SystemExit("unhandled worksite rule: " + line)
+
         site = re.fullmatch(r"okaysite\[SITE_([A-Z0-9_]+)\]\s*=\s*1;", line)
+        if site and in_default:
+            mapping.setdefault("*", []).append(site.group(1).lower())
+            continue
         if site and pending:
             for creature in pending:
                 mapping.setdefault(creature, []).append(site.group(1).lower())
             continue
         if line == "break;":
             pending = []
-    return mapping
+            in_default = False
+    if "*" not in mapping:
+        raise SystemExit("verifyworklocation has no default case any more")
+    return mapping, conditional
 
 
 def politics_tables():
@@ -269,11 +299,24 @@ def main() -> int:
         table_lines.append(f'\t&"{crime}": {value},')
     table_lines += ["}", "",
         "## Where each creature type can plausibly be found working, from",
-        "## verifyworklocation(). Types not listed can be found anywhere.",
+        "## verifyworklocation(). The &\"*\" entry is the switch's default case,",
+        "## which every unlisted type falls through to — and it is a real place,",
+        "## so an unlisted person is still sent somewhere and the choice still",
+        "## costs a draw.",
         "const CREATURE_WORKSITES: Dictionary = {"]
-    for creature, sites in sorted(worksites().items()):
+    plain, conditional = worksites()
+    for creature, sites in sorted(plain.items()):
         listed = ", ".join(f'&"{site}"' for site in sites)
         table_lines.append(f'\t&"{creature}": [{listed}],')
+    table_lines += ["}", "",
+        "## Where the Conservative Crime Squad works out of, which moves as the",
+        "## organisation kills its leaders. Keyed by creature, then by kills.",
+        "const CCS_WORKSITES: Dictionary = {"]
+    for creature, by_kills in sorted(conditional.items()):
+        rows = ", ".join(
+            "%d: [%s]" % (kills, ", ".join(f'&"{s}"' for s in sites))
+            for kills, sites in sorted(by_kills.items()))
+        table_lines.append(f'\t&"{creature}": {{{rows}}},')
     table_lines += ["}", "",
         "## The bit flags a map tile can carry, from the SITEBLOCK_ defines.",
         "const SITE_BLOCKS: Dictionary = {"]

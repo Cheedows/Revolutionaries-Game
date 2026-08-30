@@ -824,22 +824,14 @@ void probe_world(FILE *out)
 
 // Spawning people into a built world: the path a site population, a
 // recruitment meeting and a squad of enemies all come through.
+//
+// Every creature type, under eight legal and political climates, half of them
+// mid-infiltration so the branches that only fire inside a site — the CCS
+// naming, a firefighter turning out in bunker gear, a bouncer with a cover
+// story — are reached too.
 void probe_spawn(FILE *out)
 {
-   // Types whose equipment is ported; the rest fall through with nothing extra.
-   static const char *TYPES[] = {
-      "CREATURE_BOUNCER", "CREATURE_SECURITYGUARD", "CREATURE_LAWYER",
-      "CREATURE_DOCTOR", "CREATURE_NURSE", "CREATURE_PSYCHOLOGIST",
-      "CREATURE_SCIENTIST_LABTECH", "CREATURE_SCIENTIST_EMINENT",
-      "CREATURE_CORPORATE_CEO", "CREATURE_WORKER_SWEATSHOP", "CREATURE_TANK",
-      "CREATURE_GUARDDOG", "CREATURE_MERC", "CREATURE_SOCIALITE",
-      "CREATURE_FOOTBALLCOACH", "CREATURE_TEACHER", "CREATURE_OFFICEWORKER",
-      "CREATURE_MAILMAN", "CREATURE_NUN", "CREATURE_RETIREE",
-      "CREATURE_PROGRAMMER", "CREATURE_CHEF", "CREATURE_PLUMBER",
-   };
-   const int TYPE_COUNT = (int)(sizeof(TYPES) / sizeof(TYPES[0]));
-
-   for (int scenario = 0; scenario < 4; scenario++)
+   for (int scenario = 0; scenario < 8; scenario++)
    {
       unsigned long seed = 217645177UL * (unsigned long)(scenario + 1);
       lcs_trace_set_seed(seed);
@@ -853,11 +845,18 @@ void probe_spawn(FILE *out)
       }
       delete_and_clear(location);
       make_world(false);
-      mode = GAMEMODE_BASE;
+
+      bool inside = scenario >= 4;
+      mode = inside ? GAMEMODE_SITE : GAMEMODE_BASE;
       sitealienate = 0;
+      sitealarm = inside ? 1 : 0;
+      endgamestate = inside ? (scenario - 4) : ENDGAME_NONE;
+      ccs_kills = (char)(scenario % 3);
 
       fprintf(out, "{\"kind\":\"spawn\",\"scenario\":%d,\"seed\":%lu",
               scenario, seed);
+      fprintf(out, ",\"insite\":%d,\"alarm\":%d,\"endgame\":%d,\"ccskills\":%d",
+              inside ? 1 : 0, sitealarm, endgamestate, ccs_kills);
       fputs(",\"law\":[", out);
       for (int l = 0; l < LAWNUM; l++)
          fprintf(out, "%s%d", l ? "," : "", law[l]);
@@ -870,29 +869,44 @@ void probe_spawn(FILE *out)
       // fresh one per spawn would run creatureinit() twice each time.
       Creature cr;
       fputs("],\"people\":[", out);
-      for (int t = 0; t < TYPE_COUNT; t++)
+      // Indexed by the enum, not by the order the XML happened to load in:
+      // makecreature() takes the enum and the two are not the same list.
+      for (int t = 0; t < CREATURENUM; t++)
       {
-         cursite = 1 + (t % 8);
-         makecreature(cr, creaturetype_string_to_enum(TYPES[t]));
+         cursite = 1 + (t % (len(location) - 1));
+         makecreature(cr, t);
 
          fprintf(out, "%s{\"type\":", t ? "," : "");
-         write_string(out, TYPES[t]);
+         write_string(out, getcreaturetype(t)->get_idname().c_str());
          fprintf(out, ",\"site\":%d,\"worklocation\":%d,\"align\":%d,\"age\":%d",
                  cursite, cr.worklocation, cr.align, cr.age);
-         fprintf(out, ",\"money\":%d,\"infiltration\":%lld",
-                 cr.money, (long long)(cr.infiltration * 1000000.0f));
+         fprintf(out, ",\"money\":%d,\"juice\":%d,\"gender\":%d",
+                 cr.money, cr.juice, cr.gender_liberal);
+         fprintf(out, ",\"infiltration\":%lld",
+                 (long long)(cr.infiltration * 1000000.0f));
+         // The type can change under the spawner's feet: a prisoner is built
+         // as somebody else and only dressed as a prisoner.
+         fputs(",\"became\":", out);
+         write_string(out, getcreaturetype(cr.type)->get_idname().c_str());
          fputs(",\"name\":", out);
          write_string(out, cr.name);
          fputs(",\"weapon\":", out);
          write_string(out, cr.is_armed() ? cr.get_weapon().get_itemtypename().c_str() : "");
+         fprintf(out, ",\"clips\":%d", cr.count_clips());
          fputs(",\"armor\":", out);
          write_string(out, cr.is_naked() ? "" : cr.get_armor().get_itemtypename().c_str());
          fputs(",\"attributes\":[", out);
          for (int i = 0; i < ATTNUM; i++)
             fprintf(out, "%s%d", i ? "," : "", cr.get_attribute(i, false));
+         fputs("],\"raw\":[", out);
+         for (int i = 0; i < ATTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.attribute_raw_probe(i));
          fputs("],\"skills\":[", out);
          for (int i = 0; i < SKILLNUM; i++)
             fprintf(out, "%s%d", i ? "," : "", cr.get_skill(i));
+         fputs("],\"suspected\":[", out);
+         for (int i = 0; i < LAWFLAGNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.crimes_suspected[i]);
          fputs("]}", out);
       }
       fputs("]}\n", out);

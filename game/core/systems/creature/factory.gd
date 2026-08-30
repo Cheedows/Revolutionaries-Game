@@ -23,7 +23,18 @@ const BIRTHDAY_DAYS := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 ## Builds a blank creature, exactly as Creature::creatureinit() does.
 static func blank(rng: Rng) -> Creature:
-	var creature := Creature.new()
+	return reset(Creature.new(), rng)
+
+
+## Blanks a creature that already exists.
+##
+## The original reaches this by calling makecreature() on somebody it has
+## already built — a prisoner is somebody else first — so the reset has to work
+## on an object rather than only make one.
+static func reset(creature: Creature, rng: Rng) -> Creature:
+	creature.weapon = null
+	creature.clips.clear()
+	creature.armor = null
 
 	creature.age = 18 + rng.below(40)
 	var gender := rng.below(2) + 1
@@ -71,7 +82,7 @@ static func populate(creature: Creature, type: CreatureType, rng: Rng, law: Law,
 	creature.alignment = _roll_alignment(type, rng, public_mood)
 	creature.age = Roll.interval(rng, type.age)
 	creature.juice = Roll.interval(rng, type.juice)
-	var gender := _roll_gender(type, rng, law)
+	var gender := roll_gender(type, rng, law)
 	creature.gender_liberal = Gender.name_of(gender)
 	creature.gender_conservative = creature.gender_liberal
 	creature.infiltration = float(Roll.interval(rng, type.infiltration)) / 100.0
@@ -86,8 +97,8 @@ static func populate(creature: Creature, type: CreatureType, rng: Rng, law: Law,
 		var skill: StringName = Ids.SKILLS[index]
 		creature.skills.values[index] = Roll.interval(rng, type.skills.get(skill, unspecified))
 
-	_give_armor(creature, type, rng)
-	_give_weapon(creature, type, rng, law, catalog)
+	give_armor(creature, type, rng)
+	give_weapon(creature, type, rng, law, catalog)
 
 
 ## What this kind of person is called when you meet one.
@@ -140,7 +151,8 @@ static func _roll_alignment(type: CreatureType, rng: Rng, public_mood: int) -> S
 	return Alignment.name_of(value)
 
 
-static func _roll_gender(type: CreatureType, rng: Rng, law: Law) -> int:
+## Rolls the gender the type calls for, laws included.
+static func roll_gender(type: CreatureType, rng: Rng, law: Law) -> int:
 	var rolled := rng.below(2) + 1
 	var women := law.get_value(&"women")
 	var declared := Gender.value_of(type.gender)
@@ -177,7 +189,11 @@ static func _bias_holds(rng: Rng, women_law: int) -> bool:
 	return false
 
 
-static func _give_armor(creature: Creature, type: CreatureType, rng: Rng) -> void:
+## Dresses the creature in one of its type's outfits.
+##
+## Public because a prisoner is built as one kind of person and then re-dressed
+## as a prisoner, which is the one place the two halves come apart.
+static func give_armor(creature: Creature, type: CreatureType, rng: Rng) -> void:
 	var chosen: StringName = Roll.pick(rng, type.armortypes)
 	if chosen == null or chosen == &"ARMOR_NONE":
 		return
@@ -186,13 +202,14 @@ static func _give_armor(creature: Creature, type: CreatureType, rng: Rng) -> voi
 	creature.armor = armor
 
 
-static func _give_weapon(creature: Creature, type: CreatureType, rng: Rng,
+## Arms the creature from its type's weapon table.
+static func give_weapon(creature: Creature, type: CreatureType, rng: Rng,
 		law: Law, catalog: Catalog) -> void:
 	var choice: CreatureWeapons = Roll.pick(rng, type.weapons)
 	if choice == null:
 		return
 	if choice.type == &"CIVILIAN":
-		give_civilian_weapon(creature, rng, law)
+		give_civilian_weapon(creature, rng, law, catalog)
 		return
 	if choice.type == &"WEAPON_NONE":
 		return
@@ -202,29 +219,36 @@ static func _give_weapon(creature: Creature, type: CreatureType, rng: Rng,
 	weapon.count = mini(Roll.interval(rng, choice.number_weapons), 10)
 	creature.weapon = weapon
 
-	if choice.cliptype == &"NONE":
+	# Which clip the weapon takes is settled before the number of them is
+	# rolled, because the original settles it when it loads the file: a weapon
+	# that takes no ammunition never reaches the roll at all.
+	var clip_type := _resolve_clip(choice.cliptype, choice.type, catalog)
+	if clip_type == &"" or clip_type == &"NONE":
 		return
 	var clip := Clip.new()
-	clip.type = _resolve_clip(choice.cliptype, choice.type, catalog)
+	clip.type = clip_type
 	clip.count = Roll.interval(rng, choice.number_clips)
-	if clip.type != &"":
-		creature.clips.append(clip)
+	creature.clips.append(clip)
+	EquipmentRules.reload_weapon(creature, catalog)
 
 
 ## Whatever an ordinary person might be carrying, which depends entirely on how
 ## loose the gun laws are.
-static func give_civilian_weapon(creature: Creature, rng: Rng, law: Law) -> void:
+static func give_civilian_weapon(creature: Creature, rng: Rng, law: Law,
+		catalog: Catalog) -> void:
 	var guns := law.get_value(&"guncontrol")
 	if guns == -1 and rng.one_in(30):
-		_arm(creature, &"WEAPON_REVOLVER_38", &"CLIP_38")
+		_arm(creature, &"WEAPON_REVOLVER_38", &"CLIP_38", catalog)
 	elif guns == -2:
 		if rng.one_in(10):
-			_arm(creature, &"WEAPON_SEMIPISTOL_9MM", &"CLIP_9")
+			_arm(creature, &"WEAPON_SEMIPISTOL_9MM", &"CLIP_9", catalog)
 		elif rng.one_in(9):
-			_arm(creature, &"WEAPON_SEMIPISTOL_45", &"CLIP_45")
+			_arm(creature, &"WEAPON_SEMIPISTOL_45", &"CLIP_45", catalog)
 
 
-static func _arm(creature: Creature, weapon_type: StringName, clip_type: StringName) -> void:
+## Hands over a gun with four clips, one of which is loaded straight away.
+static func _arm(creature: Creature, weapon_type: StringName,
+		clip_type: StringName, catalog: Catalog) -> void:
 	var weapon := Weapon.new()
 	weapon.type = weapon_type
 	creature.weapon = weapon
@@ -232,15 +256,23 @@ static func _arm(creature: Creature, weapon_type: StringName, clip_type: StringN
 	clip.type = clip_type
 	clip.count = 4
 	creature.clips.append(clip)
+	EquipmentRules.reload_weapon(creature, catalog)
 
 
 ## Resolves the APPROPRIATE macro to the clip the weapon actually takes.
+##
+## A named clip is checked against the weapon too: the original rejects one the
+## weapon cannot chamber when it reads the file, and a rejected clip is the same
+## as no clip at all.
 static func _resolve_clip(cliptype: StringName, weapon_type: StringName,
 		catalog: Catalog) -> StringName:
-	if cliptype != &"APPROPRIATE":
-		return cliptype
 	var weapon: WeaponType = catalog.get_entry(&"weapon", weapon_type)
 	if weapon == null:
+		return &""
+	if cliptype != &"APPROPRIATE":
+		for attack: WeaponAttack in weapon.attacks:
+			if attack.ammotype == cliptype:
+				return cliptype
 		return &""
 	for attack: WeaponAttack in weapon.attacks:
 		if attack.uses_ammo:

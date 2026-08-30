@@ -60,10 +60,18 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
 
 ### A. Close foundational gaps
 
-- [ ] Finish long-tail creature spawn kits: police, agents, CCS types, armed hicks, prisoners/recursive types, thieves and every remaining `CreatureType` behavior.
+- [x] Finish long-tail creature spawn kits: police, agents, CCS types, armed hicks, prisoners/recursive types, thieves and every remaining `CreatureType` behavior.
+  - Probed across all 106 types x 8 legal/political climates, half of them
+    mid-infiltration so the site-dependent branches are reached. Every field is
+    compared, raw attribute values included.
 - [ ] Finish context-sensitive check rules needed later: stealth, disguise and driving.
-- [ ] Verify safehouse ownership cleanup behavior (locks/alarms/staff-only markers).
-- [ ] Wire site-plan LOOT steps only if parity requires behavior; preserve the original no-op if it is genuinely empty.
+- [x] Verify safehouse ownership cleanup behavior (locks/alarms/staff-only markers).
+  - Ported in `core/systems/site/site_builder.gd`; not probed, because nothing is
+    held outright at the start of a game so the recorded worlds never take the
+    branch. Needs a fixture once renting is playable.
+- [x] Wire site-plan LOOT steps only if parity requires behavior; preserve the original no-op if it is genuinely empty.
+  - Genuinely empty: `configSiteLoot::build()` has no body. Recorded as a
+    parity exception below.
 - [ ] Add any missing state fields discovered by the remaining systems without leaking UI concerns into `core/`.
 - [ ] Add targeted probes for currently unit-tested-but-unprobed arrest/prostitution branches where practical.
 
@@ -147,11 +155,11 @@ Port from `src/combat/` and remaining combat helpers.
 
 Site construction is already strong; now port the gameplay that occurs inside the site from `src/sitemode/`.
 
-- [ ] Enter/leave site lifecycle and squad placement.
-- [ ] Movement across floors and stairs.
+- [x] Enter/leave site lifecycle and squad placement.
+- [x] Movement across floors and stairs.
 - [ ] Visibility/encounters and enemy population.
 - [ ] Stealth, suspicion, disguise and alarm states.
-- [ ] Restricted areas/doors/locks/security behavior.
+- [x] Restricted areas/doors/locks/security behavior.
 - [ ] Site specials and interaction rules from `mapspecials.cpp`.
 - [ ] Dialogue/talk/persuasion/intimidation/recruit-like site interactions.
 - [ ] Loot pickup/drop/carry and site inventory consequences.

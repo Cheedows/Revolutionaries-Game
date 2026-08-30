@@ -34,6 +34,8 @@ void makecreature(Creature &cr,short type)
    cr.strip(NULL);                  //
 
    cr.creatureinit();
+   if(getenv("LCS_SPREAD_LOG") && type==CREATURE_WORKER_FACTORY_CHILD)
+      fprintf(stderr, "[stage] after init %lu\n", seed[0]);
    cr.exists=1;
    cr.squadid=-1;
    cr.type=type;
@@ -41,10 +43,16 @@ void makecreature(Creature &cr,short type)
    cr.location=cursite;
    cr.worklocation=cursite;
    verifyworklocation(cr);
+   if(getenv("LCS_SPREAD_LOG") && type==CREATURE_WORKER_FACTORY_CHILD)
+      fprintf(stderr, "[stage] after work %lu wl=%d\n", seed[0], (int)cr.worklocation);
 
    const CreatureType* crtype=getcreaturetype(type);
    crtype->make_creature(cr);
+   if(getenv("LCS_SPREAD_LOG") && type==CREATURE_WORKER_FACTORY_CHILD)
+      fprintf(stderr, "[stage] after make %lu\n", seed[0]);
    int attnum=crtype->attribute_points_.roll();
+   if(getenv("LCS_SPREAD_LOG") && type==CREATURE_WORKER_FACTORY_CHILD)
+      fprintf(stderr, "[stage] after points %lu attnum=%d\n", seed[0], attnum);
    int attcap[ATTNUM];
    for(int i=0;i<ATTNUM;i++)
    {
@@ -609,10 +617,16 @@ void makecreature(Creature &cr,short type)
       attnum-=min(4,cr.get_attribute(a,false));
       possible.push_back(a);
    }
+   const char *spreadlog = getenv("LCS_SPREAD_LOG");
+   if(spreadlog && type==CREATURE_WORKER_FACTORY_CHILD)
+      fprintf(stderr, "[spread] start attnum=%d\n", attnum);
    while(attnum>0&&len(possible))
    {
       int i=LCSrandom(len(possible));
       int a=possible[i];
+      if(spreadlog && type==CREATURE_WORKER_FACTORY_CHILD)
+         fprintf(stderr, "[spread] pool=%d i=%d a=%d val=%d cap=%d attnum=%d\n",
+                 (int)len(possible), i, a, cr.get_attribute(a,false), attcap[a], attnum);
       if(a==ATTRIBUTE_WISDOM&&cr.align==ALIGN_LIBERAL&&LCSrandom(4)) a=ATTRIBUTE_HEART;
       if(a==ATTRIBUTE_HEART&&cr.align==ALIGN_CONSERVATIVE&&LCSrandom(4)) a=ATTRIBUTE_WISDOM;
       if(cr.get_attribute(a,false)<attcap[a])

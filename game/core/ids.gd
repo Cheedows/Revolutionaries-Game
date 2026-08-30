@@ -384,3 +384,13 @@ const CRIMES: Array[StringName] = [
 	&"banktellerrobbery",
 	&"bankstickup",
 ]
+
+## 6 entries, in enum order.
+const ENDGAME_STATES: Array[StringName] = [
+	&"none",
+	&"ccs_appearance",
+	&"ccs_attacks",
+	&"ccs_sieges",
+	&"ccs_defeated",
+	&"martiallaw",
+]

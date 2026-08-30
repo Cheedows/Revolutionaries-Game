@@ -301,6 +301,10 @@ public:
    /* Exposes roll_check() to the trace harness probes, which diff the dice
       system directly. See tools/trace_harness/lcs_probe.cpp. */
    static int roll_check_probe(int skill) { return roll_check(skill); }
+   /* Exposes the unmodified attribute value to the trace harness probes. The
+      age and injury modifiers can hide a difference of one point, so parity on
+      get_attribute() alone is not enough. */
+   int attribute_raw_probe(int attribute) const { return attributes[attribute].value; }
 private:
    static Weapon& weapon_none();
    static Armor& armor_none();

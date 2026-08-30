@@ -67,6 +67,10 @@ var offended: Dictionary = {}
 
 ## How exposed the Conservative Crime Squad is, and how the game ended.
 var ccs_exposure: int = 0
+
+## How many of the Conservative Crime Squad's leaders have been killed, which
+## decides who is left in charge when one is met.
+var ccs_kills: int = 0
 var endgame_state: StringName = &"none"
 
 ## Lifetime tallies shown on the high-score screen.

@@ -6,8 +6,10 @@ extends RefCounted
 ## tighter the gun laws, the better armed the guards — so that shape is a table
 ## and only the genuinely bespoke types are written out.
 ##
-## Scope: the types below are ported. Anything else falls through with nothing
-## extra, which is what the original's long empty case list does too.
+## The types that need more than a table are in kits/: people in uniform, the
+## Conservative Crime Squad, and the people the law has already failed. Anything
+## none of them claims falls through with nothing extra, which is what the
+## original's long empty case list does too.
 
 ## Weapon by gun law, for the types that follow that shape:
 ## law value -> [weapon, clip, clips carried] or [weapon] for something melee.
@@ -52,22 +54,23 @@ const DISGUISE_SITES: Array[StringName] = [
 	&"industry_nuclear", &"business_bank",
 ]
 
-## What a hick calls themselves.
-const HICK_NAMES := ["Country Boy", "Good ol' Boy", "Hick", "Hillbilly",
-		"Redneck", "Rube", "Yokel"]
-
-
 ## Equips [param creature] for its type. [param caps] may be raised or lowered.
 static func equip(state: GameState, rng: Rng, creature: Creature,
 		type: CreatureType, caps: PackedInt32Array, catalog: Catalog) -> void:
 	var key := creature.type_key()
 
+	if UniformKits.equip(state, rng, creature, catalog):
+		return
+	if CcsKits.equip(state, rng, creature, catalog):
+		return
+	if StreetKits.equip(state, rng, creature, caps, catalog):
+		return
+
 	if GUARD_KITS.has(key):
 		if key == &"bouncer" and _is_high_security(state, creature):
 			creature.name = "Enforcer"
 			creature.skills.values[Ids.SKILLS.find(&"club")] = rng.below(3) + 3
-		_give(creature, GUARD_KITS[key].get(state.law.get_value(&"guncontrol"), []), catalog)
-		EquipmentRules.reload_weapon(creature, catalog)
+		Kit.give(creature, GUARD_KITS[key].get(state.law.get_value(&"guncontrol"), []), catalog)
 		if key == &"bouncer":
 			# A bouncer somewhere a squad could talk its way into is a
 			# Conservative with a little cover of his own; anywhere else he is
@@ -81,18 +84,17 @@ static func equip(state: GameState, rng: Rng, creature: Creature,
 
 	if key in DESK_REVOLVER:
 		if state.law.get_value(&"guncontrol") == -2 and rng.one_in(3):
-			_give(creature, [&"WEAPON_REVOLVER_38", &"CLIP_38", 1], catalog)
-			EquipmentRules.reload_weapon(creature, catalog)
+			Kit.give(creature, [&"WEAPON_REVOLVER_38", &"CLIP_38", 1], catalog)
 		if key == &"psychologist":
 			# A suit or a dress, by what the wearer is read as.
 			var suit := creature.gender_liberal == &"male" or rng.below(2) != 0
-			_wear(creature, &"ARMOR_CHEAPSUIT" if suit else &"ARMOR_CHEAPDRESS")
+			Kit.wear(creature, &"ARMOR_CHEAPSUIT" if suit else &"ARMOR_CHEAPDRESS")
 		return
 
 	if key in SYRINGE_TYPES:
-		CreatureFactory.give_civilian_weapon(creature, rng, state.law)
+		CreatureFactory.give_civilian_weapon(creature, rng, state.law, catalog)
 		if not creature.is_armed() and rng.one_in(2):
-			_give(creature, [&"WEAPON_SYRINGE"], catalog)
+			Kit.give(creature, [&"WEAPON_SYRINGE"], catalog)
 		return
 
 	match key:
@@ -110,15 +112,8 @@ static func equip(state: GameState, rng: Rng, creature: Creature,
 				creature.money = 0
 		&"genetic":
 			_name_experiment(state, rng, creature, caps)
-		&"hick":
-			creature.name = Roll.pick(rng, HICK_NAMES)
-		&"merc":
-			var rifle: StringName = &"WEAPON_AUTORIFLE_M16" \
-					if state.law.get_value(&"guncontrol") < 1 else &"WEAPON_SEMIRIFLE_AR15"
-			_give(creature, [rifle, &"CLIP_ASSAULT", 7], catalog)
-			EquipmentRules.reload_weapon(creature, catalog)
 		&"socialite":
-			_wear(creature, &"ARMOR_EXPENSIVEDRESS" if creature.gender_liberal == &"female"
+			Kit.wear(creature, &"ARMOR_EXPENSIVEDRESS" if creature.gender_liberal == &"female"
 					else &"ARMOR_EXPENSIVESUIT")
 		&"fastfoodworker":
 			# Teenagers and the barely-adult, nobody else.
@@ -163,15 +158,3 @@ static func _is_high_security(state: GameState, creature: Creature) -> bool:
 	return site != null and site.high_security and state.site.location != -1
 
 
-static func _give(creature: Creature, kit: Array, catalog: Catalog) -> void:
-	if kit.is_empty():
-		return
-	var weapon := Weapon.new(kit[0])
-	creature.weapon = weapon
-	if kit.size() >= 3:
-		var clip := Clip.new(kit[1], kit[2])
-		creature.clips.append(clip)
-
-
-static func _wear(creature: Creature, armor_type: StringName) -> void:
-	creature.armor = Armor.new(armor_type)
