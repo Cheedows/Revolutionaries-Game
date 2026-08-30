@@ -8,7 +8,7 @@ extends TestCase
 
 func test_a_day_advances_and_reports_itself() -> void:
 	var session := Session.new(99)
-	session.emit(DailyTurn.run(session.state, session.rng))
+	session.submit(DailyTurn.run(session.state, session.rng))
 
 	var events := session.drain_events()
 	check(not events.is_empty(), "a day produces at least one event")
@@ -20,7 +20,7 @@ func test_a_day_advances_and_reports_itself() -> void:
 func test_events_are_numbered_in_order() -> void:
 	var session := Session.new(1)
 	for day in 5:
-		session.emit(DailyTurn.run(session.state, session.rng))
+		session.submit(DailyTurn.run(session.state, session.rng))
 	var events := session.drain_events()
 	for index in events.size():
 		equal(events[index].sequence, index, "event %d is in sequence" % index)
@@ -30,7 +30,7 @@ func test_a_month_rolls_over_after_thirty_one_days() -> void:
 	var session := Session.new(3)
 	var rolled := false
 	for day in 31:
-		session.emit(DailyTurn.run(session.state, session.rng))
+		session.submit(DailyTurn.run(session.state, session.rng))
 	for event in session.drain_events():
 		if event.type == Event.MONTH_ADVANCED:
 			rolled = true
@@ -63,12 +63,12 @@ func test_wounds_and_sentences_tick_down_daily() -> void:
 	creature.sentence = 3
 	creature.hiding = 1
 
-	session.emit(DailyTurn.run(session.state, session.rng))
+	session.submit(DailyTurn.run(session.state, session.rng))
 	equal(creature.clinic, 1, "a day in the clinic passes")
 	equal(creature.sentence, 2, "a day of the sentence is served")
 	equal(creature.hiding, 0, "and the last day laying low")
 
-	session.emit(DailyTurn.run(session.state, session.rng))
+	session.submit(DailyTurn.run(session.state, session.rng))
 	equal(creature.clinic, 0, "treatment finishes")
 	var healed := false
 	for event in session.drain_events():

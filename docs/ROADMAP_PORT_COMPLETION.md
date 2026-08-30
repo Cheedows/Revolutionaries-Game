@@ -109,8 +109,18 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     when the search runs. A player who has not opened that menu since the laws
     changed goes looking under the old number, so the difficulty table is
     stored state in the port too, refreshed by the same step.
-- [ ] Recruit management: the meeting queue, recruits losing interest over
-    time, and lining a recruit up for a task rather than membership.
+- [x] Recruit management: the evening's meeting queue from `advanceday()` —
+    whose meetings happen, what becomes of the ones that cannot (a recruiter
+    who died, lost their safehouse, is under siege, or is in the wrong city),
+    and the bookings counter that decides who turns up. Covered by deterministic
+    fixture tests rather than a probe: the original runs this as a keystroke
+    loop that a recorded script cannot steer.
+  - This is also the first system to ask the player several questions in one
+    turn, which found a gap in the seam: `Session.answer()` called `resume` and
+    threw the result away, so a resumed system's events were lost and a second
+    question never arrived. Answers now go back through `Session.submit()`.
+- [ ] Lining a recruit up for a task rather than for membership
+    (`recruitst::task`), and the meeting-queue entry points in `talk.cpp`.
 - [ ] Complete activity assignment semantics and a reliable parity probe/trace.
 - [ ] Remaining daily activities: hacking, graffiti, prostitution, teaching, burial and other activity variants from the original.
 - [ ] Dating/relationship activity behavior used by the original.

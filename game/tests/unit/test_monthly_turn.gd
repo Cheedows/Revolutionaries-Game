@@ -15,7 +15,7 @@ func test_a_year_runs_the_political_cycle() -> void:
 	var bills := 0
 
 	for day in 365:
-		session.emit(DailyTurn.run(session.state, session.rng))
+		session.submit(DailyTurn.run(session.state, session.rng))
 		for event in session.drain_events():
 			if event.type == Event.ELECTION_HELD:
 				elections += 1
@@ -38,7 +38,7 @@ func test_the_news_goes_stale_every_month() -> void:
 	var before: int = session.state.opinion.interest[0]
 
 	for day in 31:
-		session.emit(DailyTurn.run(session.state, session.rng))
+		session.submit(DailyTurn.run(session.state, session.rng))
 
 	check(session.state.opinion.interest[0] < before,
 			"last month's stories stopped being news")

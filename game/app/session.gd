@@ -43,11 +43,15 @@ func pending() -> PendingIntent:
 
 
 ## Answers the pending decision and lets the simulation continue.
+##
+## Whatever resuming produces goes back through [method submit], so a system
+## that asks a second question parks again rather than losing the thread, and
+## the events it produced on the way are not dropped.
 func answer(choice: Variant) -> void:
 	assert(_pending != null, "nothing is waiting for an answer")
 	var waiting := _pending
 	_pending = null
-	waiting.resume.call(choice)
+	submit(waiting.resume.call(choice))
 
 
 ## Takes everything that has happened since the last call.
@@ -63,6 +67,20 @@ func emit(events: Array[Event]) -> void:
 		event.sequence = _next_sequence
 		_next_sequence += 1
 		_events.append(event)
+
+
+## Takes whatever a system returned: events to record, or a question to park on.
+##
+## Every system returns one or the other, so this is the single place the
+## difference is handled — callers do not have to test for it.
+func submit(result: Variant) -> void:
+	if result is PendingIntent:
+		var asked: PendingIntent = result
+		emit(asked.events)
+		ask(asked)
+		return
+	if result is Array:
+		emit(result)
 
 
 ## Parks the simulation until [method answer] is called.

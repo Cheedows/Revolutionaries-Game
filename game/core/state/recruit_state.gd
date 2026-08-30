@@ -10,8 +10,9 @@ extends RefCounted
 ## their range rather than to anything meaningful.
 const LIMIT := 127
 
-## Id of the person being met.
+## Id of the person being met, and of the Liberal meeting them.
 var recruit_id: int = 0
+var recruiter_id: int = 0
 
 ## Days left before they lose interest, and how many meetings there have been.
 var time_left: int = 0

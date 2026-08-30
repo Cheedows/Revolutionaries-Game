@@ -117,7 +117,7 @@ func _controls() -> Control:
 
 
 func _advance_one_day() -> void:
-	_session.emit(DailyTurn.run(_session.state, _session.rng, _session.catalog))
+	_session.submit(DailyTurn.run(_session.state, _session.rng, _session.catalog))
 	for event in _session.drain_events():
 		_log.append(EventText.describe(event, _session.state),
 				EventText.colour_of(event))

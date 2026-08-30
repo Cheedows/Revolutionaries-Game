@@ -21,7 +21,7 @@ func _initialize() -> void:
 			return
 
 	for day in days:
-		session.emit(DailyTurn.run(session.state, session.rng, session.catalog))
+		session.submit(DailyTurn.run(session.state, session.rng, session.catalog))
 		if session.is_waiting():
 			printerr("day %d stopped for a decision: %s"
 					% [day, session.pending().intent.type])

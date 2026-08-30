@@ -9,11 +9,11 @@ func test_rent_falls_due_on_the_third() -> void:
 	session.state.ledger.funds = 500
 
 	# The calendar starts on the first, so one day's advance reaches the second.
-	session.emit(DailyTurn.run(session.state, session.rng))
+	session.submit(DailyTurn.run(session.state, session.rng))
 	equal(session.state.calendar.day, 2, "the second")
 	equal(session.state.ledger.funds, 500, "nothing is due yet")
 
-	session.emit(DailyTurn.run(session.state, session.rng))
+	session.submit(DailyTurn.run(session.state, session.rng))
 	equal(session.state.calendar.day, RentRules.RENT_DAY, "the third")
 	equal(session.state.ledger.funds, 400, "and the rent is paid")
 	equal(flat.renting, 100, "the lease continues")
@@ -31,7 +31,7 @@ func test_an_unpayable_rent_means_eviction() -> void:
 	member.join_days = 1
 
 	for day in 3:
-		session.emit(DailyTurn.run(session.state, session.rng))
+		session.submit(DailyTurn.run(session.state, session.rng))
 
 	equal(flat.renting, Renting.NOBODY, "the lease is lost")
 	check(member.base != flat.id, "and the squad is out")
@@ -57,7 +57,7 @@ func test_a_new_lease_skips_its_first_rent() -> void:
 	session.state.ledger.funds = 500
 
 	for day in 3:
-		session.emit(DailyTurn.run(session.state, session.rng))
+		session.submit(DailyTurn.run(session.state, session.rng))
 	equal(session.state.ledger.funds, 500, "the month's rent was in the deposit")
 
 

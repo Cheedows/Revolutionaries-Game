@@ -89,6 +89,9 @@ var recruits: int = 0
 ## the recruitment menu, which is what the original does — see
 ## [method Recruiting.refresh_difficulties].
 var recruit_difficulty: Dictionary = Recruiting.FINDABLE.duplicate()
+
+## Meetings the squad has agreed to, oldest first.
+var recruit_meetings: Array[RecruitState] = []
 var endgame_state: StringName = &"none"
 
 ## Lifetime tallies shown on the high-score screen.
