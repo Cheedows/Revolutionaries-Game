@@ -21,6 +21,7 @@
 int getsimplevoter(int leaning);
 void congress(char clearformess, char canseethings);
 void elections_house(char canseethings);
+void supremecourt(char clearformess, char canseethings);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
 void damagemod(Creature &t, char &damtype, int &damamount, char hitlocation,
@@ -589,6 +590,49 @@ void probe_elections(FILE *out)
    }
 }
 
+// A Supreme Court session, with the presentation switched off. The court's
+// own laws and bench are recorded before and after.
+void probe_court(FILE *out)
+{
+   for (int scenario = 0; scenario < 12; scenario++)
+   {
+      unsigned long seed = 179424691UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++)
+         law[l] = ((l * 2 + scenario) % 5) - 2;
+      for (int j = 0; j < COURTNUM; j++)
+         court[j] = ((j + scenario) % 5) - 2;
+      for (int s = 0; s < SENATENUM; s++)
+         senate[s] = ((s + scenario) % 5) - 2;
+      exec[EXEC_PRESIDENT] = (scenario % 5) - 2;
+
+      fprintf(out, "{\"kind\":\"court\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fprintf(out, ",\"president\":%d", exec[EXEC_PRESIDENT]);
+      fputs(",\"law_before\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", law[l]);
+      fputs("],\"court_before\":[", out);
+      for (int j = 0; j < COURTNUM; j++)
+         fprintf(out, "%s%d", j ? "," : "", court[j]);
+      fputs("],\"senate\":[", out);
+      for (int s = 0; s < SENATENUM; s++)
+         fprintf(out, "%s%d", s ? "," : "", senate[s]);
+
+      supremecourt(0, 0);
+
+      fputs("],\"law_after\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", law[l]);
+      fputs("],\"court_after\":[", out);
+      for (int j = 0; j < COURTNUM; j++)
+         fprintf(out, "%s%d", j ? "," : "", court[j]);
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -614,6 +658,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "damage")) probe_damage(out);
    else if (!strcmp(which, "congress")) probe_congress(out);
    else if (!strcmp(which, "elections")) probe_elections(out);
+   else if (!strcmp(which, "court")) probe_court(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
