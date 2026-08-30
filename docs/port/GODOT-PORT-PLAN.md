@@ -163,16 +163,13 @@ Phase 4 — new mechanics
   - Only once Phase 2 is trace-green. New mechanics before parity means no baseline to
     diff against, and every bug is ambiguous.
 
-## 8. Open decisions
+## 8. Decisions (locked)
 
-1. **Sim core language.** Pure GDScript (simple, hackable, slow-ish but this game is not
-   perf-bound) vs. C++ GDExtension wrapping the existing logic (fast to reach parity, but
-   drags the old architecture and the old bugs forward, and makes new mechanics harder).
-   Recommendation: **pure GDScript**, given the goal is new mechanics, not preservation.
-2. **Parity target.** Full mechanical parity first, then diverge? Or port selectively and
-   accept divergence from the start? Parity-first is slower but is the only version where
-   the golden-trace harness pays for itself.
-3. **Scope of "one-shot conversion."** 62k lines of interleaved C++ is not a single pass.
-   Realistic unit of one-shot work is one system at a time against a trace.
-4. **Setting/branding.** The repo is named Revolutionaries-Game; a rename away from LCS
-   branding is worth deciding early since it touches every string.
+1. **Sim core language: pure GDScript.** No GDExtension, no C++ carried forward.
+2. **Parity first.** Mechanical parity against golden traces before any new mechanic.
+3. **Branding: "Revolutionaries", held in one autoload** (`branding.gd`) with all game text
+   tokenised. Renaming later is a four-line edit. See ARCHITECTURE.md §6.
+4. **Unit of work is one system at a time, against a trace** — not a single bulk pass.
+
+Module boundaries, file contracts, the Event/Intent seam and the extensibility rules are
+specified in [ARCHITECTURE.md](ARCHITECTURE.md), which is binding on the rewrite.
