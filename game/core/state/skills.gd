@@ -6,7 +6,7 @@ extends RefCounted
 ## Training banks experience; the original converts it to levels between turns,
 ## which is a rule and belongs in core/systems/creature/train.gd.
 
-const MAXIMUM := 20
+const MAXIMUM := 99
 
 var values: PackedInt32Array = PackedInt32Array()
 var experience: PackedInt32Array = PackedInt32Array()

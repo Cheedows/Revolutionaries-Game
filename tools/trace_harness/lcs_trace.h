@@ -35,6 +35,17 @@ void lcs_trace_swap();
 /* The seed to use, or 0 when the harness is not driving the run. */
 unsigned long lcs_trace_seed();
 
+/* True when the RNG should be seeded from lcs_trace_seed() rather than from
+   system entropy: either a trace is being recorded or a probe set a seed. */
+bool lcs_trace_has_seed();
+
+/* Forces the seed, for probes that reseed between samples. */
+void lcs_trace_set_seed(unsigned long value);
+
+/* Runs the system probe named by LCS_PROBE and exits, when it is set. Called
+   from main() once content is loaded. */
+void lcs_probe_run_if_requested();
+
 /* Emits one JSONL record for the screen built since the last call and returns
    the next scripted keystroke. Returns -1 when the script is exhausted, which
    the caller turns into a quit. */

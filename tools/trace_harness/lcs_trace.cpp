@@ -13,6 +13,7 @@ bool g_initialised = false;
 bool g_active = false;
 FILE *g_out = NULL;
 unsigned long g_seed = 0;
+bool g_seed_forced = false;
 long g_max_keys = -1;
 
 std::vector<int> g_script;   // keystrokes to feed, in order
@@ -129,6 +130,19 @@ unsigned long lcs_trace_seed()
 {
    initialise();
    return g_seed;
+}
+
+bool lcs_trace_has_seed()
+{
+   initialise();
+   return g_active || g_seed_forced;
+}
+
+void lcs_trace_set_seed(unsigned long value)
+{
+   initialise();
+   g_seed = value;
+   g_seed_forced = true;
 }
 
 void lcs_trace_char(char ch)

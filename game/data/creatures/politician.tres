@@ -26,8 +26,8 @@ max = 95
 
 [sub_resource type="Resource" id="Sub_5"]
 script = ExtResource("Script_1")
-min = 0
-max = 0
+min = 40
+max = 40
 
 [sub_resource type="Resource" id="Sub_6"]
 script = ExtResource("Script_1")

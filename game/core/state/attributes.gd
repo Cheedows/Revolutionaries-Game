@@ -6,7 +6,7 @@ extends RefCounted
 ## bonus when a check asks for one; the bonus is a rule, so it lives in
 ## core/systems/creature/, not here.
 
-const MAXIMUM := 20
+const MAXIMUM := 99
 
 var values: PackedInt32Array = PackedInt32Array()
 

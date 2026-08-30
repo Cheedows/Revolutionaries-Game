@@ -1,6 +1,7 @@
 bin_PROGRAMS = crimesquad
 crimesquad_SOURCES = ../tools/trace_harness/lcs_trace.cpp\
  ../tools/trace_harness/lcs_state.cpp\
+ ../tools/trace_harness/lcs_probe.cpp\
  ../tools/trace_harness/lcs_trace.h game.cpp lcsio.cpp cursesmovie.cpp compat.cpp\
  cursesgraphics.cpp lcsio.h cursesmovie.h compat.h cursesgraphics.h includes.h\
  externs.h common/commondisplay.cpp common/commonactions.cpp\

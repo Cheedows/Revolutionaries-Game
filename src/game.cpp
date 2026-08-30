@@ -442,6 +442,9 @@ int main(int argc, char* argv[])
    xml_loaded_ok&=populate_from_xml(augmenttype,"augmentations.xml",xmllog);
    if(!xml_loaded_ok) end_game(EXIT_FAILURE);
 
+   // Content is loaded: a system probe can now run against it and exit.
+   lcs_probe_run_if_requested();
+
    //addstr("Attempting to load saved game... ");
    //getkey();
 

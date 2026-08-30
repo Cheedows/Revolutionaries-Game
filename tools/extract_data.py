@@ -438,12 +438,16 @@ def extract_creatures(report: Report):
         for tag in {child.tag for child in entry} - handled:
             report.ignore("creatures.xml", idname, tag)
 
+        # Defaults come from the CreatureType constructor in
+        # src/creature/creaturetype.cpp, not from zero: an entry that omits a
+        # field gets the original's default, and getting these wrong shifts
+        # the whole creature-creation draw sequence.
         age_raw = child_text(entry, "age")
         if age_raw in AGE_MACROS:
             low, high = AGE_MACROS[age_raw]
             age = Res("interval.gd", {"min": low, "max": high})
         else:
-            age = interval(age_raw)
+            age = interval(age_raw, (18, 57))
 
         attributes = {}
         node = entry.find("attributes")
@@ -493,14 +497,13 @@ def extract_creatures(report: Report):
             "idname": StringName(idname),
             "type_name": child_text(entry, "type_name", "UNDEFINED"),
             "encounter_name": child_text(entry, "encounter_name"),
-            "alignment": StringName(ALIGNMENTS.get(alignment_raw, "public_mood"
-                                                   if alignment_raw else "conservative")),
-            "gender": StringName(GENDERS.get(child_text(entry, "gender"), "neutral")),
+            "alignment": StringName(ALIGNMENTS.get(alignment_raw, "public_mood")),
+            "gender": StringName(GENDERS.get(child_text(entry, "gender"), "random")),
             "age": age,
             "juice": interval(child_text(entry, "juice")),
-            "money": interval(child_text(entry, "money")),
+            "money": interval(child_text(entry, "money"), (20, 40)),
             "infiltration": interval(child_text(entry, "infiltration")),
-            "attribute_points": interval(child_text(entry, "attribute_points")),
+            "attribute_points": interval(child_text(entry, "attribute_points"), (40, 40)),
             "attributes": attributes,
             "skills": skills,
             "armortypes": armortypes,

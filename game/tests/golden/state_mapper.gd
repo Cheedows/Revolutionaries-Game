@@ -99,7 +99,7 @@ static func _creature(recorded: Dictionary) -> Creature:
 	creature.id = recorded["id"]
 	creature.name = recorded["name"]
 	creature.type = StringName(recorded["type"])
-	creature.alignment = _alignment(recorded["align"])
+	creature.alignment = Alignment.name_of(recorded["align"])
 	creature.alive = int(recorded["alive"]) != 0
 	creature.exists = int(recorded["exists"]) != 0
 	creature.squad_id = recorded["squadid"]
@@ -124,14 +124,6 @@ static func _creature(recorded: Dictionary) -> Creature:
 	creature.skills.values = _ints(recorded["skills"])
 	creature.crimes_suspected = _ints(recorded["crimes_suspected"])
 	return creature
-
-
-static func _alignment(value: int) -> StringName:
-	# The original's ALIGN_ enum: 0 conservative, 1 moderate, 2 liberal.
-	match value:
-		2: return &"liberal"
-		1: return &"moderate"
-		_: return &"conservative"
 
 
 static func _ints(values: Array) -> PackedInt32Array:

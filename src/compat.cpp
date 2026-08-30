@@ -248,7 +248,7 @@ unsigned long r_num2()
 void initMainRNG()
 {  // we got 4 integers to initialize, which we'll get from a well-seeded linear congruential generator
    // The trace harness supplies a fixed seed so runs are reproducible.
-   seed[0]=lcs_trace_active()?lcs_trace_seed():getSeed(); // seed the linear congruential generator
+   seed[0]=lcs_trace_has_seed()?lcs_trace_seed():getSeed(); // seed the linear congruential generator
    for(int i=RNG_SIZE-1;i>=0;i--) seed[i]=r_num2(); // initialize all the integers
 }
 
