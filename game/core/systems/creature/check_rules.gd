@@ -67,7 +67,7 @@ static func skill_roll(rng: Rng, creature: Creature, skill: StringName) -> int:
 	var index := Ids.SKILLS.find(skill)
 	var skill_value := creature.skills.values[index]
 	var attribute_value := AttributeRules.effective(
-			creature, Ids.SKILL_ATTRIBUTE[skill], true)
+			creature, Tables.SKILL_ATTRIBUTE[skill], true)
 
 	# Attributes count half toward a skill, and never more than a little above
 	# the skill itself — being strong is no substitute for knowing how.

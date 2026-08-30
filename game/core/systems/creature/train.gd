@@ -25,7 +25,7 @@ const EXPERIENCE_DIVISOR := 6.0
 ## The most this creature could ever reach in [param skill]: the value of the
 ## attribute that governs it.
 static func skill_cap(creature: Creature, skill: StringName, use_juice: bool) -> int:
-	return AttributeRules.effective(creature, Ids.SKILL_ATTRIBUTE[skill], use_juice)
+	return AttributeRules.effective(creature, Tables.SKILL_ATTRIBUTE[skill], use_juice)
 
 
 ## Banks [param experience] toward [param skill].

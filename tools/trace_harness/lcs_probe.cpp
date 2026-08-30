@@ -17,6 +17,11 @@
 
 #include "lcs_trace.h"
 
+// Not declared in includes.h; the probe needs them to diff the political model.
+int getsimplevoter(int leaning);
+int presidentapproval();
+char determine_politician_vote(char alignment, int law);
+
 namespace {
 
 // Samples per creature type. Enough to exercise every interval and every
@@ -257,6 +262,62 @@ void probe_equipment(FILE *out)
    }
 }
 
+// The political model: public mood per law, Stalinist agreement, weighted
+// issue draws, voters, approval ratings and how politicians vote.
+void probe_politics(FILE *out)
+{
+   // Vary the country's opinions so the tables are exercised, not just read.
+   for (int scenario = 0; scenario < 6; scenario++)
+   {
+      unsigned long seed = 86028121UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      exec[EXEC_PRESIDENT] = (scenario % 5) - 2;
+      presparty = scenario % 2;
+
+      fprintf(out, "{\"kind\":\"politics\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fputs(",\"attitude\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", attitude[v]);
+      fputs("],\"interest\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", public_interest[v]);
+      fputs("],\"mood\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", publicmood(l));
+      fprintf(out, "],\"mood_overall\":%d,\"mood_stalin\":%d",
+              publicmood(LAW_MOOD), publicmood(LAW_STALIN));
+      fprintf(out, ",\"president\":%d,\"presparty\":%d",
+              exec[EXEC_PRESIDENT], presparty);
+
+      fputs(",\"issues\":[", out);
+      for (int i = 0; i < 30; i++)
+         fprintf(out, "%s%d", i ? "," : "", randomissue(true));
+      fputs("],\"swing\":[", out);
+      for (int i = 0; i < 20; i++)
+         fprintf(out, "%s%d", i ? "," : "", getswingvoter(false));
+      fputs("],\"swing_stalin\":[", out);
+      for (int i = 0; i < 20; i++)
+         fprintf(out, "%s%d", i ? "," : "", getswingvoter(true));
+      fputs("],\"simple\":[", out);
+      for (int i = 0; i < 20; i++)
+         fprintf(out, "%s%d", i ? "," : "", getsimplevoter(i % 3 - 1));
+      fputs("],\"politician\":[", out);
+      for (int a = -2; a <= 3; a++)
+         for (int l = 0; l < LAWNUM; l++)
+            fprintf(out, "%s%d", (a == -2 && l == 0) ? "" : ",",
+                    determine_politician_vote((char)a, l));
+      fprintf(out, "],\"approval\":%d}\n", presidentapproval());
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -277,6 +338,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "training")) probe_training(out);
    else if (!strcmp(which, "checks")) probe_checks(out);
    else if (!strcmp(which, "equipment")) probe_equipment(out);
+   else if (!strcmp(which, "politics")) probe_politics(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
