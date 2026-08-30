@@ -261,6 +261,83 @@ def gd(entry):
     return "{%s}" % ", ".join(parts)
 
 
+IN_CHARACTER_LAW = re.compile(r"law\[LAW_([A-Z0-9_]+)\]==(-?\d+)")
+
+
+def in_character(text):
+    """Reads weapon_in_character() into a list of outfit-and-weapon rules.
+
+    The original writes it as a run of ifs over string comparisons, some of
+    them nested one level so a weapon set is tried against several outfits.
+    Each rule names the creature type the pairing passes for; -1, meaning it
+    passes for nobody, is simply the absence of a rule.
+    """
+    function = body(text, "char weapon_in_character(const string& wtype, const string& atype)",
+                    "\n/* checks if a creature's weapon is suspicious */")
+    function = function[function.index("{") + 1:]
+    lines = joined([line.strip() for line in function.splitlines() if line.strip()])
+
+    rules = []
+    outer = None    # a condition guarding a braced block
+    pending = None  # a condition awaiting the return that it guards
+    for line in lines:
+        line = re.sub(r"\s+", "", line)
+        if not line:
+            continue
+        if line == "{":
+            outer = pending
+            pending = None
+            continue
+        if line == "}":
+            outer = None
+            continue
+        if line == "return-1;":
+            continue
+
+        match = re.fullmatch(r"(?:else)?if\((?P<cond>.+)\)", line)
+        if match:
+            pending = match.group("cond")
+            continue
+
+        match = re.fullmatch(r"return CREATURE_(?P<who>[A-Z0-9_]+);".replace(" ", ""), line)
+        if not match:
+            raise SystemExit("unrecognised in-character line: %r" % line)
+
+        parts = [part for part in (outer, pending) if part]
+        if not parts:
+            raise SystemExit("in-character rule with no condition")
+        condition = "&&".join("(%s)" % part for part in parts)
+        pending = None
+
+        weapons = sorted(set(re.findall(r'wtype=="(WEAPON_[A-Z0-9_]+)"', condition)))
+        armors = sorted(set(re.findall(r'atype=="(ARMOR_[A-Z0-9_]+)"', condition)))
+        laws = [[name.lower(), int(value)]
+                for name, value in IN_CHARACTER_LAW.findall(condition)]
+        if not weapons or not armors:
+            raise SystemExit("in-character rule names no pair: %r" % condition)
+        rule_entry = {"armors": armors, "weapons": weapons,
+                      "type": "CREATURE_" + match.group("who")}
+        if laws:
+            rule_entry["laws"] = laws
+        rules.append(rule_entry)
+    if not rules:
+        raise SystemExit("no weapon_in_character rules found")
+    return rules
+
+
+def gd_plain(value):
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, str):
+        return '&"%s"' % value
+    if isinstance(value, list):
+        return "[%s]" % ", ".join(gd_plain(item) for item in value)
+    if isinstance(value, dict):
+        return "{%s}" % ", ".join('&"%s": %s' % (k, gd_plain(v))
+                                  for k, v in value.items())
+    raise SystemExit("cannot write %r" % value)
+
+
 def main() -> int:
     text = SOURCE.read_text(errors="replace")
     function = body(text, "char hasdisguise(const Creature &cr)",
@@ -308,9 +385,19 @@ def main() -> int:
     out += ["", "## Siege type -> rules, for a squad defending its own safehouse."]
     emit("BY_SIEGE", siege, out)
 
+    pairs = in_character(text)
+    out += ["", "## Outfit-and-weapon pairings that pass for somebody who would",
+            "## carry that weapon, from weapon_in_character(). A rule holds when",
+            "## the creature wears one of the listed outfits and carries one of",
+            '## the listed weapons; &"laws" must also hold where present.',
+            "const IN_CHARACTER: Array = ["]
+    for entry in pairs:
+        out.append("\t%s," % gd_plain(entry))
+    out += ["]", ""]
+
     OUT.write_text("\n".join(out))
-    print("wrote %s: %d site rules, %d siege rules"
-          % (OUT.relative_to(ROOT), len(sites), len(siege)))
+    print("wrote %s: %d site rules, %d siege rules, %d in-character pairings"
+          % (OUT.relative_to(ROOT), len(sites), len(siege), len(pairs)))
     return 0
 
 

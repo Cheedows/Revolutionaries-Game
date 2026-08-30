@@ -1485,12 +1485,15 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
    for (int i = 0; i < len(cr.clips); i++)
       fprintf(out, "%s{\"type\":\"%s\",\"count\":%ld}", i ? "," : "",
               cr.clips[i]->get_itemtypename().c_str(), cr.clips[i]->get_number());
+   // is_naked(), not get_armor().empty(): a creature with no armor at all
+   // still answers get_armor() with a placeholder garment, and recording that
+   // would dress the port's copy in something the original is not wearing.
    fputs("],\"armor\":", out);
-   write_string(out, cr.get_armor().empty()
+   write_string(out, cr.is_naked()
                      ? "" : cr.get_armor().get_itemtypename().c_str());
    fprintf(out, ",\"armor_quality\":%d,\"armor_damaged\":%d,"
                 "\"armor_bloody\":%d}",
-           cr.get_armor().empty() ? 1 : cr.get_armor().get_quality(),
+           cr.is_naked() ? 1 : cr.get_armor().get_quality(),
            cr.get_armor().is_damaged() ? 1 : 0,
            cr.get_armor().is_bloody() ? 1 : 0);
 }
@@ -2033,6 +2036,156 @@ void probe_encounters(FILE *out)
    }
 }
 
+// Getting through a building unnoticed: the per-turn disguise check, and the
+// check made when the squad does something it should not have.
+//
+// The room is filled by prepareencounter() so the watchers are the ones the
+// site would really hold, and the squad is dressed and armed across the range
+// that matters — nothing, a concealed weapon, and something obvious.
+void probe_stealth(FILE *out)
+{
+   static const char *KITS[] = {"none", "casual", "uniform", "obvious"};
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      fieldskillrate = scenario % 3;
+
+      newsstoryst *ns = new newsstoryst;
+      ns->loc = 1;
+      newsstory.push_back(ns);
+      sitestory = ns;
+      mode = GAMEMODE_SITE;
+
+      for (int kit = 0; kit < 4; kit++)
+      for (int restricted = 0; restricted < 2; restricted++)
+      for (int timer = 0; timer < 3; timer++)
+      {
+         unsigned long seed_used = 9000011UL * (unsigned long)
+            (kit * 8 + restricted * 4 + timer + scenario * 137 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         cursite = 1;
+         sitetype = location[cursite]->type;
+         sitealarm = 0;
+         sitealarmtimer = timer == 0 ? -1 : timer;
+         sitecrime = 0;
+         locx = MAPX >> 1, locy = 5, locz = 0;
+         for (int x = 0; x < MAPX; x++)
+         for (int y = 0; y < MAPY; y++)
+         for (int z = 0; z < MAPZ; z++)
+         {
+            levelmap[x][y][z].flag = 0;
+            levelmap[x][y][z].special = SPECIAL_NONE;
+         }
+         if (restricted) levelmap[locx][locy][locz].flag |= SITEBLOCK_RESTRICTED;
+
+         squadst squad;
+         squad.id = 1;
+         chase_build_squad(squad, scenario, 4, 0);
+         activesquad = &squad;
+         for (int p = 0; p < 6; p++)
+         {
+            if (!squad.squad[p]) continue;
+            squad.squad[p]->carid = -1;
+            squad.squad[p]->set_skill(SKILL_STEALTH, (p + scenario) % 8);
+            squad.squad[p]->set_skill(SKILL_DISGUISE, (p * 2 + scenario) % 8);
+            if (kit >= 1)
+               squad.squad[p]->give_armor(*armortype[getarmortype(
+                  kit == 1 ? "ARMOR_CLOTHES" : "ARMOR_POLICEUNIFORM")], NULL);
+            if (kit == 2)
+               squad.squad[p]->give_weapon(*weapontype[getweapontype(
+                  "WEAPON_SEMIPISTOL_9MM")], NULL);
+            if (kit == 3)
+               squad.squad[p]->give_weapon(*weapontype[getweapontype(
+                  "WEAPON_AUTORIFLE_M16")], NULL);
+         }
+
+         prepareencounter(sitetype, restricted);
+
+         fprintf(out, "{\"kind\":\"blend\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"kit\":\"%s\",\"restricted\":%d,\"timer\":%d,"
+                      "\"sitetype\":%d,\"endgame\":%d,\"rate\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, KITS[kit], restricted, sitealarmtimer,
+                 sitetype, endgamestate, fieldskillrate, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         chase_write_state(out, "before", squad);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         disguisecheck(sitealarmtimer < 0 ? 1 : sitealarmtimer);
+         fprintf(out, ",\"draws\":%lld,\"alarm\":%d,\"alarmtimer\":%d",
+                 lcs_trace_draw_count() - before, sitealarm, sitealarmtimer);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+
+         // And then the check the squad triggers by acting.
+         lcs_trace_set_seed(seed_used + 1);
+         initMainRNG();
+         sitealarm = 0;
+         fprintf(out, "{\"kind\":\"notice\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"kit\":\"%s\",\"restricted\":%d,\"timer\":%d,"
+                      "\"sitetype\":%d,\"endgame\":%d,\"rate\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used + 1, KITS[kit], restricted, sitealarmtimer,
+                 sitetype, endgamestate, fieldskillrate, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         chase_write_state(out, "before", squad);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fprintf(out, "],\"difficulty\":%d", DIFFICULTY_AVERAGE);
+
+         before = lcs_trace_draw_count();
+         noticecheck(-1, DIFFICULTY_AVERAGE);
+         fprintf(out, ",\"draws\":%lld,\"alarm\":%d",
+                 lcs_trace_draw_count() - before, sitealarm);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+
+         chase_free_squad(squad);
+         activesquad = NULL;
+      }
+   }
+}
+
 void lcs_probe_run_if_requested()
 {
    const char *which = getenv("LCS_PROBE");
@@ -2069,6 +2222,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "chase")) probe_chase(out);
    else if (!strcmp(which, "fight")) probe_fight(out);
    else if (!strcmp(which, "encounters")) probe_encounters(out);
+   else if (!strcmp(which, "stealth")) probe_stealth(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

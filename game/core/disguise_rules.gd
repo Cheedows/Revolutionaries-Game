@@ -55,3 +55,27 @@ const BY_SIEGE: Dictionary = {
 	&"hicks": [{&"armor": &"ARMOR_CLOTHES", &"value": 2}, {&"armor": &"ARMOR_OVERALLS", &"value": 1}, {&"armor": &"ARMOR_WIFEBEATER", &"value": 1}],
 	&"police": [{&"armor": &"ARMOR_SWATARMOR", &"escalation": [&"==", 0], &"value": 1}, {&"armor": &"ARMOR_MILITARY", &"escalation": [&">", 0], &"value": 1}, {&"armor": &"ARMOR_ARMYARMOR", &"escalation": [&">", 0], &"value": 1}, {&"armor": &"ARMOR_SEALSUIT", &"escalation": [&">", 0], &"value": 1}],
 }
+
+
+## Outfit-and-weapon pairings that pass for somebody who would
+## carry that weapon, from weapon_in_character(). A rule holds when
+## the creature wears one of the listed outfits and carries one of
+## the listed weapons; &"laws" must also hold where present.
+const IN_CHARACTER: Array = [
+	{&"armors": [&"ARMOR_LABCOAT"], &"weapons": [&"WEAPON_SYRINGE"], &"type": &"CREATURE_SCIENTIST_LABTECH"},
+	{&"armors": [&"ARMOR_BLACKROBE"], &"weapons": [&"WEAPON_GAVEL"], &"type": &"CREATURE_JUDGE_LIBERAL"},
+	{&"armors": [&"ARMOR_SECURITYUNIFORM"], &"weapons": [&"WEAPON_DESERT_EAGLE", &"WEAPON_MP5_SMG", &"WEAPON_NIGHTSTICK", &"WEAPON_REVOLVER_38", &"WEAPON_REVOLVER_44", &"WEAPON_SEMIPISTOL_45", &"WEAPON_SEMIPISTOL_9MM"], &"type": &"CREATURE_SECURITYGUARD"},
+	{&"armors": [&"ARMOR_POLICEARMOR", &"ARMOR_POLICEUNIFORM"], &"weapons": [&"WEAPON_DESERT_EAGLE", &"WEAPON_NIGHTSTICK", &"WEAPON_REVOLVER_38", &"WEAPON_REVOLVER_44", &"WEAPON_SEMIPISTOL_45", &"WEAPON_SEMIPISTOL_9MM", &"WEAPON_SHOTGUN_PUMP"], &"type": &"CREATURE_COP"},
+	{&"armors": [&"ARMOR_SWATARMOR"], &"weapons": [&"WEAPON_CARBINE_M4", &"WEAPON_SMG_MP5"], &"type": &"CREATURE_SWAT"},
+	{&"armors": [&"ARMOR_SECURITYUNIFORM"], &"weapons": [&"WEAPON_CARBINE_M4", &"WEAPON_SMG_MP5"], &"type": &"CREATURE_SECURITYGUARD", &"laws": [[&"guncontrol", -2]]},
+	{&"armors": [&"ARMOR_ARMYARMOR", &"ARMOR_MILITARY"], &"weapons": [&"WEAPON_CARBINE_M4", &"WEAPON_SMG_MP5"], &"type": &"CREATURE_SOLDIER"},
+	{&"armors": [&"ARMOR_ARMYARMOR", &"ARMOR_MILITARY"], &"weapons": [&"WEAPON_AUTORIFLE_M16", &"WEAPON_SEMIRIFLE_AR15"], &"type": &"CREATURE_SOLDIER"},
+	{&"armors": [&"ARMOR_DEATHSQUADUNIFORM"], &"weapons": [&"WEAPON_AUTORIFLE_M16", &"WEAPON_SEMIRIFLE_AR15"], &"type": &"CREATURE_DEATHSQUAD"},
+	{&"armors": [&"ARMOR_BUNKERGEAR"], &"weapons": [&"WEAPON_AXE"], &"type": &"CREATURE_FIREFIGHTER"},
+	{&"armors": [&"ARMOR_BUNKERGEAR"], &"weapons": [&"WEAPON_FLAMETHROWER"], &"type": &"CREATURE_FIREFIGHTER", &"laws": [[&"freespeech", -2]]},
+	{&"armors": [&"ARMOR_PRISONGUARD"], &"weapons": [&"WEAPON_NIGHTSTICK", &"WEAPON_SHOTGUN_PUMP", &"WEAPON_SMG_MP5"], &"type": &"CREATURE_PRISONGUARD"},
+	{&"armors": [&"ARMOR_OVERALLS", &"ARMOR_WIFEBEATER"], &"weapons": [&"WEAPON_PITCHFORK", &"WEAPON_SHOTGUN_PUMP", &"WEAPON_TORCH"], &"type": &"CREATURE_HICK", &"laws": [[&"guncontrol", -2]]},
+	{&"armors": [&"ARMOR_PRISONER"], &"weapons": [&"WEAPON_SHANK"], &"type": &"CREATURE_PRISONER"},
+	{&"armors": [&"ARMOR_HARDHAT", &"ARMOR_WORKCLOTHES"], &"weapons": [&"WEAPON_CHAIN"], &"type": &"CREATURE_WORKER_FACTORY_UNION"},
+	{&"armors": [&"ARMOR_SEALSUIT"], &"weapons": [&"WEAPON_CARBINE_M4"], &"type": &"CREATURE_SEAL"},
+]
