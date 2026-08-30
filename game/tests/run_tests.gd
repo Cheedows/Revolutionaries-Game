@@ -29,8 +29,12 @@ func _initialize() -> void:
 
 	for path in scripts:
 		var script: GDScript = load(path)
-		if script == null:
-			printerr("could not load %s" % path)
+		# A suite that fails to parse must count as a failure, not stall the
+		# run: without this the loop below never reaches quit().
+		if script == null or not script.can_instantiate():
+			print("  FAIL  %s (could not be loaded — see the parse errors above)"
+					% path.get_file())
+			total += 1
 			failed += 1
 			continue
 		var suite: Object = script.new()
