@@ -34,6 +34,10 @@ ENUMS = [
     ("FIELD_SKILL_RATES", "src/includes.h", "FieldSkillRates", "FIELDSKILLRATE_", None),
     ("ANIMAL_GLOSSES", "src/includes.h", "AnimalGlosses", "ANIMALGLOSS_",
      "ANIMALGLOSSNUM"),
+    # Kept with the CREATURE_ prefix intact, because that is the idname the
+    # XML uses and everything else in the port names creature types by.
+    ("CREATURE_TYPES", "src/creature/creature.h", "CreatureTypes", "",
+     "CREATURENUM"),
 ]
 
 
@@ -73,7 +77,8 @@ def members(source: str, enum_name: str, prefix: str, terminator: str):
                 if len(names) != value:
                     raise SystemExit(
                         f"{enum_name}: {name} is {value} but would land at index {len(names)}")
-                names.append(name.removeprefix(prefix).lower())
+                names.append(name.removeprefix(prefix).lower() if prefix
+                             else name)
             value += 1
     return names
 

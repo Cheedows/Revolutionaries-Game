@@ -226,7 +226,20 @@ Site construction is already strong; now port the gameplay that occurs inside th
 
 - [x] Enter/leave site lifecycle and squad placement.
 - [x] Movement across floors and stairs.
-- [ ] Visibility/encounters and enemy population.
+- [x] Enemy population: `prepareencounter()` and `addsiegeencounter()`, with
+    the weights generated into `core/encounter_rules.gd` by
+    `tools/extract_encounters.py` rather than transcribed — 784 weight
+    statements and 28 spawn loops across 29 site tables.
+  - Verified by the `encounters` probe: every site type under three climates,
+    with and without the squad standing somewhere restricted, in three states
+    of the building (quiet, alarmed, burning with a response on the way), plus
+    the siege waves for every attacker, besieged and not, on foot and armoured.
+  - **Deliberately excluded.** An `org` siege reaches `addsiegeencounter()`'s
+    switch with no matching case, so the original makes nobody and the roster
+    keeps whoever was left in the slots from the previous wave, re-marked as
+    present. That is leftover state rather than a rule, and unreachable in
+    play: an organisation siege does not send attackers through the door.
+- [ ] Visibility: what the squad can see of the people in the room.
 - [ ] Stealth, suspicion, disguise and alarm states.
 - [x] Restricted areas/doors/locks/security behavior.
 - [ ] Site specials and interaction rules from `mapspecials.cpp`.

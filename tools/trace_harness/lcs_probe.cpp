@@ -1894,6 +1894,145 @@ void probe_fight(FILE *out)
    }
 }
 
+// Who is in a building when the squad walks in, and who arrives afterwards.
+//
+// Every site type, with and without the squad standing somewhere restricted,
+// with and without the alarm up long enough to have brought a response, and
+// then the siege waves for each kind of attacker.
+void probe_encounters(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = scenario % ENDGAMENUM;
+      for (int e = 0; e < EXECNUM; e++) exec[e] = (e + scenario) % 3 - 1;
+
+      newsstoryst *ns = new newsstoryst;
+      ns->loc = 1;
+      newsstory.push_back(ns);
+      sitestory = ns;
+      mode = GAMEMODE_SITE;
+
+      squadst squad;
+      squad.id = 1;
+      for (int p = 0; p < 6; p++) squad.squad[p] = NULL;
+      activesquad = &squad;
+
+      for (int type = 0; type < SITENUM; type++)
+      for (int sec = 0; sec < 2; sec++)
+      for (int variant = 0; variant < 3; variant++)
+      {
+         unsigned long seed_used = 6000011UL * (unsigned long)
+            (type * 8 + sec * 4 + variant + scenario * 457 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         cursite = 1;
+         sitetype = location[cursite]->type;
+         sitealarm = variant == 1;
+         siteonfire = variant == 2;
+         postalarmtimer = variant == 2 ? 100 : 0;
+         locx = MAPX >> 1, locy = 5, locz = 0;
+         for (int x = 0; x < MAPX; x++)
+         for (int y = 0; y < MAPY; y++)
+         for (int z = 0; z < MAPZ; z++)
+         {
+            levelmap[x][y][z].flag = 0;
+            levelmap[x][y][z].special = SPECIAL_NONE;
+         }
+         if (sec) levelmap[locx][locy][locz].flag |= SITEBLOCK_RESTRICTED;
+
+         long long before = lcs_trace_draw_count();
+         prepareencounter(type, sec);
+
+         fprintf(out, "{\"kind\":\"prepare\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"type\":%d,\"sec\":%d,\"variant\":%d,\"sitetype\":%d,"
+                      "\"endgame\":%d,\"world_seed\":%lu,\"draws\":%lld",
+                 scenario, seed_used, type, sec, variant, sitetype,
+                 endgamestate, run_seed, lcs_trace_draw_count() - before);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"exec\":[", out);
+         for (int i = 0; i < EXECNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", exec[i]);
+         fputs("]", out);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+      }
+
+      // Siege waves: each kind of attacker, and the building's own
+      // reinforcements when no siege is on.
+      for (int besieged = 0; besieged < 2; besieged++)
+      for (int kind = 0; kind < SIEGENUM; kind++)
+      for (int heavy = 0; heavy < 2; heavy++)
+      {
+         // SIEGE_ORG falls through addsiegeencounter()'s switch without
+         // making anybody, so the slots keep whoever was in them from the
+         // last wave and are simply re-marked as present. That is leftover
+         // state rather than a rule, and the original never reaches it: an
+         // organisation siege does not put attackers through the door.
+         if (besieged && kind == SIEGE_ORG) continue;
+         unsigned long seed_used = 8000009UL * (unsigned long)
+            (besieged * 40 + kind * 4 + heavy + scenario * 211 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         cursite = 1;
+         sitetype = location[cursite]->type;
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         location[cursite]->siege.siege = besieged != 0;
+         location[cursite]->siege.siegetype = kind;
+         location[cursite]->siege.escalationstate = kind % 4;
+
+         long long before = lcs_trace_draw_count();
+         int came = addsiegeencounter(heavy ? SIEGEFLAG_HEAVYUNIT
+                                            : SIEGEFLAG_UNIT_DAMAGED);
+
+         fprintf(out, "{\"kind\":\"siege\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"besieged\":%d,\"attacker\":%d,\"heavy\":%d,"
+                      "\"escalation\":%d,\"sitetype\":%d,\"endgame\":%d,"
+                      "\"world_seed\":%lu,\"draws\":%lld,\"came\":%d",
+                 scenario, seed_used, besieged, kind, heavy, kind % 4,
+                 sitetype, endgamestate, run_seed,
+                 lcs_trace_draw_count() - before, came);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+      }
+      location[1]->siege.siege = false;
+      activesquad = NULL;
+   }
+}
+
 void lcs_probe_run_if_requested()
 {
    const char *which = getenv("LCS_PROBE");
@@ -1929,6 +2068,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "combat")) probe_combat(out);
    else if (!strcmp(which, "chase")) probe_chase(out);
    else if (!strcmp(which, "fight")) probe_fight(out);
+   else if (!strcmp(which, "encounters")) probe_encounters(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

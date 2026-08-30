@@ -12,6 +12,12 @@ const COURT_SEATS := 9
 ## President, Vice President, Secretary of State, Attorney General.
 const EXEC_POSTS := 4
 
+## Indices into [member executive], from the Exec enum in src/includes.h.
+const PRESIDENT := 0
+const VICE_PRESIDENT := 1
+const SECRETARY_OF_STATE := 2
+const ATTORNEY_GENERAL := 3
+
 var house: PackedInt32Array = PackedInt32Array()
 var senate: PackedInt32Array = PackedInt32Array()
 var court: PackedInt32Array = PackedInt32Array()
