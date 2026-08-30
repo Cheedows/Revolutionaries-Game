@@ -197,7 +197,7 @@ static func _resolve_clip(cliptype: StringName, weapon_type: StringName,
 	if weapon == null:
 		return &""
 	for attack: WeaponAttack in weapon.attacks:
-		if attack.ammotype != &"":
+		if attack.uses_ammo:
 			return attack.ammotype
 	return &""
 

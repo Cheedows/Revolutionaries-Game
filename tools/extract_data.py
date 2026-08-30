@@ -135,7 +135,7 @@ def extract_weapons(report: Report):
             "name": child_text(entry, "name", "UNDEFINED"),
             "name_future": child_text(entry, "name_future"),
             "fencevalue": to_int(child_text(entry, "fencevalue")),
-            "shortname": child_text(entry, "shortname"),
+            "shortname": child_text(entry, "shortname", "UNDEF"),
             "shortname_future": child_text(entry, "shortname_future"),
             "name_sub_1": child_text(entry, "name_sub_1"),
             "name_sub_2": child_text(entry, "name_sub_2"),
@@ -155,7 +155,7 @@ def extract_weapons(report: Report):
             "suspicious": to_bool(child_text(entry, "suspicious"), True),
             "auto_break_locks": to_bool(child_text(entry, "auto_break_locks"), False),
             "legality": to_int(child_text(entry, "legality"), 2),
-            "bashstrengthmod": to_int(child_text(entry, "bashstrengthmod"), 100),
+            "bashstrengthmod": to_int(child_text(entry, "bashstrengthmod"), 1),
             "size": to_int(child_text(entry, "size"), 15),
         }
         for tag in {child.tag for child in entry} - handled:
@@ -169,12 +169,13 @@ def extract_weapons(report: Report):
                 "ranged": to_bool(child_text(attack, "ranged"), False),
                 "thrown": to_bool(child_text(attack, "thrown"), False),
                 "can_backstab": to_bool(child_text(attack, "can_backstab"), False),
-                "skill": StringName(child_text(attack, "skill")),
-                "ammotype": StringName(child_text(attack, "ammotype")),
+                "skill": StringName(child_text(attack, "skill", "CLUB")),
+                "ammotype": StringName(child_text(attack, "ammotype", "UNDEF")),
+                "uses_ammo": attack.find("ammotype") is not None,
                 "shoots": to_int(child_text(attack, "shoots")),
                 "number_attacks": to_int(child_text(attack, "number_attacks"), 1),
-                "strength_min": to_int(child_text(attack, "strength_min")),
-                "strength_max": to_int(child_text(attack, "strength_max")),
+                "strength_min": to_int(child_text(attack, "strength_min"), 5),
+                "strength_max": to_int(child_text(attack, "strength_max"), 10),
                 "accuracy_bonus": to_int(child_text(attack, "accuracy_bonus")),
                 "successive_attacks_difficulty": to_int(child_text(attack, "successive_attacks_difficulty")),
                 "fixed_damage": to_int(child_text(attack, "fixed_damage"), 1),
@@ -192,8 +193,8 @@ def extract_weapons(report: Report):
                 "critical": to_bool(child_text(attack, "critical"), False),
                 "always_describe_hit": to_bool(child_text(attack, "always_describe_hit"), False),
                 "severtype": to_int(child_text(attack, "severtype")),
-                "attack_description": child_text(attack, "attack_description"),
-                "hit_description": child_text(attack, "hit_description"),
+                "attack_description": child_text(attack, "attack_description", "assaults"),
+                "hit_description": child_text(attack, "hit_description", "striking"),
                 "hit_punctuation": child_text(attack, "hit_punctuation", "."),
             }))
         props["attacks"] = attacks
@@ -211,67 +212,91 @@ ARMOR_HANDLED = {
 }
 
 
-def _armor_props(entry, idname, is_mask):
+def _armor_props(entry, idname, is_mask, base=None):
     covering = entry.find("body_covering")
     armor = entry.find("armor")
     interrogation = entry.find("interrogation")
+    base = base or {}
 
-    def covering_flag(tag, default):
+    def fallback(key, constructor_default):
+        """A mask inherits from the armor type its <default> element names; an
+        ordinary armor falls back to the ArmorType constructor's value."""
+        return base.get(key, constructor_default)
+
+    def covering_flag(tag, key, default):
+        default = fallback(key, default)
         return default if covering is None else to_bool(child_text(covering, tag), default)
 
-    def armor_value(tag):
-        return 0 if armor is None else to_int(child_text(armor, tag))
+    def armor_value(tag, key):
+        default = fallback(key, 0)
+        return default if armor is None else to_int(child_text(armor, tag), default)
 
-    def interrogation_value(tag):
-        return 0 if interrogation is None else to_int(child_text(interrogation, tag))
+    def interrogation_value(tag, key):
+        default = fallback(key, 0)
+        return default if interrogation is None else to_int(child_text(interrogation, tag), default)
 
     return {
         "idname": StringName(idname),
-        "name": child_text(entry, "name", "UNDEFINED"),
-        "name_future": child_text(entry, "name_future"),
-        "fencevalue": to_int(child_text(entry, "fencevalue")),
-        "shortname": child_text(entry, "shortname"),
-        "description": child_text(entry, "description"),
-        "armor_body": armor_value("body"),
-        "armor_head": armor_value("head"),
-        "armor_limbs": armor_value("limbs"),
-        "armor_fireprotection": armor_value("fireprotection"),
-        "covers_body": covering_flag("body", False),
-        "covers_head": covering_flag("head", False),
-        "covers_arms": covering_flag("arms", False),
-        "covers_legs": covering_flag("legs", False),
-        "conceals_face": covering_flag("conceals_face", False),
-        "conceal_weapon_size": to_int(child_text(entry, "conceal_weapon_size")),
-        "professionalism": to_int(child_text(entry, "professionalism")),
-        "stealth_value": to_int(child_text(entry, "stealth_value")),
-        "deathsquad_legality": to_bool(child_text(entry, "deathsquad_legality"), False),
-        "can_get_bloody": to_bool(child_text(entry, "can_get_bloody"), True),
-        "can_get_damaged": to_bool(child_text(entry, "can_get_damaged"), True),
-        "qualitylevels": to_int(child_text(entry, "qualitylevels"), 1),
-        "durability": to_int(child_text(entry, "durability"), 1),
-        "make_difficulty": to_int(child_text(entry, "make_difficulty")),
-        "make_price": to_int(child_text(entry, "make_price")),
-        "interrogation_basepower": interrogation_value("basepower"),
-        "interrogation_assaultbonus": interrogation_value("assaultbonus"),
-        "interrogation_drugbonus": interrogation_value("drugbonus"),
+        "name": child_text(entry, "name", fallback("name", "UNDEFINED")),
+        "name_future": child_text(entry, "name_future", fallback("name_future", "")),
+        "fencevalue": to_int(child_text(entry, "fencevalue"), fallback("fencevalue", 0)),
+        "shortname": child_text(entry, "shortname", fallback("shortname", "UNDEF")),
+        "description": child_text(entry, "description", fallback("description", "UNDEF")),
+        "armor_body": armor_value("body", "armor_body"),
+        "armor_head": armor_value("head", "armor_head"),
+        "armor_limbs": armor_value("limbs", "armor_limbs"),
+        "armor_fireprotection": armor_value("fireprotection", "armor_fireprotection"),
+        "covers_body": covering_flag("body", "covers_body", True),
+        "covers_head": covering_flag("head", "covers_head", False),
+        "covers_arms": covering_flag("arms", "covers_arms", True),
+        "covers_legs": covering_flag("legs", "covers_legs", True),
+        "conceals_face": covering_flag("conceals_face", "conceals_face", False),
+        "conceal_weapon_size": to_int(child_text(entry, "conceal_weapon_size"), fallback("conceal_weapon_size", 5)),
+        "professionalism": to_int(child_text(entry, "professionalism"), fallback("professionalism", 2)),
+        "stealth_value": to_int(child_text(entry, "stealth_value"), fallback("stealth_value", 0)),
+        "deathsquad_legality": to_bool(child_text(entry, "deathsquad_legality"), fallback("deathsquad_legality", False)),
+        "can_get_bloody": to_bool(child_text(entry, "can_get_bloody"), fallback("can_get_bloody", True)),
+        "can_get_damaged": to_bool(child_text(entry, "can_get_damaged"), fallback("can_get_damaged", True)),
+        "qualitylevels": to_int(child_text(entry, "qualitylevels"), fallback("qualitylevels", 4)),
+        "durability": to_int(child_text(entry, "durability"), fallback("durability", 10)),
+        "make_difficulty": to_int(child_text(entry, "make_difficulty"), fallback("make_difficulty", 0)),
+        "make_price": to_int(child_text(entry, "make_price"), fallback("make_price", 0)),
+        "interrogation_basepower": interrogation_value("basepower", "interrogation_basepower"),
+        "interrogation_assaultbonus": interrogation_value("assaultbonus", "interrogation_assaultbonus"),
+        "interrogation_drugbonus": interrogation_value("drugbonus", "interrogation_drugbonus"),
         "is_mask": is_mask,
-        "surprise": to_int(child_text(entry, "surprise")),
+        "surprise": to_int(child_text(entry, "surprise"), fallback("surprise", 0)),
     }
 
 
 def extract_armors(report: Report):
     verify_against_cpp("src/items/armortype.cpp", ARMOR_HANDLED)
+
+    armor_props = {}
     for source, entry_tag, is_mask, out_dir in (
         ("armors.xml", "armortype", False, "armor"),
         ("masks.xml", "masktype", True, "masks"),
     ):
         root = ET.parse(ART / source).getroot()
+
+        # masks.xml opens with <default>ARMOR_MASK</default>: every mask is
+        # built from that armor type and overrides parts of it, which the
+        # original does with a copy constructor.
+        base = None
+        default_element = root.find("default")
+        if default_element is not None and default_element.text:
+            base_idname = default_element.text.strip()
+            if base_idname not in armor_props:
+                raise SystemExit(f"{source} inherits from unknown armor {base_idname}")
+            base = armor_props[base_idname]
+
         for entry in root.findall(entry_tag):
             idname = entry.get("idname", "")
             for tag in {child.tag for child in entry} - ARMOR_HANDLED:
                 report.ignore(source, idname, tag)
-            write(OUT / out_dir / f"{slug(idname)}.tres",
-                  Res("armor_type.gd", _armor_props(entry, idname, is_mask)))
+            props = _armor_props(entry, idname, is_mask, base)
+            armor_props[idname] = props
+            write(OUT / out_dir / f"{slug(idname)}.tres", Res("armor_type.gd", props))
             report.written += 1
 
 

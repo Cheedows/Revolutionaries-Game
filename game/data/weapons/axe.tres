@@ -10,7 +10,8 @@ ranged = false
 thrown = false
 can_backstab = false
 skill = &"AXE"
-ammotype = &""
+ammotype = &"UNDEF"
+uses_ammo = false
 shoots = 0
 number_attacks = 1
 strength_min = 6
@@ -32,7 +33,7 @@ critical = false
 always_describe_hit = false
 severtype = 0
 attack_description = "chops at"
-hit_description = ""
+hit_description = "striking"
 hit_punctuation = "."
 
 [resource]

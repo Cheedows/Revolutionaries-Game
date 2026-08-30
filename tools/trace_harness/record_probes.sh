@@ -10,7 +10,7 @@ GAME="${LCS_BUILD:-/tmp/lcsbuild}/src/crimesquad"
 mkdir -p "$OUT"
 cd "$ROOT"
 
-for probe in blank creatures training checks; do
+for probe in blank creatures training checks equipment; do
 	tmp="$(mktemp)"
 	home="$(mktemp -d)"
 	screen="$(mktemp)"

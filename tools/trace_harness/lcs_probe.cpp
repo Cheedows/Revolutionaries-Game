@@ -198,6 +198,65 @@ void probe_checks(FILE *out)
    }
 }
 
+// Wears armor down, values it, checks concealment, and loads weapons, so the
+// equipment rules can be diffed. Deterministic: no randomness is involved.
+void probe_equipment(FILE *out)
+{
+   for (int a = 0; a < len(armortype); a++)
+   {
+      Armor armor(*armortype[a]);
+      fputs("{\"kind\":\"armor\",\"type\":", out);
+      write_string(out, armortype[a]->get_idname().c_str());
+      fprintf(out, ",\"quality_levels\":%d,\"steps\":[",
+              armortype[a]->get_quality_levels());
+      for (int step = 0; step < 6; step++)
+      {
+         bool wearable = armor.decrease_quality(1);
+         fprintf(out, "%s[%d,%d,%ld]", step ? "," : "",
+                 armor.get_quality(), wearable ? 1 : 0, armor.get_fencevalue());
+      }
+      fputs("],\"conceals\":[", out);
+      for (int w = 0; w < len(weapontype); w++)
+         fprintf(out, "%s%d", w ? "," : "",
+                 armortype[a]->conceals_weapon(*weapontype[w]) ? 1 : 0);
+      fputs("]}\n", out);
+   }
+
+   // Loading: give a creature each weapon and the clips its type names, then
+   // reload until the clips run out.
+   for (int w = 0; w < len(weapontype); w++)
+   {
+      Creature cr;
+      cr.give_weapon(*weapontype[w], NULL);
+      fputs("{\"kind\":\"reload\",\"weapon\":", out);
+      write_string(out, weapontype[w]->get_idname().c_str());
+
+      std::string clipname;
+      for (int i = 0; i < weapontype[w]->get_attacks().size(); i++)
+         if (!weapontype[w]->get_attacks()[i]->ammotype.empty())
+         {
+            clipname = weapontype[w]->get_attacks()[i]->ammotype;
+            break;
+         }
+      fputs(",\"clip\":", out);
+      write_string(out, clipname.c_str());
+
+      int taken = 0;
+      if (!clipname.empty() && getcliptype(clipname) != -1)
+         taken = cr.take_clips(*cliptype[getcliptype(clipname)], 12) ? 1 : 0;
+      fprintf(out, ",\"taken\":%d,\"clips_after_take\":%d", taken, cr.count_clips());
+
+      fputs(",\"reloads\":[", out);
+      for (int i = 0; i < 12; i++)
+      {
+         bool ok = cr.reload(true);
+         fprintf(out, "%s[%d,%d,%d]", i ? "," : "", ok ? 1 : 0,
+                 cr.get_weapon().get_ammoamount(), cr.count_clips());
+      }
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -217,6 +276,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "blank")) probe_blank(out);
    else if (!strcmp(which, "training")) probe_training(out);
    else if (!strcmp(which, "checks")) probe_checks(out);
+   else if (!strcmp(which, "equipment")) probe_equipment(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

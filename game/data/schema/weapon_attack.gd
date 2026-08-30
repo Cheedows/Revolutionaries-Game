@@ -11,10 +11,15 @@ extends Resource
 @export var can_backstab: bool = false
 
 ## Skill used to resolve the attack, e.g. &"pistol", &"heavy_weapons".
-@export var skill: StringName = &""
+@export var skill: StringName = &"CLUB"
 
 ## Idname of the clip type consumed, empty for melee.
-@export var ammotype: StringName = &""
+@export var ammotype: StringName = &"UNDEF"
+
+## Whether the weapon type actually declared an ammunition type. The
+## original keeps this as a separate flag because the default ammotype is
+## the placeholder "UNDEF" rather than an empty string.
+@export var uses_ammo: bool = false
 
 ## Rounds fired per attack; 0 for melee.
 @export var shoots: int = 0
@@ -23,8 +28,8 @@ extends Resource
 ## Strength contribution bounds. Note: art/weapons.xml contains a
 ## "strentgh_min" typo in some entries which the original parser silently
 ## ignores; the extractor reproduces that, so those attacks use the default.
-@export var strength_min: int = 0
-@export var strength_max: int = 0
+@export var strength_min: int = 5
+@export var strength_max: int = 10
 
 @export var accuracy_bonus: int = 0
 @export var successive_attacks_difficulty: int = 0
@@ -46,6 +51,6 @@ extends Resource
 ## How limbs come off on a severing hit; 0 = never.
 @export var severtype: int = 0
 
-@export var attack_description: String = ""
-@export var hit_description: String = ""
+@export var attack_description: String = "assaults"
+@export var hit_description: String = "striking"
 @export var hit_punctuation: String = "."

@@ -10,7 +10,8 @@ ranged = false
 thrown = false
 can_backstab = false
 skill = &"CLUB"
-ammotype = &""
+ammotype = &"UNDEF"
+uses_ammo = false
 shoots = 0
 number_attacks = 1
 strength_min = 6
@@ -32,7 +33,7 @@ critical = false
 always_describe_hit = false
 severtype = 0
 attack_description = "swings at"
-hit_description = ""
+hit_description = "striking"
 hit_punctuation = "."
 
 [resource]
@@ -41,7 +42,7 @@ idname = &"WEAPON_BASEBALLBAT"
 name = "Baseball Bat"
 name_future = "Spaceball Bat"
 fencevalue = 20
-shortname = ""
+shortname = "UNDEF"
 shortname_future = ""
 name_sub_1 = ""
 name_sub_2 = ""

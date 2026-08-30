@@ -15,18 +15,18 @@ extends ItemType
 @export var armor_fireprotection: int = 0
 
 ## Which parts of the body the garment covers, for damage and disguise checks.
-@export var covers_body: bool = false
+@export var covers_body: bool = true
 @export var covers_head: bool = false
-@export var covers_arms: bool = false
-@export var covers_legs: bool = false
+@export var covers_arms: bool = true
+@export var covers_legs: bool = true
 @export var conceals_face: bool = false
 
 ## Largest weapon size the garment can hide.
-@export var conceal_weapon_size: int = 0
+@export var conceal_weapon_size: int = 5
 
 ## How convincing the garment is as professional attire, and how well it hides
 ## the wearer in site mode.
-@export var professionalism: int = 0
+@export var professionalism: int = 2
 @export var stealth_value: int = 0
 
 ## Legality when worn by a death squad; drives police reaction.
@@ -36,8 +36,8 @@ extends ItemType
 @export var can_get_damaged: bool = true
 
 ## Quality tiers the garment can exist at, and how hard it is to make or buy.
-@export var qualitylevels: int = 1
-@export var durability: int = 1
+@export var qualitylevels: int = 4
+@export var durability: int = 10
 @export var make_difficulty: int = 0
 @export var make_price: int = 0
 

@@ -10,7 +10,8 @@ ranged = false
 thrown = false
 can_backstab = false
 skill = &"CLUB"
-ammotype = &""
+ammotype = &"UNDEF"
+uses_ammo = false
 shoots = 0
 number_attacks = 1
 strength_min = 1
@@ -32,7 +33,7 @@ critical = false
 always_describe_hit = false
 severtype = 0
 attack_description = "swings at"
-hit_description = ""
+hit_description = "striking"
 hit_punctuation = "."
 
 [resource]
@@ -61,6 +62,6 @@ graffiti = false
 suspicious = true
 auto_break_locks = false
 legality = 2
-bashstrengthmod = 100
+bashstrengthmod = 1
 size = 15
 attacks = Array[Resource]([SubResource("Sub_1")])

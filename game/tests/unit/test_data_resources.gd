@@ -74,7 +74,9 @@ func test_defaults_match_the_original() -> void:
 		fail("none.tres did not load")
 		return
 	equal(none.legality, 2, "default legality when the element is absent")
-	equal(none.bashstrengthmod, 100, "default bash strength modifier")
+	# The XML comments document a default of 100, but WeaponType's constructor
+	# sets 1; the code is what runs.
+	equal(none.bashstrengthmod, 1, "default bash strength modifier")
 	equal(none.can_threaten_hostages, false, "WEAPON_NONE overrides can_threaten_hostages")
 
 
