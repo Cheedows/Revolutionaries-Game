@@ -685,6 +685,51 @@ void probe_names(FILE *out)
    }
 }
 
+// Moving public opinion: the function nearly everything funnels through.
+void probe_opinion_change(FILE *out)
+{
+   for (int scenario = 0; scenario < 12; scenario++)
+   {
+      unsigned long seed = 141650939UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 23 + scenario * 7) % 101;
+         public_interest[v] = (v * 11 + scenario * 5) % 60;
+         background_liberal_influence[v] = 0;
+      }
+
+      fprintf(out, "{\"kind\":\"opinion\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fputs(",\"attitude_before\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", attitude[v]);
+      fputs("],\"interest_before\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", public_interest[v]);
+
+      // Every view, every attribution, positive and negative, capped and not.
+      fputs("],\"changes\":[", out);
+      bool first = true;
+      for (int v = 0; v < VIEWNUM; v++)
+         for (int affect = -1; affect <= 1; affect++)
+            for (int power = -12; power <= 12; power += 8)
+            {
+               int cap = (power > 0 && (v % 2)) ? 70 : 100;
+               change_public_opinion(v, power, (char)affect, (char)cap);
+               fprintf(out, "%s[%d,%d]", first ? "" : ",",
+                       attitude[v], public_interest[v]);
+               first = false;
+            }
+      fputs("],\"influence\":[", out);
+      for (int v = 0; v < VIEWNUM; v++)
+         fprintf(out, "%s%d", v ? "," : "", background_liberal_influence[v]);
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -712,6 +757,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "elections")) probe_elections(out);
    else if (!strcmp(which, "court")) probe_court(out);
    else if (!strcmp(which, "names")) probe_names(out);
+   else if (!strcmp(which, "opinion")) probe_opinion_change(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
