@@ -1,0 +1,98 @@
+[gd_resource type="Resource" script_class="WeaponType" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://data/schema/weapon_attack.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/weapon_type.gd" id="Script_2"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+priority = 1
+ranged = true
+thrown = false
+can_backstab = false
+skill = &"PISTOL"
+ammotype = &"CLIP_9"
+shoots = 0
+number_attacks = 1
+strength_min = 0
+strength_max = 0
+accuracy_bonus = 0
+successive_attacks_difficulty = 0
+fixed_damage = 10
+random_damage = 181
+armorpiercing = 4
+no_damage_reduction_for_limbs_chance = 0
+bruises = false
+cuts = false
+tears = false
+burns = false
+bleeding = true
+fire = false
+damages_armor = true
+critical = false
+always_describe_hit = false
+severtype = 0
+attack_description = "shoots at"
+hit_description = ""
+hit_punctuation = "."
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+priority = 2
+ranged = false
+thrown = false
+can_backstab = false
+skill = &"CLUB"
+ammotype = &""
+shoots = 0
+number_attacks = 1
+strength_min = 2
+strength_max = 6
+accuracy_bonus = 0
+successive_attacks_difficulty = 0
+fixed_damage = 5
+random_damage = 6
+armorpiercing = 0
+no_damage_reduction_for_limbs_chance = 0
+bruises = true
+cuts = false
+tears = false
+burns = false
+bleeding = false
+fire = false
+damages_armor = false
+critical = false
+always_describe_hit = false
+severtype = 0
+attack_description = "swings at"
+hit_description = ""
+hit_punctuation = "."
+
+[resource]
+script = ExtResource("Script_2")
+idname = &"WEAPON_SEMIPISTOL_9MM"
+name = "9mm Semiauto"
+name_future = "9mm Laser Pistol"
+fencevalue = 100
+shortname = "9mm Semi."
+shortname_future = "9mm Las."
+name_sub_1 = ""
+name_sub_2 = ""
+name_future_sub_1 = ""
+name_future_sub_2 = ""
+shortname_sub_1 = ""
+shortname_sub_2 = ""
+shortname_future_sub_1 = ""
+shortname_future_sub_2 = ""
+can_take_hostages = true
+can_threaten_hostages = true
+protects_against_kidnapping = true
+threatening = true
+musical_attack = false
+instrument = false
+graffiti = false
+suspicious = true
+auto_break_locks = false
+legality = 0
+bashstrengthmod = 100
+size = 5
+attacks = Array[Resource]([SubResource("Sub_1"), SubResource("Sub_2")])

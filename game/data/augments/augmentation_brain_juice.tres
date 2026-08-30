@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_BRAIN_JUICE"
+name = "Brain Juice"
+description = "Our Liberal Scientists have developed a pill that, when taken twice a day (once in the morning and once in the evening with warm glass of Liberal Milk), increases brain power ten-fold."
+type = &"head"
+attribute = &"intelligence"
+effect = 2
+cost = 0
+difficulty = 0
+min_age = 0
+max_age = 999

@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="CreatureType" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://data/schema/interval.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/creature_weapons.gd" id="Script_2"]
+[ext_resource type="Script" path="res://data/schema/creature_type.gd" id="Script_3"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+min = 20
+max = 59
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_2")
+type = &"WEAPON_NONE"
+number_weapons = SubResource("Sub_6")
+cliptype = &"NONE"
+number_clips = SubResource("Sub_7")
+
+[resource]
+script = ExtResource("Script_3")
+idname = &"CREATURE_BANK_TELLER"
+type_name = "Bank Teller"
+encounter_name = "Bank Teller"
+alignment = &"moderate"
+gender = &"neutral"
+age = SubResource("Sub_1")
+juice = SubResource("Sub_2")
+money = SubResource("Sub_3")
+infiltration = SubResource("Sub_4")
+attribute_points = SubResource("Sub_5")
+attributes = {}
+skills = {}
+armortypes = Array[StringName]([&"ARMOR_CLOTHES"])
+weapons = Array[Resource]([SubResource("Sub_8")])

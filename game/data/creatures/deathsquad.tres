@@ -1,0 +1,114 @@
+[gd_resource type="Resource" script_class="CreatureType" load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://data/schema/interval.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/creature_weapons.gd" id="Script_2"]
+[ext_resource type="Script" path="res://data/schema/creature_type.gd" id="Script_3"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+min = 18
+max = 35
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+min = 90
+max = 140
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+min = 50
+max = 80
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+min = 3
+max = 10
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+min = 3
+max = 10
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+min = 3
+max = 10
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+min = 6
+max = 10
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+min = 1
+max = 2
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+min = 1
+max = 2
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_1")
+min = 1
+max = 2
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+min = 2
+max = 5
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+min = 2
+max = 5
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_1")
+min = 1
+max = 2
+
+[sub_resource type="Resource" id="Sub_16"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_17"]
+script = ExtResource("Script_1")
+min = 7
+max = 7
+
+[sub_resource type="Resource" id="Sub_18"]
+script = ExtResource("Script_2")
+type = &"WEAPON_AUTORIFLE_M16"
+number_weapons = SubResource("Sub_16")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_17")
+
+[resource]
+script = ExtResource("Script_3")
+idname = &"CREATURE_DEATHSQUAD"
+type_name = "DethSquad Officer"
+encounter_name = ""
+alignment = &"conservative"
+gender = &"male_bias"
+age = SubResource("Sub_1")
+juice = SubResource("Sub_2")
+money = SubResource("Sub_3")
+infiltration = SubResource("Sub_4")
+attribute_points = SubResource("Sub_5")
+attributes = {&"agility": SubResource("Sub_6"), &"health": SubResource("Sub_7"), &"strength": SubResource("Sub_8"), &"wisdom": SubResource("Sub_9")}
+skills = {&"driving": SubResource("Sub_10"), &"handtohand": SubResource("Sub_11"), &"pistol": SubResource("Sub_12"), &"psychology": SubResource("Sub_13"), &"rifle": SubResource("Sub_14"), &"shotgun": SubResource("Sub_15")}
+armortypes = Array[StringName]([&"ARMOR_DEATHSQUADUNIFORM"])
+weapons = Array[Resource]([SubResource("Sub_18")])

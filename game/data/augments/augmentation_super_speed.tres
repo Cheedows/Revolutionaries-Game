@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_SUPER_SPEED"
+name = "Super Speed"
+description = "Replacing the legs of a Liberal with mechanical ones would increase their speed and reaction extensively."
+type = &"legs"
+attribute = &"agility"
+effect = 3
+cost = 5000
+difficulty = 0
+min_age = 0
+max_age = 999

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_INCREASED_AWARENESS"
+name = "Increased Awareness"
+description = "By augmenting a Liberal's language centers, we can give them increased language processing and awareness when dealing with other people."
+type = &"head"
+attribute = &"charisma"
+effect = 3
+cost = 0
+difficulty = 0
+min_age = 0
+max_age = 999

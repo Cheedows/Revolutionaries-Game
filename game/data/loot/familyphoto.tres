@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="LootType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/loot_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"LOOT_FAMILYPHOTO"
+name = "Family Photos"
+name_future = ""
+fencevalue = 1
+cloth = false
+stackable = false
+no_quick_fencing = false

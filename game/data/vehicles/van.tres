@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="VehicleType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/vehicle_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"VAN"
+longname = "Van"
+shortname = "Van"
+price = 10000
+sleeperprice = 0
+available_at_dealership = false
+size = 1
+year_start_at_year = 0
+year_start_at_current_year = true
+year_add = 1
+year_add_random = -41
+year_add_random_up_to_current_year = false
+colors = Array[StringName]([&"Red", &"White", &"Blue", &"Beige", &"Black"])
+display_colors = []
+drivebonus_base = 2
+drivebonus_skillfactor = 1
+drivebonus_softlimit = 4
+drivebonus_hardlimit = 7
+dodgebonus_base = 0
+dodgebonus_skillfactor = 1
+dodgebonus_softlimit = 0
+dodgebonus_hardlimit = 6
+attackbonus_driver = -4
+attackbonus_passenger = 3
+armor_low_min = 6
+armor_low_max = 9
+armor_high_min = 3
+armor_high_max = 5
+armor_midpoint = 95
+steal_difficulty_to_find = 2
+steal_touch_alarm_chance = 10
+steal_sense_alarm_chance = 1
+steal_juice = 0
+steal_extra_heat = 0

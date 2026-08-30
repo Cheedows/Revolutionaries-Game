@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="VehicleType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/vehicle_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"BUG"
+longname = "Bug"
+shortname = "Bug"
+price = 2500
+sleeperprice = 2000
+available_at_dealership = true
+size = 1
+year_start_at_year = 1969
+year_start_at_current_year = false
+year_add = 0
+year_add_random = 6
+year_add_random_up_to_current_year = false
+colors = Array[StringName]([&"Red", &"White", &"Blue", &"Beige", &"Black"])
+display_colors = []
+drivebonus_base = 6
+drivebonus_skillfactor = 0
+drivebonus_softlimit = 7
+drivebonus_hardlimit = 10
+dodgebonus_base = 3
+dodgebonus_skillfactor = 0
+dodgebonus_softlimit = 4
+dodgebonus_hardlimit = 6
+attackbonus_driver = -3
+attackbonus_passenger = -2
+armor_low_min = 5
+armor_low_max = 7
+armor_high_min = 0
+armor_high_max = 2
+armor_midpoint = 60
+steal_difficulty_to_find = 2
+steal_touch_alarm_chance = 10
+steal_sense_alarm_chance = 1
+steal_juice = 0
+steal_extra_heat = 0

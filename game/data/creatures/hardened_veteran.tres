@@ -1,0 +1,109 @@
+[gd_resource type="Resource" script_class="CreatureType" load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://data/schema/interval.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/creature_weapons.gd" id="Script_2"]
+[ext_resource type="Script" path="res://data/schema/creature_type.gd" id="Script_3"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+min = 35
+max = 59
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+min = 0
+max = 100
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+min = 0
+max = 30
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+min = 7
+max = 10
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+min = 7
+max = 10
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+min = 7
+max = 10
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+min = 2
+max = 4
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+min = 2
+max = 4
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+min = 2
+max = 4
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_1")
+min = 1
+max = 3
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+min = 4
+max = 7
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+min = 0
+max = 2
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_16"]
+script = ExtResource("Script_1")
+min = 7
+max = 7
+
+[sub_resource type="Resource" id="Sub_17"]
+script = ExtResource("Script_2")
+type = &"WEAPON_AUTORIFLE_M16"
+number_weapons = SubResource("Sub_15")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_16")
+
+[resource]
+script = ExtResource("Script_3")
+idname = &"CREATURE_HARDENED_VETERAN"
+type_name = "Hardened Veteran"
+encounter_name = "Hardened Veteran"
+alignment = &"conservative"
+gender = &"male_bias"
+age = SubResource("Sub_1")
+juice = SubResource("Sub_2")
+money = SubResource("Sub_3")
+infiltration = SubResource("Sub_4")
+attribute_points = SubResource("Sub_5")
+attributes = {&"agility": SubResource("Sub_6"), &"health": SubResource("Sub_7"), &"strength": SubResource("Sub_8")}
+skills = {&"driving": SubResource("Sub_9"), &"handtohand": SubResource("Sub_10"), &"pistol": SubResource("Sub_11"), &"psychology": SubResource("Sub_12"), &"rifle": SubResource("Sub_13"), &"security": SubResource("Sub_14")}
+armortypes = Array[StringName]([&"ARMOR_ARMYARMOR"])
+weapons = Array[Resource]([SubResource("Sub_17")])

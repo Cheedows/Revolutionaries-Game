@@ -1,0 +1,236 @@
+[gd_resource type="Resource" script_class="CreatureType" load_steps=44 format=3]
+
+[ext_resource type="Script" path="res://data/schema/interval.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/creature_weapons.gd" id="Script_2"]
+[ext_resource type="Script" path="res://data/schema/creature_type.gd" id="Script_3"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+min = 20
+max = 59
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+min = 200
+max = 350
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+min = 0
+max = 150
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+min = 7
+max = 10
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+min = 5
+max = 10
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+min = 4
+max = 10
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+min = 5
+max = 10
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+min = 5
+max = 10
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+min = 2
+max = 9
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_1")
+min = 4
+max = 7
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+min = 4
+max = 9
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+min = 2
+max = 9
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_1")
+min = 2
+max = 9
+
+[sub_resource type="Resource" id="Sub_16"]
+script = ExtResource("Script_1")
+min = 4
+max = 9
+
+[sub_resource type="Resource" id="Sub_17"]
+script = ExtResource("Script_1")
+min = 2
+max = 9
+
+[sub_resource type="Resource" id="Sub_18"]
+script = ExtResource("Script_1")
+min = 2
+max = 9
+
+[sub_resource type="Resource" id="Sub_19"]
+script = ExtResource("Script_1")
+min = 2
+max = 9
+
+[sub_resource type="Resource" id="Sub_20"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_21"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_22"]
+script = ExtResource("Script_2")
+type = &"WEAPON_REVOLVER_44"
+number_weapons = SubResource("Sub_20")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_21")
+
+[sub_resource type="Resource" id="Sub_23"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_24"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_25"]
+script = ExtResource("Script_2")
+type = &"WEAPON_SEMIPISTOL_9MM"
+number_weapons = SubResource("Sub_23")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_24")
+
+[sub_resource type="Resource" id="Sub_26"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_27"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_28"]
+script = ExtResource("Script_2")
+type = &"WEAPON_AUTORIFLE_M16"
+number_weapons = SubResource("Sub_26")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_27")
+
+[sub_resource type="Resource" id="Sub_29"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_30"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_31"]
+script = ExtResource("Script_2")
+type = &"WEAPON_AUTORIFLE_AK47"
+number_weapons = SubResource("Sub_29")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_30")
+
+[sub_resource type="Resource" id="Sub_32"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_33"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_34"]
+script = ExtResource("Script_2")
+type = &"WEAPON_SHOTGUN_PUMP"
+number_weapons = SubResource("Sub_32")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_33")
+
+[sub_resource type="Resource" id="Sub_35"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_36"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_37"]
+script = ExtResource("Script_2")
+type = &"WEAPON_CARBINE_M4"
+number_weapons = SubResource("Sub_35")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_36")
+
+[sub_resource type="Resource" id="Sub_38"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_39"]
+script = ExtResource("Script_1")
+min = 4
+max = 4
+
+[sub_resource type="Resource" id="Sub_40"]
+script = ExtResource("Script_2")
+type = &"WEAPON_SMG_MP5"
+number_weapons = SubResource("Sub_38")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_39")
+
+[resource]
+script = ExtResource("Script_3")
+idname = &"CREATURE_AGENT"
+type_name = "Agent"
+encounter_name = "Agent"
+alignment = &"conservative"
+gender = &"male_bias"
+age = SubResource("Sub_1")
+juice = SubResource("Sub_2")
+money = SubResource("Sub_3")
+infiltration = SubResource("Sub_4")
+attribute_points = SubResource("Sub_5")
+attributes = {&"agility": SubResource("Sub_6"), &"health": SubResource("Sub_7"), &"intelligence": SubResource("Sub_8"), &"strength": SubResource("Sub_9"), &"wisdom": SubResource("Sub_10")}
+skills = {&"club": SubResource("Sub_11"), &"dodge": SubResource("Sub_12"), &"driving": SubResource("Sub_13"), &"handtohand": SubResource("Sub_14"), &"pistol": SubResource("Sub_15"), &"psychology": SubResource("Sub_16"), &"rifle": SubResource("Sub_17"), &"shotgun": SubResource("Sub_18"), &"smg": SubResource("Sub_19")}
+armortypes = Array[StringName]([&"ARMOR_BLACKSUIT"])
+weapons = Array[Resource]([SubResource("Sub_22"), SubResource("Sub_25"), SubResource("Sub_28"), SubResource("Sub_31"), SubResource("Sub_34"), SubResource("Sub_37"), SubResource("Sub_40")])

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ClipType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/clip_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"CLIP_44"
+name = ".44 Speedloader"
+name_future = ".44 Heavy Slug Mag"
+fencevalue = 3
+ammo = 6

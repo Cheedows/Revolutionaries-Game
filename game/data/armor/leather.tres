@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="ArmorType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/armor_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"ARMOR_LEATHER"
+name = "Dark Leather Armor"
+name_future = ""
+fencevalue = 100
+shortname = "Black Leather"
+description = ""
+armor_body = 3
+armor_head = 0
+armor_limbs = 2
+armor_fireprotection = 0
+covers_body = false
+covers_head = false
+covers_arms = false
+covers_legs = false
+conceals_face = false
+conceal_weapon_size = 0
+professionalism = 1
+stealth_value = 3
+deathsquad_legality = false
+can_get_bloody = true
+can_get_damaged = true
+qualitylevels = 3
+durability = 20
+make_difficulty = 7
+make_price = 300
+interrogation_basepower = 0
+interrogation_assaultbonus = 0
+interrogation_drugbonus = 0
+is_mask = false
+surprise = 0

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="VehicleType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/vehicle_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"TAXICAB"
+longname = "Taxicab"
+shortname = "Taxicab"
+price = 5000
+sleeperprice = 0
+available_at_dealership = false
+size = 2
+year_start_at_year = 0
+year_start_at_current_year = true
+year_add = 1
+year_add_random = -41
+year_add_random_up_to_current_year = false
+colors = Array[StringName]([&"Taxi-Striped"])
+display_colors = Array[StringName]([&"false"])
+drivebonus_base = 2
+drivebonus_skillfactor = 0
+drivebonus_softlimit = 4
+drivebonus_hardlimit = 12
+dodgebonus_base = 2
+dodgebonus_skillfactor = 0
+dodgebonus_softlimit = 6
+dodgebonus_hardlimit = 12
+attackbonus_driver = -2
+attackbonus_passenger = 0
+armor_low_min = 4
+armor_low_max = 6
+armor_high_min = 0
+armor_high_max = 2
+armor_midpoint = 50
+steal_difficulty_to_find = 8
+steal_touch_alarm_chance = 0
+steal_sense_alarm_chance = 0
+steal_juice = 0
+steal_extra_heat = 0

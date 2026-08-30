@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="VehicleType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/vehicle_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AGENTCAR"
+longname = "Sportscar"
+shortname = "Sport"
+price = 10000
+sleeperprice = 0
+available_at_dealership = false
+size = 2
+year_start_at_year = 0
+year_start_at_current_year = true
+year_add = 1
+year_add_random = -11
+year_add_random_up_to_current_year = false
+colors = Array[StringName]([&"Black"])
+display_colors = []
+drivebonus_base = 0
+drivebonus_skillfactor = 2
+drivebonus_softlimit = 15
+drivebonus_hardlimit = 99
+dodgebonus_base = 0
+dodgebonus_skillfactor = 2
+dodgebonus_softlimit = 15
+dodgebonus_hardlimit = 99
+attackbonus_driver = -1
+attackbonus_passenger = 0
+armor_low_min = 6
+armor_low_max = 8
+armor_high_min = 2
+armor_high_max = 4
+armor_midpoint = 30
+steal_difficulty_to_find = 10
+steal_touch_alarm_chance = 0
+steal_sense_alarm_chance = 0
+steal_juice = 0
+steal_extra_heat = 0

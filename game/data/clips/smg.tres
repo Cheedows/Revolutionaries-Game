@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ClipType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/clip_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"CLIP_SMG"
+name = "9mm SMG Mag"
+name_future = "SMG Powerpack"
+fencevalue = 5
+ammo = 15

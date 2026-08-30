@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_MIGHTY_STRENGTH"
+name = "Mighty Strength"
+description = "We can artificially stimulate the muscles in a Liberals arms, and make them stronger and more powerful than ever before."
+type = &"arms"
+attribute = &"strength"
+effect = 3
+cost = 4000
+difficulty = 0
+min_age = 0
+max_age = 999

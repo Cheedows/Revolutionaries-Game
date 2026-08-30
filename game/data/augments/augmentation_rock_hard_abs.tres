@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_ROCK_HARD_ABS"
+name = "Rock Hard Abs"
+description = "These abs are the result of centuries of Liberal science, perfected to the epitomy of all abs. They increase your core strength one hundred fold."
+type = &"body"
+attribute = &"strength"
+effect = 2
+cost = 999
+difficulty = 0
+min_age = 0
+max_age = 999

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_THICK_SKIN"
+name = "Thick Skin"
+description = "By enhancing this Liberal's skin, they will be better prepared to fight off the words of the Conservative Swine, and less likely to be brainwashed to their side."
+type = &"skin"
+attribute = &"wisdom"
+effect = -3
+cost = 0
+difficulty = 0
+min_age = 0
+max_age = 999

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="VehicleType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/vehicle_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"SUV"
+longname = "SUV"
+shortname = "SUV"
+price = 7500
+sleeperprice = 6000
+available_at_dealership = true
+size = 3
+year_start_at_year = 1995
+year_start_at_current_year = false
+year_add = 0
+year_add_random = 0
+year_add_random_up_to_current_year = true
+colors = Array[StringName]([&"Red", &"White", &"Blue", &"Beige", &"Black"])
+display_colors = []
+drivebonus_base = 2
+drivebonus_skillfactor = 1
+drivebonus_softlimit = 3
+drivebonus_hardlimit = 12
+dodgebonus_base = 1
+dodgebonus_skillfactor = 1
+dodgebonus_softlimit = 4
+dodgebonus_hardlimit = 12
+attackbonus_driver = -2
+attackbonus_passenger = 0
+armor_low_min = 5
+armor_low_max = 7
+armor_high_min = 0
+armor_high_max = 2
+armor_midpoint = 50
+steal_difficulty_to_find = 1
+steal_touch_alarm_chance = 85
+steal_sense_alarm_chance = 4
+steal_juice = 2
+steal_extra_heat = 0

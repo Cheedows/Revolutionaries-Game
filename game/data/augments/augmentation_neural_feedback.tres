@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_NEURAL_FEEDBACK"
+name = "Faster Neural Feedback"
+description = "By supplying the brain cells with a constant source of methamphetamines, electrical signals increase in speed drastically."
+type = &"head"
+attribute = &"agility"
+effect = 2
+cost = 4000
+difficulty = 0
+min_age = 0
+max_age = 20

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="VehicleType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/vehicle_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"HMMWV"
+longname = "HMMWV"
+shortname = "Humvee"
+price = 80000
+sleeperprice = 0
+available_at_dealership = false
+size = 4
+year_start_at_year = 0
+year_start_at_current_year = true
+year_add = 1
+year_add_random = -10
+year_add_random_up_to_current_year = false
+colors = Array[StringName]([&"Beige", &"Green"])
+display_colors = []
+drivebonus_base = 1
+drivebonus_skillfactor = 1
+drivebonus_softlimit = 6
+drivebonus_hardlimit = 12
+dodgebonus_base = 0
+dodgebonus_skillfactor = 1
+dodgebonus_softlimit = 5
+dodgebonus_hardlimit = 12
+attackbonus_driver = -2
+attackbonus_passenger = 1
+armor_low_min = 6
+armor_low_max = 8
+armor_high_min = 0
+armor_high_max = 2
+armor_midpoint = 90
+steal_difficulty_to_find = 10
+steal_touch_alarm_chance = 0
+steal_sense_alarm_chance = 0
+steal_juice = 0
+steal_extra_heat = 0

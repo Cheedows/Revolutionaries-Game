@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="CreatureType" load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://data/schema/interval.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/creature_weapons.gd" id="Script_2"]
+[ext_resource type="Script" path="res://data/schema/creature_type.gd" id="Script_3"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+min = 35
+max = 59
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+min = 100
+max = 150
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+min = 20
+max = 60
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+min = 50
+max = 80
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+min = 10
+max = 10
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+min = 6
+max = 10
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+min = 6
+max = 11
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+min = 1
+max = 3
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_2")
+type = &"WEAPON_NONE"
+number_weapons = SubResource("Sub_10")
+cliptype = &"NONE"
+number_clips = SubResource("Sub_11")
+
+[resource]
+script = ExtResource("Script_3")
+idname = &"CREATURE_SCIENTIST_EMINENT"
+type_name = "Eminent Scientist"
+encounter_name = ""
+alignment = &"conservative"
+gender = &"male_bias"
+age = SubResource("Sub_1")
+juice = SubResource("Sub_2")
+money = SubResource("Sub_3")
+infiltration = SubResource("Sub_4")
+attribute_points = SubResource("Sub_5")
+attributes = {&"intelligence": SubResource("Sub_6"), &"wisdom": SubResource("Sub_7")}
+skills = {&"science": SubResource("Sub_8"), &"writing": SubResource("Sub_9")}
+armortypes = Array[StringName]([&"ARMOR_LABCOAT"])
+weapons = Array[Resource]([SubResource("Sub_12")])

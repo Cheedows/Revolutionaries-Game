@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AugmentType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/augment_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"AUGMENTATION_SLEEVE_TATTOOS"
+name = "Sleeve Tattoos"
+description = "By covering the arms of a Liberal with these tattoos, which are laced with a special compound, they will be even more ready to devote their lives to the liberal cause."
+type = &"arms"
+attribute = &"heart"
+effect = 2
+cost = 20
+difficulty = 0
+min_age = 0
+max_age = 999

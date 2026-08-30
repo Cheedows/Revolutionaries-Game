@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="WeaponType" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://data/schema/weapon_attack.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/weapon_type.gd" id="Script_2"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+priority = 1
+ranged = false
+thrown = false
+can_backstab = false
+skill = &"CLUB"
+ammotype = &""
+shoots = 0
+number_attacks = 1
+strength_min = 6
+strength_max = 12
+accuracy_bonus = 0
+successive_attacks_difficulty = 0
+fixed_damage = 5
+random_damage = 21
+armorpiercing = 0
+no_damage_reduction_for_limbs_chance = 0
+bruises = true
+cuts = false
+tears = false
+burns = false
+bleeding = false
+fire = false
+damages_armor = false
+critical = false
+always_describe_hit = false
+severtype = 0
+attack_description = "swings at"
+hit_description = ""
+hit_punctuation = "."
+
+[resource]
+script = ExtResource("Script_2")
+idname = &"WEAPON_STAFF"
+name = "Wizard's Staff"
+name_future = "Wizard's Staff"
+fencevalue = 100
+shortname = "Staff"
+shortname_future = "Staff"
+name_sub_1 = ""
+name_sub_2 = ""
+name_future_sub_1 = ""
+name_future_sub_2 = ""
+shortname_sub_1 = ""
+shortname_sub_2 = ""
+shortname_future_sub_1 = ""
+shortname_future_sub_2 = ""
+can_take_hostages = false
+can_threaten_hostages = true
+protects_against_kidnapping = true
+threatening = true
+musical_attack = false
+instrument = false
+graffiti = false
+suspicious = true
+auto_break_locks = false
+legality = 2
+bashstrengthmod = 125
+size = 15
+attacks = Array[Resource]([SubResource("Sub_1")])

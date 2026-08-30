@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="ArmorType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/schema/armor_type.gd" id="Script_1"]
+
+[resource]
+script = ExtResource("Script_1")
+idname = &"MASK_GUY_FAWKES"
+name = "Guy Fawkes Mask"
+name_future = ""
+fencevalue = 0
+shortname = "G. Fawkes Mask"
+description = "Remember the 5th of November"
+armor_body = 0
+armor_head = 0
+armor_limbs = 0
+armor_fireprotection = 0
+covers_body = false
+covers_head = false
+covers_arms = false
+covers_legs = false
+conceals_face = false
+conceal_weapon_size = 0
+professionalism = 0
+stealth_value = 0
+deathsquad_legality = false
+can_get_bloody = true
+can_get_damaged = true
+qualitylevels = 1
+durability = 1
+make_difficulty = 0
+make_price = 0
+interrogation_basepower = 6
+interrogation_assaultbonus = 0
+interrogation_drugbonus = 0
+is_mask = true
+surprise = 0

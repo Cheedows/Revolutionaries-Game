@@ -1,0 +1,144 @@
+[gd_resource type="Resource" script_class="CreatureType" load_steps=28 format=3]
+
+[ext_resource type="Script" path="res://data/schema/interval.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/creature_weapons.gd" id="Script_2"]
+[ext_resource type="Script" path="res://data/schema/creature_type.gd" id="Script_3"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+min = 35
+max = 59
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+min = 500
+max = 750
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+min = 150
+max = 200
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+min = 90
+max = 100
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+min = 0
+max = 0
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+min = 4
+max = 25
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+min = 1
+max = 25
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+min = 4
+max = 25
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+min = 1
+max = 25
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+min = 4
+max = 25
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_1")
+min = 10
+max = 25
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+min = 0
+max = 5
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+min = 2
+max = 7
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_1")
+min = 4
+max = 7
+
+[sub_resource type="Resource" id="Sub_16"]
+script = ExtResource("Script_1")
+min = 4
+max = 7
+
+[sub_resource type="Resource" id="Sub_17"]
+script = ExtResource("Script_1")
+min = 6
+max = 9
+
+[sub_resource type="Resource" id="Sub_18"]
+script = ExtResource("Script_1")
+min = 0
+max = 5
+
+[sub_resource type="Resource" id="Sub_19"]
+script = ExtResource("Script_1")
+min = 2
+max = 7
+
+[sub_resource type="Resource" id="Sub_20"]
+script = ExtResource("Script_1")
+min = 6
+max = 9
+
+[sub_resource type="Resource" id="Sub_21"]
+script = ExtResource("Script_1")
+min = 6
+max = 9
+
+[sub_resource type="Resource" id="Sub_22"]
+script = ExtResource("Script_1")
+min = 1
+max = 1
+
+[sub_resource type="Resource" id="Sub_23"]
+script = ExtResource("Script_1")
+min = 9
+max = 9
+
+[sub_resource type="Resource" id="Sub_24"]
+script = ExtResource("Script_2")
+type = &"WEAPON_SHOTGUN_AA12"
+number_weapons = SubResource("Sub_22")
+cliptype = &"APPROPRIATE"
+number_clips = SubResource("Sub_23")
+
+[resource]
+script = ExtResource("Script_3")
+idname = &"CREATURE_CCS_ARCHCONSERVATIVE"
+type_name = "CCS Officer"
+encounter_name = ""
+alignment = &"conservative"
+gender = &"male_bias"
+age = SubResource("Sub_1")
+juice = SubResource("Sub_2")
+money = SubResource("Sub_3")
+infiltration = SubResource("Sub_4")
+attribute_points = SubResource("Sub_5")
+attributes = {&"agility": SubResource("Sub_6"), &"charisma": SubResource("Sub_7"), &"health": SubResource("Sub_8"), &"heart": SubResource("Sub_9"), &"intelligence": SubResource("Sub_10"), &"strength": SubResource("Sub_11"), &"wisdom": SubResource("Sub_12")}
+skills = {&"business": SubResource("Sub_13"), &"dodge": SubResource("Sub_14"), &"driving": SubResource("Sub_15"), &"handtohand": SubResource("Sub_16"), &"pistol": SubResource("Sub_17"), &"psychology": SubResource("Sub_18"), &"religion": SubResource("Sub_19"), &"rifle": SubResource("Sub_20"), &"shotgun": SubResource("Sub_21")}
+armortypes = Array[StringName]([&"ARMOR_HEAVYARMOR"])
+weapons = Array[Resource]([SubResource("Sub_24")])
