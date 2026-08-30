@@ -26,6 +26,7 @@ char wincheck();
 void make_world(bool hasmaps);
 void makecreature(Creature &cr, short type);
 void build_site(std::string name);
+void initsite(Location &loc);
 short creaturetype_string_to_enum(const std::string &ctname);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
@@ -898,6 +899,78 @@ void probe_spawn(FILE *out)
 }
 
 // Building floor plans from art/sitemaps.txt.
+// Rebuilding a whole site from its own seed: the drawn maps, the generated
+// plans, the repair passes and the loot scattered on top.
+void probe_sites(FILE *out)
+{
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++)
+         law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      make_world(false);
+
+      // initsite() wants a squad on the map; an empty one is enough, since
+      // nothing it does reads the members.
+      squadst squad;
+      for (int p = 0; p < 6; p++) squad.squad[p] = NULL;
+      activesquad = &squad;
+
+      bool seen[SITENUM];
+      for (int s = 0; s < SITENUM; s++) seen[s] = false;
+
+      for (int l = 0; l < len(location); l++)
+      {
+         int type = location[l]->type;
+         if (type < 0 || type >= SITENUM || seen[type]) continue;
+         seen[type] = true;
+
+         unsigned long before[RNG_SIZE];
+         for (int i = 0; i < RNG_SIZE; i++) before[i] = ::seed[i];
+         initsite(*location[l]);
+
+         fprintf(out, "{\"kind\":\"site\",\"scenario\":%d,\"seed\":%lu",
+                 scenario, run_seed);
+         fprintf(out, ",\"location\":%d,\"type\":%d,\"renting\":%d",
+                 l, type, location[l]->renting);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("]", out);
+         fputs(",\"mapseed\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", location[l]->mapseed[i]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", before[i]);
+         fputs("],\"flags\":[", out);
+         bool first = true;
+         for (int z = 0; z < 7; z++)
+         for (int y = 0; y < MAPY; y++)
+         for (int x = 0; x < MAPX; x++)
+         {
+            fprintf(out, "%s%d", first ? "" : ",", levelmap[x][y][z].flag);
+            first = false;
+         }
+         fputs("],\"specials\":[", out);
+         first = true;
+         for (int z = 0; z < 7; z++)
+         for (int y = 0; y < MAPY; y++)
+         for (int x = 0; x < MAPX; x++)
+         {
+            fprintf(out, "%s%d", first ? "" : ",", levelmap[x][y][z].special);
+            first = false;
+         }
+         fputs("]}\n", out);
+      }
+      activesquad = NULL;
+   }
+}
+
 void probe_sitemaps(FILE *out)
 {
    // Every plan in art/sitemaps.txt, in file order.
@@ -995,6 +1068,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "world")) probe_world(out);
    else if (!strcmp(which, "spawn")) probe_spawn(out);
    else if (!strcmp(which, "sitemaps")) probe_sitemaps(out);
+   else if (!strcmp(which, "sites")) probe_sites(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

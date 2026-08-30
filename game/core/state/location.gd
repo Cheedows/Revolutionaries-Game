@@ -64,3 +64,6 @@ var map_seed: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])
 
 ## Items left lying on the floor between visits.
 var ground_loot: Array[Item] = []
+
+## Marks earlier visits left behind, repainted onto the regenerated plan.
+var changes: Array[SiteChange] = []

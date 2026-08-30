@@ -39,6 +39,7 @@ Two kinds of evidence are used:
 | Activity dispatch | `funds_and_trouble()` | the ported activities, run from the loop |
 | Spawning people | `makecreature()`, `verifyworklocation()` | 4 scenarios x 23 kinds of person |
 | Floor plans | `art/sitemaps.txt`, `configSite*::build()` | 3 seeds x all 26 plans, 11,270 cells each |
+| Site construction | `initsite()`, `readMap()` | 2 worlds x every kind of site, 11,270 cells each |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -50,6 +51,15 @@ Two kinds of evidence are used:
 
 Named rather than skipped. Each is work, not a decision to leave it out.
 
+- **The pre-scripting map generator** in `initsite()` is not ported. It is the
+  branch the original takes when `art/sitemaps.txt` fails to load: a random
+  room, a hand-rolled apartment block, and a pass that scatters specials and
+  restrictions by site type. It is unreachable in any copy that ships its own
+  data files, and porting it would mean carrying a second, worse map generator
+  forever.
+- **A safehouse held outright** is stripped of its locks, alarms and staff-only
+  markings on entry. That is ported but not probed: nothing is rented at the
+  start of a game, so the recorded worlds never take that branch.
 - **The site map step LOOT** builds nothing, which is parity: the original's
   `configSiteLoot::build()` is an empty body with a comment saying the loot
   system is due a revision. The plans still carry the loot types they name, so

@@ -30,10 +30,18 @@ func _init() -> void:
 ## open ground, so this is where every site starts — see initsite() in
 ## src/sitemode/sitemap.cpp.
 func clear() -> void:
+	fill(Tables.SITE_BLOCKS[&"block"])
+
+
+## Resets every cell to [param flag] and no special feature.
+##
+## Hand-drawn plans start from open ground rather than rock, because the drawn
+## grid says where the walls are.
+func fill(flag: int) -> void:
 	var cells := WIDTH * HEIGHT * LEVELS
 	flags.resize(cells)
 	specials.resize(cells)
-	flags.fill(Tables.SITE_BLOCKS[&"block"])
+	flags.fill(flag)
 	specials.fill(NO_SPECIAL)
 
 

@@ -72,7 +72,11 @@ static func is_free(map: LevelMap, x: int, y: int, z: int) -> bool:
 ## restricted. This repeatedly relaxes any restricted square that touches a
 ## public one, so the marking ends up following the walls instead of the
 ## rectangle, and each pass may open the way for the next — hence the loop.
-static func normalise_security(map: LevelMap) -> void:
+## [param need_open_sides] tightens what counts as a way through a door: with
+## it, a public square on the far side only counts if it can also be walked on.
+## The site builder passes it and the UNIQUE step does not, which is a real
+## difference between the two copies of this loop in the original.
+static func normalise_security(map: LevelMap, need_open_sides: bool = false) -> void:
 	var door: int = Tables.SITE_BLOCKS[&"door"]
 	var block: int = Tables.SITE_BLOCKS[&"block"]
 	var locked: int = Tables.SITE_BLOCKS[&"locked"]
@@ -88,7 +92,8 @@ static func normalise_security(map: LevelMap) -> void:
 					if (flag & block) or not (flag & restricted):
 						continue
 					if flag & door:
-						if _relax_door(map, x, y, z, locked, restricted):
+						if _relax_door(map, x, y, z, locked, restricted,
+								block if need_open_sides else 0):
 							acted = true
 					elif _open_beside(map, x, y, z, block, restricted):
 						map.clear_flag(x, y, z, restricted)
@@ -101,13 +106,19 @@ static func normalise_security(map: LevelMap) -> void:
 ## area: unlock it and let the public in. Public on only one side means it is
 ## the boundary, so lock it.
 static func _relax_door(map: LevelMap, x: int, y: int, z: int, locked: int,
-		restricted: int) -> bool:
+		restricted: int, block: int) -> bool:
+	# The lock test below always asks only about security; the unlock test may
+	# also require the square to be walkable, hence the two masks.
 	var west := map.get_flag(x - 1, y, z) & restricted
 	var east := map.get_flag(x + 1, y, z) & restricted
 	var north := map.get_flag(x, y - 1, z) & restricted
 	var south := map.get_flag(x, y + 1, z) & restricted
+	var open_west := map.get_flag(x - 1, y, z) & (restricted | block)
+	var open_east := map.get_flag(x + 1, y, z) & (restricted | block)
+	var open_north := map.get_flag(x, y - 1, z) & (restricted | block)
+	var open_south := map.get_flag(x, y + 1, z) & (restricted | block)
 
-	if (not west and not east) or (not north and not south):
+	if (not open_west and not open_east) or (not open_north and not open_south):
 		map.clear_flag(x, y, z, locked)
 		map.clear_flag(x, y, z, restricted)
 		return true
