@@ -270,6 +270,13 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 	# restored person is not the same person without them.
 	creature.age = int(entry["age"])
 	creature.juice = int(entry["juice"])
+	# The founder takes half damage and gets shielded, so which hire somebody
+	# is changes how a fight goes as much as their skills do.
+	creature.hire_id = int(entry["hireid"])
+	creature.body.stunned = int(entry["stunned"])
+	creature.cannot_bluff = int(entry["cantbluff"])
+	creature.forced_incapacitated = int(entry["forceinc"]) != 0
+	creature.converted = int(entry["converted"]) != 0
 	creature.alive = int(entry["alive"]) != 0
 	creature.is_driver = int(entry["driver"]) != 0
 	creature.wheelchair = int(entry["wheelchair"]) != 0
@@ -287,6 +294,23 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 	var special: Array = entry["special"]
 	for index in special.size():
 		creature.body.special[index] = int(special[index])
+
+	if String(entry["weapon"]) != "":
+		creature.weapon = Weapon.new()
+		creature.weapon.type = StringName(entry["weapon"])
+		creature.weapon.ammo = int(entry["ammo"])
+		creature.weapon.loaded_clip = StringName(entry["loaded"])
+	for held: Dictionary in entry["clips"]:
+		var clip := Clip.new()
+		clip.type = StringName(held["type"])
+		clip.count = int(held["count"])
+		creature.clips.append(clip)
+	if String(entry["armor"]) != "":
+		creature.armor = Armor.new()
+		creature.armor.type = StringName(entry["armor"])
+		creature.armor.quality = int(entry["armor_quality"])
+		creature.armor.damaged = int(entry["armor_damaged"]) != 0
+		creature.armor.bloody = int(entry["armor_bloody"]) != 0
 
 	# The restore is only faithful if the numbers the rolls actually read come
 	# out the same; checking here turns a silent divergence into a clear one.

@@ -1452,7 +1452,11 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
            cr.alive ? 1 : 0, (int)cr.carid, cr.is_driver ? 1 : 0,
            (int)cr.squadid, cr.location,
            (cr.flag & CREATUREFLAG_WHEELCHAIR) ? 1 : 0, cr.animalgloss);
-   fprintf(out, ",\"age\":%d,\"juice\":%d", cr.age, cr.juice);
+   fprintf(out, ",\"age\":%d,\"juice\":%d,\"hireid\":%d,\"stunned\":%d,"
+                "\"cantbluff\":%d,\"forceinc\":%d,\"converted\":%d",
+           cr.age, cr.juice, (int)cr.hireid, (int)cr.stunned,
+           (int)cr.cantbluff, cr.forceinc ? 1 : 0,
+           (cr.flag & CREATUREFLAG_CONVERTED) ? 1 : 0);
    fputs(",\"attributes\":[", out);
    for (int i = 0; i < ATTNUM; i++)
       fprintf(out, "%s%d", i ? "," : "", cr.attribute_raw_probe(i));
@@ -1468,7 +1472,27 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
    fputs("],\"special\":[", out);
    for (int i = 0; i < SPECIALWOUNDNUM; i++)
       fprintf(out, "%s%d", i ? "," : "", (int)cr.special[i]);
-   fputs("]}", out);
+
+   // What they are carrying, which decides what they can do with it.
+   fputs("],\"weapon\":", out);
+   write_string(out, cr.is_armed() ? cr.get_weapon().get_itemtypename().c_str() : "");
+   fprintf(out, ",\"ammo\":%d",
+           cr.is_armed() ? cr.get_weapon().get_ammoamount() : 0);
+   fputs(",\"loaded\":", out);
+   write_string(out, cr.is_armed()
+                     ? cr.get_weapon().get_loaded_cliptypename().c_str() : "");
+   fputs(",\"clips\":[", out);
+   for (int i = 0; i < len(cr.clips); i++)
+      fprintf(out, "%s{\"type\":\"%s\",\"count\":%ld}", i ? "," : "",
+              cr.clips[i]->get_itemtypename().c_str(), cr.clips[i]->get_number());
+   fputs("],\"armor\":", out);
+   write_string(out, cr.get_armor().empty()
+                     ? "" : cr.get_armor().get_itemtypename().c_str());
+   fprintf(out, ",\"armor_quality\":%d,\"armor_damaged\":%d,"
+                "\"armor_bloody\":%d}",
+           cr.get_armor().empty() ? 1 : cr.get_armor().get_quality(),
+           cr.get_armor().is_damaged() ? 1 : 0,
+           cr.get_armor().is_bloody() ? 1 : 0);
 }
 
 // Writes every car on the road, with the type the driving rules read off it.
@@ -1722,6 +1746,154 @@ void probe_chase(FILE *out)
    }
 }
 
+// A whole round of combat: the squad swings, the other side swings back, and
+// everybody bleeds.
+//
+// Probed as three separate calls per sample rather than one loop, because
+// youattack(), enemyattack() and creatureadvance() each decide a great deal on
+// their own and a divergence in one would otherwise be blamed on another.
+void probe_fight(FILE *out)
+{
+   static const char *ROUNDS[] = {"you", "enemy", "advance", "full"};
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+
+      newsstoryst *ns = new newsstoryst;
+      ns->loc = 1;
+      newsstory.push_back(ns);
+      sitestory = ns;
+
+      for (int round = 0; round < 4; round++)
+      for (int alarm = 0; alarm < 2; alarm++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      {
+         unsigned long seed_used = 4000037UL *
+            (unsigned long)(round * 12 + alarm * 5 + crowd + scenario * 89 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         mode = GAMEMODE_SITE;
+         cursite = 1;
+         sitetype = location[cursite]->type;
+         sitealarm = alarm;
+         sitealienate = 0;
+         sitecrime = 0;
+         sitealarmtimer = -1;
+         postalarmtimer = 0;
+         siteonfire = 0;
+         sitestory->crime.clear();
+         locx = MAPX >> 1, locy = 5, locz = 0;
+         for (int x = 0; x < MAPX; x++)
+         for (int y = 0; y < MAPY; y++)
+         for (int z = 0; z < MAPZ; z++)
+         {
+            levelmap[x][y][z].flag = 0;
+            levelmap[x][y][z].special = SPECIAL_NONE;
+            levelmap[x][y][z].siegeflag = 0;
+         }
+         // A fire under the squad's feet, so the burning and the spreading are
+         // both reached.
+         if (crowd == 3)
+            levelmap[locx][locy][locz].flag |= SITEBLOCK_FIRE_PEAK;
+
+         squadst squad;
+         squad.id = 1;
+         chase_build_squad(squad, scenario, 4, crowd % 2);
+         activesquad = &squad;
+         for (int p = 0; p < 6; p++)
+            if (squad.squad[p]) squad.squad[p]->carid = -1;
+
+         // A mixed room: enemies who will fight, and bystanders who will not.
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         int slot = 0;
+         for (int n = 0; n < crowd * 2; n++)
+         {
+            makecreature(encounter[slot], n % 2 ? CREATURE_COP
+                                                : CREATURE_WORKER_SECRETARY);
+            if (n % 2) conservatise(encounter[slot]);
+            encounter[slot].carid = -1;
+            slot++;
+         }
+         // Somebody armed, so the squad has a dangerous target to prefer.
+         makecreature(encounter[slot], CREATURE_SECURITYGUARD);
+         conservatise(encounter[slot]);
+         encounter[slot].carid = -1;
+         slot++;
+
+         fprintf(out, "{\"kind\":\"fight\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"round\":\"%s\",\"alarm\":%d,\"crowd\":%d,"
+                      "\"endgame\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, ROUNDS[round], alarm, crowd,
+                 endgamestate, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         fprintf(out, ",\"fire\":%d", crowd == 3 ? 1 : 0);
+         chase_write_state(out, "before", squad);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         if (!strcmp(ROUNDS[round], "you")) youattack();
+         else if (!strcmp(ROUNDS[round], "enemy")) enemyattack();
+         else if (!strcmp(ROUNDS[round], "advance")) creatureadvance();
+         else { youattack(); enemyattack(); creatureadvance(); }
+
+         fprintf(out, ",\"draws\":%lld,\"alarm_after\":%d,\"crime\":%d,"
+                      "\"alienate\":%d,\"onfire\":%d,\"postalarm\":%d",
+                 lcs_trace_draw_count() - before, sitealarm, sitecrime,
+                 sitealienate, siteonfire, postalarmtimer);
+         fputs(",\"crimes\":[", out);
+         for (int i = 0; i < len(sitestory->crime); i++)
+            fprintf(out, "%s%d", i ? "," : "", sitestory->crime[i]);
+         fputs("],\"fireflags\":[", out);
+         {
+            bool first = true;
+            for (int y = 0; y < MAPY; y++)
+            for (int x = 0; x < MAPX; x++)
+            {
+               fprintf(out, "%s%d", first ? "" : ",",
+                       levelmap[x][y][0].flag & (SITEBLOCK_FIRE_START |
+                          SITEBLOCK_FIRE_PEAK | SITEBLOCK_FIRE_END |
+                          SITEBLOCK_DEBRIS));
+               first = false;
+            }
+         }
+         fputs("]", out);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+
+         chase_free_squad(squad);
+         activesquad = NULL;
+      }
+   }
+}
+
 void lcs_probe_run_if_requested()
 {
    const char *which = getenv("LCS_PROBE");
@@ -1756,6 +1928,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "context")) probe_context_checks(out);
    else if (!strcmp(which, "combat")) probe_combat(out);
    else if (!strcmp(which, "chase")) probe_chase(out);
+   else if (!strcmp(which, "fight")) probe_fight(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

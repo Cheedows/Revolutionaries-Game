@@ -73,6 +73,12 @@ var ccs_exposure: int = 0
 ## decides who is left in charge when one is met.
 var ccs_kills: int = 0
 
+## High-score tallies the original keeps: Conservatives killed, Liberals lost,
+## and the Conservative Crime Squad's leadership specifically.
+var kills: int = 0
+var dead: int = 0
+var ccs_boss_kills: int = 0
+
 ## How many Conservatives the squad has taken home for re-education.
 var kidnappings: int = 0
 var endgame_state: StringName = &"none"

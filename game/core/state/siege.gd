@@ -21,3 +21,8 @@ var escalation: int = 0
 var has_tank: bool = false
 var has_air_support: bool = false
 var uses_tear_gas: bool = false
+
+## Attackers killed here, and how many of their tanks are left. The escalation
+## rules read both: a siege that keeps losing people escalates faster.
+var kills: int = 0
+var tanks: int = 0

@@ -88,7 +88,21 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 	# Whatever was thrown is gone, and the next one comes to hand.
 	for throw in burst["thrown"]:
 		_ready_another_throw(attacker)
+
+	# The original sets an "actual" flag here and nowhere else: a swing that
+	# was cut short by injury, a reload, or an argument instead does not count,
+	# and the rules that follow a real blow read that flag. This is it.
+	events.append(Event.new(Event.ATTACK_RESOLVED,
+			{"attacker": attacker.id, "target": target.id}))
 	return events
+
+
+## Whether [param events] came from a blow that was actually thrown.
+static func was_struck(events: Array[Event]) -> bool:
+	for event: Event in events:
+		if event.type == Event.ATTACK_RESOLVED:
+			return true
+	return false
 
 
 ## Drops the weapon that was just thrown and readies the next of its kind.

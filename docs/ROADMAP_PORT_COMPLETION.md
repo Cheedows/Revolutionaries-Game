@@ -160,7 +160,30 @@ Port from `src/combat/` and remaining combat helpers.
     ammunition, standing, site crime and the alarm — and on the number of RNG
     draws each blow consumed, which is what makes a missing roll findable.
 
+- [x] The round itself: `youattack()`, `enemyattack()` and `creatureadvance()`
+    (with `advancecreature()`), plus the encounter roster helpers `enemy()`,
+    `delenc()` and `makeloot()`, `alienationcheck()`, `squadgrab_immobile()`
+    and the site's own between-rounds tick — the alarm timers and the fire
+    spreading through the building.
+  - Verified by the `fight` probe: each half of a round on its own and then all
+    three together, in a room holding police, secretaries and a security guard
+    so the targeting has to choose between a dangerous enemy, an ordinary one
+    and a bystander, with a third of the samples standing the squad in a fire.
+    Compared on draw counts, both sides' wounds and blood, the alarm, the site
+    crime list, the alienation level and every fire and debris flag on the
+    ground floor.
+- [ ] The rhetorical-attack conversion: a squad member who loses an argument
+    changes sides. Needs the talk system (Gate G).
+
 **Gate E:** arbitrary squads can fight headlessly to a deterministic conclusion with parity-level wounds, deaths, ammo and aftermath.
+
+**Known original bugs preserved.** A fire at its height tries to spread
+sideways and, failing all four directions, is meant to climb — but the test
+guarding that branch asks for a try count the loop cannot reach, so fire never
+spreads upward. The same loop reads a tile's *special index* as though it were
+a bit mask when deciding whether a floor has stairs, which is what limits how
+far up the building the fire is simulated at all. Both reproduced in
+`core/systems/site/site_round.gd`.
 
 ### F. Port car and foot chases
 
@@ -183,9 +206,9 @@ Port from `src/combat/` and remaining combat helpers.
     records the generator state at the start of each measured turn, because a
     turn cannot be replayed from a seed: building the squad and raising the
     pursuit draw first.
-- [ ] Wire the chase loop into site mode and base mode once encounters exist
-    (Gate G): the turn systems are complete, but nothing calls them yet because
-    `youattack()`/`enemyattack()`/`creatureadvance()` are not ported.
+- [ ] Wire the chase loop into site mode and base mode. The turn systems and
+    the combat rounds both exist now; what is missing is the caller — leaving a
+    site, and the base-mode consequences of surrendering or being caught.
 
 **Gate F:** both chase types have repeatable parity tests and clean transitions into/out of combat/site/base state.
 
