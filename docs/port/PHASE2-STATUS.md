@@ -32,6 +32,8 @@ Two kinds of evidence are used:
 | Names | `firstname()`, `lastname()`, `generate_name()` | 40 samples x 44 names |
 | Opinion shifts | `change_public_opinion()` | 12 scenarios x 972 shifts |
 | Crime and heat | `criminalize()`, `lawflagheat()` | crime list checked against a trace |
+| Win condition | `wincheck()` | 40 governments, hostile to converted |
+| Monthly turn (political spine) | `passmonth()` | a simulated year runs the cycle |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -85,5 +87,12 @@ Recorded because a port has to decide what to do about each, and because
 5. Cutscenes cannot work in a 64-bit build: `loadmovie()` reads frame timings
    with `sizeof(long)` from files written where `long` was 4 bytes. Played to
    the end they hang or read out of bounds. Not ported at all.
-6. `alarmwait()` can block forever if its timer fires before `pause()` is
+6. `wincheck()` has a dangling `else`. The relaxed win condition's law check is
+   bound to the wrong `if`, so under that condition **the laws are never
+   examined at all** — the game can be won with the country's laws untouched,
+   provided the player holds the executive, both chambers and the court. Under
+   the strict condition the relaxed block runs redundantly inside the loop.
+   Reproduced deliberately; this is the clearest candidate so far for a bug to
+   fix rather than keep, once parity is established.
+7. `alarmwait()` can block forever if its timer fires before `pause()` is
    reached — the original's own comment says so. The port has no such wait.

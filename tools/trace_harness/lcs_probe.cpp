@@ -22,6 +22,7 @@ int getsimplevoter(int leaning);
 void congress(char clearformess, char canseethings);
 void elections_house(char canseethings);
 void supremecourt(char clearformess, char canseethings);
+char wincheck();
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
 void damagemod(Creature &t, char &damtype, int &damamount, char hitlocation,
@@ -730,6 +731,47 @@ void probe_opinion_change(FILE *out)
    }
 }
 
+// The win condition, across governments from hostile to fully converted.
+void probe_wincheck(FILE *out)
+{
+   for (int scenario = 0; scenario < 40; scenario++)
+   {
+      // Sweep from an Arch-Conservative government to an Elite Liberal one,
+      // so the boundary of every threshold is crossed.
+      int tilt = scenario % 10;
+      wincondition = (scenario / 10) % 2 ? WINCONDITION_ELITE : WINCONDITION_EASY;
+
+      for (int e = 0; e < EXECNUM; e++) exec[e] = tilt >= 8 ? 2 : (tilt / 3) - 2;
+      for (int l = 0; l < LAWNUM; l++)
+         law[l] = tilt >= 9 ? 2 : ((l + tilt) % 5) - 2;
+      for (int h = 0; h < HOUSENUM; h++)
+         house[h] = (h % 10) < tilt ? 2 : ((h % 3) - 1);
+      for (int s = 0; s < SENATENUM; s++)
+         senate[s] = (s % 10) < tilt ? 2 : ((s % 3) - 1);
+      for (int j = 0; j < COURTNUM; j++)
+         court[j] = (j % 10) < tilt ? 2 : ((j % 3) - 1);
+
+      fprintf(out, "{\"kind\":\"wincheck\",\"scenario\":%d,\"elite\":%d",
+              scenario, wincondition == WINCONDITION_ELITE ? 1 : 0);
+      fputs(",\"exec\":[", out);
+      for (int e = 0; e < EXECNUM; e++)
+         fprintf(out, "%s%d", e ? "," : "", exec[e]);
+      fputs("],\"law\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", law[l]);
+      fputs("],\"house\":[", out);
+      for (int h = 0; h < HOUSENUM; h++)
+         fprintf(out, "%s%d", h ? "," : "", house[h]);
+      fputs("],\"senate\":[", out);
+      for (int s = 0; s < SENATENUM; s++)
+         fprintf(out, "%s%d", s ? "," : "", senate[s]);
+      fputs("],\"court\":[", out);
+      for (int j = 0; j < COURTNUM; j++)
+         fprintf(out, "%s%d", j ? "," : "", court[j]);
+      fprintf(out, "],\"won\":%d}\n", wincheck() ? 1 : 0);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -758,6 +800,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "court")) probe_court(out);
    else if (!strcmp(which, "names")) probe_names(out);
    else if (!strcmp(which, "opinion")) probe_opinion_change(out);
+   else if (!strcmp(which, "wincheck")) probe_wincheck(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

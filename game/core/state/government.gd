@@ -9,7 +9,8 @@ extends RefCounted
 const HOUSE_SEATS := 435
 const SENATE_SEATS := 100
 const COURT_SEATS := 9
-const EXEC_POSTS := 7
+## President, Vice President, Secretary of State, Attorney General.
+const EXEC_POSTS := 4
 
 var house: PackedInt32Array = PackedInt32Array()
 var senate: PackedInt32Array = PackedInt32Array()

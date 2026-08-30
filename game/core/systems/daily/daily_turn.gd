@@ -34,6 +34,7 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 			"month": state.calendar.month,
 			"year": state.calendar.year,
 		}))
+		events.append_array(MonthlyTurn.run(state, rng))
 	return events
 
 
