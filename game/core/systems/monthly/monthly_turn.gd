@@ -28,6 +28,9 @@ const CCS_THRESHOLDS := {
 static func run(state: GameState, rng: Rng) -> Array[Event]:
 	var events: Array[Event] = []
 
+	# The clinics discharge first: the original runs this before anything else
+	# the month does.
+	events.append_array(ClinicStay.run(state, rng))
 	events.append_array(_escalate_opposition(state))
 	_stale_the_news(state)
 	# A lease signed last month is an ordinary one now.

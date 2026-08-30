@@ -2745,6 +2745,278 @@ static void dispersal_block(char &clearformess)
 
 
 
+// The first clinic in the world, for the samples that want real medics.
+static int find_clinic_index_probe()
+{
+   for (int l = 0; l < len(location); l++)
+      if (location[l]->type == SITE_HOSPITAL_CLINIC) return l;
+   return 1;
+}
+
+// A transcription of the "AGE THINGS" pass of advanceday() and the "HEAL
+// CLINIC PEOPLE" pass of passmonth(), both of which are inline in functions
+// that do far more than the probe wants to measure.
+static void ageing_block(char &clearformess)
+{
+   int pday=day,pmonth=month;
+   if(pday>monthday()) pday=1,pmonth=(pmonth%12)+1;
+
+   for(int p=0;p<len(pool);p++)
+   {
+      pool[p]->stunned=0;
+      pool[p]->joindays++;
+      if(!pool[p]->alive) { pool[p]->deathdays++; continue; }
+      if(!pool[p]->animalgloss)
+      {
+         if(pool[p]->age>60)
+         {
+            int decrement=0;
+            while(pool[p]->age-decrement>60)
+            {
+               if(LCSrandom(365*10)==0)
+               {
+                  pool[p]->adjust_attribute(ATTRIBUTE_HEALTH,-1);
+                  if(pool[p]->get_attribute(ATTRIBUTE_HEALTH,false)<=0 &&
+                     pool[p]->get_attribute(ATTRIBUTE_HEALTH,true)<=1)
+                  {
+                     pool[p]->die();
+                     break;
+                  }
+               }
+               decrement+=10;
+            }
+            if(!pool[p]->alive)continue;
+         }
+         if(pmonth==pool[p]->birthday_month&&pday==pool[p]->birthday_day)
+         {
+            pool[p]->age++;
+            switch(pool[p]->age)
+            {
+            case 13:
+               pool[p]->type=CREATURE_TEENAGER;
+               pool[p]->type_idname="CREATURE_TEENAGER";
+               break;
+            case 18:
+               pool[p]->type=CREATURE_POLITICALACTIVIST;
+               pool[p]->type_idname="CREATURE_POLITICALACTIVIST";
+               break;
+            }
+         }
+      }
+      if(pool[p]->blood<100) pool[p]->blood++;
+      if(pool[p]->hiding>0)
+      {
+         if((--pool[p]->hiding)==0)
+         {
+            if(location[pool[p]->base]->siege.siege) pool[p]->hiding=1;
+            else pool[p]->location=pool[p]->base;
+         }
+      }
+      if((pool[p]->flag&CREATUREFLAG_MISSING)&&!(pool[p]->flag&CREATUREFLAG_KIDNAPPED))
+      {
+         if(LCSrandom(14)+5<pool[p]->joindays)
+         {
+            pool[p]->flag|=CREATUREFLAG_KIDNAPPED;
+            newsstoryst *ns=new newsstoryst;
+            ns->type=NEWSSTORY_KIDNAPREPORT;
+            ns->loc=pool[p]->location;
+            ns->cr=pool[p];
+            newsstory.push_back(ns);
+         }
+      }
+      pool[p]->skill_up();
+   }
+}
+
+static void clinic_block(char &clearformess)
+{
+   for(int p=0;p<len(pool);p++)
+   {
+      if(!(pool[p]->alive)) continue;
+      if(pool[p]->clinic>0)
+      {
+         pool[p]->clinic--;
+         for(int w=0;w<BODYPARTNUM;w++)
+         {
+            if((pool[p]->wound[w]&WOUND_NASTYOFF)||(pool[p]->wound[w]&WOUND_CLEANOFF))
+               pool[p]->wound[w]=(char)WOUND_CLEANOFF;
+            else pool[p]->wound[w]=0;
+         }
+         int healthdamage = 0;
+         if(pool[p]->special[SPECIALWOUND_RIGHTLUNG]!=1)
+         {
+            pool[p]->special[SPECIALWOUND_RIGHTLUNG]=1;
+            if(LCSrandom(2)) healthdamage++;
+         }
+         if(pool[p]->special[SPECIALWOUND_LEFTLUNG]!=1)
+         {
+            pool[p]->special[SPECIALWOUND_LEFTLUNG]=1;
+            if(LCSrandom(2)) healthdamage++;
+         }
+         if(pool[p]->special[SPECIALWOUND_HEART]!=1)
+         {
+            pool[p]->special[SPECIALWOUND_HEART]=1;
+            if(LCSrandom(3)) healthdamage++;
+         }
+         pool[p]->special[SPECIALWOUND_LIVER]=1;
+         pool[p]->special[SPECIALWOUND_STOMACH]=1;
+         pool[p]->special[SPECIALWOUND_RIGHTKIDNEY]=1;
+         pool[p]->special[SPECIALWOUND_LEFTKIDNEY]=1;
+         pool[p]->special[SPECIALWOUND_SPLEEN]=1;
+         pool[p]->special[SPECIALWOUND_RIBS]=RIBNUM;
+         if(!pool[p]->special[SPECIALWOUND_NECK])
+            pool[p]->special[SPECIALWOUND_NECK]=2;
+         if(!pool[p]->special[SPECIALWOUND_UPPERSPINE])
+            pool[p]->special[SPECIALWOUND_UPPERSPINE]=2;
+         if(!pool[p]->special[SPECIALWOUND_LOWERSPINE])
+            pool[p]->special[SPECIALWOUND_LOWERSPINE]=2;
+         pool[p]->set_attribute(ATTRIBUTE_HEALTH,pool[p]->get_attribute(ATTRIBUTE_HEALTH,0)-healthdamage);
+         if(pool[p]->get_attribute(ATTRIBUTE_HEALTH,0)<=0)
+            pool[p]->set_attribute(ATTRIBUTE_HEALTH,1);
+         if(pool[p]->blood<=20&&pool[p]->clinic<=2)pool[p]->blood=50;
+         if(pool[p]->blood<=50&&pool[p]->clinic<=1)pool[p]->blood=75;
+         if(pool[p]->clinic > 2 && pool[p]->location > -1 &&
+            location[pool[p]->location]->type==SITE_HOSPITAL_CLINIC)
+         {
+            int hospital=find_hospital(*pool[p]);
+            if(hospital!=-1) pool[p]->location=hospital;
+         }
+         if(pool[p]->clinic==0)
+         {
+            pool[p]->blood=100;
+            int hs=find_homeless_shelter(*pool[p]);
+            if(hs==-1) hs=0;
+            if(location[pool[p]->base]->siege.siege||
+               location[pool[p]->base]->renting==RENTING_NOCONTROL)
+               pool[p]->base=hs;
+            pool[p]->location=pool[p]->base;
+         }
+      }
+   }
+}
+
+// A day passing for everybody, and a month passing for anybody in a clinic.
+void probe_ageing(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 61207793UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      int clinicloc = find_clinic_index_probe();
+
+      // stage 0 is the day's ageing pass, stage 1 the month at a clinic.
+      for (int stage = 0; stage < 2; stage++)
+      for (int start = 0; start < 6; start++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int besieged = 0; besieged < 2; besieged++)
+      {
+         unsigned long seed_used = 6600011UL * (unsigned long)
+            (stage * 512 + start * 32 + crowd * 4 + besieged + scenario * 149 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         day = 1 + start * 5;
+         month = 1 + start;
+         location[1]->siege.siege = besieged ? 1 : 0;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            cr->id = 950000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = stage ? clinicloc : 1;
+            cr->base = 1;
+            cr->hireid = n ? 0 : -1;
+            cr->joindays = 3 + n * 6 + start;
+            // Old enough to be declining, young enough to have a birthday.
+            cr->age = (n == 0) ? 72 + start : 12 + n + start;
+            cr->birthday_month = month;
+            cr->birthday_day = day + 1 > monthday() ? 1 : day + 1;
+            cr->blood = 15 + n * 30;
+            cr->hiding = (n == 1) ? 1 : 0;
+            cr->clinic = stage ? (1 + (n + start) % 4) : 0;
+            cr->set_attribute(ATTRIBUTE_HEALTH, 2 + n);
+            cr->wound[BODYPART_ARM_RIGHT] |= (n % 2) ? WOUND_NASTYOFF : WOUND_CUT;
+            cr->wound[BODYPART_BODY] |= WOUND_SHOT | WOUND_BLEEDING;
+            cr->special[SPECIALWOUND_LEFTLUNG] = 0;
+            if (n % 2) cr->special[SPECIALWOUND_HEART] = 0;
+            cr->special[SPECIALWOUND_RIBS] = RIBNUM - 2;
+            if (n % 3 == 1) cr->special[SPECIALWOUND_LOWERSPINE] = 0;
+            if (n == 2) cr->flag |= CREATUREFLAG_MISSING;
+            cr->set_skill(SKILL_STREETSENSE, 2);
+            cr->train(SKILL_STREETSENSE, 200 + n * 60);
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"ageing\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"stage\":%d,\"start\":%d,\"crowd\":%d,\"besieged\":%d,"
+                      "\"day\":%d,\"month\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, stage, start, crowd, besieged, day, month,
+                 run_seed);
+         fputs(",\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"hiding\":%d,\"clinic\":%d,\"joindays\":%d,"
+                         "\"bmonth\":%d,\"bday\":%d,\"missing\":%d,"
+                         "\"kidnapped\":%d,\"experience\":[",
+                    p ? "," : "", (int)pool[p]->hiding, (int)pool[p]->clinic,
+                    (int)pool[p]->joindays, (int)pool[p]->birthday_month,
+                    (int)pool[p]->birthday_day,
+                    (pool[p]->flag & CREATUREFLAG_MISSING) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_KIDNAPPED) ? 1 : 0);
+            for (int sk = 0; sk < SKILLNUM; sk++)
+               fprintf(out, "%s%d", sk ? "," : "",
+                       (int)pool[p]->get_skill_ip(sk));
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         if (stage) clinic_block(clearformess);
+         else { day++; ageing_block(clearformess); }
+
+         fprintf(out, ",\"draws\":%lld,\"stories\":%d",
+                 lcs_trace_draw_count() - before, len(newsstory));
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"hiding\":%d,\"clinic\":%d,\"joindays\":%d,"
+                         "\"kidnapped\":%d,\"type\":",
+                    p ? "," : "", (int)pool[p]->hiding, (int)pool[p]->clinic,
+                    (int)pool[p]->joindays,
+                    (pool[p]->flag & CREATUREFLAG_KIDNAPPED) ? 1 : 0);
+            write_string(out, getcreaturetype(pool[p]->type)->get_idname().c_str());
+            fputs(",\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         location[1]->siege.siege = 0;
+      }
+   }
+}
+
+
 // The nightly dispersal check: who can still be reached down the chain of
 // command, who is promoted when a link in it dies, and who quietly loses touch
 // with the organisation for good.
@@ -2865,14 +3137,6 @@ void probe_dispersal(FILE *out)
    }
 }
 
-
-// The first clinic in the world, for the samples that want real medics.
-static int find_clinic_index_probe()
-{
-   for (int l = 0; l < len(location); l++)
-      if (location[l]->type == SITE_HOSPITAL_CLINIC) return l;
-   return 1;
-}
 
 // A transcription of the healing block of advanceday(), which is inline there
 // and cannot be called on its own. Kept line-for-line so the probe measures the
@@ -3703,6 +3967,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "activation")) probe_activation_day(out);
    else if (!strcmp(which, "recovery")) probe_recovery(out);
    else if (!strcmp(which, "dispersal")) probe_dispersal(out);
+   else if (!strcmp(which, "ageing")) probe_ageing(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

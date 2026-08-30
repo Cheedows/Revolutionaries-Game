@@ -56,22 +56,24 @@ func test_the_session_parks_on_a_decision_instead_of_blocking() -> void:
 	check(not session.is_waiting(), "the session is free again")
 
 
-func test_wounds_and_sentences_tick_down_daily() -> void:
+func test_hiding_ticks_down_daily_but_a_sentence_does_not() -> void:
 	var session := Session.new(5)
 	var creature := session.state.add_creature(Creature.new())
+	creature.join_days = 1
 	creature.clinic = 2
 	creature.sentence = 3
 	creature.hiding = 1
 
 	session.submit(DailyTurn.run(session.state, session.rng))
-	equal(creature.clinic, 1, "a day in the clinic passes")
-	equal(creature.sentence, 2, "a day of the sentence is served")
-	equal(creature.hiding, 0, "and the last day laying low")
+	equal(creature.hiding, 0, "the last day laying low passes")
+	# Time in a clinic and time inside are both counted in months in the
+	# original, and both come off in the monthly turn rather than here.
+	equal(creature.clinic, 2, "a stay in the clinic is not a matter of days")
+	equal(creature.sentence, 3, "and neither is a sentence")
 
 	session.submit(DailyTurn.run(session.state, session.rng))
-	equal(creature.clinic, 0, "treatment finishes")
-	var healed := false
+	var came_back := false
 	for event in session.drain_events():
-		if event.type == Event.CREATURE_HEALED:
-			healed = true
-	check(healed, "and says so")
+		if event.type == Event.CONTACT_REGAINED:
+			came_back = true
+	check(came_back, "and coming back out is reported")

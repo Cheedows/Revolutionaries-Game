@@ -225,7 +225,30 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     it ends the run whenever a sample deliberately kills the last Liberal.
 - [ ] Safehouse/base actions not already covered by Commands.
 - [ ] Liberal agenda/review-management behavior that belongs to simulation rather than presentation.
-- [ ] Ensure a full `advanceday()` equivalent exists as composable systems rather than one monolith.
+- [x] A day passing for everybody (`advanceday()`'s "AGE THINGS" pass) and a
+    month at a clinic (`passmonth()`'s "HEAL CLINIC PEOPLE" pass). Stunning
+    expires, the very old decline and occasionally die of it, birthdays turn a
+    child into a teenager and a teenager into an activist, a point of blood
+    closes, people come back out of hiding — but not into a besieged safehouse
+    — a kidnapping the papers had not caught up with is reported, and banked
+    experience becomes levels. A clinic then does in a month what a safehouse
+    cannot: every wound closed, every organ back, the ribs knitted.
+  - **Subtle original behavior, easy to get wrong.** The clinic's health line
+    is unconditional and reads the *effective* figure: a patient whose spine
+    has just been rebuilt has their raw health overwritten with the quartered
+    reading whether or not anything cost them a point. That is what makes a
+    spinal injury permanently ruinous rather than merely expensive.
+  - `clinic` and `sentence` are counted in months and come off in the monthly
+    turn. The port had been decrementing both daily; it no longer does.
+  - Verified by the `ageing` probe: both passes at six points in the calendar,
+    three crowd sizes, besieged and not, compared on draw counts, news stories
+    queued, and every Liberal's age, type, blood, wounds, organs, attributes,
+    skills, whereabouts and time left.
+- [x] `advanceday()` is now composable systems in the original's order, which
+    is load-bearing: the date does not move until most of the day is over, so
+    rent falls due before the day counter ticks and a birthday is checked after
+    it. The port had been advancing the calendar first and paying rent a day
+    early.
 
 **Gate B:** a player can remain in base mode for months, assign the full original activity set, recruit/manage people, incur arrests/sieges and advance days with deterministic parity.
 
