@@ -31,6 +31,7 @@ Two kinds of evidence are used:
 | Supreme Court | `supremecourt()` | 12 scenarios, laws and bench |
 | Names | `firstname()`, `lastname()`, `generate_name()` | 40 samples x 44 names |
 | Opinion shifts | `change_public_opinion()` | 12 scenarios x 972 shifts |
+| Crime and heat | `criminalize()`, `lawflagheat()` | crime list checked against a trace |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |

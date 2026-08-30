@@ -23,6 +23,10 @@ var known: bool = false
 ## Whether the organisation is squatting here as a safehouse.
 var is_safehouse: bool = false
 
+## Who holds the place: &"nobody", &"lcs" or &"ccs". Crimes against the
+## Conservative Crime Squad are not prosecuted.
+var rented_by: StringName = &"nobody"
+
 ## Police attention and how well the site's secrecy is holding.
 var heat: int = 0
 var secrecy: int = 100

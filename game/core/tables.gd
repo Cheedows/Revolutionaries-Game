@@ -127,3 +127,41 @@ const STALINIST_AGREES_ON_VIEW: Dictionary = {
 	&"torture": false,
 	&"women": false,
 }
+
+## How vigorously the law pursues each crime, from lawflagheat(). Not how
+## severe the crime is: assault carries no heat because the squad picks up
+## too many charges for it to mean anything.
+const CRIME_HEAT: Dictionary = {
+	&"armedassault": 0,
+	&"arson": 50,
+	&"assault": 0,
+	&"bankrobbery": 20,
+	&"breaking": 0,
+	&"brownies": 50,
+	&"burial": 0,
+	&"burnflag": 0,
+	&"cartheft": 0,
+	&"ccfraud": 20,
+	&"commerce": 20,
+	&"disturbance": 0,
+	&"escaped": 50,
+	&"extortion": 20,
+	&"guncarry": 0,
+	&"gunuse": 1,
+	&"helpescape": 50,
+	&"hireillegal": 10,
+	&"information": 50,
+	&"jury": 0,
+	&"kidnapping": 20,
+	&"loitering": 0,
+	&"murder": 20,
+	&"prostitution": 0,
+	&"publicnudity": 0,
+	&"racketeering": 50,
+	&"resist": 10,
+	&"speech": 0,
+	&"terrorism": 100,
+	&"theft": 0,
+	&"treason": 100,
+	&"vandalism": 0,
+}

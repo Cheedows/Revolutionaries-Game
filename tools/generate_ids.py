@@ -23,6 +23,7 @@ ENUMS = [
     ("LAWS", "src/includes.h", "Laws", "LAW_", "LAWNUM"),
     ("VIEWS", "src/includes.h", "Views", "VIEW_", "VIEWNUM"),
     ("ACTIVITIES", "src/includes.h", "Activity", "ACTIVITY_", "ACTIVITYNUM"),
+    ("LAW_FLAGS", "src/includes.h", "Lawflags", "LAWFLAG_", "LAWFLAGNUM"),
 ]
 
 
@@ -107,6 +108,18 @@ def skill_attributes(skills):
     for skill in missing:
         mapping[skill] = default
     return mapping
+
+
+def crime_heat():
+    """Parses lawflagheat() into a crime -> heat map."""
+    text = (ROOT / "src/common/commonactions.cpp").read_text(errors="replace")
+    body = re.search(r"int lawflagheat\(int lawflag\)\s*\{(.*?)\n\}", text, re.S)
+    if not body:
+        raise SystemExit("lawflagheat not found")
+    heat = {}
+    for flag, value in re.findall(r"case LAWFLAG_([A-Z]+):\s*return (\d+);", body.group(1)):
+        heat[flag.lower()] = int(value)
+    return heat
 
 
 def politics_tables():
@@ -203,6 +216,13 @@ def main() -> int:
         "const STALINIST_AGREES_ON_VIEW: Dictionary = {"]
     for view in sorted(stalin_view):
         table_lines.append(f'\t&"{view}": {"true" if stalin_view[view] else "false"},')
+    table_lines += ["}", "",
+        "## How vigorously the law pursues each crime, from lawflagheat(). Not how",
+        "## severe the crime is: assault carries no heat because the squad picks up",
+        "## too many charges for it to mean anything.",
+        "const CRIME_HEAT: Dictionary = {"]
+    for crime, value in sorted(crime_heat().items()):
+        table_lines.append(f'\t&"{crime}": {value},')
     table_lines += ["}", ""]
     TABLES.write_text("\n".join(table_lines))
     print(f"wrote {TABLES.relative_to(ROOT)}: "

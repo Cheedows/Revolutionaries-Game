@@ -50,3 +50,32 @@ func test_ids_are_unique_and_named() -> void:
 				fail("%s contains a duplicate: %s" % [group_name, value])
 				return
 			seen[value] = true
+
+
+func test_crime_flags_match_the_recorded_arrays() -> void:
+	var records := TraceFile.load_records(TRACE)
+	if records.is_empty():
+		fail("could not read %s" % TRACE)
+		return
+	# The trace with a squad in it is the one that has creatures to inspect.
+	for record: Dictionary in records:
+		var pool: Array = record["state"]["pool"]
+		if pool.is_empty():
+			continue
+		var creature: Dictionary = pool[0]
+		equal(Ids.LAW_FLAGS.size(), (creature["crimes_suspected"] as Array).size(),
+				"crime count — note this differs from the number of laws")
+		return
+	fail("no trace frame had a creature in it")
+
+
+func test_every_crime_has_a_heat_value() -> void:
+	for crime: StringName in Ids.LAW_FLAGS:
+		var heat := CrimeRules.heat_of(crime)
+		if heat < 0:
+			fail("%s has negative heat" % crime)
+			return
+	# Spot-check the two ends the original comments on.
+	equal(CrimeRules.heat_of(&"treason"), 100, "treason is pursued hardest")
+	equal(CrimeRules.heat_of(&"assault"), 0,
+			"assault carries none — the squad picks up too many charges for it to matter")

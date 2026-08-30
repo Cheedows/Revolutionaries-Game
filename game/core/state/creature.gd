@@ -53,7 +53,9 @@ var base: int = -1
 ## How much attention the police are paying.
 var heat: int = 0
 
-## Crimes the authorities suspect, per entry in Ids.LAWS.
+## Crimes the authorities suspect, per entry in [constant Ids.LAW_FLAGS].
+## Note this is a different list from the laws themselves: a crime is a thing
+## you can be charged with, a law is a policy the country holds.
 var crimes_suspected: PackedInt32Array = PackedInt32Array()
 
 ## Whether this is an animal rather than a person. The original tracks it
@@ -93,7 +95,7 @@ var augmentations: Array[StringName] = []
 
 
 func _init() -> void:
-	crimes_suspected.resize(Ids.LAWS.size())
+	crimes_suspected.resize(Ids.LAW_FLAGS.size())
 
 
 func is_armed() -> bool:
