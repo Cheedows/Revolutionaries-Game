@@ -34,6 +34,7 @@ Two kinds of evidence are used:
 | Crime and heat | `criminalize()`, `lawflagheat()` | crime list checked against a trace |
 | Win condition | `wincheck()` | 40 governments, hostile to converted |
 | Monthly turn (political spine) | `passmonth()` | a simulated year runs the cycle |
+| World building | `make_classic_world()`, `initlocation()` | 6 scenarios x 44 locations |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |

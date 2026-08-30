@@ -23,6 +23,7 @@ void congress(char clearformess, char canseethings);
 void elections_house(char canseethings);
 void supremecourt(char clearformess, char canseethings);
 char wincheck();
+void make_world(bool hasmaps);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
 void damagemod(Creature &t, char &damtype, int &damamount, char hitlocation,
@@ -772,6 +773,50 @@ void probe_wincheck(FILE *out)
    }
 }
 
+// Building the world: the structure of the city and the RNG each location
+// takes for its own floor plan.
+void probe_world(FILE *out)
+{
+   for (int scenario = 0; scenario < 6; scenario++)
+   {
+      unsigned long seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++)
+         law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+
+      fprintf(out, "{\"kind\":\"world\",\"scenario\":%d,\"seed\":%lu",
+              scenario, seed);
+      fputs(",\"law\":[", out);
+      for (int l = 0; l < LAWNUM; l++)
+         fprintf(out, "%s%d", l ? "," : "", law[l]);
+
+      make_world(scenario % 2 == 1);
+
+      fputs("],\"locations\":[", out);
+      for (int l = 0; l < len(location); l++)
+      {
+         fprintf(out, "%s{\"id\":%d,\"type\":%d,\"parent\":%d,\"area\":%d",
+                 l ? "," : "", location[l]->id, location[l]->type,
+                 location[l]->parent, location[l]->area);
+         fprintf(out, ",\"renting\":%d,\"hidden\":%d,\"mapped\":%d,\"upgradable\":%d",
+                 location[l]->renting, location[l]->hidden ? 1 : 0,
+                 location[l]->mapped ? 1 : 0, location[l]->upgradable ? 1 : 0);
+         fputs(",\"name\":", out);
+         write_string(out, location[l]->name);
+         fputs(",\"shortname\":", out);
+         write_string(out, location[l]->shortname);
+         fputs(",\"mapseed\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%d", i ? "," : "", (int)location[l]->mapseed[i]);
+         fputs("]}", out);
+      }
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -801,6 +846,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "names")) probe_names(out);
    else if (!strcmp(which, "opinion")) probe_opinion_change(out);
    else if (!strcmp(which, "wincheck")) probe_wincheck(out);
+   else if (!strcmp(which, "world")) probe_world(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

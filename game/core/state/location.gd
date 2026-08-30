@@ -23,9 +23,25 @@ var known: bool = false
 ## Whether the organisation is squatting here as a safehouse.
 var is_safehouse: bool = false
 
-## Who holds the place: &"nobody", &"lcs" or &"ccs". Crimes against the
-## Conservative Crime Squad are not prosecuted.
+## Who holds the place, as a name: &"nobody", &"permanent", &"ccs" or
+## &"rented". Crimes against the Conservative Crime Squad are not prosecuted.
 var rented_by: StringName = &"nobody"
+
+## The raw holder value. See [Renting]: negative names a holder, zero means the
+## organisation squats here, and positive is a monthly rent.
+var renting: int = Renting.NOBODY
+
+## Which part of the map this sits in; the original uses it to decide travel.
+var area: int = 0
+
+## Whether the player knows this place exists.
+var hidden: bool = false
+
+## Whether the squad has a floor plan for it.
+var mapped: bool = false
+
+## Whether the organisation can fortify it into a compound.
+var upgradable: bool = false
 
 ## Police attention and how well the site's secrecy is holding.
 var heat: int = 0

@@ -24,6 +24,8 @@ ENUMS = [
     ("VIEWS", "src/includes.h", "Views", "VIEW_", "VIEWNUM"),
     ("ACTIVITIES", "src/includes.h", "Activity", "ACTIVITY_", "ACTIVITYNUM"),
     ("LAW_FLAGS", "src/includes.h", "Lawflags", "LAWFLAG_", "LAWFLAGNUM"),
+    ("SITE_TYPES", "src/locations/locations.h", "SiteTypes", "SITE_", "SITENUM"),
+    ("SIEGE_TYPES", "src/locations/locations.h", "SiegeTypes", "SIEGE_", "SIEGENUM"),
 ]
 
 
