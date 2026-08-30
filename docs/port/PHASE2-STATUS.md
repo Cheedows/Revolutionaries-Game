@@ -29,6 +29,7 @@ Two kinds of evidence are used:
 | Congress | `congress()` | 10 scenarios: 435 House and 100 Senate votes each |
 | Elections | `elections_house()`, `elections_senate()` | 10 scenarios, every election law |
 | Supreme Court | `supremecourt()` | 12 scenarios, laws and bench |
+| Names | `firstname()`, `lastname()`, `generate_name()` | 40 samples x 44 names |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -55,10 +56,6 @@ Named rather than skipped. Each is work, not a decision to leave it out.
   chase systems.
 - **Monthly turn** — finances, justice, sleepers, elections, the endgame — is
   not started. The voter model and the legislative session it needs are green.
-- **Name generation** is not ported (`creaturenames.cpp`, 921 lines), and it
-  consumes randomness. The Supreme Court replacing a justice names them, so a
-  full-game replay will diverge from that point until this is done. The court
-  probe checks the bench, which is decided before the name is drawn.
 - **Constitutional endgames** are left out of the ported Congress: purging the
   court, imposing term limits, and the two ways an extreme Congress ends the
   game. Each is its own system.

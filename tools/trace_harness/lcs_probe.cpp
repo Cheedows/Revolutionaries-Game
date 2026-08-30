@@ -633,6 +633,58 @@ void probe_court(FILE *out)
    }
 }
 
+// The name generator, which every replay depends on because it consumes
+// randomness wherever a person is created.
+void probe_names(FILE *out)
+{
+   for (int sample = 0; sample < 40; sample++)
+   {
+      unsigned long seed = 275604541UL * (unsigned long)(sample + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      int gender = sample % 4;  // neutral, male, female, white male patriarch
+      fprintf(out, "{\"kind\":\"names\",\"sample\":%d,\"seed\":%lu,\"gender\":%d",
+              sample, seed, gender);
+
+      char first[80], last[80], middle[80];
+      fputs(",\"full\":[", out);
+      for (int i = 0; i < 12; i++)
+      {
+         generate_name(first, (char)gender);
+         fputs(i ? "," : "", out);
+         write_string(out, first);
+      }
+      fputs("],\"first\":[", out);
+      for (int i = 0; i < 12; i++)
+      {
+         firstname(first, (char)gender);
+         fputs(i ? "," : "", out);
+         write_string(out, first);
+      }
+      fputs("],\"last\":[", out);
+      for (int i = 0; i < 12; i++)
+      {
+         lastname(last, gender == GENDER_WHITEMALEPATRIARCH);
+         fputs(i ? "," : "", out);
+         write_string(out, last);
+      }
+      fputs("],\"long\":[", out);
+      for (int i = 0; i < 8; i++)
+      {
+         generate_long_name(first, middle, last, (char)gender);
+         fprintf(out, "%s[", i ? "," : "");
+         write_string(out, first);
+         fputc(',', out);
+         write_string(out, middle);
+         fputc(',', out);
+         write_string(out, last);
+         fputc(']', out);
+      }
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -659,6 +711,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "congress")) probe_congress(out);
    else if (!strcmp(which, "elections")) probe_elections(out);
    else if (!strcmp(which, "court")) probe_court(out);
+   else if (!strcmp(which, "names")) probe_names(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
