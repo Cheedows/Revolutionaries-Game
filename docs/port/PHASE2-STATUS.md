@@ -27,6 +27,8 @@ Two kinds of evidence are used:
 | Public opinion | `publicmood()`, `stalinview()`, `randomissue()` | 6 scenarios x 22 laws |
 | Voters and legislators | `getswingvoter()`, `presidentapproval()`, … | 6 scenarios, 1,000-voter approval |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
+| Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
+| Reputation | `addjuice()` | folded into the activities probe |
 | Session loop | the seam itself | headless run, 31 days into February |
 | Save format | new, not ported | round-trip from recorded state |
 
@@ -37,6 +39,10 @@ Named rather than skipped. Each is work, not a decision to leave it out.
 - **Daily turn** is a skeleton: the date, time served, wounds and levelling.
   Recruitment, sieges, interrogation, dating, hacking, graffiti, prostitution,
   teaching, burial and the news pass are not ported.
+- **Prostitution** is ported but not probed: a police sting in the original
+  calls `find_police_station()`, which walks a world the probe does not build.
+  The same probe would also need a Liberal drug law to keep a brownie seller out
+  of the cells, which is why the recorded scenarios use one.
 - **Arrests** are ported but not probed: an arrest in the original reaches
   `criminalize()` and the news system, which need a built world the probe does
   not have. The rule itself is small and unit-tested.

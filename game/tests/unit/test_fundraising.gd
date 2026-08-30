@@ -27,6 +27,8 @@ func test_earnings_match_the_original() -> void:
 		var rng := Rng.new(int(sample["seed"]))
 		var creature := _creature(sample, state, rng)
 
+		state.law.set_value(&"drugs", int(sample["drug_law"]))
+
 		var runs: Array = sample["runs"]
 		for day in runs.size():
 			var expected: Array = runs[day]
@@ -42,6 +44,9 @@ func test_earnings_match_the_original() -> void:
 			FundraisingActivities.sell_music(state, rng, creature, _catalog)
 			if state.ledger.funds != int(expected[3]):
 				return _report(sample, day, "after busking", expected[3], state.ledger.funds)
+			StreetTradeActivities.sell_brownies(state, rng, creature)
+			if state.ledger.funds != int(expected[4]):
+				return _report(sample, day, "after brownies", expected[4], state.ledger.funds)
 
 		var influence: Array = sample["influence"]
 		for index in influence.size():
@@ -50,6 +55,11 @@ func test_earnings_match_the_original() -> void:
 						% [sample["scenario"], Ids.VIEWS[index], influence[index],
 								state.opinion.background_influence[index]])
 				return
+
+		if creature.juice != int(sample["juice_after"]):
+			fail("scenario %s: juice expected %s, got %d"
+					% [sample["scenario"], sample["juice_after"], creature.juice])
+			return
 
 		var skills_after: Array = sample["skills_after"]
 		for index in skills_after.size():

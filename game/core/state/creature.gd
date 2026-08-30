@@ -72,6 +72,9 @@ var sentence: int = 0
 var confessions: int = 0
 var death_penalty: int = 0
 
+## Id of whoever recruited this creature, or -1. Reputation trickles up it.
+var recruiter_id: int = -1
+
 ## Days since joining, and since dying.
 var join_days: int = 0
 var death_days: int = 0

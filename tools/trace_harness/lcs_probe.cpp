@@ -23,6 +23,7 @@ void doActivitySolicitDonations(std::vector<Creature *> &solicit, char &clearfor
 void doActivitySellTshirts(std::vector<Creature *> &tshirts, char &clearformess);
 void doActivitySellArt(std::vector<Creature *> &art, char &clearformess);
 void doActivitySellMusic(std::vector<Creature *> &music, char &clearformess);
+void doActivitySellBrownies(std::vector<Creature *> &brownies, char &clearformess);
 int presidentapproval();
 char determine_politician_vote(char alignment, int law);
 
@@ -371,7 +372,12 @@ void probe_activities(FILE *out)
       std::vector<Creature *> one;
       one.push_back(&cr);
 
-      fputs("],\"runs\":[", out);
+      // Drug laws stay Liberal so a brownie seller is never busted: an arrest
+      // reaches criminalize() and the news system, which need a built world.
+      law[LAW_DRUGS] = (scenario % 2) + 1;
+      fprintf(out, "],\"drug_law\":%d", law[LAW_DRUGS]);
+
+      fputs(",\"runs\":[", out);
       for (int day = 0; day < 4; day++)
       {
          doActivitySolicitDonations(one, clearformess);
@@ -382,13 +388,20 @@ void probe_activities(FILE *out)
          long after_art = ledger.get_funds();
          doActivitySellMusic(one, clearformess);
          long after_music = ledger.get_funds();
-         fprintf(out, "%s[%ld,%ld,%ld,%ld]", day ? "," : "",
-                 after_donations, after_tshirts, after_art, after_music);
+         doActivitySellBrownies(one, clearformess);
+         long after_brownies = ledger.get_funds();
+         // Prostitution is not probed: a police sting sends the creature to
+         // find_police_station(), which walks a world this probe does not
+         // build. See docs/port/PHASE2-STATUS.md.
+         fprintf(out, "%s[%ld,%ld,%ld,%ld,%ld]", day ? "," : "",
+                 after_donations, after_tshirts, after_art, after_music,
+                 after_brownies);
       }
       fputs("],\"influence\":[", out);
       for (int v = 0; v < VIEWNUM; v++)
          fprintf(out, "%s%d", v ? "," : "", background_liberal_influence[v]);
-      fputs("],\"skills_after\":[", out);
+      fprintf(out, "],\"juice_after\":%d", cr.juice);
+      fputs(",\"skills_after\":[", out);
       for (int i = 0; i < SKILLNUM; i++)
          fprintf(out, "%s%d", i ? "," : "", cr.get_skill(i));
       fputs("]}\n", out);
