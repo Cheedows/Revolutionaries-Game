@@ -393,6 +393,18 @@ def extract_vehicles(report: Report):
             node = entry.find(name)
             return default if node is None else to_int(child_text(node, tag), default)
 
+        def block_float(name, tag, default=1.0):
+            """A skill factor is written as a decimal in the XML and read with
+            atof; reading it as an integer silently turns 0.5 into nothing."""
+            node = entry.find(name)
+            if node is None:
+                return default
+            raw = child_text(node, tag)
+            try:
+                return float(raw)
+            except ValueError:
+                return default
+
         def block_bool(name, tag, default=False):
             node = entry.find(name)
             return default if node is None else to_bool(child_text(node, tag), default)
@@ -423,13 +435,13 @@ def extract_vehicles(report: Report):
             "colors": colors,
             "display_colors": display_colors,
             "drivebonus_base": block("drivebonus", "base"),
-            "drivebonus_skillfactor": block("drivebonus", "skillfactor"),
-            "drivebonus_softlimit": block("drivebonus", "softlimit"),
-            "drivebonus_hardlimit": block("drivebonus", "hardlimit"),
+            "drivebonus_skillfactor": block_float("drivebonus", "skillfactor"),
+            "drivebonus_softlimit": block("drivebonus", "softlimit", 8),
+            "drivebonus_hardlimit": block("drivebonus", "hardlimit", 99),
             "dodgebonus_base": block("dodgebonus", "base"),
-            "dodgebonus_skillfactor": block("dodgebonus", "skillfactor"),
-            "dodgebonus_softlimit": block("dodgebonus", "softlimit"),
-            "dodgebonus_hardlimit": block("dodgebonus", "hardlimit"),
+            "dodgebonus_skillfactor": block_float("dodgebonus", "skillfactor"),
+            "dodgebonus_softlimit": block("dodgebonus", "softlimit", 8),
+            "dodgebonus_hardlimit": block("dodgebonus", "hardlimit", 99),
             "attackbonus_driver": block("attackbonus", "driver"),
             "attackbonus_passenger": block("attackbonus", "passenger"),
             "armor_low_min": block("armor", "low_armor_min"),

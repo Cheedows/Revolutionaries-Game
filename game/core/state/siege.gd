@@ -13,6 +13,10 @@ var attacker: StringName = &""
 var timer: int = 0
 var underway: bool = false
 
+## How far the response has escalated, which decides what the attackers wear
+## and bring. Zero is the first squad car.
+var escalation: int = 0
+
 ## Escalations the attackers have reached for.
 var has_tank: bool = false
 var has_air_support: bool = false

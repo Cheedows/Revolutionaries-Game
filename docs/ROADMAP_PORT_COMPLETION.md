@@ -64,7 +64,12 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
   - Probed across all 106 types x 8 legal/political climates, half of them
     mid-infiltration so the site-dependent branches are reached. Every field is
     compared, raw attribute values included.
-- [ ] Finish context-sensitive check rules needed later: stealth, disguise and driving.
+- [x] Finish context-sensitive check rules needed later: stealth, disguise and driving.
+  - Disguise rules are generated from `hasdisguise()` rather than transcribed;
+    the extractor refuses to run rather than drop a rule it does not recognise.
+  - Probed as a table (every outfit at every kind of site, restricted or not,
+    high security or not, under three legal climates) plus the rolls themselves
+    for every garment and every car.
 - [x] Verify safehouse ownership cleanup behavior (locks/alarms/staff-only markers).
   - Ported in `core/systems/site/site_builder.gd`; not probed, because nothing is
     held outright at the start of a game so the recorded worlds never take the

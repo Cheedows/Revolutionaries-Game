@@ -70,6 +70,10 @@ var special_attack: StringName = &""
 ## Whether the authorities would deport rather than charge this person.
 var illegal_alien: bool = false
 
+## Id of the person this one is dragging along, or 0 for nobody. A hostage or
+## a body makes a squad conspicuous in every sense.
+var prisoner_id: int = 0
+
 ## &"none", &"animal" or &"tank". The original folds tanks into the same field,
 ## since a tank is another thing that is not a person and is armored by nature.
 var animal_gloss: StringName = &"none"

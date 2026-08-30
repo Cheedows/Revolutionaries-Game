@@ -28,6 +28,7 @@ void makecreature(Creature &cr, short type);
 void build_site(std::string name);
 void initsite(Location &loc);
 void knowmap(int locx, int locy, int locz);
+char hasdisguise(const Creature &cr);
 short creaturetype_string_to_enum(const std::string &ctname);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
@@ -822,6 +823,144 @@ void probe_world(FILE *out)
    }
 }
 
+// The three skills the dice alone do not decide: stealth reads what you are
+// wearing, disguise reads whether it belongs where you are standing, and
+// driving reads the car.
+void probe_context_checks(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 100003UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      make_world(false);
+
+      squadst squad;
+      for (int p = 0; p < 6; p++) squad.squad[p] = NULL;
+      activesquad = &squad;
+      mode = GAMEMODE_SITE;
+
+      // Whether an outfit passes, everywhere it might be worn. No randomness
+      // is involved, so this is a table rather than a sample.
+      for (int l = 0; l < len(location); l++)
+      {
+         int type = location[l]->type;
+         if (type < 0 || type >= SITENUM) continue;
+         cursite = l;
+         locx = MAPX >> 1, locy = 5, locz = 0;
+         for (int x = 0; x < MAPX; x++)
+         for (int y = 0; y < MAPY; y++)
+         for (int z = 0; z < MAPZ; z++)
+         {
+            levelmap[x][y][z].flag = 0;
+            levelmap[x][y][z].special = SPECIAL_NONE;
+            levelmap[x][y][z].siegeflag = 0;
+         }
+
+         for (int secure = 0; secure < 2; secure++)
+         {
+            levelmap[locx][locy][locz].flag =
+               secure ? SITEBLOCK_RESTRICTED : 0;
+            for (int high = 0; high < 2; high++)
+            {
+               location[l]->highsecurity = high;
+               fprintf(out, "{\"kind\":\"disguise\",\"scenario\":%d,\"site\":%d",
+                       scenario, type);
+               fprintf(out, ",\"restricted\":%d,\"highsecurity\":%d", secure, high);
+               fputs(",\"armors\":[", out);
+               for (int a = 0; a < len(armortype); a++)
+               {
+                  if (a) fputc(',', out);
+                  write_string(out, armortype[a]->get_idname().c_str());
+               }
+               fputs("],\"ratings\":[", out);
+               for (int a = 0; a < len(armortype); a++)
+               {
+                  Creature cr;
+                  cr.give_armor(*armortype[a], NULL);
+                  fprintf(out, "%s%d", a ? "," : "", (int)hasdisguise(cr));
+               }
+               // And with nothing on at all, which several sites care about.
+               Creature bare;
+               fprintf(out, ",%d]}\n", (int)hasdisguise(bare));
+            }
+            location[l]->highsecurity = 0;
+         }
+      }
+
+      // Stealth and disguise rolls, which start from the dice and then get
+      // cut down by the clothes.
+      cursite = 1;
+      locx = MAPX >> 1, locy = 5, locz = 0;
+      levelmap[locx][locy][locz].flag = 0;
+      for (int a = 0; a < len(armortype); a++)
+      for (int wear = 1; wear <= 3; wear++)
+      {
+         unsigned long seed_used = 100019UL * (unsigned long)(a * 4 + wear + scenario);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         Creature cr;
+         cr.set_skill(SKILL_STEALTH, (a + wear) % 9);
+         cr.set_skill(SKILL_DISGUISE, (a + wear * 2) % 9);
+         cr.give_armor(*armortype[a], NULL);
+         for (int step = 1; step < wear; step++) cr.get_armor().decrease_quality(1);
+         if (wear == 3) cr.get_armor().set_damaged(true);
+
+         fprintf(out, "{\"kind\":\"cover\",\"scenario\":%d,\"seed\":%lu,\"armor\":",
+                 scenario, seed_used);
+         write_string(out, armortype[a]->get_idname().c_str());
+         fprintf(out, ",\"wear\":%d,\"quality\":%d,\"damaged\":%d",
+                 wear, cr.get_armor().get_quality(),
+                 cr.get_armor().is_damaged() ? 1 : 0);
+         fprintf(out, ",\"stealth_skill\":%d,\"disguise_skill\":%d,\"uniformed\":%d",
+                 cr.get_skill(SKILL_STEALTH), cr.get_skill(SKILL_DISGUISE),
+                 (int)hasdisguise(cr));
+         fputs(",\"stealth\":[", out);
+         for (int i = 0; i < 8; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.skill_roll(SKILL_STEALTH));
+         fputs("],\"disguise\":[", out);
+         for (int i = 0; i < 8; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.skill_roll(SKILL_DISGUISE));
+         fputs("]}\n", out);
+      }
+
+      // Driving, which is the car's ability more than the driver's.
+      mode = GAMEMODE_CHASECAR;
+      for (int v = 0; v < len(vehicletype); v++)
+      for (int level = 0; level < 3; level++)
+      {
+         unsigned long seed_used = 100043UL * (unsigned long)(v * 4 + level + scenario);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         Creature cr;
+         cr.set_skill(SKILL_DRIVING, level * 4);
+         Vehicle car(*vehicletype[v], vehicletype[v]->color()[0], 2000);
+         chaseseq.clean();
+         chaseseq.friendcar.push_back(&car);
+         cr.carid = car.id();
+
+         fprintf(out, "{\"kind\":\"drive\",\"scenario\":%d,\"seed\":%lu,\"vehicle\":",
+                 scenario, seed_used);
+         write_string(out, vehicletype[v]->idname().c_str());
+         fprintf(out, ",\"skill\":%d,\"escape\":[", cr.get_skill(SKILL_DRIVING));
+         for (int i = 0; i < 8; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.skill_roll(PSEUDOSKILL_ESCAPEDRIVE));
+         fputs("],\"dodge\":[", out);
+         for (int i = 0; i < 8; i++)
+            fprintf(out, "%s%d", i ? "," : "", cr.skill_roll(PSEUDOSKILL_DODGEDRIVE));
+         fputs("]}\n", out);
+         chaseseq.friendcar.clear();
+      }
+      mode = GAMEMODE_SITE;
+      activesquad = NULL;
+   }
+}
+
 // Spawning people into a built world: the path a site population, a
 // recruitment meeting and a squad of enemies all come through.
 //
@@ -1131,6 +1270,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "spawn")) probe_spawn(out);
    else if (!strcmp(which, "sitemaps")) probe_sitemaps(out);
    else if (!strcmp(which, "sites")) probe_sites(out);
+   else if (!strcmp(which, "context")) probe_context_checks(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

@@ -8,10 +8,11 @@ extends RefCounted
 ## the best three. That caps a roll at 18 however able the creature is, which is
 ## why high skill gives diminishing returns.
 ##
-## Scope: the general path, the specialist skills that ignore attributes, and
-## the skills that fail automatically at zero. Stealth, disguise and the driving
-## pseudo-skills also read armor, a disguise and the current vehicle; they are
-## ported with the site and chase systems that supply those.
+## Three skills are not decided by the dice alone. Stealth reads what the
+## creature is wearing and the state it is in, disguise reads whether the
+## outfit belongs where the squad is standing, and the two driving
+## pseudo-skills read the car. Those take a [param context] — see
+## [method skill_roll] — because the alternative is core/ reaching for globals.
 
 ## Ability is divided by this to get whole dice.
 const POINTS_PER_DIE := 3
@@ -25,6 +26,17 @@ const REQUIRES_TRAINING: Array[StringName] = [
 ## Skills specialised enough to ignore the governing attribute and count the
 ## skill itself twice over.
 const IGNORES_ATTRIBUTE: Array[StringName] = [&"security"]
+
+## Driving as the two things a chase actually asks of it. Both roll the driving
+## skill and then hand the total to the car.
+const ESCAPE_DRIVE := &"escapedrive"
+const DODGE_DRIVE := &"dodgedrive"
+
+## Each quality tier below the best takes a fifth off a garment's stealth.
+const WEAR_STEALTH_FACTOR := 0.8
+
+## Damaged clothing is half as quiet.
+const DAMAGED_STEALTH_FACTOR := 0.5
 
 
 ## Rolls against a raw ability score. Returns 0-18.
@@ -63,7 +75,17 @@ static func attribute_roll(rng: Rng, creature: Creature, attribute: StringName) 
 
 
 ## Rolls [param skill]. Returns 0 when the creature cannot attempt it at all.
-static func skill_roll(rng: Rng, creature: Creature, skill: StringName) -> int:
+##
+## [param context] supplies what the roll cannot work out for itself, and is
+## only read by the skills that need it:
+## [code]catalog[/code] for stealth's clothing and driving's car,
+## [code]disguise[/code] as a rating from [Disguise], and
+## [code]vehicle[/code] as the car the creature is in.
+static func skill_roll(rng: Rng, creature: Creature, skill: StringName,
+		context: Dictionary = {}) -> int:
+	var driving := skill == ESCAPE_DRIVE or skill == DODGE_DRIVE
+	if driving:
+		skill = &"driving"
 	var index := Ids.SKILLS.find(skill)
 	var skill_value := creature.skills.values[index]
 	var attribute_value := AttributeRules.effective(
@@ -75,12 +97,96 @@ static func skill_roll(rng: Rng, creature: Creature, skill: StringName) -> int:
 	if skill in IGNORES_ATTRIBUTE:
 		adjusted = skill_value
 
+	if driving:
+		# The car takes over: it turns the driver's whole total into its own
+		# figure, and a driver with no car cannot drive at all.
+		skill_value = _car_skill(context, skill_value + adjusted)
+		adjusted = 0
+
 	var result := roll_check(rng, skill_value + adjusted)
 
 	# The roll happens before this check in the original, so an untrained
 	# specialist still consumes the same randomness on the way to failing.
 	if skill in REQUIRES_TRAINING and skill_value == 0:
 		return 0
+	if skill == &"stealth":
+		return _muffled(result, creature, context)
+	if skill == &"disguise":
+		return _believed(result, creature, context)
+	return result
+
+
+## What the car makes of the driver's ability.
+##
+## A car has a bonus, a multiplier, and two ceilings: past the first, further
+## ability counts half, and past the second it counts for nothing.
+static func _car_skill(context: Dictionary, total: int) -> int:
+	var vehicle: Vehicle = context.get(&"vehicle")
+	var catalog: Catalog = context.get(&"catalog")
+	if vehicle == null or catalog == null:
+		return 0
+	var type: VehicleType = catalog.get_entry(&"vehicle", vehicle.type)
+	if type == null:
+		return 0
+
+	var dodging: bool = context.get(&"dodging", false)
+	var base: int = type.dodgebonus_base if dodging else type.drivebonus_base
+	# A decimal, and the product is truncated: half of an odd total is rounded
+	# down, which is the original's integer score.
+	var factor: float = type.dodgebonus_skillfactor if dodging \
+			else type.drivebonus_skillfactor
+	var soft: int = type.dodgebonus_softlimit if dodging else type.drivebonus_softlimit
+	var hard: int = type.dodgebonus_hardlimit if dodging else type.drivebonus_hardlimit
+
+	var score := int((total + base) * factor)
+	if score < soft:
+		return score
+	if score > soft:
+		score = (score + soft) / 2
+	return hard if score > hard else score
+
+
+## How much of the roll survives what the creature is wearing.
+##
+## Note the original truncates the garment's stealth to a whole number before
+## multiplying, so a garment worn past its first tier loses everything rather
+## than a fifth. Reproduced.
+static func _muffled(result: int, creature: Creature, context: Dictionary) -> int:
+	var catalog: Catalog = context.get(&"catalog")
+	if catalog == null or creature.armor == null:
+		return 0
+	var type: ArmorType = catalog.get_entry(&"armor", creature.armor.type)
+	if type == null:
+		return 0
+
+	var stealth := float(type.stealth_value)
+	for tier in range(1, creature.armor.quality):
+		stealth *= WEAR_STEALTH_FACTOR
+	if creature.armor.damaged:
+		stealth *= DAMAGED_STEALTH_FACTOR
+
+	result *= int(stealth)
+	result /= 2
+	# Shredded clothes are not stealthy, they are conspicuous.
+	if creature.armor.quality > EquipmentRules.quality_levels(creature.armor, catalog):
+		return 0
+	return result
+
+
+## How much of the roll survives being looked at.
+static func _believed(result: int, creature: Creature, context: Dictionary) -> int:
+	var uniformed: int = context.get(&"disguise", Disguise.EXPOSED)
+	if uniformed == Disguise.EXPOSED:
+		return 0
+	if uniformed == Disguise.PARTIAL:
+		result >>= 1
+	if creature.armor != null and creature.armor.bloody:
+		result >>= 1
+	if creature.armor != null and creature.armor.damaged:
+		result >>= 1
+	# Dragging somebody along makes the whole act unconvincing.
+	if creature.prisoner_id != 0:
+		result >>= 2
 	return result
 
 

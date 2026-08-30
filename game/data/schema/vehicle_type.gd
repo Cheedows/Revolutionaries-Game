@@ -26,13 +26,13 @@ extends Resource
 
 ## Driving and dodging bonuses scale with the driver's skill, then flatten.
 @export var drivebonus_base: int = 0
-@export var drivebonus_skillfactor: int = 0
-@export var drivebonus_softlimit: int = 0
-@export var drivebonus_hardlimit: int = 0
+@export var drivebonus_skillfactor: float = 1.0
+@export var drivebonus_softlimit: int = 8
+@export var drivebonus_hardlimit: int = 99
 @export var dodgebonus_base: int = 0
-@export var dodgebonus_skillfactor: int = 0
-@export var dodgebonus_softlimit: int = 0
-@export var dodgebonus_hardlimit: int = 0
+@export var dodgebonus_skillfactor: float = 1.0
+@export var dodgebonus_softlimit: int = 8
+@export var dodgebonus_hardlimit: int = 99
 
 ## Bonus to attacks made from the vehicle.
 @export var attackbonus_driver: int = 0

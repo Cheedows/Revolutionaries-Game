@@ -20,12 +20,12 @@ static func wear_armor(armor: Armor, catalog: Catalog, amount: int = 1) -> bool:
 	armor.quality += amount
 	if armor.quality < 1:
 		armor.quality = 1
-	return armor.quality <= _quality_levels(armor, catalog)
+	return armor.quality <= quality_levels(armor, catalog)
 
 
 ## Whether the garment has worn past its last tier.
 static func is_ruined(armor: Armor, catalog: Catalog) -> bool:
-	return armor.quality > _quality_levels(armor, catalog)
+	return armor.quality > quality_levels(armor, catalog)
 
 
 ## What a pawn shop pays for [param armor]: the type's value divided by its
@@ -126,7 +126,8 @@ static func reload_weapon(creature: Creature, catalog: Catalog, wasteful: bool =
 	return true
 
 
-static func _quality_levels(armor: Armor, catalog: Catalog) -> int:
+## How many tiers of wear the garment has before it is rags.
+static func quality_levels(armor: Armor, catalog: Catalog) -> int:
 	var type: ArmorType = catalog.get_entry(&"armor", armor.type)
 	return type.qualitylevels if type != null else 1
 
