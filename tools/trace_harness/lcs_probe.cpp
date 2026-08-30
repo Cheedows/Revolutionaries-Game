@@ -25,6 +25,7 @@ void supremecourt(char clearformess, char canseethings);
 char wincheck();
 void make_world(bool hasmaps);
 void makecreature(Creature &cr, short type);
+void build_site(std::string name);
 short creaturetype_string_to_enum(const std::string &ctname);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
@@ -896,6 +897,66 @@ void probe_spawn(FILE *out)
    }
 }
 
+// Building floor plans from art/sitemaps.txt.
+void probe_sitemaps(FILE *out)
+{
+   // Plans whose steps are ported: tiles and the room, hallway and stairs
+   // scripts. Anything using SPECIAL, UNIQUE, LOOT or STAIRS_RANDOM is left
+   // out until those are done.
+   static const char *PLANS[] = {
+      "GENERIC_FRONTDOOR", "GENERIC_UNSECURE", "GENERIC_SECURE",
+      "GENERIC_ONEROOM", "GENERIC_LOBBY", "OUTDOOR_OPEN",
+      "OUTDOOR_PUBLICPARK",
+   };
+   const int PLAN_COUNT = (int)(sizeof(PLANS) / sizeof(PLANS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long seed = 512927377UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      for (int p = 0; p < PLAN_COUNT; p++)
+      {
+         // A blank map, as initsite() starts from.
+         for (int x = 0; x < MAPX; x++)
+         for (int y = 0; y < MAPY; y++)
+         for (int z = 0; z < MAPZ; z++)
+         {
+            levelmap[x][y][z].flag = 0;
+            levelmap[x][y][z].special = SPECIAL_NONE;
+         }
+
+         build_site(PLANS[p]);
+
+         fprintf(out, "{\"kind\":\"sitemap\",\"scenario\":%d,\"seed\":%lu,\"plan\":",
+                 scenario, seed);
+         write_string(out, PLANS[p]);
+         // Only the ground floor and the first two above it carry anything in
+         // these plans; recording all ten would be mostly zeroes.
+         fputs(",\"flags\":[", out);
+         bool first = true;
+         for (int z = 0; z < 3; z++)
+         for (int y = 0; y < MAPY; y++)
+         for (int x = 0; x < MAPX; x++)
+         {
+            fprintf(out, "%s%d", first ? "" : ",", levelmap[x][y][z].flag);
+            first = false;
+         }
+         fputs("],\"specials\":[", out);
+         first = true;
+         for (int z = 0; z < 3; z++)
+         for (int y = 0; y < MAPY; y++)
+         for (int x = 0; x < MAPX; x++)
+         {
+            fprintf(out, "%s%d", first ? "" : ",", levelmap[x][y][z].special);
+            first = false;
+         }
+         fputs("]}\n", out);
+      }
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -927,6 +988,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "wincheck")) probe_wincheck(out);
    else if (!strcmp(which, "world")) probe_world(out);
    else if (!strcmp(which, "spawn")) probe_spawn(out);
+   else if (!strcmp(which, "sitemaps")) probe_sitemaps(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

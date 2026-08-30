@@ -38,6 +38,7 @@ Two kinds of evidence are used:
 | Rent and eviction | the rent pass in `advanceday()` | unit-tested against a built world |
 | Activity dispatch | `funds_and_trouble()` | the ported activities, run from the loop |
 | Spawning people | `makecreature()`, `verifyworklocation()` | 4 scenarios x 23 kinds of person |
+| Floor plans | `art/sitemaps.txt`, `configSite*::build()` | 3 seeds x 7 plans, 4,830 cells each |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -49,6 +50,11 @@ Two kinds of evidence are used:
 
 Named rather than skipped. Each is work, not a decision to leave it out.
 
+- **Site map steps SPECIAL, UNIQUE, LOOT and STAIRS_RANDOM** are not built.
+  The first three place features and items that need the loot and encounter
+  systems; the fourth searches both floors for a free tile and carries a bug in
+  its own search (it iterates one list while indexing another). Nineteen of the
+  twenty-six plans use at least one of them.
 - **Spawn kits for the rarer types** are not ported: the Conservative Crime
   Squad members, police and agents, hicks with guns, prisoners (which recurse
   into other types), thieves, and the rest of the long tail. The probe covers

@@ -270,3 +270,30 @@ const CREATURE_WORKSITES: Dictionary = {
 	&"worker_sweatshop": [&"industry_sweatshop"],
 	&"yogainstructor": [&"business_vegancoop"],
 }
+
+## The bit flags a map tile can carry, from the SITEBLOCK_ defines.
+const SITE_BLOCKS: Dictionary = {
+	&"exit": 1,
+	&"block": 2,
+	&"door": 4,
+	&"known": 8,
+	&"loot": 16,
+	&"locked": 32,
+	&"klock": 64,
+	&"clock": 128,
+	&"restricted": 256,
+	&"bloody": 512,
+	&"bloody2": 1024,
+	&"grassy": 2048,
+	&"outdoor": 4096,
+	&"debris": 8192,
+	&"graffiti": 16384,
+	&"graffiti_ccs": 32768,
+	&"graffiti_other": 65536,
+	&"fire_start": 131072,
+	&"fire_peak": 262144,
+	&"fire_end": 524288,
+	&"chainlink": 1048576,
+	&"alarmed": 2097152,
+	&"metal": 4194304,
+}

@@ -63,9 +63,12 @@ func next() -> int:
 ## division; the mathematically equivalent integer form is used here because it
 ## cannot round differently between platforms. Proven equal to the C++ over the
 ## full draw range by [code]tests/unit/test_rng.gd[/code].
+##
+## A bound of zero or less still draws, and still returns zero or a negative
+## number. That is not a nicety: the original's map generator asks for
+## [code]LCSrandom(dy - 3)[/code] without checking that dy exceeds three, and
+## skipping the draw there rearranges every building.
 func below(max_exclusive: int) -> int:
-	if max_exclusive <= 0:
-		return 0
 	return (max_exclusive * (next() - 1)) / _MASK
 
 

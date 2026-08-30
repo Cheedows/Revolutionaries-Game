@@ -26,6 +26,7 @@ ENUMS = [
     ("LAW_FLAGS", "src/includes.h", "Lawflags", "LAWFLAG_", "LAWFLAGNUM"),
     ("SITE_TYPES", "src/locations/locations.h", "SiteTypes", "SITE_", "SITENUM"),
     ("SIEGE_TYPES", "src/locations/locations.h", "SiegeTypes", "SIEGE_", "SIEGENUM"),
+    ("SITE_SPECIALS", "src/locations/locations.h", "SpecialBlocks", "SPECIAL_", "SPECIALNUM"),
 ]
 
 
@@ -122,6 +123,17 @@ def crime_heat():
     for flag, value in re.findall(r"case LAWFLAG_([A-Z]+):\s*return (\d+);", body.group(1)):
         heat[flag.lower()] = int(value)
     return heat
+
+
+def site_blocks():
+    """Parses the SITEBLOCK_ bit flags into name -> value."""
+    text = (ROOT / "src/locations/locations.h").read_text(errors="replace")
+    flags = {}
+    for name, bit in re.findall(r"#define SITEBLOCK_([A-Z0-9_]+) BIT(\d+)", text):
+        flags[name.lower()] = 1 << (int(bit) - 1)
+    if not flags:
+        raise SystemExit("no SITEBLOCK flags found")
+    return flags
 
 
 def worksites():
@@ -261,6 +273,11 @@ def main() -> int:
     for creature, sites in sorted(worksites().items()):
         listed = ", ".join(f'&"{site}"' for site in sites)
         table_lines.append(f'\t&"{creature}": [{listed}],')
+    table_lines += ["}", "",
+        "## The bit flags a map tile can carry, from the SITEBLOCK_ defines.",
+        "const SITE_BLOCKS: Dictionary = {"]
+    for name, value in sorted(site_blocks().items(), key=lambda pair: pair[1]):
+        table_lines.append(f'\t&"{name}": {value},')
     table_lines += ["}", ""]
     TABLES.write_text("\n".join(table_lines))
     print(f"wrote {TABLES.relative_to(ROOT)}: "
