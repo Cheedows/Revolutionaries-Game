@@ -54,6 +54,14 @@ var secrecy: int = 100
 ## Whether the place keeps armed staff and locked doors.
 var high_security: bool = false
 
+## Fortifications and stores, for a safehouse that has been built up. The
+## original calls these the compound.
+var compound_walls: int = 0
+var compound_stores: int = 0
+
+## The legitimate business a safehouse hides behind, or -1 for none.
+var front_business: int = -1
+
 ## Whether the site has been closed down after a raid.
 var closed: int = 0
 

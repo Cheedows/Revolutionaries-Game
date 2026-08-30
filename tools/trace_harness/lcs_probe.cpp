@@ -2499,6 +2499,292 @@ static void activation_write_loot(FILE *out, vector<Item *> &pile)
 }
 
 
+// The first clinic in the world, for the samples that want real medics.
+static int find_clinic_index_probe()
+{
+   for (int l = 0; l < len(location); l++)
+      if (location[l]->type == SITE_HOSPITAL_CLINIC) return l;
+   return 1;
+}
+
+// A transcription of the healing block of advanceday(), which is inline there
+// and cannot be called on its own. Kept line-for-line so the probe measures the
+// original and not a paraphrase of it.
+static void recovery_block(char &clearformess)
+{
+   int p;
+   int *healing = new int[len(location)];
+   int *healing2 = new int[len(location)];
+   for (p = 0; p < len(location); p++)
+   {
+      if (location[p]->type == SITE_HOSPITAL_CLINIC) healing[p] = 6;
+      else if (location[p]->type == SITE_HOSPITAL_UNIVERSITY) healing[p] = 12;
+      else healing[p] = 0;
+      healing2[p] = 0;
+   }
+   for (p = 0; p < len(pool); p++)
+   {
+      if (!pool[p]->alive) continue;
+      if (pool[p]->hiding) continue;
+      if (pool[p]->flag & CREATUREFLAG_SLEEPER) continue;
+      if (pool[p]->activity.type == ACTIVITY_HEAL ||
+          pool[p]->activity.type == ACTIVITY_NONE)
+         if (pool[p]->location > -1 &&
+             healing[pool[p]->location] < pool[p]->get_skill(SKILL_FIRSTAID))
+         {
+            healing[pool[p]->location] = pool[p]->get_skill(SKILL_FIRSTAID);
+            pool[p]->activity.type = ACTIVITY_HEAL;
+         }
+   }
+   for (p = 0; p < len(location); p++)
+      if (location[p]->type != SITE_HOSPITAL_CLINIC &&
+          location[p]->type != SITE_HOSPITAL_UNIVERSITY)
+         if (!fooddaysleft(p))
+            if (location[p]->siege.siege)
+               healing[p] = 0;
+
+   for (p = 0; p < len(pool); p++)
+   {
+      if (!(pool[p]->alive)) continue;
+      if (clinictime(*pool[p]))
+      {
+         if (pool[p]->clinic == false)
+         {
+            int damage = 0;
+            int transfer = 0;
+            if (pool[p]->location > -1)
+               healing2[pool[p]->location] += 100 - pool[p]->blood;
+            if (pool[p]->blood < 100 - (clinictime(*pool[p]) - 1) * 20)
+            {
+               if (pool[p]->location > -1)
+                  pool[p]->blood += 1 + healing[pool[p]->location] / 3;
+               if (pool[p]->blood > 100 - (clinictime(*pool[p]) - 1) * 20)
+                  pool[p]->blood = 100 - (clinictime(*pool[p]) - 1) * 20;
+               if (pool[p]->blood > 100) pool[p]->blood = 100;
+            }
+            if (pool[p]->alive && pool[p]->blood < 0) pool[p]->die();
+            for (int w = 0; w < BODYPARTNUM; w++)
+            {
+               if (pool[p]->wound[w] & WOUND_NASTYOFF)
+               {
+                  if (pool[p]->location > -1 &&
+                      healing[pool[p]->location] + LCSrandom(10) > 12)
+                     pool[p]->wound[w] = WOUND_CLEANOFF;
+                  else
+                  {
+                     damage += 4;
+                     if (pool[p]->location > -1 &&
+                         healing[pool[p]->location] + 9 <= 12) transfer = 1;
+                  }
+               }
+               else if (pool[p]->wound[w] & WOUND_BLEEDING)
+               {
+                  if (pool[p]->location > -1 &&
+                      healing[pool[p]->location] + LCSrandom(10) > 8)
+                     pool[p]->wound[w] &= ~WOUND_BLEEDING;
+                  else damage += 1;
+               }
+               else
+               {
+                  if (pool[p]->blood >= 95) pool[p]->wound[w] &= WOUND_CLEANOFF;
+               }
+            }
+            for (int i = SPECIALWOUND_RIGHTLUNG; i < SPECIALWOUNDNUM; ++i)
+            {
+               int healdiff = 14, permdamage = 0, bleed = 0, healed = 0;
+               switch (i)
+               {
+               case SPECIALWOUND_HEART:
+                  healdiff = 16;
+                  bleed = 8;
+               case SPECIALWOUND_RIGHTLUNG:
+               case SPECIALWOUND_LEFTLUNG:
+                  permdamage = 1;
+               case SPECIALWOUND_LIVER:
+               case SPECIALWOUND_STOMACH:
+               case SPECIALWOUND_RIGHTKIDNEY:
+               case SPECIALWOUND_LEFTKIDNEY:
+               case SPECIALWOUND_SPLEEN:
+                  healed = 1;
+                  bleed++;
+                  break;
+               case SPECIALWOUND_RIBS:
+                  healed = RIBNUM;
+                  break;
+               case SPECIALWOUND_NECK:
+               case SPECIALWOUND_UPPERSPINE:
+               case SPECIALWOUND_LOWERSPINE:
+                  healed = 2;
+                  break;
+               }
+               if (pool[p]->special[i] != healed &&
+                   (i == SPECIALWOUND_RIBS || pool[p]->special[i] != 1))
+               {
+                  if (pool[p]->location > -1 &&
+                      healing[pool[p]->location] + LCSrandom(10) > healdiff)
+                  {
+                     pool[p]->special[i] = healed;
+                     if (permdamage)
+                     {
+                        if (LCSrandom(20) > healing[pool[p]->location])
+                        {
+                           pool[p]->adjust_attribute(ATTRIBUTE_HEALTH, -1);
+                           if (pool[p]->get_attribute(ATTRIBUTE_HEALTH, false) <= 0)
+                              pool[p]->set_attribute(ATTRIBUTE_HEALTH, 1);
+                        }
+                     }
+                  }
+                  else
+                  {
+                     damage += bleed;
+                     if (healing[pool[p]->location] + 9 <= healdiff) transfer = 1;
+                  }
+               }
+            }
+            pool[p]->blood -= damage;
+            if (transfer && pool[p]->location > -1 && pool[p]->alive == 1 &&
+                pool[p]->align == 1 &&
+                location[pool[p]->location]->renting != RENTING_NOCONTROL &&
+                location[pool[p]->location]->type != SITE_HOSPITAL_UNIVERSITY)
+               pool[p]->activity.type = ACTIVITY_CLINIC;
+         }
+      }
+   }
+   for (p = 0; p < len(pool); p++)
+   {
+      if (pool[p]->location >= 0 && pool[p]->activity.type == ACTIVITY_HEAL)
+      {
+         if (healing2[pool[p]->location] == 0)
+            pool[p]->activity.type = ACTIVITY_NONE;
+         else
+            pool[p]->train(SKILL_FIRSTAID,
+                           MAX(0, healing2[pool[p]->location] / 5 -
+                                  pool[p]->get_skill(SKILL_FIRSTAID) * 2));
+      }
+   }
+   delete[] healing;
+   delete[] healing2;
+}
+
+
+// The night's nursing: the healing block of advanceday(). Anybody hurt enough
+// to need a clinic but not in one is patched up where they are, by whoever at
+// that safehouse has the steadiest hands.
+//
+// Driven straight out of daily.cpp, because the block is inline there and the
+// point is to measure exactly what it does.
+void probe_recovery(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 55501913UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      // Somewhere with real medics on hand, and somewhere without.
+      int clinicloc = find_clinic_index_probe();
+
+      for (int hurt = 1; hurt <= 4; hurt++)
+      for (int medics = 0; medics < 3; medics++)
+      for (int where = 0; where < 2; where++)
+      for (int besieged = 0; besieged < 2; besieged++)
+      {
+         unsigned long seed_used = 4400021UL * (unsigned long)
+            (hurt * 64 + medics * 16 + where * 4 + besieged + scenario * 97 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         int site = where ? clinicloc : 1;
+         location[1]->siege.siege = besieged ? 1 : 0;
+         location[1]->compound_stores = besieged ? 0 : 100;
+
+         // The patients, hurt in every way the block has a rule for.
+         for (int n = 0; n < hurt; n++)
+         {
+            Creature *cr = new Creature;
+            cr->id = 800000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = site;
+            cr->base = site;
+            cr->hireid = n ? 0 : -1;
+            cr->blood = 20 + n * 20 - (scenario * 7);
+            cr->activity.type = ACTIVITY_NONE;
+            cr->set_skill(SKILL_FIRSTAID, 0);
+            cr->wound[BODYPART_ARM_RIGHT] |=
+               (n % 2) ? WOUND_NASTYOFF : WOUND_BLEEDING;
+            cr->wound[BODYPART_BODY] |= WOUND_SHOT | WOUND_BLEEDING;
+            cr->wound[BODYPART_HEAD] |= WOUND_CUT;
+            cr->special[SPECIALWOUND_LEFTLUNG] = 0;
+            if (n % 2) cr->special[SPECIALWOUND_HEART] = 0;
+            if (n % 3 == 0) cr->special[SPECIALWOUND_LIVER] = 0;
+            cr->special[SPECIALWOUND_RIBS] = RIBNUM - 1 - n % 4;
+            if (n % 3 == 1) cr->special[SPECIALWOUND_LOWERSPINE] = 0;
+            cr->set_attribute(ATTRIBUTE_HEALTH, 4 + n);
+            pool.push_back(cr);
+         }
+         // The people looking after them, at whatever standard.
+         for (int m = 0; m < medics; m++)
+         {
+            Creature *cr = new Creature;
+            cr->id = 810000 + m;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = site;
+            cr->base = site;
+            cr->hireid = 0;
+            cr->activity.type = m ? ACTIVITY_NONE : ACTIVITY_HEAL;
+            cr->set_skill(SKILL_FIRSTAID, (m + scenario) * 4 + 1);
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"recovery\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"hurt\":%d,\"medics\":%d,\"where\":%d,\"besieged\":%d,"
+                      "\"site\":%d,\"stores\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, hurt, medics, where, besieged, site,
+                 location[1]->compound_stores, run_seed);
+         fputs(",\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"activity\":%d,\"person\":",
+                    p ? "," : "", pool[p]->activity.type);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         recovery_block(clearformess);
+
+         fprintf(out, ",\"draws\":%lld", lcs_trace_draw_count() - before);
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"activity\":%d,\"person\":",
+                    p ? "," : "", pool[p]->activity.type);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         location[1]->siege.siege = 0;
+      }
+   }
+}
+
+
 // The individual half of a day: the jobs the original runs one Liberal at a
 // time, before it sorts anybody into a group. Mending and sewing clothes,
 // finding a wheelchair, reading the polls, and the idle Liberal who washes
@@ -3048,6 +3334,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "recruit")) probe_recruit(out);
    else if (!strcmp(which, "activities_day")) probe_activities_day(out);
    else if (!strcmp(which, "activation")) probe_activation_day(out);
+   else if (!strcmp(which, "recovery")) probe_recovery(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

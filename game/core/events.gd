@@ -87,6 +87,7 @@ const ARMOR_NO_CLOTH := &"armor_no_cloth"            # {creature, armor}
 const WHEELCHAIR_SOUGHT := &"wheelchair_sought"      # {creature, found}
 const POLLS_SURVEYED := &"polls_surveyed"            # {creature, approval, concern, survey}
 const RECRUIT_FOUND := &"recruit_found"              # {creature, candidates}
+const TREATMENT_NEEDED := &"treatment_needed"        # {creature}
 const HACK_DEFACED := &"hack_defaced"                # {what, target, issue, team}
 const GRAFFITI_TAGGED := &"graffiti_tagged"          # {creature}
 const GRAFFITI_MURAL_STARTED := &"graffiti_mural_started" # {creature, issue}

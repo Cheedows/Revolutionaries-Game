@@ -62,6 +62,9 @@ static func _continue(state: GameState, month_rolled: bool, rng: Rng,
 		return _continue(state, month_rolled, rng, catalog, &"activities", done,
 				ActivityAssignment.run(state, rng, catalog))
 	if stage == &"activities":
+		# The night's nursing runs between the day's work and the evening's
+		# meetings, and asks nothing, so it is not a stage of its own.
+		done.append_array(DailyRecovery.run(state, rng))
 		return _continue(state, month_rolled, rng, catalog, &"meetings", done,
 				RecruitQueue.advance(state, rng, catalog))
 	done.append_array(_close_the_day(state, month_rolled, rng))

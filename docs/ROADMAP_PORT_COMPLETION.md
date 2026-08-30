@@ -186,7 +186,25 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     interactive minigame of its own and is listed separately below.
 - [ ] Stealing a car (`stealcar()`): the theft minigame, its alarms and the
     police response.
-- [ ] Injury recovery, hospital/time-served/levelling edge cases not yet represented.
+- [x] Injury recovery: the night's nursing block of `advanceday()`. Whoever is
+    at a safehouse with the steadiest hands treats everybody hurt enough to
+    need a clinic but not in one, and the building itself counts as a medic —
+    a clinic as a skill of 6, a teaching hospital as 12. A besieged safehouse
+    with an empty larder cannot nurse anybody, which needs `fooddaysleft()`
+    and so the compound's stores.
+  - The organ table is the original's switch written out. That switch has no
+    `break`s in it, so a heart falls through the lungs into the abdomen and
+    collects all three sets of consequences: difficulty 16, nine points of
+    bleeding, and permanent damage. Teeth, eyes, the nose and the tongue are
+    never treated, because the loop starts at the first lung.
+  - **Subtle original behavior, easy to get wrong.** The floor that stops
+    permanent damage killing somebody outright tests the *effective* health
+    figure, not the raw one. A broken lower spine quarters health on its own,
+    so a patient can go from raw 4 to the floor on a single point of damage.
+  - Verified by the `recovery` probe: four patient counts against three
+    standards of care, at a safehouse and at a clinic, half of them besieged,
+    compared on draw counts and on every patient's blood, wounds, organs,
+    attributes, skills and whether they were sent to a real clinic.
 - [ ] Safehouse/base actions not already covered by Commands.
 - [ ] Liberal agenda/review-management behavior that belongs to simulation rather than presentation.
 - [ ] Ensure a full `advanceday()` equivalent exists as composable systems rather than one monolith.
