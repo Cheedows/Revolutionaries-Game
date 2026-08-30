@@ -26,6 +26,7 @@ Two kinds of evidence are used:
 | Equipment | `src/items/`, `take_clips()`, `reload()` | 40 armor types, 36 weapons |
 | Public opinion | `publicmood()`, `stalinview()`, `randomissue()` | 6 scenarios x 22 laws |
 | Voters and legislators | `getswingvoter()`, `presidentapproval()`, … | 6 scenarios, 1,000-voter approval |
+| Congress | `congress()` | 10 scenarios: 435 House and 100 Senate votes each |
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
@@ -51,7 +52,10 @@ Named rather than skipped. Each is work, not a decision to leave it out.
   read armor, a disguise and the current vehicle, and belong with the site and
   chase systems.
 - **Monthly turn** — finances, justice, sleepers, elections, the endgame — is
-  not started. The voter model it needs is green.
+  not started. The voter model and the legislative session it needs are green.
+- **Constitutional endgames** are left out of the ported Congress: purging the
+  court, imposing term limits, and the two ways an extreme Congress ends the
+  game. Each is its own system.
 - **News**, **combat**, **site infiltration** and **chases** are not started.
 - **Site maps**: `art/sitemaps.txt` is a scripting language interpreted by
   `configfile.cpp`, not data, and is still unextracted.
