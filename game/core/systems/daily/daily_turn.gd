@@ -27,6 +27,7 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 			continue
 		events.append_array(_tick_creature(creature))
 
+	events.append_array(RentRules.run(state))
 	state.ledger.reset_daily()
 
 	if month_rolled:

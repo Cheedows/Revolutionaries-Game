@@ -40,6 +40,10 @@ var hidden: bool = false
 ## Whether the squad has a floor plan for it.
 var mapped: bool = false
 
+## Set when a lease was signed this month, so the first rent is not charged
+## twice.
+var new_rental: bool = false
+
 ## Whether the organisation can fortify it into a compound.
 var upgradable: bool = false
 

@@ -30,6 +30,9 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 
 	events.append_array(_escalate_opposition(state))
 	_stale_the_news(state)
+	# A lease signed last month is an ordinary one now.
+	for location: Location in state.locations.values():
+		location.new_rental = false
 	state.ledger.reset_monthly()
 
 	if state.calendar.month == ELECTION_MONTH:
