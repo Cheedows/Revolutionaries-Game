@@ -135,8 +135,23 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
 - [x] Daily arrests: `checkforarrest()` and `attemptarrest()`, wired into the
     four street-fundraising activities, brownies and graffiti. Being noticed is
     not a note in a file — it is a foot chase, and the player runs it.
-- [ ] Remaining daily activities: teaching, study, community service, burial,
-    trouble, letters and Guardian essays.
+- [x] Remaining daily activities: teaching, study, community service, burial,
+    trouble, letters and Guardian essays — plus the clinic visit and a sleeper
+    surfacing, which the original resolves inline while it is still sorting the
+    roster rather than in a group pass of their own.
+  - **Known original bug preserved.** The sleeper case has no `break`, so a
+    sleeper who comes in from the cold also spends the day writing a letter to
+    the editor — and one whose shelter is under siege, and so stays a sleeper,
+    writes the letter anyway.
+  - `funds_and_trouble()` filters the roster on nothing but "alive" and "has
+    somewhere to be". The port was additionally skipping anybody jailed,
+    hospitalised or on a squad; it no longer does, because the original does
+    not and a stale assignment really is still carried out.
+  - Verified by the extended `activities_day` probe: 19 jobs across three
+    crowd sizes, each in isolation and mixed, the mixed roster handed in
+    forwards and reversed, now also compared on where the day leaves each
+    Liberal (location, base, months in a clinic and whether they are still a
+    sleeper).
 - [x] Hacking: the team break-in, credit-card fraud, and the two
     denial-of-service jobs that the original collects but never acts on beyond
     the practice they give.

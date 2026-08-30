@@ -8,7 +8,8 @@ extends TestCase
 ## sure the grouping is doing that work and not merely following the roster.
 ##
 ## Compared on draw counts, the funds raised, both opinion arrays, and every
-## Liberal's skills, standing, income, wounds and unfinished mural.
+## Liberal's skills, standing, income, wounds, whereabouts and
+## unfinished mural.
 
 const PROBE := "res://tests/golden/probes/activities_day.jsonl.gz"
 
@@ -52,6 +53,8 @@ func _day_matches(sample: Dictionary) -> bool:
 		# spare argument; the port gives it a field of its own.
 		if person.activity == &"graffiti" and int(entry["arg"]) != -1:
 			person.mural = Ids.VIEWS[int(entry["arg"])]
+		person.clinic = int(entry["clinic"])
+		person.sleeper = bool(int(entry["sleeper"]))
 		roster.append(person)
 
 	# The recorded run answered every prompt from a keystroke script whose only
@@ -73,7 +76,13 @@ func _day_matches(sample: Dictionary) -> bool:
 
 	if not _opinion_matches(where, state, sample):
 		return false
-	return _roster_matches(where, state, roster, sample["pool_after"])
+	# A buried body leaves the original's pool outright; the port marks it as
+	# no longer existing, which is the same thing said differently.
+	var left: Array[Creature] = []
+	for person: Creature in roster:
+		if person.exists:
+			left.append(person)
+	return _roster_matches(where, state, left, sample["pool_after"])
 
 
 func _opinion_matches(where: String, state: GameState,
@@ -109,8 +118,18 @@ func _roster_matches(where: String, state: GameState, roster: Array[Creature],
 			return _diverged(at, "mural", mural, person.mural)
 		if person.income != int(want["income"]):
 			return _diverged(at, "income", want["income"], person.income)
+		# Where a day leaves somebody: a clinic keeps them for months, and a
+		# sleeper who surfaces moves into the shelter for good.
+		if person.clinic != int(want["clinic"]):
+			return _diverged(at, "clinic", want["clinic"], person.clinic)
+		if person.sleeper != bool(int(want["sleeper"])):
+			return _diverged(at, "sleeper", want["sleeper"], person.sleeper)
 
 		var who: Dictionary = want["person"]
+		if person.location != int(who["location"]):
+			return _diverged(at, "location", who["location"], person.location)
+		if person.base != int(who["base"]):
+			return _diverged(at, "base", who["base"], person.base)
 		if person.juice != int(who["juice"]):
 			return _diverged(at, "juice", who["juice"], person.juice)
 		var skills: Array = who["skills"]

@@ -2474,6 +2474,10 @@ void probe_recruit(FILE *out)
 void doActivityHacking(vector<Creature *> &hack, char &clearformess);
 void doActivityGraffiti(vector<Creature *> &graffiti, char &clearformess);
 void doActivityProstitution(vector<Creature *> &prostitutes, char &clearformess);
+void doActivityLearn(vector<Creature *> &students, char &clearformess);
+void doActivityTrouble(vector<Creature *> &trouble, char &clearformess);
+void doActivityTeach(vector<Creature *> &teachers, char &clearformess);
+void doActivityBury(vector<Creature *> &bury, char &clearformess);
 
 // A day's activities, run the way the original runs them: everybody grouped by
 // what they are doing, and the groups worked through in a fixed order.
@@ -2487,7 +2491,11 @@ void probe_activities_day(FILE *out)
       ACTIVITY_DONATIONS, ACTIVITY_SELL_TSHIRTS, ACTIVITY_SELL_ART,
       ACTIVITY_SELL_MUSIC, ACTIVITY_SELL_DRUGS, ACTIVITY_CCFRAUD,
       ACTIVITY_DOS_ATTACKS, ACTIVITY_DOS_RACKET, ACTIVITY_HACKING,
-      ACTIVITY_GRAFFITI, ACTIVITY_PROSTITUTION,
+      ACTIVITY_GRAFFITI, ACTIVITY_PROSTITUTION, ACTIVITY_TROUBLE,
+      ACTIVITY_STUDY_LAW, ACTIVITY_STUDY_MARTIAL_ARTS,
+      ACTIVITY_TEACH_POLITICS, ACTIVITY_TEACH_FIGHTING, ACTIVITY_BURY,
+      ACTIVITY_WRITE_LETTERS, ACTIVITY_WRITE_GUARDIAN,
+      ACTIVITY_COMMUNITYSERVICE, ACTIVITY_CLINIC, ACTIVITY_SLEEPER_JOINLCS,
    };
    const int JOB_COUNT = (int)(sizeof(JOBS) / sizeof(JOBS[0]));
 
@@ -2569,8 +2577,35 @@ void probe_activities_day(FILE *out)
                cr->give_weapon(*weapontype[getweapontype("WEAPON_SPRAYCAN")], NULL);
                cr->activity.arg = (n == 2) ? VIEW_TAXES : -1;
             }
+            // A trip to the clinic only means anything to somebody hurt, and
+            // the length of the stay is read straight off the injuries.
+            if (cr->activity.type == ACTIVITY_CLINIC)
+            {
+               cr->blood = 40 + n * 25;
+               cr->wound[BODYPART_ARM_RIGHT] |= WOUND_NASTYOFF;
+               cr->special[SPECIALWOUND_LEFTLUNG] = 0;
+               if (n) cr->special[SPECIALWOUND_HEART] = 0;
+               cr->special[SPECIALWOUND_RIBS] = RIBNUM - n;
+            }
+            if (cr->activity.type == ACTIVITY_SLEEPER_JOINLCS)
+               cr->flag |= CREATUREFLAG_SLEEPER;
             pool.push_back(cr);
             made++;
+         }
+
+         // A couple of bodies, so the burial pass has something to do. They
+         // are at the end of the pool, which is where the original walks from.
+         for (int d = 0; d < 2; d++)
+         {
+            Creature *dead = new Creature;
+            dead->id = 610000 + d;
+            dead->align = ALIGN_LIBERAL;
+            dead->location = 1;
+            dead->base = 1;
+            dead->alive = false;
+            dead->money = 20 + d * 15;
+            dead->activity.type = ACTIVITY_NONE;
+            pool.push_back(dead);
          }
 
          fprintf(out, "{\"kind\":\"day\",\"scenario\":%d,\"seed\":%lu,"
@@ -2589,8 +2624,11 @@ void probe_activities_day(FILE *out)
          fputs("],\"pool\":[", out);
          for (int p = 0; p < len(pool); p++)
          {
-            fprintf(out, "%s{\"activity\":%d,\"arg\":%d,\"person\":",
-                    p ? "," : "", pool[p]->activity.type, pool[p]->activity.arg);
+            fprintf(out, "%s{\"activity\":%d,\"arg\":%d,\"clinic\":%d,"
+                         "\"sleeper\":%d,\"person\":",
+                    p ? "," : "", pool[p]->activity.type, (int)pool[p]->activity.arg,
+                    (int)pool[p]->clinic,
+                    (pool[p]->flag & CREATUREFLAG_SLEEPER) ? 1 : 0);
             chase_write_creature(out, *pool[p], true);
             fputs("}", out);
          }
@@ -2604,7 +2642,7 @@ void probe_activities_day(FILE *out)
          long long before = lcs_trace_draw_count();
          // Split by group, so a divergence names the activity rather than the
          // day. Mirrors funds_and_trouble()'s own order.
-         long long split[8];
+         long long split[12];
          {
             vector<Creature *> trouble, hack, bury, solicit, tshirts, art,
                                music, graffiti, brownies, prostitutes,
@@ -2623,6 +2661,41 @@ void probe_activities_day(FILE *out)
                case ACTIVITY_SELL_MUSIC: music.push_back(pool[p]); break;
                case ACTIVITY_SELL_DRUGS: brownies.push_back(pool[p]); break;
                case ACTIVITY_PROSTITUTION: prostitutes.push_back(pool[p]); break;
+               case ACTIVITY_TROUBLE: trouble.push_back(pool[p]); break;
+               case ACTIVITY_BURY: bury.push_back(pool[p]); break;
+               case ACTIVITY_TEACH_POLITICS: case ACTIVITY_TEACH_COVERT:
+               case ACTIVITY_TEACH_FIGHTING: teachers.push_back(pool[p]); break;
+               case ACTIVITY_STUDY_LAW: case ACTIVITY_STUDY_MARTIAL_ARTS:
+                  students.push_back(pool[p]); break;
+               case ACTIVITY_COMMUNITYSERVICE:
+                  addjuice(*pool[p],1,10);
+                  change_public_opinion(VIEW_LIBERALCRIMESQUADPOS,1,0,80);
+                  break;
+               case ACTIVITY_CLINIC:
+                  hospitalize(find_clinic(*pool[p]),*pool[p]);
+                  pool[p]->activity.type=ACTIVITY_NONE;
+                  break;
+               case ACTIVITY_SLEEPER_JOINLCS:
+                  if(!location[find_homeless_shelter(*pool[p])]->siege.siege)
+                  {
+                     pool[p]->activity.type=ACTIVITY_NONE;
+                     pool[p]->flag &= ~CREATUREFLAG_SLEEPER;
+                     pool[p]->location = pool[p]->base =
+                        find_homeless_shelter(*pool[p]);
+                  }
+                  // No break: the original falls through into the letters.
+               case ACTIVITY_WRITE_LETTERS:
+                  if(pool[p]->skill_check(SKILL_WRITING,DIFFICULTY_EASY))
+                     background_liberal_influence[randomissue()]+=5;
+                  pool[p]->train(SKILL_WRITING,LCSrandom(5)+1);
+                  break;
+               case ACTIVITY_WRITE_GUARDIAN:
+                  if(pool[p]->skill_check(SKILL_WRITING,DIFFICULTY_EASY))
+                     background_liberal_influence[randomissue()]+=15;
+                  else
+                     background_liberal_influence[randomissue()]-=15;
+                  pool[p]->train(SKILL_WRITING,LCSrandom(5)+1);
+                  break;
                }
             }
             long long at = lcs_trace_draw_count();
@@ -2641,13 +2714,21 @@ void probe_activities_day(FILE *out)
             doActivityGraffiti(graffiti, clearformess);
             split[6] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
             doActivityProstitution(prostitutes, clearformess);
-            split[7] = lcs_trace_draw_count() - at;
+            split[7] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityLearn(students, clearformess);
+            split[8] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityTrouble(trouble, clearformess);
+            split[9] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityTeach(teachers, clearformess);
+            split[10] = lcs_trace_draw_count() - at; at = lcs_trace_draw_count();
+            doActivityBury(bury, clearformess);
+            split[11] = lcs_trace_draw_count() - at;
          }
 
          fprintf(out, ",\"draws\":%lld,\"funds\":%d",
                  lcs_trace_draw_count() - before, ledger.get_funds());
          fputs(",\"split\":[", out);
-         for (int i = 0; i < 8; i++)
+         for (int i = 0; i < 12; i++)
             fprintf(out, "%s%lld", i ? "," : "", split[i]);
          fputs("]", out);
          fputs(",\"attitude_after\":[", out);
@@ -2660,9 +2741,10 @@ void probe_activities_day(FILE *out)
          for (int p = 0; p < len(pool); p++)
          {
             fprintf(out, "%s{\"activity\":%d,\"arg\":%d,\"income\":%d,"
-                         "\"person\":",
-                    p ? "," : "", pool[p]->activity.type, pool[p]->activity.arg,
-                    pool[p]->income);
+                         "\"clinic\":%d,\"sleeper\":%d,\"person\":",
+                    p ? "," : "", pool[p]->activity.type, (int)pool[p]->activity.arg,
+                    (int)pool[p]->income, (int)pool[p]->clinic,
+                    (pool[p]->flag & CREATUREFLAG_SLEEPER) ? 1 : 0);
             chase_write_creature(out, *pool[p], true);
             fputs("}", out);
          }
