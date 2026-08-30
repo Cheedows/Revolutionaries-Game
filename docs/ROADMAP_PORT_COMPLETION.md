@@ -137,15 +137,16 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     not a note in a file — it is a foot chase, and the player runs it.
 - [ ] Remaining daily activities: teaching, study, community service, burial,
     trouble, letters and Guardian essays.
-- [ ] Hacking is ported (`core/systems/daily/activities/hacking.gd`) but is
-    **not yet probe-verified**, and is excluded from the `activities_day` probe
-    for that reason. One Liberal in a three-hacker team consumes a different
-    number of draws in `skill_roll(SKILL_COMPUTERS)` than the port does — five
-    against four, for a Liberal with skill 10 and effective intelligence 4,
-    where the port's `min(intelligence / 2, skill + 3)` gives an ability of 12
-    and the original evidently rolls on 13 or 14. The other two hackers in the
-    same team agree exactly. Resolve before re-enabling the four hacking jobs
-    in `tools/trace_harness/lcs_probe.cpp`.
+- [x] Hacking: the team break-in, credit-card fraud, and the two
+    denial-of-service jobs that the original collects but never acts on beyond
+    the practice they give.
+  - **Known original bug preserved.** `MAX()` is a macro, so
+    `hack_skill = MAX(hack_skill, skill_roll(SKILL_COMPUTERS))` rolls once to
+    compare and rolls *again* when the first roll won — and keeps the second,
+    which can be lower than the best so far. A team of good hackers costs far
+    more draws than it appears to and can end up with a worse number than it
+    had. This is the only place in the original where a macro double-evaluates
+    a roll; the rest were checked.
 - [ ] Dating/relationship activity behavior used by the original.
 - [ ] Interrogation.
 - [ ] Siege daily processing and safehouse consequences.

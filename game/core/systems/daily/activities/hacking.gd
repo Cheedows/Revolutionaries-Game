@@ -95,9 +95,15 @@ static func _break_in(state: GameState, rng: Rng, team: Array,
 	if team.is_empty():
 		return events
 
+	# MAX() is a macro in the original, so `MAX(best, skill_roll(...))` rolls
+	# once to compare and rolls again when the first roll won — and it is the
+	# second roll that is kept, which can be lower than the best so far. A
+	# team of good hackers therefore costs far more draws than it looks like,
+	# and can end up with a worse number than it had. Reproduced.
 	var best := 0
 	for hacker: Creature in team:
-		best = maxi(best, CheckRules.skill_roll(rng, hacker, &"computers"))
+		if best < CheckRules.skill_roll(rng, hacker, &"computers"):
+			best = CheckRules.skill_roll(rng, hacker, &"computers")
 	var reach := best + team.size() - 1
 
 	if reach >= Difficulty.HEROIC:

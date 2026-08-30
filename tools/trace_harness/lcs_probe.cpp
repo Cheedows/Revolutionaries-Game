@@ -2483,13 +2483,10 @@ void doActivityProstitution(vector<Creature *> &prostitutes, char &clearformess)
 // from a roster doing one thing each.
 void probe_activities_day(FILE *out)
 {
-   // The four hacking jobs are deliberately absent: the port's hacking pass
-   // still diverges on one Liberal's skill_roll (see the Gate B notes in
-   // docs/ROADMAP_PORT_COMPLETION.md), and a probe that cannot pass is worse
-   // than one that says exactly what it does not yet cover.
    static const int JOBS[] = {
       ACTIVITY_DONATIONS, ACTIVITY_SELL_TSHIRTS, ACTIVITY_SELL_ART,
-      ACTIVITY_SELL_MUSIC, ACTIVITY_SELL_DRUGS,
+      ACTIVITY_SELL_MUSIC, ACTIVITY_SELL_DRUGS, ACTIVITY_CCFRAUD,
+      ACTIVITY_DOS_ATTACKS, ACTIVITY_DOS_RACKET, ACTIVITY_HACKING,
       ACTIVITY_GRAFFITI, ACTIVITY_PROSTITUTION,
    };
    const int JOB_COUNT = (int)(sizeof(JOBS) / sizeof(JOBS[0]));
