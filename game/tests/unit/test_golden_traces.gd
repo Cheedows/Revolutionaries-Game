@@ -7,7 +7,7 @@ extends TestCase
 ## word for word. If that holds across a four-month playthrough, every system
 ## ported afterwards can be diffed against these traces meaningfully.
 
-const EXPECTED_TRACES := 6
+const EXPECTED_TRACES := 9
 
 
 func test_traces_are_readable() -> void:
