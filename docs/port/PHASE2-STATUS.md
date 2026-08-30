@@ -29,6 +29,7 @@ Two kinds of evidence are used:
 | Street fundraising | `doActivitySolicitDonations()` and the three sales | 8 scenarios x 4 days |
 | Brownie selling | `doActivitySellBrownies()` | same probe, both Liberal drug laws |
 | Reputation | `addjuice()` | folded into the activities probe |
+| Wounds and armor | `healthmodroll()`, `damagemod()` | 60 samples x 8 rolls, 6 armors x every body part |
 | Session loop | the seam itself | headless run, 31 days into February |
 | Save format | new, not ported | round-trip from recorded state |
 
@@ -69,8 +70,11 @@ Recorded because a port has to decide what to do about each, and because
    Both are silently ignored by the original; both are ignored here too.
 3. `bashstrengthmod` defaults to 1 in `WeaponType`'s constructor, though the
    XML's own documentation says 100. The code is what runs.
-4. Cutscenes cannot work in a 64-bit build: `loadmovie()` reads frame timings
+4. `fireprotection` is a boolean, not a rating — the extractor had been reading
+   `<fireprotection>true</fireprotection>` as the number zero, which quietly
+   turned firefighters' bunker gear into ordinary clothing.
+5. Cutscenes cannot work in a 64-bit build: `loadmovie()` reads frame timings
    with `sizeof(long)` from files written where `long` was 4 bytes. Played to
    the end they hang or read out of bounds. Not ported at all.
-5. `alarmwait()` can block forever if its timer fires before `pause()` is
+6. `alarmwait()` can block forever if its timer fires before `pause()` is
    reached — the original's own comment says so. The port has no such wait.

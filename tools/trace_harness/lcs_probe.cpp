@@ -19,6 +19,9 @@
 
 // Not declared in includes.h; the probe needs them to diff the political model.
 int getsimplevoter(int leaning);
+void healthmodroll(int &aroll, Creature &a);
+void damagemod(Creature &t, char &damtype, int &damamount, char hitlocation,
+               char armorpenetration, int mod, int extraarmor);
 void doActivitySolicitDonations(std::vector<Creature *> &solicit, char &clearformess);
 void doActivitySellTshirts(std::vector<Creature *> &tshirts, char &clearformess);
 void doActivitySellArt(std::vector<Creature *> &art, char &clearformess);
@@ -408,6 +411,75 @@ void probe_activities(FILE *out)
    }
 }
 
+// The two pieces of combat that decide outcomes: what old injuries cost a
+// roll, and what armor takes out of a hit.
+void probe_damage(FILE *out)
+{
+   static const char *ARMORS[] = {
+      "ARMOR_NONE", "ARMOR_CLOTHES", "ARMOR_ARMYARMOR", "ARMOR_BUNKERGEAR",
+      "ARMOR_HEAVYARMOR", "ARMOR_CHEAPSUIT",
+   };
+   const int ARMOR_COUNT = (int)(sizeof(ARMORS) / sizeof(ARMORS[0]));
+
+   for (int sample = 0; sample < 60; sample++)
+   {
+      unsigned long seed = 217645199UL * (unsigned long)(sample + 1);
+      lcs_trace_set_seed(seed);
+      initMainRNG();
+
+      Creature cr;
+      // Knock out a spread of organs so the injury penalties are exercised.
+      cr.special[SPECIALWOUND_RIGHTEYE] = (sample % 2) ? 1 : 0;
+      cr.special[SPECIALWOUND_LEFTEYE] = (sample % 3) ? 1 : 0;
+      cr.special[SPECIALWOUND_RIGHTLUNG] = (sample % 4) ? 1 : 0;
+      cr.special[SPECIALWOUND_HEART] = (sample % 5) ? 1 : 0;
+      cr.special[SPECIALWOUND_NECK] = (sample % 7) ? 1 : 0;
+      cr.special[SPECIALWOUND_LOWERSPINE] = (sample % 6) ? 1 : 0;
+      cr.special[SPECIALWOUND_RIBS] = RIBNUM - (sample % 11);
+
+      fprintf(out, "{\"kind\":\"damage\",\"sample\":%d,\"seed\":%lu",
+              sample, seed);
+      fputs(",\"special\":[", out);
+      for (int i = 0; i < SPECIALWOUNDNUM; i++)
+         fprintf(out, "%s%d", i ? "," : "", cr.special[i]);
+
+      fputs("],\"health_rolls\":[", out);
+      for (int i = 0; i < 8; i++)
+      {
+         int roll = 20;
+         healthmodroll(roll, cr);
+         fprintf(out, "%s%d", i ? "," : "", roll);
+      }
+
+      // Armor: every combination of garment, body part and attack.
+      const char *armorname = ARMORS[sample % ARMOR_COUNT];
+      int quality = 1 + (sample % 3);
+      bool damaged = (sample % 4) == 0;
+      cr.give_armor(*armortype[getarmortype(armorname)], NULL);
+      // decrease_quality() is the only way in; quality starts at 1.
+      cr.get_armor().decrease_quality(quality - 1);
+      if (damaged) cr.get_armor().set_damaged(true);
+
+      fputs("],\"armor\":", out);
+      write_string(out, armorname);
+      fprintf(out, ",\"quality\":%d,\"damaged\":%d", quality, damaged ? 1 : 0);
+
+      fputs(",\"damage\":[", out);
+      bool first = true;
+      for (int bp = 0; bp < BODYPARTNUM; bp++)
+         for (int piercing = 0; piercing <= 4; piercing += 2)
+            for (int mod = -6; mod <= 6; mod += 3)
+            {
+               char damtype = (mod % 2) ? WOUND_BURNED : WOUND_CUT;
+               int amount = 40;
+               damagemod(cr, damtype, amount, (char)bp, (char)piercing, mod, 0);
+               fprintf(out, "%s%d", first ? "" : ",", amount);
+               first = false;
+            }
+      fputs("]}\n", out);
+   }
+}
+
 } // namespace
 
 void lcs_probe_run_if_requested()
@@ -430,6 +502,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "equipment")) probe_equipment(out);
    else if (!strcmp(which, "politics")) probe_politics(out);
    else if (!strcmp(which, "activities")) probe_activities(out);
+   else if (!strcmp(which, "damage")) probe_damage(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

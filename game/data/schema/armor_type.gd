@@ -12,7 +12,8 @@ extends ItemType
 @export var armor_body: int = 0
 @export var armor_head: int = 0
 @export var armor_limbs: int = 0
-@export var armor_fireprotection: int = 0
+## Whether the garment resists fire. A flag in the original, not a rating.
+@export var armor_fireprotection: bool = false
 
 ## Which parts of the body the garment covers, for damage and disguise checks.
 @export var covers_body: bool = true

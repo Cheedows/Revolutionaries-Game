@@ -61,6 +61,10 @@ var crimes_suspected: PackedInt32Array = PackedInt32Array()
 ## indecency — and because they are described differently.
 var animal: bool = false
 
+## &"none", &"animal" or &"tank". The original folds tanks into the same field,
+## since a tank is another thing that is not a person and is armored by nature.
+var animal_gloss: StringName = &"none"
+
 ## Current assignment, from [constant Ids.ACTIVITIES].
 var activity: StringName = &"none"
 

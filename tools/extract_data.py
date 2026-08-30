@@ -231,6 +231,11 @@ def _armor_props(entry, idname, is_mask, base=None):
         default = fallback(key, 0)
         return default if armor is None else to_int(child_text(armor, tag), default)
 
+    def armor_flag(tag, key, default):
+        """Fire protection is a boolean in the original, not a rating."""
+        default = fallback(key, default)
+        return default if armor is None else to_bool(child_text(armor, tag), default)
+
     def interrogation_value(tag, key):
         default = fallback(key, 0)
         return default if interrogation is None else to_int(child_text(interrogation, tag), default)
@@ -245,7 +250,7 @@ def _armor_props(entry, idname, is_mask, base=None):
         "armor_body": armor_value("body", "armor_body"),
         "armor_head": armor_value("head", "armor_head"),
         "armor_limbs": armor_value("limbs", "armor_limbs"),
-        "armor_fireprotection": armor_value("fireprotection", "armor_fireprotection"),
+        "armor_fireprotection": armor_flag("fireprotection", "armor_fireprotection", False),
         "covers_body": covering_flag("body", "covers_body", True),
         "covers_head": covering_flag("head", "covers_head", False),
         "covers_arms": covering_flag("arms", "covers_arms", True),
