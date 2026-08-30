@@ -52,6 +52,9 @@ const CHOOSE_ENCOUNTER_RESPONSE := &"choose_encounter_response"
 const CHOOSE_ATTACK_TARGET := &"choose_attack_target"
 const CHOOSE_CHASE_ACTION := &"choose_chase_action"
 const CONFIRM_RETREAT := &"confirm_retreat"
+const CONFIRM_NOISY_DOOR := &"confirm_noisy_door"    # {locked, emergency_exit}
+const CONFIRM_PICK_LOCK := &"confirm_pick_lock"      # {x, y, z}
+const CONFIRM_FORCE_DOOR := &"confirm_force_door"    # {x, y, z, locked}
 
 # --- Interrogation, recruitment and dialogue ------------------------------
 

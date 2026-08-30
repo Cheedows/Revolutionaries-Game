@@ -27,6 +27,7 @@ void make_world(bool hasmaps);
 void makecreature(Creature &cr, short type);
 void build_site(std::string name);
 void initsite(Location &loc);
+void knowmap(int locx, int locy, int locz);
 short creaturetype_string_to_enum(const std::string &ctname);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
@@ -964,6 +965,53 @@ void probe_sites(FILE *out)
          {
             fprintf(out, "%s%d", first ? "" : ",", levelmap[x][y][z].special);
             first = false;
+         }
+         fputs("]}\n", out);
+
+         // Take the squad on a fixed tour of the building, so the rule
+         // that stops it at a wall and the way the map fills in around it
+         // are pinned down together.
+         //
+         // It starts on the first open square inside rather than on the
+         // doorstep, and treats doors and exits as walls: opening a door and
+         // walking out of one both ask the player questions, and both are
+         // probed on their own.
+         locz = 0;
+         locx = MAPX >> 1, locy = 1;
+         for (int y = 2; y < MAPY; y++)
+         for (int x = 2; x < MAPX - 2; x++)
+            if (!(levelmap[x][y][0].flag & (SITEBLOCK_BLOCK | SITEBLOCK_DOOR |
+                                            SITEBLOCK_EXIT | SITEBLOCK_OUTDOOR)))
+            {  locx = x, locy = y, y = MAPY, x = MAPX; }
+         knowmap(locx, locy, locz);
+
+         static const int STEPS[][2] = {
+            {0,1},{0,1},{0,1},{1,0},{1,0},{0,1},{0,1},{-1,0},{-1,0},{-1,0},
+            {0,1},{0,1},{1,0},{0,1},{0,1},{1,0},{1,0},{1,0},{0,-1},{0,-1},
+            {-1,0},{0,1},{0,1},{0,1},{1,0},{1,0},{0,1},{-1,0},{-1,0},{0,1},
+         };
+         const int STEP_COUNT = (int)(sizeof(STEPS) / sizeof(STEPS[0]));
+         fprintf(out, "{\"kind\":\"walk\",\"scenario\":%d,\"seed\":%lu,\"location\":%d",
+                 scenario, run_seed, l);
+         fprintf(out, ",\"start\":[%d,%d,%d],\"path\":[", locx, locy, locz);
+         for (int s = 0; s < STEP_COUNT; s++)
+         {
+            int nx = locx + STEPS[s][0], ny = locy + STEPS[s][1];
+            if (nx >= 0 && nx < MAPX && ny >= 0 && ny < MAPY &&
+                !(levelmap[nx][ny][locz].flag & (SITEBLOCK_BLOCK |
+                                                 SITEBLOCK_DOOR | SITEBLOCK_EXIT)))
+               locx = nx, locy = ny;
+            knowmap(locx, locy, locz);
+            fprintf(out, "%s[%d,%d,%d]", s ? "," : "", locx, locy, locz);
+         }
+         fputs("],\"known\":[", out);
+         bool seen_first = true;
+         for (int y = 0; y < MAPY; y++)
+         for (int x = 0; x < MAPX; x++)
+         {
+            fprintf(out, "%s%d", seen_first ? "" : ",",
+                    (levelmap[x][y][locz].flag & SITEBLOCK_KNOWN) ? 1 : 0);
+            seen_first = false;
          }
          fputs("]}\n", out);
       }

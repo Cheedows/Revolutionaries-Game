@@ -82,3 +82,28 @@ const GENERATED: Dictionary = {
 	&"residential_shelter": &"GENERIC_UNSECURE",
 	&"residential_tenement": &"RESIDENTIAL_APARTMENT",
 }
+
+
+## Site type -> how good its locks are: 1 a respectable business,
+## 2 somewhere that expects to be broken into. Anything absent is 0.
+const SECURITY: Dictionary = {
+	&"business_bank": 2,
+	&"business_cigarbar": 1,
+	&"corporate_headquarters": 1,
+	&"corporate_house": 2,
+	&"government_armybase": 2,
+	&"government_courthouse": 2,
+	&"government_firestation": 1,
+	&"government_intelligencehq": 2,
+	&"government_policestation": 2,
+	&"government_prison": 2,
+	&"government_white_house": 2,
+	&"industry_nuclear": 2,
+	&"industry_polluter": 1,
+	&"industry_sweatshop": 1,
+	&"laboratory_cosmetics": 1,
+	&"laboratory_genetic": 1,
+	&"media_amradio": 1,
+	&"media_cablenews": 1,
+	&"residential_apartment_upscale": 1,
+}

@@ -27,6 +27,7 @@ ENUMS = [
     ("SITE_TYPES", "src/locations/locations.h", "SiteTypes", "SITE_", "SITENUM"),
     ("SIEGE_TYPES", "src/locations/locations.h", "SiegeTypes", "SIEGE_", "SIEGENUM"),
     ("SITE_SPECIALS", "src/locations/locations.h", "SpecialBlocks", "SPECIAL_", "SPECIALNUM"),
+    ("CRIMES", "src/includes.h", "Crimes", "CRIME_", "CRIMENUM"),
 ]
 
 

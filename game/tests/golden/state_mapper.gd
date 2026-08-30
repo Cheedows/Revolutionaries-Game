@@ -77,7 +77,7 @@ static func build(state: Dictionary) -> GameState:
 	game.police_heat = state["police_heat"]
 	game.ccs_exposure = state["ccsexposure"]
 	game.site.alarm = int(state["sitealarm"]) != 0
-	game.site.crime = state["sitecrime"]
+	game.site.crime_level = int(state["sitecrime"])
 	game.site.location = state["cursite"]
 	game.next_creature_id = state["curcreatureid"]
 	game.next_squad_id = state["cursquadid"]

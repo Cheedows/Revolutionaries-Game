@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src" / "sitemode" / "sitemap.cpp"
+DAILY = ROOT / "src" / "daily" / "daily.cpp"
 OUT = ROOT / "game" / "core" / "site_plans.gd"
 
 
@@ -36,6 +37,29 @@ def switch_cases(body, call):
     return found
 
 
+def security():
+    """How good a site's locks are, from securityable() in src/daily/daily.cpp.
+
+    Zero is a place anyone can walk into, one is a respectable business, two is
+    somewhere that expects to be broken into. The number decides how hard a
+    lock is to pick and a door to kick in.
+    """
+    text = DAILY.read_text(errors="replace")
+    body = text[text.index("char securityable(int type)"):]
+    body = body[:body.index("\n}\n")]
+    levels = {}
+    pending = []
+    for line in body.splitlines():
+        for label in re.findall(r"case\s+(SITE_[A-Z0-9_]+)\s*:", line):
+            pending.append(label)
+        match = re.search(r"return\s+(\d+)\s*;", line)
+        if match and pending:
+            for label in pending:
+                levels[label] = int(match.group(1))
+            pending = []
+    return levels
+
+
 def key(label):
     """The site type as core/ids.gd names it: prefix off, lowercased."""
     return label.removeprefix("SITE_").lower()
@@ -48,6 +72,7 @@ def main() -> int:
 
     drawn = switch_cases(body, "readMap")
     generated = switch_cases(body, "build_site")
+    locks = security()
 
     lines = [
         "class_name SitePlans",
@@ -76,6 +101,16 @@ def main() -> int:
     ]
     for site in sorted(generated):
         lines.append(f'\t&"{key(site)}": &"{generated[site]}",')
+    lines += [
+        "}",
+        "",
+        "",
+        "## Site type -> how good its locks are: 1 a respectable business,",
+        "## 2 somewhere that expects to be broken into. Anything absent is 0.",
+        "const SECURITY: Dictionary = {",
+    ]
+    for site in sorted(locks):
+        lines.append(f'\t&"{key(site)}": {locks[site]},')
     lines += ["}", ""]
 
     OUT.write_text("\n".join(lines))

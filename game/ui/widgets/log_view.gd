@@ -14,6 +14,17 @@ var _scroll: ScrollContainer
 
 
 func _ready() -> void:
+	_build()
+
+
+## Builds the scroller and the column of lines.
+##
+## Called from _ready(), but also from anything that writes, because a caller
+## may reasonably fill the log before the widget reaches the tree — and a view
+## that silently drops what it was given is worse than one that builds early.
+func _build() -> void:
+	if _lines != null:
+		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -30,6 +41,7 @@ func _ready() -> void:
 func append(text: String, colour: Color = Palette.TEXT) -> void:
 	if text.is_empty():
 		return
+	_build()
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -41,13 +53,17 @@ func append(text: String, colour: Color = Palette.TEXT) -> void:
 		_lines.remove_child(oldest)
 		oldest.queue_free()
 
-	# Follow the tail, so the newest line is the one being read.
+	# Follow the tail, so the newest line is the one being read. Only once the
+	# widget is on screen: there is nothing to scroll before that.
+	if not is_inside_tree():
+		return
 	await get_tree().process_frame
 	_scroll.scroll_vertical = int(_scroll.get_v_scroll_bar().max_value)
 
 
 ## Adds a heading, for the start of a day or a report.
 func append_heading(text: String) -> void:
+	_build()
 	var label := Label.new()
 	label.text = text
 	label.add_theme_color_override("font_color", Palette.ACCENT)
@@ -55,6 +71,7 @@ func append_heading(text: String) -> void:
 
 
 func clear() -> void:
+	_build()
 	for child in _lines.get_children():
 		_lines.remove_child(child)
 		child.queue_free()

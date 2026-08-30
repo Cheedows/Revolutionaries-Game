@@ -12,6 +12,16 @@ var _mood_bar: ProgressBar
 
 
 func _ready() -> void:
+	_build()
+
+## Builds the widget's children.
+##
+## Called from _ready(), and again from refresh(), because a screen may fill a
+## widget in before it reaches the tree — and a view that silently drops what
+## it was given is worse than one that builds early.
+func _build() -> void:
+	if _date != null:
+		return
 	add_theme_stylebox_override("panel", UiTheme.panel(Palette.SURFACE_RAISED))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
@@ -34,6 +44,7 @@ func _ready() -> void:
 
 ## Redraws from [param state].
 func refresh(state: GameState) -> void:
+	_build()
 	_date.text = state.calendar.to_display()
 	_funds.text = "$%d" % state.ledger.funds
 	_funds.add_theme_color_override("font_color",

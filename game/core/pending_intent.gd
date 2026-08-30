@@ -11,9 +11,20 @@ extends RefCounted
 var intent: Intent
 
 ## Called with the player's choice to continue where the system left off.
+##
+## It returns what any system returns: an [Array] of [Event]s, or another
+## [PendingIntent] when one answer leads to the next question.
 var resume: Callable
 
+## What happened before the question came up.
+##
+## A system that gets halfway through a job and then has to ask something still
+## has news to report, and it would be lost otherwise.
+var events: Array[Event] = []
 
-func _init(asked: Intent, resume_with: Callable) -> void:
+
+func _init(asked: Intent, resume_with: Callable,
+		so_far: Array[Event] = []) -> void:
 	intent = asked
 	resume = resume_with
+	events = so_far

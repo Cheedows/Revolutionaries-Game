@@ -129,3 +129,24 @@ static func reload_weapon(creature: Creature, catalog: Catalog, wasteful: bool =
 static func _quality_levels(armor: Armor, catalog: Catalog) -> int:
 	var type: ArmorType = catalog.get_entry(&"armor", armor.type)
 	return type.qualitylevels if type != null else 1
+
+
+## How much a weapon multiplies its wielder's strength when kicking in a door.
+##
+## Bare hands are 1. The data files carry percentages for real weapons — a
+## crowbar is 125 — which the original never divides down, so anything heavier
+## than a fist makes a door a formality. Reproduced: it is the number the
+## original reads.
+static func bash_modifier(weapon: Weapon, catalog: Catalog) -> float:
+	if weapon == null:
+		return 1.0
+	var type := catalog.get_entry(&"weapon", weapon.type)
+	return float(type.bashstrengthmod) if type != null else 1.0
+
+
+## Whether the weapon opens a lock by itself, no roll needed.
+static func breaks_locks(weapon: Weapon, catalog: Catalog) -> bool:
+	if weapon == null:
+		return false
+	var type := catalog.get_entry(&"weapon", weapon.type)
+	return type != null and type.auto_break_locks

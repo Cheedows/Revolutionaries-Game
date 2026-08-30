@@ -12,6 +12,16 @@ var _rows: VBoxContainer
 
 
 func _ready() -> void:
+	_build()
+
+## Builds the widget's children.
+##
+## Called from _ready(), and again from refresh(), because a screen may fill a
+## widget in before it reaches the tree — and a view that silently drops what
+## it was given is worse than one that builds early.
+func _build() -> void:
+	if _rows != null:
+		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
 	var column := VBoxContainer.new()
 	add_child(column)
@@ -33,6 +43,7 @@ func _ready() -> void:
 
 ## Redraws from [param state].
 func refresh(state: GameState) -> void:
+	_build()
 	for child in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
