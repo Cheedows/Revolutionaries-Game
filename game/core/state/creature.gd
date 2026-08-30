@@ -101,6 +101,14 @@ var activity: StringName = &"none"
 ## The original keeps it in the activity's spare argument.
 var mural: StringName = &""
 
+## The garment a tailor is working on making, when their assignment is to sew.
+## The original keeps it in the activity's spare argument.
+var making: StringName = &""
+
+## The kind of person a recruiter is asking around for. Also the activity's
+## spare argument in the original.
+var recruiting: StringName = &""
+
 ## Days spent laying low, in hospital, in court, or dating.
 var hiding: int = 0
 var clinic: int = 0

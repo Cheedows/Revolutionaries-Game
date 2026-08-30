@@ -34,11 +34,12 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
 		events.append_array(_close_the_day(state, month_rolled, rng))
 		return events
 
-	# The day's work, and then the evening's recruitment meetings. Both can
-	# stop to ask the player something, so both are resumed through
-	# _continue(), which finishes the day once the questions run out.
-	return _continue(state, month_rolled, rng, catalog, &"activities", events,
-			ActivityAssignment.run(state, rng, catalog))
+	# The day's work in the original's three parts: the jobs done alone, the
+	# jobs done in groups, and then the evening's recruitment meetings. All
+	# three can stop to ask the player something, so all three are resumed
+	# through _continue(), which finishes the day once the questions run out.
+	return _continue(state, month_rolled, rng, catalog, &"individual", events,
+			DailyActivation.run(state, rng, catalog))
 
 
 ## Picks the day back up after whatever it stopped to ask.
@@ -57,6 +58,9 @@ static func _continue(state: GameState, month_rolled: bool, rng: Rng,
 				events + asked.events)
 
 	var done: Array[Event] = events + (result as Array[Event])
+	if stage == &"individual":
+		return _continue(state, month_rolled, rng, catalog, &"activities", done,
+				ActivityAssignment.run(state, rng, catalog))
 	if stage == &"activities":
 		return _continue(state, month_rolled, rng, catalog, &"meetings", done,
 				RecruitQueue.advance(state, rng, catalog))

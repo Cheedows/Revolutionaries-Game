@@ -47,6 +47,14 @@ void lcs_trace_set_seed(unsigned long value);
    than by guessing which roll went missing. */
 long long lcs_trace_draw_count();
 
+/* Records the figures survey() came up with, so a probe can compare the poll
+   the player reads rather than only the randomness it consumed. Inert unless a
+   probe is running. */
+void lcs_trace_survey(const int *figures, int count, int approval);
+
+/* The last figures recorded by lcs_trace_survey(). */
+const int *lcs_trace_survey_figures(int *count, int *approval);
+
 /* Runs the system probe named by LCS_PROBE and exits, when it is set. Called
    from main() once content is loaded. */
 void lcs_probe_run_if_requested();

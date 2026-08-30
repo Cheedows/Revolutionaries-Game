@@ -550,7 +550,9 @@ void survey(Creature *cr)
    int y=8,approval=presidentapproval();
    move(2,0);
    set_color(COLOR_WHITE,COLOR_BLACK,0);
-   addstr(approval/10+(LCSrandom(noise*2+1)-noise), gamelog);
+   int reported=approval/10+(LCSrandom(noise*2+1)-noise);
+   lcs_trace_survey(survey,VIEWNUM,reported); // trace harness; see lcs_trace.h
+   addstr(reported, gamelog);
    addstr("% had a favorable opinion of ");
    set_alignment_color(exec[EXEC_PRESIDENT],true);
    addstr("President ");

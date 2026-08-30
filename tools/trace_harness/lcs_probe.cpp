@@ -2479,6 +2479,254 @@ void doActivityTrouble(vector<Creature *> &trouble, char &clearformess);
 void doActivityTeach(vector<Creature *> &teachers, char &clearformess);
 void doActivityBury(vector<Creature *> &bury, char &clearformess);
 
+// The pile on the floor, which the tailoring jobs both read and rewrite.
+static void activation_write_loot(FILE *out, vector<Item *> &pile)
+{
+   for (int i = 0; i < len(pile); i++)
+   {
+      fprintf(out, "%s{\"type\":", i ? "," : "");
+      write_string(out, pile[i]->get_itemtypename().c_str());
+      fprintf(out, ",\"number\":%ld", pile[i]->get_number());
+      if (pile[i]->is_armor())
+      {
+         Armor *a = static_cast<Armor *>(pile[i]);
+         fprintf(out, ",\"quality\":%d,\"bloody\":%d,\"damaged\":%d",
+                 a->get_quality(), a->is_bloody() ? 1 : 0,
+                 a->is_damaged() ? 1 : 0);
+      }
+      fputs("}", out);
+   }
+}
+
+
+// The individual half of a day: the jobs the original runs one Liberal at a
+// time, before it sorts anybody into a group. Mending and sewing clothes,
+// finding a wheelchair, reading the polls, and the idle Liberal who washes
+// their own bloody shirt without being told to.
+//
+// Recruiting and car theft are left out on purpose: both are menus that need
+// the talk system and the theft minigame, neither of which is ported yet.
+void probe_activation_day(FILE *out)
+{
+   static const int JOBS[] = {
+      ACTIVITY_REPAIR_ARMOR, ACTIVITY_MAKE_ARMOR, ACTIVITY_WHEELCHAIR,
+      ACTIVITY_POLLS, ACTIVITY_VISIT, ACTIVITY_NONE,
+   };
+   const int JOB_COUNT = (int)(sizeof(JOBS) / sizeof(JOBS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 96431231UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int solo = -1; solo < JOB_COUNT; solo++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int besieged = 0; besieged < 2; besieged++)
+      {
+         unsigned long seed_used = 3300017UL * (unsigned long)
+            ((solo + 2) * 32 + crowd * 4 + besieged + scenario * 71 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(location[1]->loot);
+         ledger.force_funds(1500);
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 11 + scenario * 17) % 101;
+            public_interest[v] = (v * 5 + scenario * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+         location[1]->siege.siege = besieged ? 1 : 0;
+
+         // A pile on the floor worth working on, and cloth to sew with.
+         for (int i = 0; i < 4; i++)
+         {
+            Armor *lying = new Armor(*armortype[i % len(armortype)], 1 + i % 3);
+            lying->set_bloody(i % 2 == 0);
+            lying->set_damaged(i % 3 != 2);
+            location[1]->loot.push_back(lying);
+         }
+         for (int i = 0; i < len(loottype); i++)
+            if (loottype[i]->is_cloth())
+            {
+               location[1]->loot.push_back(new Loot(*loottype[i], 2));
+               break;
+            }
+
+         int made = 0;
+         for (int j = 0; j < JOB_COUNT; j++)
+         for (int n = 0; n < crowd; n++)
+         {
+            if (solo >= 0 && j != solo) continue;
+            Creature *cr = new Creature;
+            cr->id = 700000 + made;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = 1;
+            cr->base = 1;
+            cr->hireid = made ? 0 : -1;
+            cr->juice = 20 * n;
+            cr->set_skill(SKILL_TAILORING, (j + n + scenario) % 10);
+            cr->set_skill(SKILL_COMPUTERS, (j * 2 + n + scenario) % 14);
+            cr->set_skill(SKILL_STREETSENSE, (j + n) % 6);
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            // Half of them are wearing something that needs attention, which
+            // is what the idle case reacts to.
+            if ((j + n) % 2 == 0)
+            {
+               cr->get_armor().set_bloody(true);
+               if (n) cr->get_armor().set_damaged(true);
+            }
+            cr->activity.type = JOBS[j];
+            if (cr->activity.type == ACTIVITY_MAKE_ARMOR)
+               cr->activity.arg = (j + n + scenario) % len(armortype);
+            pool.push_back(cr);
+            made++;
+         }
+
+         fprintf(out, "{\"kind\":\"activation\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"crowd\":%d,\"besieged\":%d,\"solo\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, crowd, besieged, solo, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"activity\":%d,\"makes\":",
+                    p ? "," : "", pool[p]->activity.type);
+            write_string(out,
+                  pool[p]->activity.type == ACTIVITY_MAKE_ARMOR
+                  ? armortype[pool[p]->activity.arg]->get_idname().c_str() : "");
+            fputs(",\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"exec\":[", out);
+         for (int i = 0; i < EXECNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", exec[i]);
+         fprintf(out, "],\"presparty\":%d", presparty);
+         fputs(",\"floor\":[", out);
+         activation_write_loot(out, location[1]->loot);
+         fputs("]", out);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         // Every poll read today, written as it happens so the array stays in
+         // the order the day produced it.
+         int polls = 0;
+         for (int p = 0; p < len(pool); p++)
+         {
+            pool[p]->income = 0;
+            if (!pool[p]->alive) continue;
+            if (pool[p]->clinic) continue;
+            if (pool[p]->dating) continue;
+            if (pool[p]->hiding) continue;
+            if (pool[p]->location == -1) pool[p]->location = pool[p]->base;
+            if (location[pool[p]->location]->siege.siege)
+            {
+               switch (pool[p]->activity.type)
+               {
+               case ACTIVITY_HOSTAGETENDING:
+               case ACTIVITY_TEACH_POLITICS:
+               case ACTIVITY_TEACH_FIGHTING:
+               case ACTIVITY_TEACH_COVERT:
+               case ACTIVITY_HEAL:
+               case ACTIVITY_REPAIR_ARMOR:
+                  break;
+               default:
+                  pool[p]->activity.type = ACTIVITY_NONE;
+                  break;
+               }
+            }
+            switch (pool[p]->activity.type)
+            {
+            case ACTIVITY_REPAIR_ARMOR:
+               repairarmor(*pool[p], clearformess);
+               break;
+            case ACTIVITY_MAKE_ARMOR:
+               makearmor(*pool[p], clearformess);
+               break;
+            case ACTIVITY_WHEELCHAIR:
+               getwheelchair(*pool[p], clearformess);
+               if (pool[p]->flag & CREATUREFLAG_WHEELCHAIR)
+                  pool[p]->activity.type = ACTIVITY_NONE;
+               break;
+            case ACTIVITY_POLLS:
+               pool[p]->train(SKILL_COMPUTERS,
+                              MAX(3 - pool[p]->get_skill(SKILL_COMPUTERS), 1));
+               survey(pool[p]);
+               {
+                  int count = 0, approval = 0;
+                  const int *figures =
+                     lcs_trace_survey_figures(&count, &approval);
+                  fprintf(out, "%s{\"who\":%d,\"approval\":%d,\"figures\":[",
+                          polls ? "," : ",\"polls\":[", (int)pool[p]->id,
+                          approval);
+                  for (int i = 0; i < count; i++)
+                     fprintf(out, "%s%d", i ? "," : "", figures[i]);
+                  fputs("]}", out);
+                  polls++;
+               }
+               break;
+            case ACTIVITY_VISIT:
+               pool[p]->activity.type = ACTIVITY_NONE;
+               break;
+            case ACTIVITY_NONE:
+               if (pool[p]->align == 1 && !pool[p]->is_imprisoned() &&
+                   (pool[p]->get_armor().is_bloody() ||
+                    pool[p]->get_armor().is_damaged()))
+                  repairarmor(*pool[p], clearformess);
+               break;
+            }
+         }
+
+         if (polls) fputs("]", out);
+         else fputs(",\"polls\":[]", out);
+         fprintf(out, ",\"draws\":%lld,\"funds\":%d",
+                 lcs_trace_draw_count() - before, ledger.get_funds());
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"activity\":%d,\"person\":",
+                    p ? "," : "", pool[p]->activity.type);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"floor_after\":[", out);
+         activation_write_loot(out, location[1]->loot);
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         delete_and_clear(location[1]->loot);
+         location[1]->siege.siege = 0;
+      }
+   }
+}
+
+
 // A day's activities, run the way the original runs them: everybody grouped by
 // what they are doing, and the groups worked through in a fixed order.
 //
@@ -2799,6 +3047,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "stealth")) probe_stealth(out);
    else if (!strcmp(which, "recruit")) probe_recruit(out);
    else if (!strcmp(which, "activities_day")) probe_activities_day(out);
+   else if (!strcmp(which, "activation")) probe_activation_day(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

@@ -166,6 +166,26 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
 - [ ] Interrogation.
 - [ ] Siege daily processing and safehouse consequences.
 - [ ] News hooks for daily arrests (the story types the original queues).
+- [x] The individual half of the day: `advanceday()`'s "ACTIVITIES FOR
+    INDIVIDUALS" loop, which runs before anybody is sorted into a group.
+    Mending clothes (`repairarmor()`), sewing them (`makearmor()`), finding a
+    wheelchair, reading the polls (`survey()`), the visit that cancels itself,
+    the siege that calls everything else off, and the idle Liberal who washes
+    their own bloody shirt without being told to.
+  - The survey is the player's only picture of public opinion and it is a
+    deliberately bad one, so the probe records the figures it produced rather
+    than only the rolls it consumed. `survey()` in the original now hands them
+    to the harness on the way past, the way `getkey()` already does.
+  - Verified by the `activation` probe: six jobs across three crowd sizes, each
+    in isolation and mixed, half of them under siege, compared on draw counts,
+    funds, each Liberal's skills, clothes and assignment afterwards, the poll
+    figures, and the state of the pile on the floor.
+  - **Not yet covered, and excluded from the probe:** `ACTIVITY_RECRUITING`
+    sets up a meeting, which is a conversation and waits on the talk system —
+    the port does the asking-around half and stops. `ACTIVITY_STEALCARS` is an
+    interactive minigame of its own and is listed separately below.
+- [ ] Stealing a car (`stealcar()`): the theft minigame, its alarms and the
+    police response.
 - [ ] Injury recovery, hospital/time-served/levelling edge cases not yet represented.
 - [ ] Safehouse/base actions not already covered by Commands.
 - [ ] Liberal agenda/review-management behavior that belongs to simulation rather than presentation.

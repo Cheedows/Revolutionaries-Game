@@ -204,3 +204,30 @@ int lcs_trace_next_key(const char *kind)
    g_swaps_at_last_frame = g_swaps;
    return key;
 }
+
+
+// --- The last poll survey ---------------------------------------------------
+//
+// survey() builds its figures in a local array and then prints them. A probe
+// wants the numbers, not the screen, so survey() hands them here on the way
+// past and the probe picks them up afterwards.
+
+static int survey_figures[64];
+static int survey_count = 0;
+static int survey_approval = 0;
+
+void lcs_trace_survey(const int *figures, int count, int approval)
+{
+   if (count > (int)(sizeof(survey_figures) / sizeof(survey_figures[0])))
+      count = (int)(sizeof(survey_figures) / sizeof(survey_figures[0]));
+   for (int i = 0; i < count; i++) survey_figures[i] = figures[i];
+   survey_count = count;
+   survey_approval = approval;
+}
+
+const int *lcs_trace_survey_figures(int *count, int *approval)
+{
+   if (count) *count = survey_count;
+   if (approval) *approval = survey_approval;
+   return survey_figures;
+}
