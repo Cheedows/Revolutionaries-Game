@@ -41,3 +41,10 @@ var alienated: int = 0
 
 ## Whether the squad has been spotted and by whom.
 var creatures_seen: PackedInt32Array = PackedInt32Array()
+
+## What is lying on the floor where the squad is standing.
+var ground_loot: Array[Item] = []
+
+## Who the squad is face to face with. The original keeps eighteen slots and
+## counts the ones marked as existing; here the list is the roster.
+var encounter_ids: PackedInt32Array = PackedInt32Array()

@@ -22,7 +22,8 @@ extends Resource
 @export var uses_ammo: bool = false
 
 ## Rounds fired per attack; 0 for melee.
-@export var shoots: int = 0
+## Whether the attack leaves a bullet wound.
+@export var shoots: bool = false
 @export var number_attacks: int = 1
 
 ## Strength contribution bounds. Note: art/weapons.xml contains a
@@ -43,12 +44,24 @@ extends Resource
 @export var tears: bool = false
 @export var burns: bool = false
 @export var bleeding: bool = false
-@export var fire: bool = false
+## Chance in a hundred that firing this starts a fire, or leaves debris.
+@export var fire_chance: int = 0
+@export var fire_debris_chance: int = 0
 @export var damages_armor: bool = false
-@export var critical: bool = false
+## A critical hit replaces the damage figures when enough of a burst lands.
+## Each part is only used if the attack defined it.
+@export var critical_chance: int = 0
+@export var critical_hits_required: int = 1
+@export var critical_random_damage: int = 1
+@export var critical_random_damage_defined: bool = false
+@export var critical_fixed_damage: int = 1
+@export var critical_fixed_damage_defined: bool = false
+@export var critical_severtype: int = 0
+@export var critical_severtype_defined: bool = false
 @export var always_describe_hit: bool = false
 
 ## How limbs come off on a severing hit; 0 = never.
+## How a limb comes off: 0 not at all, or one of the Wound severing flags.
 @export var severtype: int = 0
 
 @export var attack_description: String = "assaults"

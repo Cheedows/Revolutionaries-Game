@@ -22,6 +22,11 @@ const _LCG_INC := 433494437
 var _state: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])
 var _lcg_seed: int = 0
 
+## How many numbers have been drawn. Not part of the simulation: the parity
+## tests compare it against the original's own count, which turns "the fight
+## went differently" into "the fight took one roll fewer, here".
+var draws: int = 0
+
 
 func _init(seed_value: int = 0) -> void:
 	seed_from(seed_value)
@@ -45,6 +50,7 @@ func seed_from(seed_value: int) -> void:
 ## Mirrors [code]r_num()[/code], including its recovery path for a state that
 ## has collapsed to all zeroes.
 func next() -> int:
+	draws += 1
 	while true:
 		var t: int = _state[0] ^ ((_state[0] << 11) & _MASK)
 		_state[0] = _state[1]

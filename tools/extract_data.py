@@ -34,6 +34,39 @@ TRUE_WORDS = {"true", "1", "on", "yes"}
 FALSE_WORDS = {"false", "0", "off", "no"}
 
 
+## The severtype names an attack can use, from severtype_string_to_enum().
+SEVERTYPES = {"NASTY": 1 << 6, "CLEAN": 1 << 7, "NONE": 0}
+
+
+def to_severtype(text):
+    """The wound flag a severing attack leaves, or None if unrecognised.
+
+    An unrecognised name is left alone by the original rather than defaulted,
+    which is why this can answer "no idea" separately from "none".
+    """
+    if text is None:
+        return None
+    return SEVERTYPES.get(text.strip().upper())
+
+
+def sub_text(node, block, tag):
+    """The text of a tag inside a child block, or None if either is missing."""
+    inner = node.find(block)
+    if inner is None:
+        return None
+    child = inner.find(tag)
+    return None if child is None else (child.text or "")
+
+
+def sub_int(node, block, tag, default):
+    raw = sub_text(node, block, tag)
+    return default if raw is None else to_int(raw, default)
+
+
+def sub_has(node, block, tag):
+    return sub_text(node, block, tag) is not None
+
+
 def to_bool(text, default):
     lowered = (text or "").strip().lower()
     if lowered in TRUE_WORDS:
@@ -172,7 +205,7 @@ def extract_weapons(report: Report):
                 "skill": StringName(child_text(attack, "skill", "CLUB")),
                 "ammotype": StringName(child_text(attack, "ammotype", "UNDEF")),
                 "uses_ammo": attack.find("ammotype") is not None,
-                "shoots": to_int(child_text(attack, "shoots")),
+                "shoots": to_bool(child_text(attack, "shoots"), False),
                 "number_attacks": to_int(child_text(attack, "number_attacks"), 1),
                 "strength_min": to_int(child_text(attack, "strength_min"), 5),
                 "strength_max": to_int(child_text(attack, "strength_max"), 10),
@@ -188,11 +221,21 @@ def extract_weapons(report: Report):
                 "tears": to_bool(child_text(attack, "tears"), False),
                 "burns": to_bool(child_text(attack, "burns"), False),
                 "bleeding": to_bool(child_text(attack, "bleeding"), False),
-                "fire": to_bool(child_text(attack, "fire"), False),
+                "fire_chance": sub_int(attack, "fire", "chance", 0),
+                "fire_debris_chance": sub_int(attack, "fire", "chance_causes_debris", 0),
                 "damages_armor": to_bool(child_text(attack, "damages_armor"), False),
-                "critical": to_bool(child_text(attack, "critical"), False),
+                "critical_chance": sub_int(attack, "critical", "chance", 0),
+                "critical_hits_required": sub_int(attack, "critical", "hits_required", 1),
+                "critical_random_damage": sub_int(attack, "critical", "random_damage", 1),
+                "critical_random_damage_defined": sub_has(attack, "critical", "random_damage"),
+                "critical_fixed_damage": sub_int(attack, "critical", "fixed_damage", 1),
+                "critical_fixed_damage_defined": sub_has(attack, "critical", "fixed_damage"),
+                "critical_severtype": to_severtype(
+                    sub_text(attack, "critical", "severtype")) or 0,
+                "critical_severtype_defined":
+                    to_severtype(sub_text(attack, "critical", "severtype")) is not None,
                 "always_describe_hit": to_bool(child_text(attack, "always_describe_hit"), False),
-                "severtype": to_int(child_text(attack, "severtype")),
+                "severtype": to_severtype(child_text(attack, "severtype")) or 0,
                 "attack_description": child_text(attack, "attack_description", "assaults"),
                 "hit_description": child_text(attack, "hit_description", "striking"),
                 "hit_punctuation": child_text(attack, "hit_punctuation", "."),

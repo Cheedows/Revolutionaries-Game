@@ -42,6 +42,11 @@ bool lcs_trace_has_seed();
 /* Forces the seed, for probes that reseed between samples. */
 void lcs_trace_set_seed(unsigned long value);
 
+/* How many draws have been made since the run started. A probe records this
+   either side of a step so a divergence can be located by draw count rather
+   than by guessing which roll went missing. */
+long long lcs_trace_draw_count();
+
 /* Runs the system probe named by LCS_PROBE and exits, when it is set. Called
    from main() once content is loaded. */
 void lcs_probe_run_if_requested();

@@ -23,6 +23,26 @@ static func wear_armor(armor: Armor, catalog: Catalog, amount: int = 1) -> bool:
 	return armor.quality <= quality_levels(armor, catalog)
 
 
+## Wears armor by a hit that landed on [param part].
+##
+## Ports armordamage() from src/combat/fight.cpp. A hit only tells on armor
+## that covers the place it landed, and only when it beats the garment's
+## durability; the first such hit marks it damaged, and later ones may wear it
+## down a tier — which is itself two more rolls.
+static func damage_armor(rng: Rng, armor: Armor, part: StringName, amount: int,
+		catalog: Catalog) -> void:
+	var type: ArmorType = catalog.get_entry(&"armor", armor.type)
+	if type == null or not DamageRules.covers(type, part):
+		return
+	if rng.below(type.durability) >= amount:
+		return
+	if not armor.damaged:
+		armor.damaged = true
+		return
+	var worn := rng.below(type.durability) < rng.below(amount) / armor.quality
+	wear_armor(armor, catalog, 1 if worn else 0)
+
+
 ## Whether the garment has worn past its last tier.
 static func is_ruined(armor: Armor, catalog: Catalog) -> bool:
 	return armor.quality > quality_levels(armor, catalog)
@@ -120,6 +140,7 @@ static func reload_weapon(creature: Creature, catalog: Catalog, wasteful: bool =
 
 	var clip_type: ClipType = catalog.get_entry(&"clip", clip.type)
 	weapon.ammo = clip_type.ammo if clip_type != null else 0
+	weapon.loaded_clip = clip.type
 	clip.count -= 1
 	if clip.count <= 0:
 		creature.clips.remove_at(0)

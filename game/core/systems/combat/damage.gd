@@ -123,7 +123,7 @@ static func _armor_at(target: Creature, body_part: StringName, wound_type: int,
 	if target.armor == null:
 		return 0
 	var type: ArmorType = catalog.get_entry(&"armor", target.armor.type)
-	if type == null or not _covers(type, body_part):
+	if type == null or not covers(type, body_part):
 		return 0
 	match body_part:
 		&"head":
@@ -134,7 +134,8 @@ static func _armor_at(target: Creature, body_part: StringName, wound_type: int,
 			return type.armor_limbs
 
 
-static func _covers(type: ArmorType, body_part: StringName) -> bool:
+## Whether a garment covers the place a blow landed.
+static func covers(type: ArmorType, body_part: StringName) -> bool:
 	match body_part:
 		&"head":
 			return type.covers_head

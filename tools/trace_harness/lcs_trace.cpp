@@ -157,6 +157,11 @@ void lcs_trace_draw()
    g_draws++;
 }
 
+long long lcs_trace_draw_count()
+{
+   return g_draws;
+}
+
 void lcs_trace_swap()
 {
    if (!g_active) return;
@@ -173,6 +178,15 @@ int lcs_trace_next_key(const char *kind)
 
    bool exhausted = g_script_pos >= g_script.size()
                     || (g_max_keys >= 0 && g_frame >= g_max_keys);
+   // A probe drives thousands of prompts and does not care what the screen
+   // says, so it loops the script rather than running out and quitting. A
+   // recorded playthrough still ends when its script does.
+   if (exhausted && getenv("LCS_PROBE") && !g_script.empty()
+       && !(g_max_keys >= 0 && g_frame >= g_max_keys))
+   {
+      g_script_pos = 0;
+      exhausted = false;
+   }
    int key = exhausted ? -1 : g_script[g_script_pos++];
 
    std::string state;

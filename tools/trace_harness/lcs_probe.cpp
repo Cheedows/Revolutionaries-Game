@@ -29,6 +29,7 @@ void build_site(std::string name);
 void initsite(Location &loc);
 void knowmap(int locx, int locy, int locz);
 char hasdisguise(const Creature &cr);
+void attack(Creature &a, Creature &t, char mistake, char &actual, bool force_melee);
 short creaturetype_string_to_enum(const std::string &ctname);
 void elections_senate(int senmod, char canseethings);
 void healthmodroll(int &aroll, Creature &a);
@@ -961,6 +962,156 @@ void probe_context_checks(FILE *out)
    }
 }
 
+// One creature attacking another: the rolls, the burst, where it lands, what
+// gets through the armor, and what a death costs everybody.
+//
+// Fought inside a real site, because attack() reads the floor it is standing
+// on and the squad the attacker belongs to.
+void probe_combat(FILE *out)
+{
+   // Seeds shared with the site probe: some worlds overflow a name buffer in
+   // initlocation() and abort the original outright, so the seeds that are
+   // known to build are the ones used.
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949823UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      cursite = 1;
+      sitealarm = scenario % 2;
+      sitecrime = 0;
+      locx = MAPX >> 1, locy = 5, locz = 0;
+      for (int x = 0; x < MAPX; x++)
+      for (int y = 0; y < MAPY; y++)
+      for (int z = 0; z < MAPZ; z++)
+      {
+         levelmap[x][y][z].flag = 0;
+         levelmap[x][y][z].special = SPECIAL_NONE;
+         levelmap[x][y][z].siegeflag = 0;
+      }
+      newsstoryst *ns = new newsstoryst;
+      ns->loc = cursite;
+      newsstory.push_back(ns);
+      sitestory = ns;
+
+      // Nothing has cleared the encounter slots, and a blood spray rolls for
+      // everybody standing in one.
+      for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+      // The CEO and the President are built the first time anything asks for
+      // them, and dying asks. Building them here, before the samples reseed,
+      // keeps a whole creature's worth of draws out of the first fight that
+      // kills somebody.
+      uniqueCreatures.initialize();
+
+      // A squad the attacker belongs to, so the founder rules are reachable.
+      squadst squad;
+      for (int p = 0; p < 6; p++) squad.squad[p] = NULL;
+      activesquad = &squad;
+
+      // Every weapon in the game, against three states of defence.
+      for (int w = 0; w < len(weapontype); w++)
+      for (int defence = 0; defence < 3; defence++)
+      {
+         unsigned long seed_used =
+            3000037UL * (unsigned long)(w * 4 + defence + scenario);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         Creature a;
+         a.id = 900000;
+         a.set_skill(SKILL_CLUB, (w + scenario) % 9);
+         a.set_skill(SKILL_PISTOL, (w + scenario) % 9);
+         a.set_skill(SKILL_RIFLE, (w + scenario) % 9);
+         a.set_skill(SKILL_SHOTGUN, (w + scenario) % 9);
+         a.set_skill(SKILL_SMG, (w + scenario) % 9);
+         a.set_skill(SKILL_HEAVYWEAPONS, (w + scenario) % 9);
+         a.set_skill(SKILL_KNIFE, (w + scenario) % 9);
+         a.set_skill(SKILL_AXE, (w + scenario) % 9);
+         a.set_skill(SKILL_SWORD, (w + scenario) % 9);
+         a.set_skill(SKILL_THROWING, (w + scenario) % 9);
+         a.set_skill(SKILL_HANDTOHAND, (w + scenario * 2) % 9);
+         a.set_skill(SKILL_STEALTH, (w + scenario) % 7);
+         a.align = ALIGN_LIBERAL;
+         a.give_weapon(*weapontype[w], NULL);
+         if (weapontype[w]->get_attacks().size() &&
+             weapontype[w]->get_attacks()[0]->uses_ammo)
+         {
+            std::string ct = weapontype[w]->get_attacks()[0]->ammotype;
+            if (getcliptype(ct) != -1)
+            {
+               a.take_clips(*cliptype[getcliptype(ct)], 4);
+               a.reload(false);
+            }
+         }
+
+         Creature t;
+         // Well clear of the CEO and the President: killing either of those
+         // spawns a replacement, and a whole creature's worth of draws would
+         // swamp the fight this is trying to record.
+         t.id = 900001;
+         t.align = ALIGN_CONSERVATIVE;
+         t.set_skill(SKILL_DODGE, defence * 4);
+         if (defence > 0)
+            t.give_armor(*armortype[getarmortype(
+               defence == 1 ? "ARMOR_CLOTHES" : "ARMOR_ARMYARMOR")], NULL);
+         squad.squad[0] = &a;
+         a.squadid = squad.id = 1;
+         a.hireid = 0; // Not the founder; the founder rules get their own pass.
+
+         fprintf(out, "{\"kind\":\"attack\",\"scenario\":%d,\"seed\":%lu,\"weapon\":",
+                 scenario, seed_used);
+         write_string(out, weapontype[w]->get_idname().c_str());
+         fprintf(out, ",\"defence\":%d,\"alarm\":%d", defence, sitealarm);
+         fputs(",\"attacker_skills\":[", out);
+         for (int i = 0; i < SKILLNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", a.get_skill(i));
+         fputs("],\"attacker_attributes\":[", out);
+         for (int i = 0; i < ATTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", a.attribute_raw_probe(i));
+         fputs("],\"target_attributes\":[", out);
+         for (int i = 0; i < ATTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", t.attribute_raw_probe(i));
+         fprintf(out, "],\"target_dodge\":%d,\"ammo_before\":%d",
+                 t.get_skill(SKILL_DODGE), a.get_weapon().get_ammoamount());
+
+         fputs(",\"rounds\":[", out);
+         for (int round = 0; round < 4; round++)
+         {
+            char actual = 0;
+            long long draws_before = lcs_trace_draw_count();
+            attack(a, t, 0, actual, false);
+            fputs(round ? ",{" : "{", out);
+            fprintf(out, "\"draws\":%lld,",
+                    lcs_trace_draw_count() - draws_before);
+            fprintf(out, "\"blood\":%d,\"alive\":%d,\"ammo\":%d",
+                    t.blood, t.alive ? 1 : 0, a.get_weapon().get_ammoamount());
+            fprintf(out, ",\"juice\":%d,\"sitecrime\":%d,\"alarm\":%d",
+                    a.juice, sitecrime, sitealarm);
+            fputs(",\"wounds\":[", out);
+            for (int i = 0; i < BODYPARTNUM; i++)
+               fprintf(out, "%s%d", i ? "," : "", (int)t.wound[i]);
+            fputs("],\"special\":[", out);
+            for (int i = 0; i < SPECIALWOUNDNUM; i++)
+               fprintf(out, "%s%d", i ? "," : "", (int)t.special[i]);
+            fputs("],\"attacker_skills\":[", out);
+            for (int i = 0; i < SKILLNUM; i++)
+               fprintf(out, "%s%d", i ? "," : "", a.get_skill(i));
+            fputs("]}", out);
+         }
+         fputs("]}\n", out);
+         squad.squad[0] = NULL;
+      }
+      activesquad = NULL;
+   }
+}
+
 // Spawning people into a built world: the path a site population, a
 // recruitment meeting and a squad of enemies all come through.
 //
@@ -1271,6 +1422,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "sitemaps")) probe_sitemaps(out);
    else if (!strcmp(which, "sites")) probe_sites(out);
    else if (!strcmp(which, "context")) probe_context_checks(out);
+   else if (!strcmp(which, "combat")) probe_combat(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

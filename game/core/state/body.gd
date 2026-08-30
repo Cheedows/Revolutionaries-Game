@@ -34,5 +34,22 @@ func has_special(wound: StringName) -> bool:
 	return special[Ids.SPECIAL_WOUNDS.find(wound)] != 0
 
 
+func get_special(wound: StringName) -> int:
+	return special[Ids.SPECIAL_WOUNDS.find(wound)]
+
+
 func set_special(wound: StringName, value: int) -> void:
 	special[Ids.SPECIAL_WOUNDS.find(wound)] = value
+
+
+## Whether a body part has been taken off, either way.
+func is_severed(part: StringName) -> bool:
+	return (wounds[Ids.BODY_PARTS.find(part)] & Wound.SEVERED) != 0
+
+
+func get_wound(part: StringName) -> int:
+	return wounds[Ids.BODY_PARTS.find(part)]
+
+
+func add_wound(part: StringName, flags: int) -> void:
+	wounds[Ids.BODY_PARTS.find(part)] |= flags

@@ -92,6 +92,19 @@ var death_penalty: int = 0
 ## Id of whoever recruited this creature, or -1. Reputation trickles up it.
 var recruiter_id: int = -1
 
+## Set when a fight found this creature too hurt to act, so the next check does
+## not have to roll for it again.
+var forced_incapacitated: bool = false
+
+## Counts down the turns this creature will not listen to a cover story: set
+## when they are attacked, so nobody talks their way out of a fight they
+## started.
+var cannot_bluff: int = 0
+
+## Which hire this creature is, or -1 for the founder. The founder takes half
+## damage and gets shielded, which is what this is read for.
+var hire_id: int = -1
+
 ## Days since joining, and since dying.
 var join_days: int = 0
 var death_days: int = 0
@@ -99,6 +112,10 @@ var death_days: int = 0
 var weapon: Weapon = null
 var armor: Armor = null
 var clips: Array[Clip] = []
+
+## More of whatever is being thrown. A stack of knives is one in the hand and
+## the rest here; throwing the one in the hand brings the next up.
+var spare_throwables: Array[Weapon] = []
 var carried: Array[Item] = []
 
 ## Installed augmentations, by augment idname.

@@ -79,8 +79,16 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
     parity exception below.
 - [ ] Add any missing state fields discovered by the remaining systems without leaking UI concerns into `core/`.
 - [ ] Add targeted probes for currently unit-tested-but-unprobed arrest/prostitution branches where practical.
+  - Blocked on the chase system: in the original an arrest runs straight into
+    `footchase()`, so the branch cannot be recorded in isolation. Revisit with
+    Gate F, which is why F is being taken before the rest of B.
 
 **Gate A:** all foundational primitives required by later modes are callable headlessly and green.
+
+> **Order note.** Gates E and F are taken before the rest of B. A daily arrest
+> runs into a foot chase and site mode runs into combat, so B and G cannot be
+> finished — or honestly probed — until those exist. Everything else in the
+> roadmap keeps its order.
 
 ### B. Finish base mode and daily simulation
 
@@ -133,16 +141,23 @@ Port from `src/news/` without coupling prose generation to state mutation.
 
 Port from `src/combat/` and remaining combat helpers.
 
-- [ ] Attack selection and attack resolution.
-- [ ] Hit/miss, dodge and defense checks.
-- [ ] Ranged ammunition/burst/fire behavior.
-- [ ] Melee/unarmed behavior.
-- [ ] Armor penetration/protection integration around the existing damage primitives.
-- [ ] Body-part injury, severing/permanent damage/death outcomes.
+- [x] Attack selection and attack resolution.
+- [x] Hit/miss, dodge and defense checks.
+- [x] Ranged ammunition/burst/fire behavior.
+- [x] Melee/unarmed behavior.
+- [x] Armor penetration/protection integration around the existing damage primitives.
+- [x] Body-part injury, severing/permanent damage/death outcomes.
 - [ ] Morale/hostage/surrender behavior used in fights.
+  - The rhetorical attacks are ported (judges, CEOs, broadcasters, musicians)
+    up to the point where a losing squad member is converted and changes sides;
+    that transfer needs the encounter roster, so it lands with Gate G.
 - [ ] Kidnapping/hauling consequences.
 - [ ] Combat event vocabulary sufficient for any future visual presentation.
-- [ ] Deterministic combat probes covering every weapon family and representative armor/body states.
+- [x] Deterministic combat probes covering every weapon family and representative armor/body states.
+  - All 38 weapon types, four blows each, against three states of defence under
+    three legal climates, compared on blood, every wound flag, every organ,
+    ammunition, standing, site crime and the alarm — and on the number of RNG
+    draws each blow consumed, which is what makes a missing roll findable.
 
 **Gate E:** arbitrary squads can fight headlessly to a deterministic conclusion with parity-level wounds, deaths, ammo and aftermath.
 
@@ -249,6 +264,9 @@ Do not silently fix these while converting because some change RNG draw counts o
 - `wincheck()` dangling-`else` relaxed-win behavior.
 - `generatestairsrandom()` secure/unsecure list indexing bug.
 - `alarmwait()` race/hang.
+- `initlocation()` overflows a 20-character buffer when an apartment block's
+  name is long enough — "Saxe-Coburg-Gotha Condominiums" aborts the original
+  outright. The port simply has no fixed-size buffer there.
 
 ## 7. Rules for executing this roadmap
 
