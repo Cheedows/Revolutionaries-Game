@@ -1,0 +1,208 @@
+[gd_resource type="Resource" script_class="ShopDef" load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://data/schema/shop_item.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/shop_def.gd" id="Script_2"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_TRENCHCOAT"
+description = "Buy a Trench Coat"
+price = 70
+sleeperprice = 0
+letter = "t"
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_WORKCLOTHES"
+description = "Buy Work Clothes"
+price = 50
+sleeperprice = 0
+letter = "w"
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_LABCOAT"
+description = "Buy a Lab Coat"
+price = 200
+sleeperprice = 0
+letter = "l"
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_BLACKROBE"
+description = "Buy a Black Judge's Robe"
+price = 200
+sleeperprice = 0
+letter = "r"
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_CLOWNSUIT"
+description = "Buy a Clown Suit"
+price = 200
+sleeperprice = 0
+letter = "c"
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_BONDAGEGEAR"
+description = "Buy Bondage Gear"
+price = 350
+sleeperprice = 0
+letter = "g"
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_TOGA"
+description = "Buy a Toga"
+price = 90
+sleeperprice = 0
+letter = "o"
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_ELEPHANTSUIT"
+description = "Buy an Elephant Suit"
+price = 1000
+sleeperprice = 0
+letter = "p"
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_DONKEYSUIT"
+description = "Buy a Donkey Suit"
+price = 1000
+sleeperprice = 0
+letter = "d"
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Purchase Halloween Costumes"
+exit = "Done"
+letter = "c"
+only_sell_legal_items = true
+allow_selling = false
+increase_prices_with_illegality = false
+sell_masks = true
+fullscreen = false
+departments = []
+items = Array[Resource]([SubResource("Sub_1"), SubResource("Sub_2"), SubResource("Sub_3"), SubResource("Sub_4"), SubResource("Sub_5"), SubResource("Sub_6"), SubResource("Sub_7"), SubResource("Sub_8"), SubResource("Sub_9")])
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_DAGGER"
+description = "Buy a Dagger"
+price = 20
+sleeperprice = 0
+letter = "k"
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SWORD"
+description = "Buy the Sword of Morfiegor"
+price = 250
+sleeperprice = 0
+letter = "s"
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_DAISHO"
+description = "Buy a Katana and Wakizashi"
+price = 250
+sleeperprice = 0
+letter = "a"
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_HAMMER"
+description = "Buy a Dwarven Hammer"
+price = 250
+sleeperprice = 0
+letter = "h"
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_MAUL"
+description = "Buy the Maul of Anrin"
+price = 250
+sleeperprice = 0
+letter = "m"
+
+[sub_resource type="Resource" id="Sub_16"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_CROSS"
+description = "Buy a Silver Cross"
+price = 250
+sleeperprice = 0
+letter = "c"
+
+[sub_resource type="Resource" id="Sub_17"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_STAFF"
+description = "Buy a Wizard's Staff"
+price = 250
+sleeperprice = 0
+letter = "w"
+
+[sub_resource type="Resource" id="Sub_18"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_LEATHER"
+description = "Buy Leather Armor"
+price = 800
+sleeperprice = 0
+letter = "l"
+
+[sub_resource type="Resource" id="Sub_19"]
+script = ExtResource("Script_1")
+item_class = &"armor"
+type = &"ARMOR_MITHRIL"
+description = "Buy Mithril Mail"
+price = 1000
+sleeperprice = 0
+letter = "!"
+
+[sub_resource type="Resource" id="Sub_20"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Purchase Medieval Gear"
+exit = "Done"
+letter = "m"
+only_sell_legal_items = true
+allow_selling = false
+increase_prices_with_illegality = false
+sell_masks = false
+fullscreen = false
+departments = []
+items = Array[Resource]([SubResource("Sub_11"), SubResource("Sub_12"), SubResource("Sub_13"), SubResource("Sub_14"), SubResource("Sub_15"), SubResource("Sub_16"), SubResource("Sub_17"), SubResource("Sub_18"), SubResource("Sub_19")])
+
+[resource]
+script = ExtResource("Script_2")
+name = &"OUBLIETTE"
+entry = ""
+exit = "Leave"
+letter = ""
+only_sell_legal_items = true
+allow_selling = false
+increase_prices_with_illegality = false
+sell_masks = false
+fullscreen = false
+departments = Array[Resource]([SubResource("Sub_10"), SubResource("Sub_20")])
+items = []

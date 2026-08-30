@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from tres import Res, StringName, write  # noqa: E402
+from tres import PackedInt32Array, Res, StringName, write  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ART = ROOT / "art"
@@ -509,6 +509,116 @@ def extract_creatures(report: Report):
         report.written += 1
 
 
+
+SHOP_HANDLED = {
+    "only_sell_legal_items", "fullscreen", "allow_selling",
+    "increase_prices_with_illegality", "department", "entry", "exit",
+    "sell_masks", "letter", "item",
+}
+SHOP_ITEM_HANDLED = {"class", "type", "description", "price", "sleeperprice", "letter"}
+ITEM_CLASSES = {"WEAPON": "weapon", "CLIP": "clip", "ARMOR": "armor", "LOOT": "loot"}
+
+
+def _letter(text: str) -> str:
+    """Mirrors the original's hotkey rule: lowercase a letter, or accept '!'."""
+    if not text:
+        return ""
+    first = text[0]
+    if first.isalpha():
+        return first.lower()
+    return first if first == "!" else ""
+
+
+def _shop(element, report, source, name, inherited_fullscreen, inherited_legal,
+          inherited_illegality):
+    for tag in {child.tag for child in element} - SHOP_HANDLED:
+        report.ignore(source, name, tag)
+
+    fullscreen = to_bool(child_text(element, "fullscreen"), inherited_fullscreen)
+    only_legal = to_bool(child_text(element, "only_sell_legal_items"), inherited_legal)
+    illegality = to_bool(child_text(element, "increase_prices_with_illegality"),
+                         inherited_illegality)
+
+    items = []
+    for item in element.findall("item"):
+        for tag in {child.tag for child in item} - SHOP_ITEM_HANDLED:
+            report.ignore(f"{source}/item", name, tag)
+        items.append(Res("shop_item.gd", {
+            "item_class": StringName(ITEM_CLASSES.get(child_text(item, "class"), "")),
+            "type": StringName(child_text(item, "type")),
+            "description": child_text(item, "description"),
+            "price": to_int(child_text(item, "price")),
+            "sleeperprice": to_int(child_text(item, "sleeperprice")),
+            "letter": _letter(child_text(item, "letter")),
+        }))
+
+    departments = [
+        _shop(child, report, source, name, fullscreen, only_legal, illegality)
+        for child in element.findall("department")
+    ]
+
+    return Res("shop_def.gd", {
+        "name": StringName(element.get("name", "")),
+        "entry": child_text(element, "entry"),
+        "exit": child_text(element, "exit", "Leave"),
+        "letter": _letter(child_text(element, "letter")),
+        "only_sell_legal_items": only_legal,
+        "allow_selling": to_bool(child_text(element, "allow_selling"), False),
+        "increase_prices_with_illegality": illegality,
+        "sell_masks": to_bool(child_text(element, "sell_masks"), False),
+        "fullscreen": fullscreen,
+        "departments": departments,
+        "items": items,
+    })
+
+
+def extract_shops(report: Report):
+    verify_against_cpp("src/sitemode/shop.cpp", SHOP_HANDLED | SHOP_ITEM_HANDLED,
+                       extra_ok={"WEAPON", "CLIP", "ARMOR", "LOOT"})
+    for source in ("armsdealer.xml", "deptstore.xml", "oubliette.xml", "pawnshop.xml"):
+        root = ET.parse(ART / source).getroot()
+        name = source.removesuffix(".xml")
+        write(OUT / "shops" / f"{name}.tres",
+              _shop(root, report, source, name, False, False, False))
+        report.written += 1
+
+
+def extract_sitemaps(report: Report):
+    """Converts the mapCSV_* tile/special grid pairs.
+
+    Note: art/sitemaps.txt is a map *scripting language* interpreted by
+    src/configfile.cpp, not data. It is ported with the site systems in Phase 2,
+    not here.
+    """
+    for tiles_path in sorted(ART.glob("mapCSV_*_Tiles.csv")):
+        name = tiles_path.stem.removeprefix("mapCSV_").removesuffix("_Tiles")
+        specials_path = ART / f"mapCSV_{name}_Specials.csv"
+        if not specials_path.exists():
+            raise SystemExit(f"{tiles_path.name} has no matching _Specials.csv")
+
+        def grid(path):
+            rows = [row for row in path.read_text().splitlines() if row.strip()]
+            return [[int(cell) for cell in row.split(",")] for row in rows]
+
+        tiles = grid(tiles_path)
+        specials = grid(specials_path)
+        height = len(tiles)
+        width = len(tiles[0])
+        if any(len(row) != width for row in tiles):
+            raise SystemExit(f"{tiles_path.name} is not rectangular")
+        if len(specials) != height or any(len(row) != width for row in specials):
+            raise SystemExit(f"{specials_path.name} does not match its tile grid")
+
+        write(OUT / "sitemaps" / f"{name.lower()}.tres", Res("site_map.gd", {
+            "idname": StringName(name.upper()),
+            "width": width,
+            "height": height,
+            "tiles": PackedInt32Array([cell for row in tiles for cell in row]),
+            "specials": PackedInt32Array([cell for row in specials for cell in row]),
+        }))
+        report.written += 1
+
+
 def main() -> int:
     report = Report()
     extract_weapons(report)
@@ -518,6 +628,8 @@ def main() -> int:
     extract_augmentations(report)
     extract_vehicles(report)
     extract_creatures(report)
+    extract_shops(report)
+    extract_sitemaps(report)
     report.summarise()
     return 0
 

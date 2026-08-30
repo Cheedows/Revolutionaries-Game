@@ -1,0 +1,163 @@
+[gd_resource type="Resource" script_class="ShopDef" load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://data/schema/shop_item.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/shop_def.gd" id="Script_2"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SMG_MP5"
+description = ""
+price = 1100
+sleeperprice = 0
+letter = ""
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_AUTORIFLE_AK47"
+description = ""
+price = 1400
+sleeperprice = 0
+letter = ""
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_REVOLVER_44"
+description = ""
+price = 500
+sleeperprice = 0
+letter = ""
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SEMIPISTOL_9MM"
+description = ""
+price = 300
+sleeperprice = 0
+letter = ""
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SEMIPISTOL_45"
+description = ""
+price = 300
+sleeperprice = 0
+letter = ""
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SHOTGUN_PUMP"
+description = ""
+price = 400
+sleeperprice = 0
+letter = ""
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Buy a Liberal Gun"
+exit = "needs no weapon."
+letter = "g"
+only_sell_legal_items = false
+allow_selling = false
+increase_prices_with_illegality = true
+sell_masks = false
+fullscreen = true
+departments = []
+items = Array[Resource]([SubResource("Sub_1"), SubResource("Sub_2"), SubResource("Sub_3"), SubResource("Sub_4"), SubResource("Sub_5"), SubResource("Sub_6")])
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_BUCKSHOT"
+description = "Buy Shotgun Shells"
+price = 25
+sleeperprice = 0
+letter = "p"
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_38"
+description = "Buy a .38 Speedloader"
+price = 25
+sleeperprice = 0
+letter = "t"
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_9"
+description = "Buy a 9mm Pistol Magazine"
+price = 40
+sleeperprice = 0
+letter = "n"
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_45"
+description = "Buy a .45 Pistol Magazine"
+price = 40
+sleeperprice = 0
+letter = "f"
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_44"
+description = "Buy a .44 Speedloader"
+price = 40
+sleeperprice = 0
+letter = "m"
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_SMG"
+description = "Buy a 9mm SMG Magazine"
+price = 50
+sleeperprice = 0
+letter = "s"
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_ASSAULT"
+description = "Buy a Rifle/Aslt.Rifle Mag"
+price = 50
+sleeperprice = 0
+letter = "r"
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Buy Liberal Clips"
+exit = "Done buying Liberal clips"
+letter = "c"
+only_sell_legal_items = false
+allow_selling = false
+increase_prices_with_illegality = true
+sell_masks = false
+fullscreen = false
+departments = []
+items = Array[Resource]([SubResource("Sub_8"), SubResource("Sub_9"), SubResource("Sub_10"), SubResource("Sub_11"), SubResource("Sub_12"), SubResource("Sub_13"), SubResource("Sub_14")])
+
+[resource]
+script = ExtResource("Script_2")
+name = &"ARSMDEALER"
+entry = ""
+exit = "Leave"
+letter = ""
+only_sell_legal_items = false
+allow_selling = false
+increase_prices_with_illegality = true
+sell_masks = false
+fullscreen = false
+departments = Array[Resource]([SubResource("Sub_7"), SubResource("Sub_15")])
+items = []

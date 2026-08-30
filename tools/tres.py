@@ -35,6 +35,8 @@ def _fmt(value, subs, order):
         if value and isinstance(value[0], StringName):
             return f"Array[StringName]([{inner}])"
         return f"[{inner}]"
+    if isinstance(value, PackedInt32Array):
+        return "PackedInt32Array(" + ", ".join(str(int(v)) for v in value) + ")"
     if isinstance(value, dict):
         inner = ", ".join(
             f"{_fmt(k, subs, order)}: {_fmt(v, subs, order)}" for k, v in value.items()
@@ -43,6 +45,10 @@ def _fmt(value, subs, order):
     if value is None:
         return "null"
     raise TypeError(f"cannot serialize {type(value).__name__}: {value!r}")
+
+
+class PackedInt32Array(list):
+    """Marks a list of ints that must serialize as a Godot PackedInt32Array."""
 
 
 class StringName(str):

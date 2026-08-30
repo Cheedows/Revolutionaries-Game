@@ -13,6 +13,8 @@ const EXPECTED_COUNTS := {
 	"res://data/augments": 12,
 	"res://data/vehicles": 11,
 	"res://data/creatures": 106,
+	"res://data/shops": 4,
+	"res://data/sitemaps": 9,
 }
 
 
@@ -89,3 +91,34 @@ func test_vehicle_nested_blocks() -> void:
 			fail("%s has no longname" % file)
 			return
 	equal(loaded, 11, "vehicle count")
+
+
+func test_shop_departments_are_recursive() -> void:
+	var pawnshop: ShopDef = load("res://data/shops/pawnshop.tres")
+	if pawnshop == null:
+		fail("pawnshop.tres did not load as a ShopDef")
+		return
+	equal(pawnshop.name, &"PAWNSHOP", "shop name")
+	equal(pawnshop.allow_selling, true, "pawn shop allows selling")
+	equal(pawnshop.departments.size(), 3, "pawn shop department count")
+	var weapons: ShopDef = pawnshop.departments[0]
+	equal(weapons.entry, "Buy a Liberal Weapon", "first department entry text")
+	check(weapons.items.size() > 0, "department has items")
+	var knife: ShopItem = weapons.items[0]
+	equal(knife.type, &"WEAPON_COMBATKNIFE", "first item type")
+	equal(knife.price, 30, "first item price")
+	equal(knife.letter, "o", "hotkeys are lowercased")
+
+
+func test_sitemaps_are_rectangular_grids() -> void:
+	var bank: SiteMap = load("res://data/sitemaps/bank.tres")
+	if bank == null:
+		fail("bank.tres did not load as a SiteMap")
+		return
+	equal(bank.width, 70, "map width")
+	equal(bank.height, 23, "map height")
+	equal(bank.tiles.size(), 70 * 23, "tile cell count")
+	equal(bank.specials.size(), 70 * 23, "special cell count")
+	# Row 0 of mapCSV_Bank_Tiles.csv starts with outdoor tiles and turns to wall.
+	equal(bank.tiles[0], 2, "first tile")
+	equal(bank.tiles[27], 3, "wall tile at x=27")

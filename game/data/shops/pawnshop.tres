@@ -1,0 +1,258 @@
+[gd_resource type="Resource" script_class="ShopDef" load_steps=28 format=3]
+
+[ext_resource type="Script" path="res://data/schema/shop_item.gd" id="Script_1"]
+[ext_resource type="Script" path="res://data/schema/shop_def.gd" id="Script_2"]
+
+[sub_resource type="Resource" id="Sub_1"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_COMBATKNIFE"
+description = "Buy a Combat Knife"
+price = 30
+sleeperprice = 0
+letter = "o"
+
+[sub_resource type="Resource" id="Sub_2"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SHOTGUN_PUMP"
+description = "Buy a Shotgun"
+price = 400
+sleeperprice = 0
+letter = "g"
+
+[sub_resource type="Resource" id="Sub_3"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_REVOLVER_38"
+description = "Buy a .38 Revolver"
+price = 150
+sleeperprice = 0
+letter = "t"
+
+[sub_resource type="Resource" id="Sub_4"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SEMIPISTOL_9MM"
+description = "Buy a 9mm Semi-automatic"
+price = 300
+sleeperprice = 0
+letter = "n"
+
+[sub_resource type="Resource" id="Sub_5"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SEMIPISTOL_45"
+description = "Buy a .45 Semi-automatic"
+price = 300
+sleeperprice = 0
+letter = "f"
+
+[sub_resource type="Resource" id="Sub_6"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_REVOLVER_44"
+description = "Buy a .44 Magnum"
+price = 300
+sleeperprice = 0
+letter = "m"
+
+[sub_resource type="Resource" id="Sub_7"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SEMIRIFLE_AR15"
+description = "Buy a Civilian AR-15"
+price = 350
+sleeperprice = 0
+letter = "r"
+
+[sub_resource type="Resource" id="Sub_8"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SMG_MP5"
+description = "Buy a 9mm MP5 SMG"
+price = 1200
+sleeperprice = 0
+letter = "s"
+
+[sub_resource type="Resource" id="Sub_9"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_CARBINE_M4"
+description = "Buy an M4 Carbine"
+price = 1400
+sleeperprice = 0
+letter = "c"
+
+[sub_resource type="Resource" id="Sub_10"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_AUTORIFLE_M16"
+description = "Buy an M16"
+price = 1500
+sleeperprice = 0
+letter = "a"
+
+[sub_resource type="Resource" id="Sub_11"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_AUTORIFLE_AK47"
+description = "Buy an AK47"
+price = 1500
+sleeperprice = 0
+letter = "k"
+
+[sub_resource type="Resource" id="Sub_12"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Buy a Liberal Weapon"
+exit = "Done buying Liberal weapons"
+letter = "g"
+only_sell_legal_items = true
+allow_selling = false
+increase_prices_with_illegality = false
+sell_masks = false
+fullscreen = false
+departments = []
+items = Array[Resource]([SubResource("Sub_1"), SubResource("Sub_2"), SubResource("Sub_3"), SubResource("Sub_4"), SubResource("Sub_5"), SubResource("Sub_6"), SubResource("Sub_7"), SubResource("Sub_8"), SubResource("Sub_9"), SubResource("Sub_10"), SubResource("Sub_11")])
+
+[sub_resource type="Resource" id="Sub_13"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_BUCKSHOT"
+description = "Buy Shotgun Shells"
+price = 20
+sleeperprice = 0
+letter = "p"
+
+[sub_resource type="Resource" id="Sub_14"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_38"
+description = "Buy a .38 Speedloader"
+price = 15
+sleeperprice = 0
+letter = "t"
+
+[sub_resource type="Resource" id="Sub_15"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_9"
+description = "Buy a 9mm Pistol Magazine"
+price = 30
+sleeperprice = 0
+letter = "n"
+
+[sub_resource type="Resource" id="Sub_16"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_45"
+description = "Buy a .45 Pistol Magazine"
+price = 30
+sleeperprice = 0
+letter = "f"
+
+[sub_resource type="Resource" id="Sub_17"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_44"
+description = "Buy a .44 Speedloader"
+price = 20
+sleeperprice = 0
+letter = "m"
+
+[sub_resource type="Resource" id="Sub_18"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_ASSAULT"
+description = "Buy a Rifle/Aslt.Rifle Mag"
+price = 35
+sleeperprice = 0
+letter = "r"
+
+[sub_resource type="Resource" id="Sub_19"]
+script = ExtResource("Script_1")
+item_class = &"clip"
+type = &"CLIP_SMG"
+description = "Buy a 9mm SMG Magazine"
+price = 35
+sleeperprice = 0
+letter = "s"
+
+[sub_resource type="Resource" id="Sub_20"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Buy Liberal Clips"
+exit = "Done buying Liberal clips"
+letter = "c"
+only_sell_legal_items = true
+allow_selling = false
+increase_prices_with_illegality = false
+sell_masks = false
+fullscreen = false
+departments = []
+items = Array[Resource]([SubResource("Sub_13"), SubResource("Sub_14"), SubResource("Sub_15"), SubResource("Sub_16"), SubResource("Sub_17"), SubResource("Sub_18"), SubResource("Sub_19")])
+
+[sub_resource type="Resource" id="Sub_21"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_CROWBAR"
+description = "Buy a Crowbar"
+price = 20
+sleeperprice = 0
+letter = "c"
+
+[sub_resource type="Resource" id="Sub_22"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_SPRAYCAN"
+description = "Buy Spray Paint"
+price = 20
+sleeperprice = 0
+letter = "s"
+
+[sub_resource type="Resource" id="Sub_23"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_GUITAR"
+description = "Buy a Guitar"
+price = 200
+sleeperprice = 0
+letter = "g"
+
+[sub_resource type="Resource" id="Sub_24"]
+script = ExtResource("Script_1")
+item_class = &"weapon"
+type = &"WEAPON_MOLOTOV"
+description = "Buy Bottle, Rag & Gasoline"
+price = 40
+sleeperprice = 0
+letter = "m"
+
+[sub_resource type="Resource" id="Sub_25"]
+script = ExtResource("Script_2")
+name = &""
+entry = "Buy Liberal Tools"
+exit = "Done buying Liberal tools"
+letter = "t"
+only_sell_legal_items = true
+allow_selling = false
+increase_prices_with_illegality = false
+sell_masks = false
+fullscreen = false
+departments = []
+items = Array[Resource]([SubResource("Sub_21"), SubResource("Sub_22"), SubResource("Sub_23"), SubResource("Sub_24")])
+
+[resource]
+script = ExtResource("Script_2")
+name = &"PAWNSHOP"
+entry = ""
+exit = "Leave"
+letter = ""
+only_sell_legal_items = true
+allow_selling = true
+increase_prices_with_illegality = false
+sell_masks = false
+fullscreen = false
+departments = Array[Resource]([SubResource("Sub_12"), SubResource("Sub_20"), SubResource("Sub_25")])
+items = []
