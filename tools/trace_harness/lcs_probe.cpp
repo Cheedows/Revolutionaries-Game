@@ -6459,6 +6459,143 @@ static int tend_block(Creature *cr, int plan, int *escaped_out)
 }
 
 
+
+// Disbanding: scattering the squad, and the slow forgetting of the years
+// afterwards.
+static void disband_block()
+{
+   // pickrandom() over the phrases the player has to type, which is rolled
+   // before the typing and so costs a draw.
+   LCSrandom(22);
+
+   for(int p=len(pool)-1;p>=0;p--)
+   {
+      if(!pool[p]->alive || pool[p]->flag&CREATUREFLAG_KIDNAPPED || pool[p]->flag&CREATUREFLAG_MISSING)
+         delete_and_remove(pool,p);
+      else if(!(pool[p]->flag&CREATUREFLAG_SLEEPER))
+      {
+         removesquadinfo(*pool[p]);
+         pool[p]->hiding=-1;
+      }
+   }
+   cleangonesquads();
+   disbandtime=year;
+}
+
+// The monthly thinning of a disbanded squad, from show_disbanding_screen().
+static void disband_month_block()
+{
+   for(int p=len(pool)-1;p>=0;p--)
+   {
+      int targetjuice=LCSrandom(100*(year-disbandtime+1));
+      if(targetjuice>1000) targetjuice=1000;
+      if(pool[p]->juice<targetjuice&&pool[p]->hireid!=-1&&!(pool[p]->flag&CREATUREFLAG_SLEEPER))
+         pool[p]->alive=0;
+   }
+}
+
+void probe_disband(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 88113301UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+
+      for (int crowd = 1; crowd <= 6; crowd++)
+      for (int shape = 0; shape < 6; shape++)
+      for (int years = 0; years < 5; years++)
+      for (int monthly = 0; monthly < 2; monthly++)
+      {
+         unsigned long seed_used = 6100013UL * (unsigned long)
+            ((((crowd * 6 + shape) * 5 + years) * 2 + monthly)
+             + scenario * 179 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         year = 2000 + years * 12;
+         disbandtime = 2000;
+         month = 1; day = 1;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 950000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = 1;
+            cr->base = 1;
+            cr->juice = (n * 137 + shape * 40) % 1200;
+            cr->hireid = n == 0 ? -1 : 950000;
+            cr->alive = ((n + shape) % 7 != 3);
+            if ((n + shape) % 5 == 1) cr->flag |= CREATUREFLAG_SLEEPER;
+            if ((n + shape) % 5 == 2) cr->flag |= CREATUREFLAG_MISSING;
+            if ((n + shape) % 5 == 3) cr->flag |= CREATUREFLAG_KIDNAPPED;
+            if (n < 6)
+            {
+               sq->squad[n] = cr;
+               cr->squadid = sq->id;
+            }
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"disband\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"crowd\":%d,\"shape\":%d,\"years\":%d,\"monthly\":%d,"
+                      "\"year\":%d,\"disbandtime\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, crowd, shape, years, monthly, year,
+                 disbandtime, run_seed);
+         fputs(",\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"id\":%d,\"alive\":%d,\"sleeper\":%d,"
+                         "\"missing\":%d,\"kidnapped\":%d,\"person\":",
+                    p ? "," : "", (int)pool[p]->id, pool[p]->alive ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_MISSING) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_KIDNAPPED) ? 1 : 0);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         if (monthly) disband_month_block();
+         else disband_block();
+
+         fprintf(out, ",\"draws\":%lld,\"disbandtime_after\":%d",
+                 lcs_trace_draw_count() - before, disbandtime);
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+            fprintf(out, "%s{\"id\":%d,\"alive\":%d,\"hiding\":%d,"
+                         "\"squadid\":%d}", p ? "," : "", (int)pool[p]->id,
+                    pool[p]->alive ? 1 : 0, (int)pool[p]->hiding,
+                    (int)pool[p]->squadid);
+         fprintf(out, "],\"squads\":%d}\n", len(squad));
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+      }
+   }
+}
+
 // The Education of a Conservative: a day of interrogation, with the plan set
 // in advance rather than typed at the menu.
 void probe_interrogation(FILE *out)
@@ -7303,6 +7440,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "cartheft")) probe_cartheft(out);
    else if (!strcmp(which, "dating")) probe_dating(out);
    else if (!strcmp(which, "interrogation")) probe_interrogation(out);
+   else if (!strcmp(which, "disband")) probe_disband(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

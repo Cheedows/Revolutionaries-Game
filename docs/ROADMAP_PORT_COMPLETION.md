@@ -119,8 +119,12 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     turn, which found a gap in the seam: `Session.answer()` called `resume` and
     threw the result away, so a resumed system's events were lost and a second
     question never arrived. Answers now go back through `Session.submit()`.
-- [ ] Lining a recruit up for a task rather than for membership
-    (`recruitst::task`), and the meeting-queue entry points in `talk.cpp`.
+- [x] Lining a recruit up for a task rather than for membership
+    (`recruitst::task`): **obsolete in the original**. The field is
+    initialised to `TASK_NONE`, written to the save file and read back, and
+    never read anywhere else — nothing in the game ever sets or acts on it, so
+    there is no behaviour to port. The meeting-queue entry points in
+    `talk.cpp` are Gate G's, with the rest of the talk system.
 - [x] Activity assignment semantics: the original groups Liberals by what they
     are doing and runs the groups in a fixed order, so a mixed roster rolls in
     an order that has nothing to do with the roster. The port was dispatching
@@ -350,7 +354,26 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     transcription the probe drives: it belongs to the day around the check, and
     it ends the run whenever a sample deliberately kills the last Liberal.
 - [ ] Safehouse/base actions not already covered by Commands.
-- [ ] Liberal agenda/review-management behavior that belongs to simulation rather than presentation.
+- [x] Liberal agenda/review-management behavior that belongs to simulation
+    rather than presentation: `liberalagenda()` is a status screen and belongs
+    to Gate I, and so does review mode. The one piece of simulation in either
+    is disbanding, which `systems/base/disbanding.gd` ports:
+    `confirmdisband()` scatters everybody who is not a sleeper into hiding
+    with no end date, takes the hostages off the books, and dates the disband
+    from the current year; `show_disbanding_screen()`'s monthly thinning then
+    forgets whoever has not earned enough standing to still be worth finding,
+    a hundred points harder every year up to a ceiling of a thousand. After
+    fifty years there is nobody left and the game is over. The day is gated on
+    it the way `advanceday()` gates every one of its passes.
+  - **Parity exception.** The original deletes a hostage from the pool without
+    taking them out of their squad first, then decides whether the squad is
+    empty by reading the freed creature's `alive` flag. The port disbands the
+    squad; the probe's answer there is undefined, so the test compares squad
+    counts only where nobody was deleted.
+  - Verified by the `disband` probe: one to six members in six shapes of
+    roster, and the monthly forgetting at five distances from the year it
+    happened (1080 samples), compared on draw counts, who is left, who is
+    alive, who is in hiding and which squads survive.
 - [x] A day passing for everybody (`advanceday()`'s "AGE THINGS" pass) and a
     month at a clinic (`passmonth()`'s "HEAL CLINIC PEOPLE" pass). Stunning
     expires, the very old decline and occasionally die of it, birthdays turn a
@@ -396,9 +419,10 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
     densities of graffiti and three arrangements of love slaves, compared on
     draw counts, both opinion arrays, every tag left on every wall, and the
     practice everybody came out of the month with.
-- [ ] Monthly finances: the original has no separate pass — income and expenses
-    accrue as they happen and the month only resets the totals and prints
-    `fundreport()`. The reset is ported; the report is Gate I.
+- [x] Monthly finances: the original has no separate pass — income and
+    expenses accrue as they happen and the month only resets the totals and
+    prints `fundreport()`. The reset is ported and runs in `MonthlyTurn`; the
+    report itself is presentation and belongs to Gate I.
 - [x] Sleepers: `sleepereffect()` and every job in
     `src/monthly/sleeper_update.cpp`. Influencing the room, snooping through
     filing cabinets, skimming the accounts, taking things home, and quietly

@@ -31,6 +31,11 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
 		return _continue(state, rng, catalog, GROUPS, [] as Array[Event],
 				[] as Array[Event])
 
+	# A disbanded squad does nothing at all: the original gates every pass of
+	# the day on it, and only the calendar and the country carry on.
+	if state.disbanded:
+		return _close_the_day(state, rng, [] as Array[Event], catalog)
+
 	# The hostages come first: the original works through them before anybody
 	# gets on with their own day.
 	return _continue(state, rng, catalog, HOSTAGES, [] as Array[Event],

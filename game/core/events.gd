@@ -47,6 +47,7 @@ const CREATURE_DIED := &"creature_died"              # {creature, cause}
 const CREATURE_ARRESTED := &"creature_arrested"
 const CREATURE_CONVERTED := &"creature_converted"
 const CREATURE_LEFT := &"creature_left"
+const SQUAD_DISBANDED := &"squad_disbanded"          # {year}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

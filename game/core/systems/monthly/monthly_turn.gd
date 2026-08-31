@@ -29,6 +29,14 @@ static func run(state: GameState, rng: Rng,
 		catalog: Catalog = null) -> Variant:
 	var events: Array[Event] = []
 
+	# A disbanded squad is forgotten a little more every month, and after
+	# fifty years there is nobody left to come back to.
+	if state.disbanded:
+		events.append_array(Disbanding.forget(state, rng))
+		if Disbanding.is_forgotten(state):
+			state.endgame_state = &"lost"
+			events.append(Event.new(Event.GAME_LOST, {"cause": &"forgotten"}))
+
 	# The clinics discharge first: the original runs this before anything else
 	# the month does.
 	events.append_array(ClinicStay.run(state, rng))

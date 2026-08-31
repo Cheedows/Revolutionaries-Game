@@ -57,6 +57,11 @@ var next_creature_id: int = 1
 var next_squad_id: int = 1
 var next_vehicle_id: int = 1
 
+## Whether the squad has scattered, and the year it did. A disbanded squad
+## still exists — it is in hiding, and the shelter can call it back.
+var disbanded: bool = false
+var disband_year: int = 0
+
 ## Difficulty and mode flags chosen at the start of a game.
 var win_condition: StringName = &"elite_liberal"
 var field_skill_rate: StringName = &"fast"
