@@ -1460,8 +1460,18 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     roster's place while a visit is under way. The controls are the site loop's
     own options, rendered by the shared dialog.
   - [ ] Picking a target on the map, and reading a room at a glance.
-- [ ] Combat presentation and target/action controls.
-- [ ] Chase presentation.
+- [x] Combat presentation and target/action controls: `ui/widgets/fight_panel.gd`
+    shows both sides while there is a fight on — everybody's name, how badly
+    hurt they are, what they are holding, who they are holding, and which car
+    they are in — in the colour of the side they are on, faded once they are
+    past fighting. The blow-by-blow reads through `CombatText`, which the log
+    now falls through to for anything from a fight. The controls are the site
+    loop's own `CHOOSE_ATTACK_TARGET` and `CHOOSE_ENCOUNTER_RESPONSE` intents,
+    rendered by the shared dialog.
+- [x] Chase presentation: the same panel, which says "in the cars" and names
+    each person's car when a chase is on; the chase's own decisions come
+    through `CHOOSE_CHASE_ACTION`, and what happens between the cars reads
+    through `ChaseText`.
 - [ ] Shops/inventory/loot interfaces.
   - [x] The counter itself: `systems/base/shop_visit.gd` walks the departments,
     buys what is on the shelves and sells what the squad brought home, and the

@@ -20,6 +20,7 @@ var _laws: LawList
 var _roster: Roster
 var _squad: SquadPanel
 var _map: SiteMapView
+var _fight: FightPanel
 var _panels: PanelStack
 var _news: Array[Event] = []
 var _log: LogView
@@ -115,6 +116,11 @@ func _build() -> void:
 	_map = SiteMapView.new()
 	_map.visible = false
 	right.add_child(_map)
+
+	# Who is in the room, or in the cars, while there is a fight on.
+	_fight = FightPanel.new()
+	_fight.visible = false
+	right.add_child(_fight)
 
 	_squad = SquadPanel.new()
 	_squad.custom_minimum_size = Vector2(0, 150)
@@ -272,6 +278,8 @@ func _refresh() -> void:
 	_roster.visible = not inside and not reading
 	if inside:
 		_map.refresh(_session.state)
+	_fight.refresh(_session.state)
+	_fight.visible = _fight.visible and not reading
 
 
 ## Asks where the squad is going, through the same dialog as everything else.

@@ -80,7 +80,9 @@ static func describe(event: Event, state: GameState) -> String:
 			return "The %s agenda is the law of the land." % Branding.ORG_NAME
 		Event.GAME_LOST:
 			return "It is over."
-	return ""
+	# Anything from a fight or a chase reads better said the way a fight is
+	# said, so those go to the adapter that knows how.
+	return CombatText.describe(event, state)
 
 
 ## The colour a line should be shown in.
