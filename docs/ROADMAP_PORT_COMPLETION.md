@@ -1557,7 +1557,16 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     finds no guard at all); and the guessed age and gender of a stranger
     (`add_age`). Two functions turned out to be dead in the original as well —
     `adjustblogpower` and `plate` are defined, declared and never called.
-- [ ] Search for all original state mutations and ensure each has an equivalent or documented exception.
+- [x] Search for all original state mutations and ensure each has an
+    equivalent or documented exception. The original keeps its whole world in
+    globals declared in `src/externs.h`, so the set of things any function can
+    mutate is that file. `tools/audit_state.py` reads those declarations and
+    maps all 107 onto where the port keeps that state, or why nothing in the
+    port needs it; it is run in CI, so a rename that breaks the map fails.
+    Unlike the function audit it does not search the port for the name — half
+    of these globals are ordinary English words (`law`, `court`, `mode`,
+    `pool`, `score`) that would match by accident — so every one is written
+    out by hand.
 - [ ] Search the original blocking input sites and ensure every meaningful decision is covered by Command/Intent flow.
 - [ ] Record final golden traces/probes for all tractable modes.
 - [ ] Add deterministic fixture-based tests where the original interactive harness cannot reliably reach a mode.
