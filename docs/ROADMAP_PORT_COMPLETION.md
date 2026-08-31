@@ -560,7 +560,17 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
     teeth and ribs, and the port only did it in the creature factory, so
     anything built by hand bled to death in a week. Bodies are born intact
     now.
-- [ ] Decide legacy bugs only after parity is demonstrated; do not silently "fix" behavior during conversion.
+- [x] Decide legacy bugs only after parity is demonstrated; do not silently
+    "fix" behavior during conversion. **Standing policy, held to throughout.**
+    Where the original does something plainly wrong, the port reproduces it
+    and the roadmap records it as a parity exception with the reasoning. The
+    ones found so far: the unparenthesised `ABS` macro in the newspaper's
+    opinion impact; the Stalinist repeal that no state can ever vote for; the
+    `sitestory` pointer left dangling after the paper frees it (the one place
+    the port deliberately differs, because the original's behaviour there is
+    undefined); the squad emptiness test that reads a freed creature; the
+    seven-item list that looks like eight; and `recruitst::task`, which is
+    dead code. Nothing has been "improved" on the way through.
 
 **Gate C:** multi-year headless simulations can pass through elections, trials, prisoners, sleepers, government shifts and all original end states.
 
@@ -610,11 +620,34 @@ Port from `src/combat/` and remaining combat helpers.
 - [x] Melee/unarmed behavior.
 - [x] Armor penetration/protection integration around the existing damage primitives.
 - [x] Body-part injury, severing/permanent damage/death outcomes.
-- [ ] Morale/hostage/surrender behavior used in fights.
+- [x] Morale/hostage/surrender behavior used in fights: the flight check is
+    `EnemyRound`'s opening pass — non-Conservatives run, unarmed bystanders
+    facing an armed squad run unless their nerve holds, anybody who has lost
+    more than half their blood runs, and a fire empties the room — and the
+    hostage rules are `Capture`'s: a shot at somebody dragging a hostage hits
+    the hostage half the time, a freed hostage turns Conservative again and
+    rejoins the other side, and a captured squad member's hostage changes
+    hands with them.
   - The rhetorical attacks are ported (judges, CEOs, broadcasters, musicians)
     up to the point where a losing squad member is converted and changes sides;
     that transfer needs the encounter roster, so it lands with Gate G.
-- [ ] Kidnapping/hauling consequences.
+- [x] Kidnapping/hauling consequences: `systems/combat/hauling.gd` ports
+    `squadgrab_immobile()`, `Capture.free_hostage()` ports `freehostage()`,
+    `Capture.kidnap_transfer()` ports `kidnaptransfer()`, and
+    `systems/combat/kidnapping.gd` ports `kidnap()` and what the room makes of
+    it: a weapon somebody can be held at makes the grab certain, bare hands
+    make it hand-to-hand against the victim's agility, and a botched grab is
+    heard at once while a clean one buys twenty rounds or so.
+  - **Subtle original behavior, easy to get wrong.** A successful grab builds
+    a whole creature to hold the copy in — rolling an age, a gender and a
+    birthday — and then overwrites it. Those rolls are in the sequence, so
+    they are in the port.
+  - Verified by the `kidnap` probe: four things to hold against four kinds of
+    victim, four grades of grabber and three states of injury (576 samples),
+    compared on draw counts, whether they were taken, whether it was done bare
+    handed, and what the grabber learned from it.
+  - Choosing who grabs whom, and releasing somebody afterwards, are site-loop
+    prompts and land with Gate G.
 - [ ] Combat event vocabulary sufficient for any future visual presentation.
 - [x] Deterministic combat probes covering every weapon family and representative armor/body states.
   - All 38 weapon types, four blows each, against three states of defence under

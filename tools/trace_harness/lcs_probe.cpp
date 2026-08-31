@@ -6612,6 +6612,139 @@ static void business_front_block(int loc)
 
 
 
+
+
+// A transcription of kidnap() from src/combat/haulkidnap.cpp with the screen
+// work taken out: clearmessagearea() redraws the site map, and the site map
+// rolls for its own animation, which has nothing to do with the grab.
+static bool kidnap_block(Creature &a, Creature &t, bool &amateur)
+{
+   if(!a.get_weapon().can_take_hostages())
+   {
+      amateur=1;
+      int aroll=a.skill_roll(SKILL_HANDTOHAND);
+      int droll=t.attribute_check(ATTRIBUTE_AGILITY,true);
+      a.train(SKILL_HANDTOHAND,droll);
+      if(aroll>droll)
+      {
+         a.prisoner=new Creature;
+         *a.prisoner=t;
+         return 1;
+      }
+      return 0;
+   }
+   a.prisoner=new Creature;
+   *a.prisoner=t;
+   return 1;
+}
+
+// Grabbing somebody: a hostage-taking weapon makes it certain, and bare
+// hands make it a fight.
+void probe_kidnap(FILE *out)
+{
+   static const char *WEAPONS[] = {
+      "WEAPON_NONE", "WEAPON_SEMIPISTOL_9MM", "WEAPON_GAVEL",
+      "WEAPON_COMBATKNIFE",
+   };
+   const int WEAPON_COUNT = (int)(sizeof(WEAPONS) / sizeof(WEAPONS[0]));
+
+   static const int TARGETS[] = {
+      CREATURE_CORPORATE_CEO, CREATURE_COP, CREATURE_WORKER_SECRETARY,
+      CREATURE_SCIENTIST_LABTECH,
+   };
+   const int TARGET_COUNT = (int)(sizeof(TARGETS) / sizeof(TARGETS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 32452843UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_SITE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int hand = 0; hand < WEAPON_COUNT; hand++)
+      for (int who = 0; who < TARGET_COUNT; who++)
+      for (int grade = 0; grade < 4; grade++)
+      for (int hurt = 0; hurt < 3; hurt++)
+      {
+         unsigned long seed_used = 9200089UL * (unsigned long)
+            ((((hand * TARGET_COUNT + who) * 4 + grade) * 3 + hurt)
+             + scenario * 197 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         delete_and_clear(pool);
+
+         Creature *grabber = new Creature;
+         makecreature(*grabber, CREATURE_POLITICALACTIVIST);
+         grabber->id = 970000;
+         grabber->align = ALIGN_LIBERAL;
+         grabber->location = 1;
+         grabber->base = 1;
+         grabber->set_skill(SKILL_HANDTOHAND, grade * 4);
+         grabber->set_attribute(ATTRIBUTE_STRENGTH, 2 + grade * 3);
+         grabber->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+         if (strcmp(WEAPONS[hand], "WEAPON_NONE"))
+            grabber->give_weapon(*weapontype[getweapontype(WEAPONS[hand])], NULL);
+         pool.push_back(grabber);
+         // The message area redraws the site map, which reads the active
+         // squad, so there has to be one.
+         delete_and_clear(squad);
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         sq->squad[0] = grabber;
+         grabber->squadid = sq->id;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         // Left on the heap: Creature's copy assignment shares its owned
+         // pointers, so letting two of them go out of scope double-frees.
+         Creature *target = new Creature;
+         makecreature(*target, TARGETS[who]);
+         target->id = 970100;
+         target->align = ALIGN_CONSERVATIVE;
+         target->location = 1;
+         target->set_attribute(ATTRIBUTE_AGILITY, 2 + grade * 2);
+         target->blood = 100 - hurt * 30;
+
+         fprintf(out, "{\"kind\":\"kidnap\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"hand\":%d,\"who\":%d,\"grade\":%d,\"hurt\":%d,"
+                      "\"weapon\":", scenario, seed_used, hand, who, grade, hurt);
+         write_string(out, WEAPONS[hand]);
+         fputs(",\"grabber\":", out);
+         chase_write_creature(out, *grabber, true);
+         fputs(",\"target\":", out);
+         chase_write_creature(out, *target, true);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         bool amateur = 0;
+         long long before = lcs_trace_draw_count();
+         bool got = kidnap_block(*grabber, *target, amateur);
+
+         fprintf(out, ",\"draws\":%lld,\"got\":%d,\"amateur\":%d",
+                 lcs_trace_draw_count() - before, got ? 1 : 0,
+                 amateur ? 1 : 0);
+         fputs(",\"grabber_after\":", out);
+         chase_write_creature(out, *grabber, true);
+         fputs("}\n", out);
+
+         grabber->prisoner = NULL;
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+      }
+   }
+}
+
 // The November election: the presidency every fourth year, both chambers
 // every second, and the propositions every year.
 extern std::vector<int> probe_props, probe_propdirs, probe_priority, probe_moods;
@@ -8117,6 +8250,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "safehouse")) probe_safehouse(out);
    else if (!strcmp(which, "amendments")) probe_amendments(out);
    else if (!strcmp(which, "election_day")) probe_election_day(out);
+   else if (!strcmp(which, "kidnap")) probe_kidnap(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
