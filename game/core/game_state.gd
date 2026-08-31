@@ -173,8 +173,19 @@ func add_vehicle(vehicle: Vehicle) -> Vehicle:
 
 
 ## Scraps a vehicle. A crashed car is gone for good, not parked somewhere.
+##
+## Nobody is left riding or waiting for it: the original's Vehicle destructor
+## calls stop_riding_me() and stop_preferring_me(), so a scrapped car cannot be
+## driven off in by a dangling id.
 func remove_vehicle(vehicle_id: int) -> void:
 	vehicles.erase(vehicle_id)
+	for creature: Creature in creatures.values():
+		if creature.vehicle_id == vehicle_id:
+			# Only the car goes: the original's stop_riding_me() leaves the
+			# is_driver flag alone, and the next car they get into reads it.
+			creature.vehicle_id = 0
+		if creature.preferred_car_id == vehicle_id:
+			creature.preferred_car_id = -1
 
 
 ## Every living member of the player's organisation.

@@ -11992,6 +11992,58 @@ void probe_sally(FILE *out)
 
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
+// The car dealership from src/daily/shopsnstuff.cpp, transcribed with the
+// menu taken out: what each model costs, what the lot pays for one traded in,
+// and what the ledger looks like afterwards.
+void probe_dealership(FILE *out)
+{
+   lcs_trace_set_seed(715827883UL);
+   initMainRNG();
+   delete_and_clear(location);
+   make_world(false);
+   uniqueCreatures.initialize();
+
+   for (int t = 0; t < len(vehicletype); t++)
+   {
+      if (!vehicletype[t]->availableatshop()) continue;
+      for (int heat = 0; heat < 2; heat++)
+      for (int sleeper = 0; sleeper < 2; sleeper++)
+      {
+         delete_and_clear(vehicle);
+         ledger.force_funds(50000);
+
+         Vehicle *car = new Vehicle(*vehicletype[t],
+                                    vehicletype[t]->color()[0], year);
+         if (heat) car->add_heat(1);
+         vehicle.push_back(car);
+
+         int price = static_cast<int>(0.8 * car->price());
+         if (car->get_heat()) price /= 10;
+
+         long funds_before = ledger.get_funds();
+         ledger.add_funds(price, INCOME_CARS);
+         long after_sale = ledger.get_funds();
+
+         int cost = sleeper ? vehicletype[t]->sleeperprice()
+                            : vehicletype[t]->price();
+         ledger.subtract_funds(cost, EXPENSE_CARS);
+
+         fprintf(out, "{\"kind\":\"dealership\",\"type\":\"%s\","
+                      "\"heat\":%d,\"sleeper\":%d,\"list\":%d,"
+                      "\"sleeperprice\":%d,\"offer\":%d,\"colors\":%d,"
+                      "\"color\":\"%s\",\"year\":%d,\"before\":%ld,"
+                      "\"after_sale\":%ld,\"cost\":%d,\"after_buy\":%ld}\n",
+                 vehicletype[t]->idname().c_str(), heat, sleeper,
+                 vehicletype[t]->price(), vehicletype[t]->sleeperprice(),
+                 price, len(vehicletype[t]->color()),
+                 vehicletype[t]->color()[0].c_str(), year, funds_before,
+                 after_sale, cost, (long)ledger.get_funds());
+
+         delete_and_clear(vehicle);
+      }
+   }
+}
+
 void probe_kidnap(FILE *out)
 {
    static const char *WEAPONS[] = {
@@ -13618,6 +13670,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "site_exit")) probe_site_exit(out);
    else if (!strcmp(which, "convert")) probe_convert(out);
    else if (!strcmp(which, "sally")) probe_sally(out);
+   else if (!strcmp(which, "dealership")) probe_dealership(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

@@ -10,7 +10,7 @@ GAME="${LCS_BUILD:-/tmp/lcsbuild}/src/crimesquad"
 mkdir -p "$OUT"
 cd "$ROOT"
 
-for probe in blank creatures training checks equipment politics activities damage congress elections court names opinion wincheck world spawn sitemaps sites context combat chase fight encounters stealth recruit activities_day activation recovery dispersal ageing drift sleepers justice siege_watch siege_turn surrender siege_outcome newspaper cartheft dating interrogation disband safehouse amendments election_day kidnap site_specials lockup prison_control vaults bank doorstaff broadcast talk_combat persuade talk_shop flirt shop site_loot site_hostage site_exit convert sally; do
+for probe in blank creatures training checks equipment politics activities damage congress elections court names opinion wincheck world spawn sitemaps sites context combat chase fight encounters stealth recruit activities_day activation recovery dispersal ageing drift sleepers justice siege_watch siege_turn surrender siege_outcome newspaper cartheft dating interrogation disband safehouse amendments election_day kidnap site_specials lockup prison_control vaults bank doorstaff broadcast talk_combat persuade talk_shop flirt shop site_loot site_hostage site_exit convert sally dealership; do
 	tmp="$(mktemp)"
 	home="$(mktemp -d)"
 	screen="$(mktemp)"

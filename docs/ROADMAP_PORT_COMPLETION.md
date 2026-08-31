@@ -342,8 +342,18 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     the chase they can end in.
   - `ACTIVITY_STEALCARS` is wired into the individual half of the day,
     including the charge for being caught at it in a police station car park.
-- [ ] Vehicle upkeep the fleet needs once cars can be acquired: the fence
-    refuses a car with heat on it, which needs the shop system.
+- [x] Vehicle upkeep the fleet needs once cars can be acquired: the car
+    dealership (`dealership()`), in `systems/base/dealership.gd`. A showroom
+    car is this year's model in the colour the buyer picks and nothing about it
+    is rolled; a sleeper on the sales floor anywhere in the city sells at cost;
+    and the lot pays four fifths of list for the car traded in, or a tenth of
+    that for one the police are looking for. Scrapping a car now also clears it
+    off whoever was driving or waiting for it, which the original's Vehicle
+    destructor does and the port did not.
+  - Verified by the `dealership` probe (every model on the forecourt, wanted or
+    not, with a sleeper on the floor or not), compared on the sticker, the
+    colours, the offer, the ledger either side of both halves of the deal, and
+    the car that comes off the lot.
 - [x] Injury recovery: the night's nursing block of `advanceday()`. Whoever is
     at a safehouse with the steadiest hands treats everybody hurt enough to
     need a clinic but not in one, and the building itself counts as a medic —

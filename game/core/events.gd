@@ -108,6 +108,11 @@ const CAR_NERVES := &"car_nerves"                    # {creature}
 const CAR_STOLEN := &"car_stolen"                    # {creature, vehicle}
 const CAR_THEFT_SPOTTED := &"car_theft_spotted"      # {creature}
 
+# --- The car dealership ----------------------------------------------------
+
+const CAR_BOUGHT := &"car_bought"                    # {creature, vehicle, price}
+const CAR_SOLD := &"car_sold"                        # {creature, vehicle, price}
+
 # --- Items and money -------------------------------------------------------
 
 const ITEM_ACQUIRED := &"item_acquired"              # {creature, item, count}
