@@ -64,6 +64,11 @@ const BLUFF_TRIED := &"bluff_tried"                  # {creature, fooled}
 const SQUAD_SURRENDERED := &"squad_surrendered"      # {creature}
 const RECRUIT_INTERESTED := &"recruit_interested"    # {creature, by, issue}
 const RECRUIT_REFUSED := &"recruit_refused"          # {creature, by, issue}
+const ANIMAL_ADDRESSED := &"animal_addressed"        # {creature, by, won_over}
+const ROOM_RENTED := &"room_rented"                  # {location, rent, threatened}
+const ROOM_REFUSED := &"room_refused"                # {location}
+const ROOM_GIVEN_UP := &"room_given_up"              # {location, moved_to}
+const TELLER_ROBBED := &"teller_robbed"              # {creature, quiet, held_up, worked}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

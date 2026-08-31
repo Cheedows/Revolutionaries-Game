@@ -9781,6 +9781,434 @@ void probe_persuade(FILE *out)
    newscherrybusted = 0;
 }
 
+// The rest of the conversations that are not a fight: the guard dog, the thing
+// in the tank, the landlord and the bank teller. Transcribed from
+// src/sitemode/talk.cpp with the display taken out and each prompt answered by
+// the sample.
+static void talk_shop_block(int which, int choice, int *outcome, int *rent_out)
+{
+   Creature &a = *activesquad->squad[0];
+   Creature &tk = encounter[0];
+   *outcome = 0;
+   *rent_out = -1;
+
+   if(which == 0 || which == 1) // heyMisterDog() / heyMisterMonster()
+   {
+      bool success = false;
+      int bestp=0;
+      for(int p=0; p<6; p++)
+         if(activesquad->squad[p] &&
+            activesquad->squad[p]->get_attribute(ATTRIBUTE_HEART, true) >
+            activesquad->squad[bestp]->get_attribute(ATTRIBUTE_HEART, true))
+            bestp = p;
+      if(activesquad->squad[bestp]->get_attribute(ATTRIBUTE_HEART, true) >= 15)
+      {
+         success = true;
+         LCSrandom(11);
+      }
+      else { tk.cantbluff=1; LCSrandom(11); }
+      if(success)
+         for(int i=0;i<ENCMAX;i++)
+            if(encounter[i].type == (which == 0 ? CREATURE_GUARDDOG
+                                                : CREATURE_GENETIC))
+               encounter[i].align = ALIGN_LIBERAL;
+      *outcome = success ? 1 : 2;
+      return;
+   }
+
+   if(which == 2) // heyIWantToCancelMyRoom()
+   {
+      location[cursite]->renting=RENTING_NOCONTROL;
+      int hs=find_homeless_shelter(cursite);
+      for(int p=0;p<len(pool);p++)
+      {
+         if(pool[p]->location==cursite)pool[p]->location=hs;
+         if(pool[p]->base==cursite)pool[p]->base=hs;
+      }
+      location[hs]->getloot(location[cursite]->loot);
+      location[cursite]->compound_walls=0;
+      location[cursite]->compound_stores=0;
+      location[cursite]->front_business=-1;
+      *outcome = 3;
+      return;
+   }
+
+   if(which == 3) // heyIWantToRentARoom()
+   {
+      int rent;
+      switch(location[cursite]->type)
+      {
+      default:rent=200;break;
+      case SITE_RESIDENTIAL_APARTMENT:rent=650;break;
+      case SITE_RESIDENTIAL_APARTMENT_UPSCALE:rent=1500;break;
+      }
+      if(choice == 0)
+      {
+         if(ledger.get_funds()<rent) { *outcome = 4; return; }
+         ledger.subtract_funds(rent,EXPENSE_RENT);
+         location[cursite]->renting=rent;
+         location[cursite]->newrental=1;
+         basesquad(activesquad,cursite);
+         *rent_out = rent;
+         *outcome = 5;
+         return;
+      }
+      if(choice == 1) { *outcome = 6; return; }
+
+      Creature *armed_liberal=NULL;
+      for(int i=0;i<6;i++)
+         if(activesquad->squad[i] &&
+            activesquad->squad[i]->get_weapon().is_threatening())
+         { armed_liberal=activesquad->squad[i]; break; }
+
+      int roll       = a.skill_roll(SKILL_PERSUASION);
+      int difficulty = DIFFICULTY_FORMIDABLE;
+      if(newscherrybusted == false) difficulty += 6;
+      if(armed_liberal == NULL) difficulty += 6;
+
+      if(roll < difficulty - 1)
+      {
+         tk.cantbluff = 1;
+         *outcome = 7;
+         return;
+      }
+      int newrent;
+      if(roll<difficulty)
+      {
+         for(int i=0;i<6;i++)
+            if(activesquad->squad[i])
+               criminalize(*(activesquad->squad[i]),LAWFLAG_EXTORTION);
+         location[cursite]->siege.timeuntillocated = 2;
+         newrent=10000000;
+         *outcome = 8;
+      }
+      else { newrent=0; *outcome = 9; }
+      location[cursite]->renting=newrent;
+      location[cursite]->newrental=true;
+      basesquad(activesquad,cursite);
+      *rent_out = newrent;
+      return;
+   }
+
+   // talkToBankTeller()
+   if(choice == 0)
+   {
+      LCSrandom(10);
+      if(location[cursite]->highsecurity)
+      {
+         LCSrandom(5);
+         sitealarm=1;
+         criminalize(a, LAWFLAG_BANKROBBERY);
+         sitestory->crime.push_back(CRIME_BANKTELLERROBBERY);
+         sitecrime+=30;
+         makecreature(encounter[0],CREATURE_MERC);
+         makecreature(encounter[1],CREATURE_MERC);
+         makecreature(encounter[2],CREATURE_MERC);
+         makecreature(encounter[3],CREATURE_MERC);
+         *outcome = 10;
+      }
+      else
+      {
+         LCSrandom(5);
+         criminalize(a, LAWFLAG_BANKROBBERY);
+         sitestory->crime.push_back(CRIME_BANKTELLERROBBERY);
+         sitecrime+=30;
+         sitealarmtimer=0;
+         activesquad->loot.push_back(new Money(5000));
+         *outcome = 11;
+      }
+      tk.cantbluff=1;
+      return;
+   }
+   if(choice == 1)
+   {
+      Creature *armed_liberal=NULL;
+      for(int i=0;i<6;i++)
+         if(activesquad->squad[i] &&
+            activesquad->squad[i]->get_weapon().is_threatening())
+         { armed_liberal=activesquad->squad[i]; break; }
+
+      int roll       = a.skill_roll(SKILL_PERSUASION);
+      int difficulty = DIFFICULTY_VERYEASY;
+      if(armed_liberal == NULL) difficulty += 12;
+      if(location[cursite]->highsecurity>0) difficulty += 12;
+
+      if(roll<difficulty)
+      {
+         sitealarm=1;
+         sitealienate=2;
+         criminalizeparty(LAWFLAG_BANKROBBERY);
+         sitestory->crime.push_back(CRIME_BANKSTICKUP);
+         sitecrime+=50;
+         CreatureTypes guard = CREATURE_SECURITYGUARD;
+         if(location[cursite]->highsecurity>0) guard = CREATURE_MERC;
+         for(int g=0;g<6;g++) makecreature(encounter[g],guard);
+         *outcome = 12;
+      }
+      else
+      {
+         criminalizeparty(LAWFLAG_BANKROBBERY);
+         sitestory->crime.push_back(CRIME_BANKSTICKUP);
+         sitecrime+=50;
+         sitealarm=1;
+         sitealienate=2;
+         for(int x=0;x<MAPX;x++)
+         for(int y=0;y<MAPY;y++)
+         for(int z=0;z<MAPZ;z++)
+         {
+            levelmap[x][y][z].flag &= ~SITEBLOCK_LOCKED;
+            if(levelmap[x][y][z].flag & SITEBLOCK_METAL)
+               levelmap[x][y][z].flag &= ~SITEBLOCK_DOOR;
+            if(levelmap[x][y][z].special == SPECIAL_BANK_VAULT)
+               levelmap[x][y][z].special = SPECIAL_NONE;
+         }
+         encounter[0].exists = false;
+         *outcome = 13;
+      }
+      return;
+   }
+   *outcome = 14;
+}
+
+void probe_talk_shop(FILE *out)
+{
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 51169UL * (unsigned long)(scenario + 71);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int which = 0; which < 5; which++)
+      for (int choice = 0; choice < 3; choice++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int heart = 0; heart < 3; heart++)
+      for (int armed = 0; armed < 2; armed++)
+      for (int secure = 0; secure < 2; secure++)
+      for (int rich = 0; rich < 2; rich++)
+      for (int cherry = 0; cherry < 2; cherry++)
+      {
+         unsigned long seed_used = 104729UL * (unsigned long)
+            (((((((which * 3 + choice) * 3 + (crowd - 1)) * 3 + heart) * 2
+              + armed) * 2 + secure) * 2 + rich) * 2 + cherry
+             + scenario * 3301 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         newscherrybusted = cherry ? 2 : 0;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 31 + scenario * 3) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         ledger.force_funds(rich ? 20000 : 100);
+
+         // The apartment is where a landlord is met; the bank is where a
+         // teller is. The animals turn up anywhere.
+         cursite = 1;
+         location[cursite]->type = which == 4 ? SITE_BUSINESS_BANK
+                                 : which >= 2 ? SITE_RESIDENTIAL_APARTMENT
+                                              : SITE_CORPORATE_HEADQUARTERS;
+         location[cursite]->highsecurity = secure;
+         location[cursite]->renting = which == 2 ? 500 : RENTING_NOCONTROL;
+         location[cursite]->siege.siege = 0;
+         location[cursite]->siege.timeuntillocated = -1;
+         location[cursite]->compound_walls = COMPOUND_PRINTINGPRESS;
+         location[cursite]->compound_stores = 1;
+         location[cursite]->front_business = 0;
+         location[cursite]->newrental = 0;
+         // Every store in the city, not just this one: cancelling a room
+         // empties it into the shelter, and the shelter keeps what it is
+         // given between samples.
+         for (int l = 0; l < len(location); l++)
+            delete_and_clear(location[l]->loot);
+         location[cursite]->loot.push_back(new Money(750));
+         location[cursite]->loot.push_back(
+               new Loot(*loottype[getloottype("LOOT_CORPFILES")]));
+         sitetype = location[cursite]->type;
+         sitealarm = 0;
+         sitealarmtimer = -1;
+         sitecrime = 0;
+         sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 910000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            cr->juice = 30 * (n + 1);
+            cr->set_skill(SKILL_PERSUASION, heart * 6 + n);
+            // Kindness is what the animals listen to, and only the kindest
+            // Liberal speaks — sometimes that is not the one talking.
+            cr->set_attribute(ATTRIBUTE_HEART, 4 + heart * 6 + n);
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            if (armed && n == crowd - 1)
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_AUTORIFLE_AK47")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+         // Somebody at home who is not in the squad, so cancelling a room has
+         // people to move.
+         Creature *resident = new Creature;
+         makecreature(*resident, CREATURE_TEENAGER);
+         resident->id = 910050;
+         resident->align = ALIGN_LIBERAL;
+         resident->location = resident->base = cursite;
+         pool.push_back(resident);
+
+         int listener = which == 0 ? CREATURE_GUARDDOG
+                      : which == 1 ? CREATURE_GENETIC
+                      : which == 4 ? CREATURE_BANK_TELLER
+                                   : CREATURE_LANDLORD;
+         makecreature(encounter[0], listener);
+         encounter[0].exists = 1;
+         encounter[0].alive = 1;
+         encounter[0].id = 910100;
+         encounter[0].align = ALIGN_CONSERVATIVE;
+         // A second animal of the same kind, so one kind word freeing a whole
+         // kennel is visible.
+         makecreature(encounter[1], listener);
+         encounter[1].exists = 1;
+         encounter[1].alive = 1;
+         encounter[1].id = 910101;
+         encounter[1].align = ALIGN_CONSERVATIVE;
+
+         fprintf(out, "{\"kind\":\"talk_shop\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"which\":%d,\"choice\":%d,\"crowd\":%d,\"heart\":%d,"
+                      "\"armed\":%d,\"secure\":%d,\"rich\":%d,\"cherry\":%d,"
+                      "\"world_seed\":%lu,\"site\":%d,\"funds\":%d",
+                 scenario, seed_used, which, choice, crowd, heart, armed,
+                 secure, rich, cherry, run_seed, cursite,
+                 (int)ledger.get_funds());
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"resident\":", out);
+         chase_write_creature(out, *resident, true);
+         fputs(",\"room\":[", out);
+         for (int e = 0; e < 2; e++)
+         {
+            if (e) fputs(",", out);
+            chase_write_creature(out, encounter[e], true);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int outcome = 0, rent_out = -1;
+         long long before = lcs_trace_draw_count();
+         talk_shop_block(which, choice, &outcome, &rent_out);
+
+         int encount = 0, ids[ENCMAX];
+         for (int e = 0; e < ENCMAX; e++)
+            if (encounter[e].exists) ids[encount++] = encounter[e].id;
+         long cash = 0;
+         for (int i = 0; i < len(activesquad->loot); i++)
+            if (activesquad->loot[i]->is_money())
+               cash += static_cast<Money *>(activesquad->loot[i])->get_amount();
+         int hs = find_homeless_shelter(cursite);
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"rent_paid\":%d,"
+                      "\"renting\":%d,\"newrental\":%d,\"walls\":%d,"
+                      "\"stores\":%d,\"front\":%d,\"located\":%d,"
+                      "\"funds_after\":%d,\"alarm\":%d,\"alarmtimer\":%d,"
+                      "\"alienate\":%d,\"crime\":%d,\"encounters\":%d,"
+                      "\"cash\":%ld,\"cantbluff\":%d,\"site_loot\":%d,"
+                      "\"shelter\":%d,\"shelter_loot\":%d",
+                 lcs_trace_draw_count() - before, outcome, rent_out,
+                 (int)location[cursite]->renting,
+                 location[cursite]->newrental ? 1 : 0,
+                 (int)location[cursite]->compound_walls,
+                 (int)location[cursite]->compound_stores,
+                 (int)location[cursite]->front_business,
+                 (int)location[cursite]->siege.timeuntillocated,
+                 (int)ledger.get_funds(), (int)sitealarm, (int)sitealarmtimer,
+                 (int)sitealienate, (int)sitecrime, encount, cash,
+                 (int)encounter[0].cantbluff,
+                 len(location[cursite]->loot), hs,
+                 hs >= 0 ? len(location[hs]->loot) : -1);
+         fputs(",\"left\":[", out);
+         for (int e = 0; e < encount; e++)
+            fprintf(out, "%s%d", e ? "," : "", ids[e]);
+         fputs("],\"aligns\":[", out);
+         for (int e = 0; e < encount; e++)
+            fprintf(out, "%s%d", e ? "," : "", (int)encounter[e].align);
+         fputs("],\"types\":[", out);
+         {
+            int written = 0;
+            for (int e = 0; e < ENCMAX; e++)
+               if (encounter[e].exists)
+                  fprintf(out, "%s%d", written++ ? "," : "",
+                          (int)encounter[e].type);
+         }
+         fputs("],\"crimes\":[", out);
+         for (int cc = 0; cc < len(ns->crime); cc++)
+            fprintf(out, "%s%d", cc ? "," : "", ns->crime[cc]);
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"base\":%d,\"location\":%d,\"suspected\":[",
+                    sq->squad[n]->base, sq->squad[n]->location);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)sq->squad[n]->crimes_suspected[f]);
+            fputs("]}", out);
+         }
+         fprintf(out, "],\"resident_after\":{\"base\":%d,\"location\":%d}}\n",
+                 resident->base, resident->location);
+
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+   newscherrybusted = 0;
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -11401,6 +11829,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "broadcast")) probe_broadcast(out);
    else if (!strcmp(which, "talk_combat")) probe_talk_combat(out);
    else if (!strcmp(which, "persuade")) probe_persuade(out);
+   else if (!strcmp(which, "talk_shop")) probe_talk_shop(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

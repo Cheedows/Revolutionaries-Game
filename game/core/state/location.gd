@@ -77,11 +77,12 @@ var has_flag: bool = false
 var closed: int = 0
 
 ## The site's own RNG stream, so its floor plan regenerates identically.
-## The original splices this into the main generator with copyRNG; see
-## docs/port/PHASE0-STATUS.md.
+## The original splices this into the main generator with copyRNG, drawing
+## once before taking the copy and once after; see WorldBuilder.seed_map().
 var map_seed: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])
 
-## Items left lying on the floor between visits.
+## What the place is holding: the site's own floor between visits, and a
+## safehouse's stores. Mirrors Location::loot in src/locations/locations.h.
 var ground_loot: Array[Item] = []
 
 ## Marks earlier visits left behind, repainted onto the regenerated plan.

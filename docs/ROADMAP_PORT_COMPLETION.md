@@ -884,9 +884,32 @@ Site construction is already strong; now port the gameplay that occurs inside th
       all eight endings, compared on draw counts, the branch taken, the issue
       and the difficulty it set, who is left in the room and in what order,
       the meeting arranged and how willing the recruit already was.
-  - [ ] The rest of `talk.cpp`: `talkToGeneric()`'s menu, the bank teller,
-      renting and cancelling a room, buying a gun, flirting
-      (`doYouComeHereOften()`), and the two animals.
+  - [x] The conversations that are not a fight: the guard dog and the thing in
+      the tank (`heyMisterDog()`, `heyMisterMonster()`) in `animals.gd`,
+      renting and giving up a room (`heyIWantToRentARoom()`,
+      `heyIWantToCancelMyRoom()`) in `landlord.gd`, and the teller window
+      (`talkToBankTeller()`) in `bank_teller.gd`, with the shared
+      armed-Liberal-in-the-room test in `backup.gd`.
+    - **Original quirk reproduced.** The animals are talked to by whoever in
+      the squad has the biggest heart, found by comparing everybody against
+      whoever is in the first slot alive or not — and the animal won over is
+      not the one spoken to but every animal of its kind in the room, so one
+      kind word frees the whole kennel.
+    - **Original quirk reproduced.** A landlord who is *nearly* frightened
+      enough agrees, then calls the police and sets next month's rent to ten
+      million dollars.
+    - Verified by the `talk_shop` probe: all five conversations and every
+      answer, against three squad sizes, three grades of kindness and
+      persuasion, an armed Liberal in the room or none, a place that pays for
+      security or not, funds enough for the rent or not, and a Squad the news
+      has heard of or not — 4,320 samples reaching all fourteen endings,
+      compared on draw counts, the branch taken, the tenancy and everything
+      built into it, the money, the alarm and its clock, the crime sheet, who
+      is in the room and whose side they are on, what the squad walked out
+      with, and where everybody who lived there ended up.
+  - [ ] The rest of `talk.cpp`: `talkToGeneric()`'s menu, buying a gun
+      (`heyINeedAGun()`, which needs the arms dealer's shop), and flirting
+      (`doYouComeHereOften()`).
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.
 - [ ] Graffiti/vandalism/burning/destruction actions present in the original.
