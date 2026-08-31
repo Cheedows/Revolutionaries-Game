@@ -185,7 +185,30 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     interrogation system's, and the option to leave a new love slave where
     they work as a sleeper is the recruitment prompt's — the port brings them
     home, which is the answer with no rolls in it.
-- [ ] Interrogation.
+- [x] Interrogation: `state/interrogation.gd` mirrors the `interrogation`
+    struct, and `systems/daily/interrogation/` ports `tendhostage()` — who is
+    on the job, the escape an unattended or unrestrained hostage tries, who
+    leads the session and how strong a case they can make, the execution, the
+    hallucinogens, the beating, the argument and the five ways it fails, the
+    despair, the death and the conversion. `hostage_queue.gd` ports the
+    "HOSTAGES" pass of `advanceday()`, which runs before anybody else's day.
+  - **Subtle original behavior, easy to get wrong.** The plan is chosen after
+    the escape check and after the day's rolls, so the restraint the escape
+    check reads is yesterday's. The prose is rolled for throughout — which
+    torture, what was screamed, what the hostage breaks into — and every one
+    of those rolls moves the generator. A hostage nobody can bring themselves
+    to execute still spends the day restrained and fed, with talking, beating
+    and drugs called off. A doctor good enough to save an overdose undoes the
+    health damage and clears the drugs from the record entirely.
+  - Verified by the `interrogation` probe: five kinds of hostage, twelve
+    plans, none to two guards, three grades of interrogator, three lengths of
+    captivity, restrained yesterday or not, and with rapport already built or
+    none (12960 samples), compared on draw counts, how the day ended, the
+    money, everybody's skills and attributes, who is still on the job, whose
+    workplace was given away, and the days of drugs on the record.
+  - **Not yet covered:** the option to leave a converted hostage where they
+    work as a sleeper is the recruitment prompt's; the port brings them home,
+    which is the answer with no rolls in it.
 - [x] The nightly siege watch (`siegecheck()`): how close the police are to
     each safehouse, and who else has decided to pay a visit. Heat accumulates
     from whoever is staying there — a corpse and a hostage draw far more of it

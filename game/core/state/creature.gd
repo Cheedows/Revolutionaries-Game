@@ -109,6 +109,9 @@ var making: StringName = &""
 ## spare argument in the original.
 var recruiting: StringName = &""
 
+## What has been done to this creature, while they are somebody's hostage.
+var interrogation: Interrogation = null
+
 ## The hostage somebody is looking after, when that is their assignment.
 var tending_id: int = 0
 

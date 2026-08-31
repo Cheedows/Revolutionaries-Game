@@ -15,6 +15,7 @@ extends RefCounted
 
 ## The day's parts, in the order the original runs them. Each one that can stop
 ## to ask the player something is a stage of its own.
+const HOSTAGES := &"hostages"
 const INDIVIDUAL := &"individual"
 const GROUPS := &"groups"
 const MEETINGS := &"meetings"
@@ -30,8 +31,10 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
 		return _continue(state, rng, catalog, GROUPS, [] as Array[Event],
 				[] as Array[Event])
 
-	return _continue(state, rng, catalog, INDIVIDUAL, [] as Array[Event],
-			DailyActivation.run(state, rng, catalog))
+	# The hostages come first: the original works through them before anybody
+	# gets on with their own day.
+	return _continue(state, rng, catalog, HOSTAGES, [] as Array[Event],
+			HostageQueue.advance(state, rng, catalog))
 
 
 ## Picks the day back up after whatever it stopped to ask.
@@ -49,6 +52,9 @@ static func _continue(state: GameState, rng: Rng, catalog: Catalog,
 				events + asked.events)
 
 	var done: Array[Event] = events + (result as Array[Event])
+	if stage == HOSTAGES:
+		return _continue(state, rng, catalog, INDIVIDUAL, done,
+				DailyActivation.run(state, rng, catalog))
 	if stage == INDIVIDUAL:
 		return _continue(state, rng, catalog, GROUPS, done,
 				ActivityAssignment.run(state, rng, catalog))

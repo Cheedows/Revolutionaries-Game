@@ -5954,6 +5954,679 @@ static char date_block(datest &d, int p, int choice)
 }
 
 
+
+// The technique enum lives inside src/daily/interrogation.cpp rather than a
+// header, so it is repeated here.
+enum ProbeInterrogationTechniques
+{
+   TECHNIQUE_TALK,
+   TECHNIQUE_RESTRAIN,
+   TECHNIQUE_BEAT,
+   TECHNIQUE_PROPS,
+   TECHNIQUE_DRUGS,
+   TECHNIQUE_KILL
+};
+
+// A transcription of tendhostage() from src/daily/interrogation.cpp with the
+// display taken out and the plan supplied as a parameter rather than typed at
+// the menu. Every roll is kept, including the ones that only pick a line of
+// prose: they move the generator, so they are part of the behaviour.
+//
+// `plan` is a bitmask over the six techniques, applied before the menu would
+// have been drawn. Returns 0 normally, 1 if the hostage escaped, 2 if they
+// were converted, 3 if they died.
+static int tend_block(Creature *cr, int plan, int *escaped_out)
+{
+   vector<Creature *> temppool;
+   int p;
+   Creature *a=NULL;
+   *escaped_out = 0;
+
+   interrogation* &intr=cr->activity.intr();
+   bool (&techniques)[6]=intr->techniques;
+   int& druguse = intr->druguse;
+   map<long,struct float_zero>& rapport = intr->rapport;
+
+   for(p=0;p<len(pool);p++)
+   {
+      if(!pool[p]->alive) continue;
+      if(pool[p]->activity.type==ACTIVITY_HOSTAGETENDING&&pool[p]->activity.arg==cr->id)
+      {
+         if(pool[p]->location==cr->location&&pool[p]->location!=-1)
+            temppool.push_back(pool[p]);
+         else pool[p]->activity.type=ACTIVITY_NONE;
+      }
+   }
+
+   if(cr->location==-1) return 0;
+
+   // The plan is chosen before the escape check, as the menu is not reached
+   // until afterwards; the restraint setting the check reads is yesterday's.
+   bool wanted[6];
+   for(int t=0;t<6;t++) wanted[t]=(plan>>t)&1;
+
+   if(!len(temppool)||!techniques[TECHNIQUE_RESTRAIN])
+   {
+      if(LCSrandom(200)+25*len(temppool)<
+         cr->get_attribute(ATTRIBUTE_INTELLIGENCE,true)+
+         cr->get_attribute(ATTRIBUTE_AGILITY,true)+
+         cr->get_attribute(ATTRIBUTE_STRENGTH,true)&&
+         cr->joindays>=5)
+      {
+         for(int q=0;q<len(pool);q++)
+            if(pool[q]==cr)
+            {
+               location[cr->location]->siege.timeuntillocated=3;
+               for(int i=0;i<len(pool);i++)
+               {
+                  if(!pool[i]->alive) continue;
+                  if(pool[i]->activity.type==ACTIVITY_HOSTAGETENDING&&pool[i]->activity.arg==cr->id)
+                     pool[i]->activity.type=ACTIVITY_NONE;
+               }
+               delete intr;
+               intr = NULL;
+               delete_and_remove(pool,q);
+               break;
+            }
+         *escaped_out = 1;
+         return 1;
+      }
+
+      if(!len(temppool)) return 0;
+   }
+
+   char turned=0;
+   int business=0,religion=0,science=0,attack=0;
+   int* _attack = new int[len(temppool)];
+
+   for(p=0;p<len(temppool);p++)
+   {
+      _attack[p] = 0;
+      if(temppool[p] && temppool[p]->alive)
+      {
+         if(temppool[p]->get_skill(SKILL_BUSINESS)>business)
+            business=temppool[p]->get_skill(SKILL_BUSINESS);
+         if(temppool[p]->get_skill(SKILL_RELIGION)>religion)
+            religion=temppool[p]->get_skill(SKILL_RELIGION);
+         if(temppool[p]->get_skill(SKILL_SCIENCE)>science)
+            science=temppool[p]->get_skill(SKILL_SCIENCE);
+
+         _attack[p] = (temppool[p]->get_attribute(ATTRIBUTE_HEART,true)-
+                       temppool[p]->get_attribute(ATTRIBUTE_WISDOM,true)+
+                       temppool[p]->get_skill(SKILL_PSYCHOLOGY)*2);
+         _attack[p] += temppool[p]->get_armor().get_interrogation_basepower();
+         if(_attack[p]<0) _attack[p]=0;
+         if(_attack[p]>attack) attack=_attack[p];
+      }
+   }
+
+   vector<int> goodp;
+   for(p=0;p<len(temppool);p++)
+      if(temppool[p] && temppool[p]->alive && _attack[p]==attack)
+         goodp.push_back(p);
+   a=temppool[pickrandom(goodp)];
+
+   attack+=len(temppool);
+   attack+=cr->joindays;
+   attack+=business-cr->get_skill(SKILL_BUSINESS);
+   attack+=religion-cr->get_skill(SKILL_RELIGION);
+   attack+=science-cr->get_skill(SKILL_SCIENCE);
+   attack+=a->skill_roll(SKILL_PSYCHOLOGY)-cr->skill_roll(SKILL_PSYCHOLOGY);
+   attack+=cr->attribute_roll(ATTRIBUTE_HEART);
+   attack-=cr->attribute_roll(ATTRIBUTE_WISDOM)*2;
+
+   // The menu, answered from the plan.
+   for(int t=0;t<6;t++) techniques[t]=wanted[t];
+
+   if(techniques[TECHNIQUE_PROPS]&&ledger.get_funds()>=250)
+      ledger.subtract_funds(250,EXPENSE_HOSTAGE);
+   else techniques[TECHNIQUE_PROPS]=0;
+   if(techniques[TECHNIQUE_DRUGS]&&ledger.get_funds()>=50)
+      ledger.subtract_funds(50,EXPENSE_HOSTAGE);
+   else techniques[TECHNIQUE_DRUGS]=0;
+
+   if(techniques[TECHNIQUE_KILL])
+   {
+      a=NULL;
+      for(int i=0;i<len(temppool);i++)
+         if(LCSrandom(50)<temppool[i]->juice||
+            LCSrandom(9)+1>=temppool[i]->get_attribute(ATTRIBUTE_HEART,0))
+         {  a=temppool[i]; break; }
+
+      if(a)
+      {
+         delete intr;
+         intr = NULL;
+         cr->die();
+         stat_kills++;
+         LCSrandom(5);   // how it was done
+         if(LCSrandom(a->get_attribute(ATTRIBUTE_HEART,false))>LCSrandom(3))
+         {
+            a->adjust_attribute(ATTRIBUTE_HEART,-1);
+            LCSrandom(4);
+         }
+         else if(!LCSrandom(3))
+            a->adjust_attribute(ATTRIBUTE_WISDOM,+1);
+      }
+      else
+      {
+         techniques[TECHNIQUE_TALK]=0;
+         techniques[TECHNIQUE_BEAT]=0;
+         techniques[TECHNIQUE_DRUGS]=0;
+      }
+
+      if(!cr->alive)
+      {
+         for(int q=0;q<len(pool);q++)
+         {
+            if(!pool[q]->alive) continue;
+            if(pool[q]->activity.type==ACTIVITY_HOSTAGETENDING&&pool[q]->activity.arg==cr->id)
+               pool[q]->activity.type=ACTIVITY_NONE;
+         }
+         delete[] _attack;
+         return 3;
+      }
+   }
+
+   if(techniques[TECHNIQUE_RESTRAIN]) attack+=5;
+
+   if(techniques[TECHNIQUE_DRUGS])
+   {
+      int drugbonus=10+a->get_armor().get_interrogation_drugbonus();
+
+      if(LCSrandom(50)<++druguse)
+      {
+         cr->adjust_attribute(ATTRIBUTE_HEALTH,-1);
+         Creature* doctor=a;
+         int maxskill=doctor->get_skill(SKILL_FIRSTAID);
+         for(int i=0;i<len(temppool);i++)
+            if(temppool[i]->get_skill(SKILL_FIRSTAID)>maxskill)
+               maxskill=(doctor=temppool[i])->get_skill(SKILL_FIRSTAID);
+
+         if(cr->get_attribute(ATTRIBUTE_HEALTH,false)<=0 || !maxskill)
+         {
+            cr->die();
+         }
+         else
+         {
+            if(doctor->skill_check(SKILL_FIRSTAID,DIFFICULTY_CHALLENGING))
+            {
+               doctor->train(SKILL_FIRSTAID,5*max(10-doctor->get_skill(SKILL_FIRSTAID),0),10);
+               cr->adjust_attribute(ATTRIBUTE_HEALTH,+1);
+               techniques[TECHNIQUE_DRUGS]=(druguse=drugbonus=0);
+            }
+            else
+            {
+               doctor->train(SKILL_FIRSTAID,5*max(5-doctor->get_skill(SKILL_FIRSTAID),0),5);
+               drugbonus*=2;
+            }
+            rapport[doctor->id]+=0.5f;
+         }
+      }
+      attack+=drugbonus;
+   }
+
+   if(techniques[TECHNIQUE_BEAT]&&!turned&&cr->alive)
+   {
+      int forceroll=0;
+      bool tortured=0;
+
+      for(int i=0;i<len(temppool);i++)
+      {
+         forceroll+=temppool[i]->attribute_roll(ATTRIBUTE_STRENGTH);
+         rapport[temppool[i]->id]-=0.4f;
+      }
+
+      if(!(a->attribute_check(ATTRIBUTE_HEART,DIFFICULTY_EASY))&&techniques[TECHNIQUE_PROPS])
+      {
+         tortured = true;
+         forceroll*=5;
+         rapport[a->id]-=3;
+         LCSrandom(6);                       // which torture
+         for(int i=0;i<2;i++) LCSrandom(10); // what was screamed
+         if(cr->get_attribute(ATTRIBUTE_HEART,true)>1) cr->adjust_attribute(ATTRIBUTE_HEART,-1);
+         if(cr->get_attribute(ATTRIBUTE_WISDOM,true)>1) cr->adjust_attribute(ATTRIBUTE_WISDOM,-1);
+      }
+      else
+      {
+         if(techniques[TECHNIQUE_PROPS]) LCSrandom(6);  // which prop
+         LCSrandom(4);                                  // scream/yell/shout
+         for(int i=0;i<3;i++) LCSrandom(20);            // what was shouted
+      }
+
+      cr->blood-=(5 + LCSrandom(5)) * (1+techniques[TECHNIQUE_PROPS]);
+
+      if(!(cr->attribute_check(ATTRIBUTE_HEALTH,forceroll)))
+      {
+         if(cr->skill_check(SKILL_RELIGION,forceroll))
+         {
+            LCSrandom(2);   // which prayer
+         }
+         else if(forceroll >
+                 cr->get_attribute(ATTRIBUTE_WISDOM,true)*3+
+                 cr->get_attribute(ATTRIBUTE_HEART,true)*3+
+                 cr->get_attribute(ATTRIBUTE_HEALTH,true)*3)
+         {
+            switch(LCSrandom(4))
+            {
+            case 2: if(techniques[TECHNIQUE_DRUGS]) LCSrandom(5); break;
+            case 3: if(techniques[TECHNIQUE_DRUGS]) LCSrandom(3); break;
+            }
+            if(cr->get_attribute(ATTRIBUTE_HEART,false)>1) cr->adjust_attribute(ATTRIBUTE_HEART,-1);
+
+            if(LCSrandom(2)&&cr->juice>0) { if((cr->juice-=forceroll)<0) cr->juice=0; }
+            else if(cr->get_attribute(ATTRIBUTE_WISDOM,false)>1)
+            {
+               cr->set_attribute(ATTRIBUTE_WISDOM,cr->get_attribute(ATTRIBUTE_WISDOM,false)-(forceroll/10));
+               if(cr->get_attribute(ATTRIBUTE_WISDOM,false)<1) cr->set_attribute(ATTRIBUTE_WISDOM,1);
+            }
+
+            if(location[cr->worklocation]->mapped==0 && !LCSrandom(5))
+            {
+               location[cr->worklocation]->mapped=1;
+               location[cr->worklocation]->hidden=0;
+            }
+         }
+         else
+         {
+            if(cr->juice>0) if((cr->juice-=forceroll)<0) cr->juice=0;
+            if(cr->get_attribute(ATTRIBUTE_WISDOM,false)>1)
+            {
+               cr->set_attribute(ATTRIBUTE_WISDOM,cr->get_attribute(ATTRIBUTE_WISDOM,false)-(forceroll/10+1));
+               if(cr->get_attribute(ATTRIBUTE_WISDOM,false)<1) cr->set_attribute(ATTRIBUTE_WISDOM,1);
+            }
+         }
+
+         if(!(cr->attribute_check(ATTRIBUTE_HEALTH,forceroll/3)))
+         {
+            if(cr->get_attribute(ATTRIBUTE_HEALTH,false)>1)
+               cr->adjust_attribute(ATTRIBUTE_HEALTH,-1);
+            else
+            {
+               cr->set_attribute(ATTRIBUTE_HEALTH,0);
+               cr->die();
+            }
+         }
+      }
+
+      if(tortured && cr->alive)
+      {
+         if(LCSrandom(a->get_attribute(ATTRIBUTE_HEART,false))>LCSrandom(3))
+         {
+            a->adjust_attribute(ATTRIBUTE_HEART,-1);
+            LCSrandom(4);
+         }
+         else if(!LCSrandom(3))
+            a->adjust_attribute(ATTRIBUTE_WISDOM,+1);
+      }
+   }
+
+   if(techniques[TECHNIQUE_TALK]&&cr->alive)
+   {
+      float rapport_temp = rapport[a->id];
+
+      if(!techniques[TECHNIQUE_RESTRAIN])attack += 5;
+      attack += int(rapport[a->id] * 3);
+
+      if(techniques[TECHNIQUE_PROPS])
+      {
+         attack += 10;
+         LCSrandom(9);   // which prop session
+      }
+      else
+      {
+         switch(LCSrandom(4))
+         {
+         case 0: LCSrandom(VIEWNUM-3); break;
+         case 1: LCSrandom(VIEWNUM-3); break;
+         }
+      }
+
+      if(techniques[TECHNIQUE_DRUGS])
+      {
+         if(cr->skill_check(SKILL_PSYCHOLOGY,DIFFICULTY_CHALLENGING))
+         {
+            LCSrandom(4);
+         }
+         else if((rapport[a->id]>1 && !LCSrandom(3)) || !LCSrandom(10))
+         {
+            rapport_temp=10;
+            LCSrandom(4);
+         }
+         else if((rapport[a->id]<-1 && LCSrandom(3)) || !LCSrandom(5))
+         {
+            attack=0;
+            LCSrandom(4);
+         }
+         else
+         {
+            LCSrandom(4);
+         }
+      }
+
+      if(cr->get_skill(SKILL_PSYCHOLOGY)>a->get_skill(SKILL_PSYCHOLOGY))
+      {
+         LCSrandom(4);
+      }
+      else if(techniques[TECHNIQUE_BEAT] || rapport_temp < -2)
+      {
+         LCSrandom(7);
+         if(a->skill_check(SKILL_SEDUCTION,DIFFICULTY_CHALLENGING))
+         {
+            LCSrandom(7);
+            rapport[a->id]+=0.7f;
+            if(rapport[a->id]>3)
+            {
+               LCSrandom(7);
+               if(rapport[a->id]>5) turned=1;
+            }
+         }
+         if(cr->get_attribute(ATTRIBUTE_HEART,false)>1) cr->adjust_attribute(ATTRIBUTE_HEART,-1);
+      }
+      else if(cr->get_skill(SKILL_RELIGION)>a->get_skill(SKILL_RELIGION)+a->get_skill(SKILL_PSYCHOLOGY) && !techniques[TECHNIQUE_DRUGS])
+      {
+         LCSrandom(4);
+         a->train(SKILL_RELIGION,cr->get_skill(SKILL_RELIGION)*4);
+      }
+      else if(cr->get_skill(SKILL_BUSINESS)>a->get_skill(SKILL_BUSINESS)+a->get_skill(SKILL_PSYCHOLOGY) && !techniques[TECHNIQUE_DRUGS])
+      {
+         LCSrandom(4);
+         a->train(SKILL_BUSINESS,cr->get_skill(SKILL_BUSINESS)*4);
+      }
+      else if(cr->get_skill(SKILL_SCIENCE)>a->get_skill(SKILL_SCIENCE)+a->get_skill(SKILL_PSYCHOLOGY) && !techniques[TECHNIQUE_DRUGS])
+      {
+         LCSrandom(4);
+         a->train(SKILL_SCIENCE,cr->get_skill(SKILL_SCIENCE)*4);
+      }
+      else if(!(cr->attribute_check(ATTRIBUTE_WISDOM,attack/6)))
+      {
+         if(cr->juice>0)
+         {
+            cr->juice-=attack;
+            if(cr->juice<0) cr->juice=0;
+         }
+         if(cr->get_attribute(ATTRIBUTE_HEART,false)<10)
+            cr->adjust_attribute(ATTRIBUTE_HEART,+1);
+         rapport[a->id]+=1.5;
+
+         if(cr->get_attribute(ATTRIBUTE_HEART,true)>cr->get_attribute(ATTRIBUTE_WISDOM,true)+4) turned=1;
+         if(rapport[a->id]>4) turned=1;
+
+         LCSrandom(5);
+         if(location[cr->worklocation]->mapped==0 && !LCSrandom(5))
+         {
+            location[cr->worklocation]->mapped=1;
+            location[cr->worklocation]->hidden=0;
+         }
+      }
+      else if(!(cr->skill_check(SKILL_PERSUASION,a->get_attribute(ATTRIBUTE_HEART, true))) || techniques[TECHNIQUE_PROPS])
+      {
+         rapport[a->id]+=0.2f;
+      }
+      else
+      {
+         rapport[a->id]+=0.5f;
+         a->adjust_attribute(ATTRIBUTE_WISDOM,+1);
+      }
+   }
+
+   if(!techniques[TECHNIQUE_KILL])
+   {
+      a->train(SKILL_PSYCHOLOGY,attack/2+1);
+      for(int i=0;i<len(temppool);i++) temppool[i]->train(SKILL_PSYCHOLOGY,attack/4+1);
+   }
+
+   if(!turned&&cr->alive&&cr->get_attribute(ATTRIBUTE_HEART,false)<=1&&LCSrandom(3)&&cr->joindays>6)
+   {
+      if(LCSrandom(6)||techniques[TECHNIQUE_RESTRAIN])
+      {
+         switch(LCSrandom(5-techniques[TECHNIQUE_RESTRAIN]))
+         {
+         case 4: cr->blood-=LCSrandom(15)+10; break;
+         }
+      }
+      else cr->die();
+   }
+
+   int outcome = 0;
+   if(cr->alive==0||cr->blood<1)
+   {
+      delete intr;
+      intr = NULL;
+      cr->die();
+      stat_kills++;
+      outcome = 3;
+      if(a)
+      {
+         if(LCSrandom(a->get_attribute(ATTRIBUTE_HEART,false)))
+         {
+            a->adjust_attribute(ATTRIBUTE_HEART,-1);
+            LCSrandom(4);
+         }
+         else if(!LCSrandom(3))
+            a->adjust_attribute(ATTRIBUTE_WISDOM,+1);
+      }
+   }
+   delete[] _attack;
+
+   if(turned&&cr->alive)
+   {
+      delete intr;
+      intr = NULL;
+      if(cr->get_attribute(ATTRIBUTE_HEART,true)>7 &&
+         cr->get_attribute(ATTRIBUTE_WISDOM,true)>2 &&
+        !LCSrandom(4) && (cr->flag & CREATUREFLAG_KIDNAPPED))
+      {
+         cr->flag&=~CREATUREFLAG_MISSING;
+         cr->flag&=~CREATUREFLAG_KIDNAPPED;
+      }
+      cr->flag|=CREATUREFLAG_BRAINWASHED;
+
+      for(int q=0;q<len(pool);q++)
+         if(pool[q]->activity.type==ACTIVITY_HOSTAGETENDING&&pool[q]->activity.arg==cr->id)
+            pool[q]->activity.type=ACTIVITY_NONE;
+
+      liberalize(*cr,false);
+      cr->hireid=a->id;
+      stat_recruits++;
+
+      if(location[cr->worklocation]->mapped==0 || location[cr->worklocation]->hidden==1)
+      {
+         location[cr->worklocation]->mapped=1;
+         location[cr->worklocation]->hidden=0;
+      }
+
+      if(cr->flag & CREATUREFLAG_MISSING && !(cr->flag & CREATUREFLAG_KIDNAPPED))
+      {
+         // sleeperize_prompt(), answered "come home as a regular member".
+         cr->location=a->location;
+         cr->base=a->base;
+         liberalize(*cr,false);
+         cr->flag&=~CREATUREFLAG_MISSING;
+         return 2;
+      }
+      return 2;
+   }
+
+   if(cr->align==1||!cr->alive) for(int q=0;q<len(pool);q++)
+   {
+      if(!pool[q]->alive) continue;
+      if(pool[q]->activity.type==ACTIVITY_HOSTAGETENDING&&pool[q]->activity.arg==cr->id)
+         pool[q]->activity.type=ACTIVITY_NONE;
+   }
+
+   return outcome;
+}
+
+
+// The Education of a Conservative: a day of interrogation, with the plan set
+// in advance rather than typed at the menu.
+void probe_interrogation(FILE *out)
+{
+   static const int HOSTAGES[] = {
+      CREATURE_CORPORATE_CEO, CREATURE_PRIEST, CREATURE_SCIENTIST_LABTECH,
+      CREATURE_COP, CREATURE_WORKER_SECRETARY,
+   };
+   const int HOSTAGE_COUNT = (int)(sizeof(HOSTAGES) / sizeof(HOSTAGES[0]));
+
+   // Talk, restrain, beat, props, drugs, kill, and the combinations that
+   // matter: the plan is a bitmask over the six.
+   static const int PLANS[] = {
+      0, 1, 2, 3, 7, 11, 19, 27, 31, 32, 47, 63,
+   };
+   const int PLAN_COUNT = (int)(sizeof(PLANS) / sizeof(PLANS[0]));
+
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 61773119UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int who = 0; who < HOSTAGE_COUNT; who++)
+      for (int plan = 0; plan < PLAN_COUNT; plan++)
+      for (int guards = 0; guards <= 2; guards++)
+      for (int grade = 0; grade < 3; grade++)
+      for (int held = 0; held < 3; held++)
+      for (int yesterday = 0; yesterday < 2; yesterday++)
+      for (int warmth = 0; warmth < 2; warmth++)
+      {
+         unsigned long seed_used = 5300021UL * (unsigned long)
+            ((((((who * PLAN_COUNT + plan) * 3 + guards) * 3 + grade) * 3
+              + held) * 2 + yesterday) * 2 + warmth + scenario * 307 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         ledger.force_funds(grade ? 5000 : 100);
+         stat_kills = 0;
+         stat_recruits = 0;
+         for (int n = 0; n < 3; n++)
+         {
+            location[20 + n]->mapped = 0;
+            location[20 + n]->hidden = 1;
+         }
+
+         Creature *hostage = new Creature;
+         makecreature(*hostage, HOSTAGES[who]);
+         hostage->id = 900000;
+         hostage->align = ALIGN_CONSERVATIVE;
+         hostage->location = 1;
+         hostage->base = 1;
+         hostage->worklocation = 20 + (who % 3);
+         hostage->hireid = -1;
+         hostage->joindays = held == 0 ? 1 : (held == 1 ? 6 : 20);
+         hostage->juice = 20 * grade;
+         hostage->flag |= CREATUREFLAG_MISSING | CREATUREFLAG_KIDNAPPED;
+         hostage->set_attribute(ATTRIBUTE_HEART, 1 + grade * 3);
+         hostage->set_attribute(ATTRIBUTE_WISDOM, 2 + grade * 2);
+         hostage->set_attribute(ATTRIBUTE_HEALTH, 2 + grade * 3);
+         hostage->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+         hostage->activity.intr() = new interrogation;
+         hostage->activity.intr()->techniques[TECHNIQUE_RESTRAIN] = yesterday;
+         hostage->activity.intr()->druguse = held == 2 ? 40 : 0;
+         // A hostage who has been talked round already, so the conversion
+         // that ends the interrogation is reachable.
+         if (warmth)
+         {
+            hostage->set_attribute(ATTRIBUTE_HEART, 8);
+            hostage->set_attribute(ATTRIBUTE_WISDOM, 3);
+            hostage->activity.intr()->rapport[900100].n = 4.2f;
+            hostage->activity.intr()->rapport[900101].n = 4.2f;
+         }
+         pool.push_back(hostage);
+
+         for (int n = 0; n < guards; n++)
+         {
+            Creature *guard = new Creature;
+            makecreature(*guard, CREATURE_POLITICALACTIVIST);
+            guard->id = 900100 + n;
+            guard->align = ALIGN_LIBERAL;
+            guard->location = 1;
+            guard->base = 1;
+            guard->hireid = -1;
+            guard->juice = 30 * (n + grade);
+            guard->set_skill(SKILL_PSYCHOLOGY, grade * 3 + n);
+            guard->set_skill(SKILL_RELIGION, (grade + n) % 4);
+            guard->set_skill(SKILL_SCIENCE, (grade + n + 1) % 4);
+            guard->set_skill(SKILL_BUSINESS, (grade + n + 2) % 4);
+            guard->set_skill(SKILL_SEDUCTION, grade * 2);
+            guard->set_skill(SKILL_FIRSTAID, n * 4);
+            guard->set_attribute(ATTRIBUTE_HEART, 2 + n * 3);
+            guard->set_attribute(ATTRIBUTE_WISDOM, 3 + grade);
+            guard->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            guard->activity.type = ACTIVITY_HOSTAGETENDING;
+            guard->activity.arg = hostage->id;
+            pool.push_back(guard);
+         }
+
+         fprintf(out, "{\"kind\":\"interrogation\",\"scenario\":%d,"
+                      "\"seed\":%lu,\"who\":%d,\"plan\":%d,\"guard_count\":%d,"
+                      "\"grade\":%d,\"held\":%d,\"yesterday\":%d,\"warmth\":%d,"
+                      "\"funds\":%d,\"druguse\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, who, PLANS[plan], guards, grade, held,
+                 yesterday, warmth, ledger.get_funds(),
+                 hostage->activity.intr()->druguse, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"hostage\":", out);
+         chase_write_creature(out, *hostage, true);
+         fprintf(out, ",\"worklocation\":%d,\"joindays\":%d",
+                 (int)hostage->worklocation, (int)hostage->joindays);
+         fputs(",\"guards\":[", out);
+         for (int n = 1; n < len(pool); n++)
+         {
+            if (n > 1) fputs(",", out);
+            chase_write_creature(out, *pool[n], true);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int escaped = 0;
+         long long before = lcs_trace_draw_count();
+         int outcome = tend_block(hostage, PLANS[plan], &escaped);
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"escaped\":%d,"
+                      "\"funds_after\":%d,\"kills\":%d,\"recruits\":%d",
+                 lcs_trace_draw_count() - before, outcome, escaped,
+                 ledger.get_funds(), stat_kills, stat_recruits);
+         fputs(",\"pool_after\":[", out);
+         for (int i = 0; i < len(pool); i++)
+         {
+            fprintf(out, "%s{\"id\":%d,\"alive\":%d,\"align\":%d,"
+                         "\"brainwashed\":%d,\"missing\":%d,\"activity\":%d,"
+                         "\"person\":", i ? "," : "", (int)pool[i]->id,
+                    pool[i]->alive ? 1 : 0, (int)pool[i]->align,
+                    (pool[i]->flag & CREATUREFLAG_BRAINWASHED) ? 1 : 0,
+                    (pool[i]->flag & CREATUREFLAG_MISSING) ? 1 : 0,
+                    pool[i]->activity.type);
+            chase_write_creature(out, *pool[i], true);
+            fputs("}", out);
+         }
+         fputs("],\"mapped\":[", out);
+         for (int n = 0; n < 3; n++)
+            fprintf(out, "%s%d", n ? "," : "", (int)location[20 + n]->mapped);
+         fprintf(out, "],\"druguse_after\":%d",
+                 (escaped || outcome == 2 || outcome == 3)
+                    ? -1 : pool[0]->activity.intr()->druguse);
+         fputs("}\n", out);
+
+         delete_and_clear(pool);
+      }
+   }
+}
+
 // An evening out: one date or three, paid for or not, ending in a love slave,
 // a break-up, a police ambush or a kidnapping in the car park.
 void probe_dating(FILE *out)
@@ -6629,6 +7302,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "newspaper")) probe_newspaper(out);
    else if (!strcmp(which, "cartheft")) probe_cartheft(out);
    else if (!strcmp(which, "dating")) probe_dating(out);
+   else if (!strcmp(which, "interrogation")) probe_interrogation(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
