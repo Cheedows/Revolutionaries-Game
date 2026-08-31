@@ -6460,6 +6460,330 @@ static int tend_block(Creature *cr, int plan, int *escaped_out)
 
 
 
+
+// The business-front naming from investlocation(), lifted verbatim.
+static void business_front_block(int loc)
+{
+   do
+   {
+               location[loc]->front_business=LCSrandom(BUSINESSFRONTNUM);
+               lastname(location[loc]->front_name,true);
+               strcat(location[loc]->front_name," ");
+               switch(location[loc]->front_business)
+               {
+               case BUSINESSFRONT_INSURANCE:
+                  switch(LCSrandom(7))
+                  {
+                  case 0:
+                     strcat(location[loc]->front_name,"Auto");
+                     strcpy(location[loc]->front_shortname,"Auto");
+                     break;
+                  case 1:
+                     strcat(location[loc]->front_name,"Life");
+                     strcpy(location[loc]->front_shortname,"Life");
+                     break;
+                  case 2:
+                     strcat(location[loc]->front_name,"Health");
+                     strcpy(location[loc]->front_shortname,"Health");
+                     break;
+                  case 3:
+                     strcat(location[loc]->front_name,"Home");
+                     strcpy(location[loc]->front_shortname,"Home");
+                     break;
+                  case 4:
+                     strcat(location[loc]->front_name,"Boat");
+                     strcpy(location[loc]->front_shortname,"Boat");
+                     break;
+                  case 5:
+                     strcat(location[loc]->front_name,"Fire");
+                     strcpy(location[loc]->front_shortname,"Fire");
+                     break;
+                  case 6:
+                     strcat(location[loc]->front_name,"Flood");
+                     strcpy(location[loc]->front_shortname,"Flood");
+                     break;
+                  }
+                  strcat(location[loc]->front_name," Insurance");
+                  strcat(location[loc]->front_shortname," Ins.");
+                  break;
+               case BUSINESSFRONT_TEMPAGENCY:
+                  switch(LCSrandom(7))
+                  {
+                  case 0:
+                     strcat(location[loc]->front_name,"Temp Agency");
+                     strcpy(location[loc]->front_shortname,"Agency");
+                     break;
+                  case 1:
+                     strcat(location[loc]->front_name,"Manpower, LLC");
+                     strcpy(location[loc]->front_shortname,"Manpower");
+                     break;
+                  case 2:
+                     strcat(location[loc]->front_name,"Staffing, Inc");
+                     strcpy(location[loc]->front_shortname,"Staff");
+                     break;
+                  case 3:
+                     strcat(location[loc]->front_name,"Labor Ready");
+                     strcpy(location[loc]->front_shortname,"Labor");
+                     break;
+                  case 4:
+                     strcat(location[loc]->front_name,"Employment");
+                     strcpy(location[loc]->front_shortname,"Employ");
+                     break;
+                  case 5:
+                     strcat(location[loc]->front_name,"Services");
+                     strcpy(location[loc]->front_shortname,"Services");
+                     break;
+                  case 6:
+                     strcat(location[loc]->front_name,"Solutions");
+                     strcpy(location[loc]->front_shortname,"Solutns");
+                     break;
+                  }
+                  break;
+               case BUSINESSFRONT_RESTAURANT:
+                  switch(LCSrandom(7))
+                  {
+                  case 0:
+                     strcat(location[loc]->front_name,"Fried Chicken");
+                     strcpy(location[loc]->front_shortname,"Chicken");
+                     break;
+                  case 1:
+                     strcat(location[loc]->front_name,"Hamburgers");
+                     strcpy(location[loc]->front_shortname,"Burgers");
+                     break;
+                  case 2:
+                     strcat(location[loc]->front_name,"Steakhouse");
+                     strcpy(location[loc]->front_shortname,"Steak");
+                     break;
+                  case 3:
+                     strcat(location[loc]->front_name,"Wok Buffet");
+                     strcpy(location[loc]->front_shortname,"Wok");
+                     break;
+                  case 4:
+                     strcat(location[loc]->front_name,"Thai Cuisine");
+                     strcpy(location[loc]->front_shortname,"Thai");
+                     break;
+                  case 5:
+                     strcat(location[loc]->front_name,"Pizzeria");
+                     strcpy(location[loc]->front_shortname,"Pizza");
+                     break;
+                  case 6:
+                     strcat(location[loc]->front_name,"Fine Dining");
+                     strcpy(location[loc]->front_shortname,"Diner");
+                     break;
+                  }
+                  break;
+               case BUSINESSFRONT_MISCELLANEOUS:
+                  switch(LCSrandom(7))
+                  {
+                  case 0:
+                     strcat(location[loc]->front_name,"Real Estate");
+                     strcpy(location[loc]->front_shortname,"Realty");
+                     break;
+                  case 1:
+                     strcat(location[loc]->front_name,"Imported Goods");
+                     strcpy(location[loc]->front_shortname,"Import");
+                     break;
+                  case 2:
+                     strcat(location[loc]->front_name,"Waste Disposal");
+                     strcpy(location[loc]->front_shortname,"Disposal");
+                     break;
+                  case 3:
+                     strcat(location[loc]->front_name,"Liquor Shop");
+                     strcpy(location[loc]->front_shortname,"Liquor");
+                     break;
+                  case 4:
+                     strcat(location[loc]->front_name,"Antiques");
+                     strcpy(location[loc]->front_shortname,"Antique");
+                     break;
+                  case 5:
+                     strcat(location[loc]->front_name,"Repair, Inc");
+                     strcpy(location[loc]->front_shortname,"Repair");
+                     break;
+                  case 6:
+                     strcat(location[loc]->front_name,"Pet Store");
+                     strcpy(location[loc]->front_shortname,"Pets");
+                     break;
+                  }
+                  break;
+               }
+            } while(location[loc]->duplicatelocation());
+}
+
+
+// Buying a compound: what a safehouse can have built into it, and the
+// business front's rejection loop.
+static void invest_block(int loc, int choice)
+{
+   if(choice==0)
+   {
+      if(location[loc]->can_be_fortified()&&ledger.get_funds()>=2000)
+      {
+         ledger.subtract_funds(2000,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_BASIC;
+      }
+   }
+   else if(choice==1)
+   {
+      if(!(location[loc]->compound_walls & COMPOUND_CAMERAS)&&ledger.get_funds()>=2000)
+      {
+         ledger.subtract_funds(2000,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_CAMERAS;
+      }
+   }
+   else if(choice==2)
+   {
+      if(location[loc]->can_be_trapped()&&ledger.get_funds()>=3000)
+      {
+         ledger.subtract_funds(3000,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_TRAPS;
+      }
+   }
+   else if(choice==3)
+   {
+      if(location[loc]->can_install_tanktraps()&&ledger.get_funds()>=3000)
+      {
+         ledger.subtract_funds(3000,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_TANKTRAPS;
+      }
+   }
+   else if(choice==4)
+   {
+      if(!(location[loc]->compound_walls & COMPOUND_GENERATOR)&&ledger.get_funds()>=3000)
+      {
+         ledger.subtract_funds(3000,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_GENERATOR;
+      }
+   }
+   else if(choice==5)
+   {
+      int aagunPrice = 200000;
+      if(law[LAW_GUNCONTROL]==ALIGN_ARCHCONSERVATIVE) aagunPrice = 35000;
+      if(!(location[loc]->compound_walls & COMPOUND_AAGUN)&&ledger.get_funds()>=aagunPrice)
+      {
+         ledger.subtract_funds(aagunPrice,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_AAGUN;
+      }
+   }
+   else if(choice==6)
+   {
+      if(!(location[loc]->compound_walls & COMPOUND_PRINTINGPRESS)&&ledger.get_funds()>=3000)
+      {
+         ledger.subtract_funds(3000,EXPENSE_COMPOUND);
+         location[loc]->compound_walls|=COMPOUND_PRINTINGPRESS;
+      }
+   }
+   else if(choice==7)
+   {
+      if(ledger.get_funds()>=150)
+      {
+         ledger.subtract_funds(150,EXPENSE_COMPOUND);
+         location[loc]->compound_stores+=20;
+      }
+   }
+   else if(choice==8)
+   {
+      if(location[loc]->can_have_businessfront()&&ledger.get_funds()>=3000)
+      {
+         ledger.subtract_funds(3000,EXPENSE_COMPOUND);
+         business_front_block(loc);
+      }
+   }
+}
+
+void probe_safehouse(FILE *out)
+{
+   static const int SITES[] = {
+      SITE_RESIDENTIAL_TENEMENT, SITE_RESIDENTIAL_APARTMENT,
+      SITE_OUTDOOR_BUNKER, SITE_RESIDENTIAL_BOMBSHELTER,
+      SITE_BUSINESS_BARANDGRILL, SITE_INDUSTRY_WAREHOUSE,
+   };
+   const int SITE_COUNT = (int)(sizeof(SITES) / sizeof(SITES[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 43217791UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+
+      for (int place = 0; place < SITE_COUNT; place++)
+      for (int choice = 0; choice < 9; choice++)
+      for (int walls = 0; walls < 4; walls++)
+      for (int purse = 0; purse < 3; purse++)
+      for (int guns = 0; guns < 2; guns++)
+      for (int upgradable = 0; upgradable < 2; upgradable++)
+      {
+         unsigned long seed_used = 6700417UL * (unsigned long)
+            (((((place * 9 + choice) * 4 + walls) * 3 + purse) * 2 + guns) * 2
+             + upgradable + scenario * 233 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         law[LAW_GUNCONTROL] = guns ? ALIGN_ARCHCONSERVATIVE : ALIGN_LIBERAL;
+         ledger.force_funds(purse == 0 ? 100 : (purse == 1 ? 4000 : 400000));
+
+         int loc = -1;
+         for (int l = 0; l < len(location); l++)
+            if (location[l]->type == SITES[place]) { loc = l; break; }
+         if (loc == -1) continue;
+         location[loc]->upgradable = upgradable;
+         location[loc]->compound_walls = walls == 0 ? 0
+            : (walls == 1 ? COMPOUND_BASIC
+            : (walls == 2 ? (COMPOUND_BASIC|COMPOUND_CAMERAS|COMPOUND_TRAPS)
+                          : (COMPOUND_TANKTRAPS|COMPOUND_GENERATOR)));
+         location[loc]->compound_stores = 5;
+         // Fronts opened by earlier samples are still standing in this world,
+         // so they are cleared rather than inherited.
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->front_business = -1;
+            location[l]->front_name[0] = 0;
+            location[l]->front_shortname[0] = 0;
+         }
+         // A front already open elsewhere, so the rejection loop has
+         // something to reject.
+         int other = (loc + 3) % len(location);
+         location[other]->front_business = BUSINESSFRONT_RESTAURANT;
+         strcpy(location[other]->front_shortname, "Pizza");
+         strcpy(location[other]->front_name, "Smith Pizzeria");
+
+         fprintf(out, "{\"kind\":\"safehouse\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"place\":%d,\"choice\":%d,\"walls\":%d,\"purse\":%d,"
+                      "\"guns\":%d,\"upgradable\":%d,\"loc\":%d,\"other\":%d,"
+                      "\"funds\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, place, choice, walls, purse, guns,
+                 upgradable, loc, other, ledger.get_funds(), run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         invest_block(loc, choice);
+
+         fprintf(out, ",\"draws\":%lld,\"funds_after\":%d,\"walls_after\":%d,"
+                      "\"stores_after\":%d,\"front\":%d",
+                 lcs_trace_draw_count() - before, ledger.get_funds(),
+                 (int)location[loc]->compound_walls,
+                 (int)location[loc]->compound_stores,
+                 (int)location[loc]->front_business);
+         fputs(",\"front_name\":", out);
+         write_string(out, location[loc]->front_name);
+         fputs(",\"front_short\":", out);
+         write_string(out, location[loc]->front_shortname);
+         fputs("}\n", out);
+      }
+   }
+}
+
 // Disbanding: scattering the squad, and the slow forgetting of the years
 // afterwards.
 static void disband_block()
@@ -7441,6 +7765,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "dating")) probe_dating(out);
    else if (!strcmp(which, "interrogation")) probe_interrogation(out);
    else if (!strcmp(which, "disband")) probe_disband(out);
+   else if (!strcmp(which, "safehouse")) probe_safehouse(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

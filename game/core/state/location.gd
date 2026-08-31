@@ -59,8 +59,11 @@ var high_security: bool = false
 var compound_walls: int = 0
 var compound_stores: int = 0
 
-## The legitimate business a safehouse hides behind, or -1 for none.
+## The legitimate business a safehouse hides behind, or -1 for none, and what
+## the sign outside says.
 var front_business: int = -1
+var front_name: String = ""
+var front_short_name: String = ""
 
 ## How well the place hides the squad from the police, as a percentage.
 ## Recomputed nightly by [SiegeWatch]; stored because the check reads it twice.

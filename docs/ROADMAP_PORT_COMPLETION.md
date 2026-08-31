@@ -353,7 +353,27 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     The end-of-game check on the tail of `dispersalcheck()` is left out of the
     transcription the probe drives: it belongs to the day around the check, and
     it ends the run whenever a sample deliberately kills the last Liberal.
-- [ ] Safehouse/base actions not already covered by Commands.
+- [x] Safehouse/base actions not already covered by Commands:
+    `systems/base/safehouse_upgrades.gd` ports `investlocation()` — walls,
+    cameras, booby traps, tank traps, a generator, an anti-aircraft gun, a
+    printing press, twenty days of tinned food, and a legitimate business to
+    hide behind — and `systems/base/business_front.gd` ports the front's
+    naming, which rolls a trade, a surname and a speciality until no other
+    place in the city shares the short name.
+  - **Subtle original behavior, easy to get wrong.** Only four of the nine
+    purchases ask whether the squad owns the place: the walls, the traps, the
+    tank traps and the front. Cameras, a generator, a printing press, an
+    anti-aircraft gun and a pantry can be installed anywhere the menu can be
+    reached from. A bunker is already fortified and already ringed with tank
+    traps; a bar and grill can have none of it. The gun costs $35,000 where
+    anybody may own one and $200,000 where they may not.
+  - Verified by the `safehouse` probe: six kinds of place, nine things to buy,
+    four states of the compound, three sizes of purse, gun control either way
+    and whether the squad owns the place (7776 samples), compared on draw
+    counts, the money, the walls, the stores and the name over the door.
+  - The rest of `baseactions.cpp` is presentation or a Command the port
+    already has: the flag-burning animation, the slogan prompt, reordering a
+    squad, choosing a destination and assigning cars.
 - [x] Liberal agenda/review-management behavior that belongs to simulation
     rather than presentation: `liberalagenda()` is a status screen and belongs
     to Gate I, and so does review mode. The one piece of simulation in either
