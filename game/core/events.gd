@@ -191,7 +191,10 @@ const CHASE_OUTPACED := &"chase_outpaced"            # {creature, trapped}
 const CHASE_UNSTOPPABLE := &"chase_unstoppable"      # {creature, manner}
 const HOSTAGE_FREED := &"hostage_freed"              # {creature}
 const CREATURE_KIDNAPPED := &"creature_kidnapped"    # {creature, base}
-const SIEGE_STARTED := &"siege_started"
+const SIEGE_STARTED := &"siege_started"              # {location, attacker}
+const SIEGE_PLANNED := &"siege_planned"              # {location, attacker}
+const SIEGE_WARNED := &"siege_warned"                # {location, escalation}
+const SIEGE_RAIDED_EMPTY := &"siege_raided_empty"    # {location}
 const SIEGE_ENDED := &"siege_ended"
 
 # --- Game lifecycle --------------------------------------------------------

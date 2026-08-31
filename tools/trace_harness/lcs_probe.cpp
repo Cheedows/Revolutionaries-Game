@@ -2903,6 +2903,165 @@ static void justice_stage(Creature &g, char &clearformess)
       prison(g);
 }
 
+// The nightly siege watch: how close the police are to each safehouse, and
+// whether anybody else has decided to pay a visit.
+void probe_siege_watch(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 39187457UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int endgame = 0; endgame < 3; endgame++)
+      for (int heat = 0; heat < 5; heat++)
+      for (int crowd = 0; crowd <= 3; crowd++)
+      for (int counted = 0; counted < 4; counted++)
+      {
+         unsigned long seed_used = 1100019UL * (unsigned long)
+            (endgame * 512 + heat * 64 + crowd * 8 + counted
+             + scenario * 277 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         endgamestate = (endgame == 0) ? ENDGAME_NONE
+                      : (endgame == 1) ? ENDGAME_CCS_APPEARANCE
+                                       : ENDGAME_CCS_SIEGES;
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         offended_corps = (counted % 2) ? 1 : 0;
+         offended_firemen = 1;
+
+         // Every safehouse starts quiet except the one being watched.
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->siege = siegest();
+            location[l]->heat = 0;
+            location[l]->compound_walls = 0;
+            location[l]->front_business = -1;
+            location[l]->haveflag = false;
+            delete_and_clear(location[l]->loot);
+         }
+         location[1]->renting = RENTING_PERMANENT;
+         location[1]->heat = heat * 60;
+         location[1]->haveflag = (counted % 3 == 1);
+         location[1]->front_business = (counted % 3 == 2) ? 0 : -1;
+         if (counted >= 2)
+            location[1]->compound_walls |= COMPOUND_PRINTINGPRESS;
+         location[1]->siege.timeuntillocated = (counted == 3) ? 1 : -1;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 960000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = 1;
+            cr->base = 1;
+            cr->hireid = n ? 960000 : -1;
+            cr->heat = 20 * n + heat * 10;
+            cr->joindays = 5;
+            cr->activity.type = (n % 2) ? ACTIVITY_NONE : ACTIVITY_DONATIONS;
+            if (n == 2) cr->alive = false;
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               cr->crimes_suspected[f] = ((f + n) % 5 == 0) ? 2 : 0;
+            pool.push_back(cr);
+         }
+         // A sleeper at the police station, so the warning path is reached.
+         if (counted == 3)
+         {
+            Creature *spy = new Creature;
+            makecreature(*spy, CREATURE_COP);
+            spy->id = 961000;
+            spy->align = ALIGN_LIBERAL;
+            int station = find_police_station(1);
+            spy->location = station;
+            spy->base = station;
+            spy->hireid = 960000;
+            spy->flag |= CREATUREFLAG_SLEEPER;
+            pool.push_back(spy);
+         }
+
+         fprintf(out, "{\"kind\":\"siege_watch\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"endgame\":%d,\"heat\":%d,\"crowd\":%d,\"counted\":%d,"
+                      "\"corps\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, endgame, heat, crowd, counted,
+                 offended_corps ? 1 : 0, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"site\":{", out);
+         fprintf(out, "\"heat\":%d,\"walls\":%d,\"front\":%d,\"flag\":%d,"
+                      "\"located\":%d}",
+                 location[1]->heat, location[1]->compound_walls,
+                 location[1]->front_business, location[1]->haveflag ? 1 : 0,
+                 (int)location[1]->siege.timeuntillocated);
+         fputs(",\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"sleeper\":%d,\"heat\":%d,\"activity\":%d,"
+                         "\"joindays\":%d,\"crimes\":[",
+                    p ? "," : "", (pool[p]->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                    (int)pool[p]->heat, pool[p]->activity.type,
+                    (int)pool[p]->joindays);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)pool[p]->crimes_suspected[f]);
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         siegecheck(1);
+
+         fprintf(out, ",\"draws\":%lld,\"pool_size\":%d",
+                 lcs_trace_draw_count() - before, len(pool));
+         fputs(",\"sites_after\":[", out);
+         for (int l = 0; l < len(location); l++)
+            fprintf(out, "%s{\"loc\":%d,\"heat\":%d,\"protection\":%d,"
+                         "\"siege\":%d,\"type\":%d,\"located\":%d,"
+                         "\"corps\":%d,\"ccs\":%d,\"loot\":%d}",
+                    l ? "," : "", l, location[l]->heat,
+                    location[l]->heat_protection,
+                    location[l]->siege.siege ? 1 : 0,
+                    (int)location[l]->siege.siegetype,
+                    (int)location[l]->siege.timeuntillocated,
+                    (int)location[l]->siege.timeuntilcorps,
+                    (int)location[l]->siege.timeuntilccs,
+                    len(location[l]->loot));
+         fputs("],\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"heat\":%d,\"alien\":%d,\"crimes\":[",
+                    p ? "," : "", (int)pool[p]->heat,
+                    (pool[p]->flag & CREATUREFLAG_ILLEGALALIEN) ? 1 : 0);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)pool[p]->crimes_suspected[f]);
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+      }
+   }
+}
+
+
 // The justice system: a month in the cells, a trial, sentencing, and a month
 // inside. Driven one stage at a time, because the original's own loop over the
 // pool interleaves them and a divergence would name the month rather than the
@@ -4665,6 +4824,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "drift")) probe_monthly_drift(out);
    else if (!strcmp(which, "sleepers")) probe_sleepers(out);
    else if (!strcmp(which, "justice")) probe_justice(out);
+   else if (!strcmp(which, "siege_watch")) probe_siege_watch(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

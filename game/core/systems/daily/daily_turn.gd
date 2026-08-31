@@ -71,6 +71,10 @@ static func _close_the_day(state: GameState, rng: Rng,
 	var aged := DailyAgeing.run(state, rng)
 	var done: Array[Event] = events + (aged["events"] as Array[Event])
 	DispersalCheck.sweep_empty_squads(state)
+	# Who the police are close to finding, and who else is coming. The
+	# original runs this at the very end of the day, after the date has moved.
+	done.append_array(SiegeWatch.run(state, rng))
+	DispersalCheck.sweep_empty_squads(state)
 
 	state.ledger.reset_daily()
 	if not bool(aged["month_rolled"]):

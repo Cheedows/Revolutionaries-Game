@@ -164,7 +164,28 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     a roll; the rest were checked.
 - [ ] Dating/relationship activity behavior used by the original.
 - [ ] Interrogation.
-- [ ] Siege daily processing and safehouse consequences.
+- [x] The nightly siege watch (`siegecheck()`): how close the police are to
+    each safehouse, and who else has decided to pay a visit. Heat accumulates
+    from whoever is staying there — a corpse and a hostage draw far more of it
+    than a wanted Liberal does — and bleeds off them again as it does. Once the
+    house is hotter than it can hide, a raid is planned, and a business out
+    front halves how fast the police close in. A house found empty is emptied:
+    the loot is confiscated, the cars are taken and anybody left behind is not
+    seen again.
+  - All six other raids too: a corporation the squad has embarrassed, the
+    intelligence services, the Conservative Crime Squad, the mob a talk-radio
+    host or a news anchor can raise once enough of the country has stopped
+    listening to them, and the fire brigade — which only turns out where free
+    speech has been outlawed and the squad is running a printing press.
+  - Also `Location::update_heat_protection()`, and the nightly cleansing of
+    charges nobody can be held on any more, which is how an amendment empties
+    a cell block.
+  - Verified by the `siege_watch` probe: three endgame stages by five heat
+    levels by four occupancies by four safehouse arrangements, compared on
+    draw counts, every site's heat, protection, siege state and three
+    countdowns, and every Liberal's heat and charge sheet.
+- [ ] The siege itself (`siegeturn()`, `sally_forth()`, `escapesiege()`) and
+    what a safehouse loses when it falls.
 - [ ] News hooks for daily arrests (the story types the original queues).
 - [x] The individual half of the day: `advanceday()`'s "ACTIVITIES FOR
     INDIVIDUALS" loop, which runs before anybody is sorted into a group.

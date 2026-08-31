@@ -310,3 +310,16 @@ const SITE_BLOCKS: Dictionary = {
 	&"alarmed": 2097152,
 	&"metal": 4194304,
 }
+
+
+## What a safehouse can have built into it, from the COMPOUND_ bits in
+## src/locations/locations.h.
+const COMPOUND := {
+	&"basic": 1 << 0,
+	&"cameras": 1 << 1,
+	&"tanktraps": 1 << 2,
+	&"traps": 1 << 3,
+	&"generator": 1 << 4,
+	&"printingpress": 1 << 5,
+	&"aagun": 1 << 6,
+}

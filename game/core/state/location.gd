@@ -62,6 +62,14 @@ var compound_stores: int = 0
 ## The legitimate business a safehouse hides behind, or -1 for none.
 var front_business: int = -1
 
+## How well the place hides the squad from the police, as a percentage.
+## Recomputed nightly by [SiegeWatch]; stored because the check reads it twice.
+var heat_protection: int = 0
+
+## Whether a flag flies outside, which is what a Conservative neighbourhood
+## judges a house by.
+var has_flag: bool = false
+
 ## Whether the site has been closed down after a raid.
 var closed: int = 0
 
