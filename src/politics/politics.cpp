@@ -28,6 +28,9 @@ This file is part of Liberal Crime Squad.                                       
 
 #include <externs.h>
 
+// Recorded for the trace harness: which laws made the ballot, and which way.
+vector<int> probe_props, probe_propdirs, probe_priority, probe_moods;
+
 //TODO: Not sure if anything in here should be logged...Perhaps only a summary of the results? --Addictgamer
 
 /* politics - calculate presidential approval */
@@ -401,6 +404,8 @@ void elections(char clearformess,char canseethings)
       pvote=(law[l]+2)*25; //CALC PRIORITY
 
       lawpriority[l]=DIFF(pvote,pmood)+LCSrandom(10)+public_interest[l];
+      probe_priority.push_back(lawpriority[l]);
+      probe_moods.push_back(pmood);
    }
 
    prop.resize(pnum);
@@ -442,6 +447,8 @@ void elections(char clearformess,char canseethings)
       lawtaken[prop[p]]=1;
 
       propdir[p]=lawdir[prop[p]];
+      probe_props.push_back(prop[p]);
+      probe_propdirs.push_back(propdir[p]);
 
       if(canseethings)
       {

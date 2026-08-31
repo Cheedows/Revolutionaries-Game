@@ -9,6 +9,8 @@ extends TestCase
 func test_a_year_runs_the_political_cycle() -> void:
 	var session := Session.new(4242)
 	_seat_a_government(session.state)
+	# Congress is elected in even years only, so the year has to be one.
+	session.state.calendar.year = 2010
 
 	var elections := 0
 	var court_sittings := 0
@@ -21,14 +23,14 @@ func test_a_year_runs_the_political_cycle() -> void:
 				elections += 1
 			elif event.type == Event.LAW_CHANGED:
 				bills += 1
-				if event.data["outcome"] == &"court_ruling" \
-						or event.data["outcome"] == &"court_declined":
+				var outcome: StringName = event.data.get("outcome", &"")
+				if outcome == &"court_ruling" or outcome == &"court_declined":
 					court_sittings += 1
 
 	equal(elections, 2, "one House and one Senate election in a year")
 	check(court_sittings > 0, "the Supreme Court sat")
 	check(bills > 10, "Congress passed judgment on bills every month, got %d" % bills)
-	equal(session.state.calendar.year, 2010, "a year went by")
+	equal(session.state.calendar.year, 2011, "a year went by")
 
 
 func test_the_news_goes_stale_every_month() -> void:

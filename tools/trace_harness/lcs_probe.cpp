@@ -6611,6 +6611,127 @@ static void business_front_block(int loc)
 
 
 
+
+// The November election: the presidency every fourth year, both chambers
+// every second, and the propositions every year.
+extern std::vector<int> probe_props, probe_propdirs, probe_priority, probe_moods;
+
+void probe_election_day(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 15485863UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+
+      for (int years = 0; years < 4; years++)
+      for (int temper = 0; temper < 5; temper++)
+      for (int term = 1; term <= 2; term++)
+      for (int party = 0; party < 3; party++)
+      for (int stalin = 0; stalin < 2; stalin++)
+      {
+         unsigned long seed_used = 8300021UL * (unsigned long)
+            ((((years * 5 + temper) * 2 + (term - 1)) * 3 + party) * 2 + stalin
+             + scenario * 269 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         year = 2000 + years;
+         month = 11; day = 1;
+         disbanding = 0;
+         stalinmode = stalin ? true : false;
+         termlimits = false;
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + temper) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (temper * 23 + v * 7) % 101;
+            public_interest[v] = (v * 5 + temper) % 40;
+         }
+         for (int h = 0; h < HOUSENUM; h++) house[h] = ((h + temper) % 5) - 2;
+         for (int s = 0; s < SENATENUM; s++) senate[s] = ((s + temper) % 5) - 2;
+         for (int c = 0; c < COURTNUM; c++) court[c] = ((c + temper) % 5) - 2;
+         presparty = party;
+         execterm = term;
+         for (int e = 0; e < EXECNUM; e++)
+         {
+            exec[e] = ((e + temper) % 5) - 2;
+            snprintf(execname[e], POLITICIAN_NAMELEN, "Exec %d", e);
+         }
+
+         fprintf(out, "{\"kind\":\"election_day\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"years\":%d,\"temper\":%d,\"term\":%d,\"party\":%d,"
+                      "\"stalin\":%d,\"year\":%d",
+                 scenario, seed_used, years, temper, term, party, stalin, year);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"house\":[", out);
+         for (int i = 0; i < HOUSENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", house[i]);
+         fputs("],\"senate\":[", out);
+         for (int i = 0; i < SENATENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", senate[i]);
+         fputs("],\"exec\":[", out);
+         for (int i = 0; i < EXECNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", exec[i]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         probe_props.clear();
+         probe_propdirs.clear();
+         probe_priority.clear();
+         probe_moods.clear();
+         elections(0, 1);
+
+         fputs(",\"props\":[", out);
+         for (int i = 0; i < len(probe_props); i++)
+            fprintf(out, "%s[%d,%d]", i ? "," : "", probe_props[i],
+                    probe_propdirs[i]);
+         fputs("],\"priority\":[", out);
+         for (int i = 0; i < len(probe_priority); i++)
+            fprintf(out, "%s%d", i ? "," : "", probe_priority[i]);
+         fputs("],\"moods\":[", out);
+         for (int i = 0; i < len(probe_moods); i++)
+            fprintf(out, "%s%d", i ? "," : "", probe_moods[i]);
+         fputs("]", out);
+         fprintf(out, ",\"draws\":%lld,\"party_after\":%d,\"term_after\":%d",
+                 lcs_trace_draw_count() - before, presparty, execterm);
+         fputs(",\"law_after\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"house_after\":[", out);
+         for (int i = 0; i < HOUSENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", house[i]);
+         fputs("],\"senate_after\":[", out);
+         for (int i = 0; i < SENATENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", senate[i]);
+         fputs("],\"exec_after\":[", out);
+         for (int i = 0; i < EXECNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", exec[i]);
+         fputs("],\"exec_names\":[", out);
+         for (int i = 0; i < EXECNUM; i++)
+         {
+            if (i) fputs(",", out);
+            write_string(out, execname[i]);
+         }
+         fputs("]}\n", out);
+      }
+   }
+}
+
 // Amending the constitution: both chambers, then thirty-eight states.
 static char ratify_block(int level,int lawview,int view,char congress)
 {
@@ -7995,6 +8116,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "disband")) probe_disband(out);
    else if (!strcmp(which, "safehouse")) probe_safehouse(out);
    else if (!strcmp(which, "amendments")) probe_amendments(out);
+   else if (!strcmp(which, "election_day")) probe_election_day(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

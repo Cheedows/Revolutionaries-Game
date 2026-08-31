@@ -22,6 +22,26 @@ const MOOD_ROLLS := 4
 const INCUMBENT_ADVANTAGE := {-2: -3, -1: -2, 0: 3, 1: 5, 2: 8}
 
 
+## The November election: the presidency every fourth year, both chambers
+## every second, and the propositions every year.
+##
+## [param watched] is whether anybody is following it. The original only rolls
+## for the candidates' titles and the propositions' numbers when it is drawing
+## them, so a squad that is dating, hiding, in prison or disbanded consumes a
+## different number of draws — which is a fork in the world, not just in the
+## screen.
+static func run(state: GameState, rng: Rng, watched: bool = true) -> Array[Event]:
+	var events: Array[Event] = []
+	if state.calendar.year % 4 == 0:
+		events.append_array(PresidentialElection.run(state, rng, watched))
+	if state.calendar.year % 2 == 0:
+		events.append_array(elect_senate(state, rng,
+				(state.calendar.year % 6) / 2))
+		events.append_array(elect_house(state, rng))
+	events.append_array(Propositions.run(state, rng, watched))
+	return events
+
+
 ## Elects the whole House.
 static func elect_house(state: GameState, rng: Rng) -> Array[Event]:
 	return _elect(state, rng, state.government.house, -1, &"house")

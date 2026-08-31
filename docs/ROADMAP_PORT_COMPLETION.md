@@ -498,7 +498,35 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
     on its own as well, compared on draw counts, the jury, the prosecution's
     case, the defense's answer, leniency, funds, and every person's sentence,
     charges, standing, whereabouts and clothes.
-- [ ] Election timing/integration beyond already-ported election primitives.
+- [x] Election timing and integration: `ElectionRules.run()` ports the shape
+    of `elections()` — the presidency every fourth year, both chambers every
+    second, and the propositions every year — and
+    `systems/politics/presidential.gd` and `systems/politics/propositions.gd`
+    port the two halves that were missing. The presidency is a hundred-voter
+    primary in each party, the incumbency rules that can hand the nomination
+    to a president or a vice president outright, a thousand voters, and a
+    cabinet built from scratch when somebody new wins. The propositions are
+    four to seven laws chosen by how far each has drifted from what people
+    want and how much they care, each put to a thousand voters.
+  - **Subtle original behavior, easy to get wrong.** A party's primary is
+    decided by strict comparisons that cascade, so a tie goes to the *less*
+    extreme candidate. The candidates' titles and the propositions' numbers
+    are only rolled for when somebody is watching, so a squad that is dating,
+    hiding, imprisoned or disbanded consumes a different number of draws —
+    which is a fork in the world, not just in the screen; `run()` takes it as
+    a parameter. The whole ballot is settled before a single vote is counted.
+    The title roll is skipped for a vice president who inherited the
+    nomination, because they already have one.
+  - **Original quirk, reproduced.** A law's priority adds
+    `public_interest[law]` — the interest in the *view* of that index, not the
+    law's own issue. The arrays are different lengths and the indices do not
+    correspond; the port indexes it the same way.
+  - Verified by the `election_day` probe: four points in the presidential
+    cycle, five tempers of the country, a president in either term, all three
+    parties in the White House and Stalin mode either way (720 samples),
+    compared on draw counts, the party and term, every seat in both chambers,
+    the executive and their names, which laws made the ballot and which way,
+    and the laws the propositions changed.
 - [x] Constitutional/extreme-government branches:
     `systems/politics/amendments.gd` ports `ratify()` — both chambers voting
     with a point of waver either way, then thirty-eight of the fifty states

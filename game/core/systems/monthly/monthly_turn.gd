@@ -59,10 +59,9 @@ static func run(state: GameState, rng: Rng,
 	state.ledger.reset_monthly()
 
 	if state.calendar.month == ELECTION_MONTH:
-		events.append_array(ElectionRules.elect_house(state, rng))
-		# The Senate elects one class of three at a time.
-		events.append_array(ElectionRules.elect_senate(state, rng,
-				state.calendar.year % 3))
+		# The presidency, both chambers and the propositions, each on their
+		# own cycle. Nobody is watching a disbanded squad's election.
+		events.append_array(ElectionRules.run(state, rng, not state.disbanded))
 	if state.calendar.month == COURT_MONTH:
 		events.append_array(SupremeCourtRules.run(state, rng))
 
