@@ -10811,6 +10811,376 @@ void probe_site_loot(FILE *out)
    }
 }
 
+// Taking people, letting them go, and letting the building's own captives out.
+// Transcribed from kidnapattempt() and releasehostage() in
+// src/combat/haulkidnap.cpp and the freeing branch of the site loop, with the
+// display taken out and each prompt answered by the sample.
+static void site_hostage_block(int which, int *outcome, int *freed_out,
+                               int *joined_out)
+{
+   *outcome = 0;
+   *freed_out = 0;
+   *joined_out = 0;
+
+   if(which == 0) // kidnapattempt()
+   {
+      short kidnapper=-1;
+      for(int p=0;p<6;p++)
+         if(activesquad->squad[p]!=NULL&&activesquad->squad[p]->alive&&
+            activesquad->squad[p]->prisoner==NULL)
+         { kidnapper=p; break; }
+      if(kidnapper<0) { *outcome = 1; return; }
+
+      vector<int> target;
+      for(int e=0;e<ENCMAX;e++)
+         if(encounter[e].exists&&encounter[e].alive&&encounter[e].align==-1&&
+           (encounter[e].animalgloss==ANIMALGLOSS_NONE||law[LAW_ANIMALRESEARCH]==2)&&
+          (!encounter[e].get_weapon().protects_against_kidnapping()||
+            encounter[e].blood<=20)&&encounter[e].animalgloss!=ANIMALGLOSS_TANK)
+            target.push_back(e);
+      if(!len(target)) { *outcome = 2; return; }
+
+      int t=target[0];
+      bool amateur=0;
+      if(kidnap(*activesquad->squad[kidnapper],encounter[t],amateur))
+      {
+         delenc(t,0);
+         int time=20+LCSrandom(10);
+         if(time<1) time=1;
+         if(sitealarmtimer>time||sitealarmtimer==-1) sitealarmtimer=time;
+         *outcome = 3;
+      }
+      else { sitealarm=1; *outcome = 4; }
+
+      if(amateur)
+      {
+         bool present=0;
+         for(int e=0;e<ENCMAX;e++)
+            if(encounter[e].exists&&encounter[e].alive) {present=1; break;}
+         if(present)
+         {
+            alienationcheck(1);
+            if(!sitealarm)sitealarm=1;
+            sitecrime+=5;
+            criminalizeparty(LAWFLAG_KIDNAPPING);
+            if(activesquad->squad[kidnapper]->prisoner!=NULL)
+            {
+               if(activesquad->squad[kidnapper]->prisoner->type==CREATURE_RADIOPERSONALITY) offended_amradio=1;
+               if(activesquad->squad[kidnapper]->prisoner->type==CREATURE_NEWSANCHOR) offended_cablenews=1;
+            }
+            else
+            {
+               if(encounter[t].type==CREATURE_RADIOPERSONALITY) offended_amradio=1;
+               if(encounter[t].type==CREATURE_NEWSANCHOR) offended_cablenews=1;
+            }
+            *outcome += 10;
+         }
+      }
+      return;
+   }
+
+   if(which == 1) // releasehostage()
+   {
+      short kidnapper=-1;
+      for(int p=0;p<6;p++)
+         if(activesquad->squad[p]!=NULL&&activesquad->squad[p]->alive&&
+            activesquad->squad[p]->prisoner!=NULL&&
+            activesquad->squad[p]->prisoner->align!=ALIGN_LIBERAL)
+         { kidnapper=p; break; }
+      if(kidnapper<0) { *outcome = 5; return; }
+
+      activesquad->squad[kidnapper]->prisoner->cantbluff=2;
+      freehostage(*(activesquad->squad[kidnapper]), 2);
+      if(!sitealarm)
+      {
+         sitealarm=1;
+         alienationcheck(1);
+      }
+      *outcome = 6;
+      return;
+   }
+
+   // The freeing branch of the site loop.
+   {
+      int partysize=squadsize(activesquad);
+      short followers=0,actgot=0;
+      bool enemy=false;
+      for(int e=0;e<ENCMAX;e++)
+         if(encounter[e].exists&&encounter[e].alive&&encounter[e].enemy())
+            enemy=true;
+      if(enemy)sitealarm=1;
+
+      bool flipstart,freed;
+      do
+      {
+         flipstart=0,freed=0;
+         for(int e=0;e<ENCMAX;e++)
+         {
+            if(!encounter[e].exists)break;
+            if((encounter[e].type==CREATURE_WORKER_SERVANT||
+               encounter[e].type==CREATURE_WORKER_FACTORY_CHILD||
+               encounter[e].type==CREATURE_WORKER_SWEATSHOP||
+               (strcmp(encounter[e].name,"Prisoner")==0 && encounter[e].align==1))&&!flipstart)
+            {
+               if(strcmp(encounter[e].name,"Prisoner")==0)
+               {
+                  sitealarm=1;
+                  criminalize(encounter[e],LAWFLAG_ESCAPED);
+               }
+               followers++,flipstart=1,freed=1;
+               if(partysize<6)
+               {
+                  int i;
+                  for(i=0;i<6;i++)
+                     if(activesquad->squad[i]!=NULL)
+                        if(subordinatesleft(*activesquad->squad[i]))
+                           break;
+                  if(i!=6)
+                  {
+                     Creature *newcr=new Creature;
+                     *newcr=encounter[e];
+                     newcr->namecreature();
+                     newcr->location=activesquad->squad[i]->location;
+                     newcr->base=activesquad->squad[i]->base;
+                     newcr->hireid=activesquad->squad[i]->id;
+                     pool.push_back(newcr);
+                     stat_recruits++;
+                     for(int p=0;p<6;p++)
+                     {
+                        if(activesquad->squad[p]==NULL)
+                        {
+                           activesquad->squad[p]=newcr;
+                           newcr->squadid=activesquad->id;
+                           break;
+                        }
+                     }
+                     actgot++,partysize++;
+                  }
+               }
+            }
+            if(flipstart)
+               if(e<ENCMAX-1)encounter[e]=encounter[e+1];
+         }
+         if(flipstart)encounter[ENCMAX-1].exists=0;
+         if(freed)
+         {
+            int time=20+LCSrandom(10);
+            if(time<1)time=1;
+            if(sitealarmtimer>time||sitealarmtimer==-1)sitealarmtimer=time;
+         }
+      } while(freed);
+
+      *freed_out = followers;
+      *joined_out = actgot;
+      *outcome = 7;
+   }
+}
+
+void probe_site_hostage(FILE *out)
+{
+   static const int TARGETS[] = {
+      CREATURE_CORPORATE_CEO, CREATURE_COP, CREATURE_GUARDDOG,
+      CREATURE_TANK, CREATURE_RADIOPERSONALITY, CREATURE_NEWSANCHOR,
+      CREATURE_WORKER_SERVANT, CREATURE_WORKER_SWEATSHOP,
+   };
+   const int TARGET_COUNT = (int)(sizeof(TARGETS) / sizeof(TARGETS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 122949829UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int which = 0; which < 3; which++)
+      for (int who = 0; who < TARGET_COUNT; who++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int armed = 0; armed < 2; armed++)
+      for (int hurt = 0; hurt < 2; hurt++)
+      for (int freed_law = 0; freed_law < 2; freed_law++)
+      for (int holding = 0; holding < 2; holding++)
+      for (int juice = 0; juice < 2; juice++)
+      {
+         unsigned long seed_used = 217645199UL * (unsigned long)
+            (((((((which * TARGET_COUNT + who) * 3 + (crowd - 1)) * 2 + armed) * 2
+              + hurt) * 2 + freed_law) * 2 + holding) * 2 + juice
+             + scenario * 7717 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         law[LAW_ANIMALRESEARCH] = freed_law ? 2 : 0;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 43 + scenario * 5) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         delete_and_clear(groundloot);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         offended_amradio = 0;
+         offended_cablenews = 0;
+         stat_recruits = 0;
+
+         cursite = 1;
+         location[cursite]->type = SITE_CORPORATE_HEADQUARTERS;
+         location[cursite]->siege.siege = 0;
+         sitetype = location[cursite]->type;
+         sitealarm = 0;
+         sitealarmtimer = -1;
+         sitecrime = 0;
+         sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         Creature *held = NULL;
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 880000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            // The founder can always take somebody on; a hire with no
+            // standing cannot, so the freed walk away instead.
+            cr->hireid = juice ? -1 : 999;
+            cr->juice = juice ? 250 : 10;
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            if (armed)
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_SEMIPISTOL_9MM")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+         if (holding)
+         {
+            held = new Creature;
+            makecreature(*held, TARGETS[who]);
+            held->id = 880050;
+            held->alive = 1;
+            held->align = ALIGN_CONSERVATIVE;
+            sq->squad[0]->prisoner = held;
+         }
+
+         makecreature(encounter[0], TARGETS[who]);
+         encounter[0].exists = 1;
+         encounter[0].alive = 1;
+         encounter[0].id = 880100;
+         encounter[0].align = ALIGN_CONSERVATIVE;
+         encounter[0].blood = hurt ? 15 : 100;
+         // A prisoner already on side, and a servant, so the freeing branch
+         // has more than one kind of person to let out.
+         makecreature(encounter[1], CREATURE_WORKER_SERVANT);
+         encounter[1].exists = 1;
+         encounter[1].alive = 1;
+         encounter[1].id = 880101;
+         encounter[1].align = ALIGN_MODERATE;
+         makecreature(encounter[2], CREATURE_PRISONER);
+         encounter[2].exists = 1;
+         encounter[2].alive = 1;
+         encounter[2].id = 880102;
+         encounter[2].align = ALIGN_LIBERAL;
+         strcpy(encounter[2].name, "Prisoner");
+
+         fprintf(out, "{\"kind\":\"site_hostage\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"which\":%d,\"who\":%d,\"crowd\":%d,\"armed\":%d,"
+                      "\"hurt\":%d,\"freed_law\":%d,\"holding\":%d,"
+                      "\"juice\":%d,\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, which, who, crowd, armed, hurt,
+                 freed_law, holding, juice, run_seed, cursite);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"held\":", out);
+         if (held) chase_write_creature(out, *held, true);
+         else fputs("null", out);
+         fputs(",\"room\":[", out);
+         for (int e = 0; e < 3; e++)
+         {
+            if (e) fputs(",", out);
+            chase_write_creature(out, encounter[e], true);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int outcome = 0, freed = 0, joined = 0;
+         long long before = lcs_trace_draw_count();
+         site_hostage_block(which, &outcome, &freed, &joined);
+
+         int encount = 0, ids[ENCMAX];
+         for (int e = 0; e < ENCMAX; e++)
+            if (encounter[e].exists) ids[encount++] = encounter[e].id;
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"freed\":%d,"
+                      "\"joined\":%d,\"alarm\":%d,\"alarmtimer\":%d,"
+                      "\"alienate\":%d,\"crime\":%d,\"encounters\":%d,"
+                      "\"amradio\":%d,\"cablenews\":%d,\"recruits\":%d,"
+                      "\"squadsize\":%d",
+                 lcs_trace_draw_count() - before, outcome, freed, joined,
+                 (int)sitealarm, (int)sitealarmtimer, (int)sitealienate,
+                 (int)sitecrime, encount, (int)offended_amradio,
+                 (int)offended_cablenews, stat_recruits,
+                 squadsize(activesquad));
+         fputs(",\"left\":[", out);
+         for (int e = 0; e < encount; e++)
+            fprintf(out, "%s%d", e ? "," : "", ids[e]);
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"prisoner\":%d,\"kidnapping\":%d}",
+                    sq->squad[n]->prisoner ? (int)sq->squad[n]->prisoner->id : 0,
+                    (int)sq->squad[n]->crimes_suspected[LAWFLAG_KIDNAPPING]);
+         }
+         fputs("]}\n", out);
+
+         for (int i = 0; i < 6; i++)
+            if (sq->squad[i]) sq->squad[i]->prisoner = NULL;
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+   offended_amradio = 0;
+   offended_cablenews = 0;
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -12435,6 +12805,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "flirt")) probe_flirt(out);
    else if (!strcmp(which, "shop")) probe_shop(out);
    else if (!strcmp(which, "site_loot")) probe_site_loot(out);
+   else if (!strcmp(which, "site_hostage")) probe_site_hostage(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

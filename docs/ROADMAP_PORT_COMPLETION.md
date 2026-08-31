@@ -961,8 +961,34 @@ Site construction is already strong; now port the gameplay that occurs inside th
     a witness or none, and other marked squares or none — 7,040 samples
     compared on draw counts, the alarm clock, the crime sheet, the square, what
     is left in the stores, and every item in the bag with its loaded rounds.
-- [ ] Hostages/kidnapping/hauling.
-- [ ] Graffiti/vandalism/burning/destruction actions present in the original.
+- [x] Hostages, kidnapping and hauling as the site offers them
+    (`kidnapattempt()` and `releasehostage()` from
+    `src/combat/haulkidnap.cpp`, and the prisoner-freeing branch of the site
+    loop), in `core/systems/site/site_hostages.gd`. The grab itself was already
+    `systems/combat/kidnapping.gd`; what is here is who can do it, who it can
+    be done to, and what the building makes of it.
+  - **Original quirk reproduced.** Freeing the building's captives walks the
+    roster forwards, frees one person, lets the rest shuffle down, and starts
+    the whole walk again — so they leave one per pass, and each pass restarts
+    the alarm clock.
+  - **Original quirk reproduced.** A bare-handed grab in front of witnesses
+    offends a broadcaster by looking at whoever the grabber ends up holding —
+    which, when the grab failed, is the person they still have from before.
+  - Verified by the `site_hostage` probe: all three actions against eight kinds
+    of person including a dog, a tank and the two celebrities whose employers
+    hold a grudge, three squad sizes, armed and unarmed, a target too hurt to
+    resist or not, animal research banned or not, the squad already holding
+    somebody or not, and a squad led by the founder or by a hire who cannot
+    take anybody on — 6,912 samples compared on draw counts, the branch, who
+    walked out and who stayed, the alarm and its clock, alienation, the crime
+    sheet, the room, the grudges, and each Liberal's hostage and charges.
+- [x] Graffiti, vandalism, burning and destruction. Tagging, smashing the
+    fittings and breaking open the cages are the specials above; fire is
+    `core/systems/site/site_round.gd`, which cools, spreads and burns out the
+    building between rounds. There is no arson *command*: the original's site
+    loop has no key for it, and a fire starts either from an incendiary weapon
+    in combat or from a Liberal in fire gear bluffing past a fire crew's
+    cordon, both of which are ported.
 - [x] On-site shops and shop interaction behaviour (`src/sitemode/shop.cpp`),
     in `core/systems/base/shopping.gd`. The arms dealer, the pawn shop, the
     department store and the mask stall are all the same code reading different

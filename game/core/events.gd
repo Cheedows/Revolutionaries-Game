@@ -74,6 +74,8 @@ const ITEM_BOUGHT := &"item_bought"                  # {creature, item, price}
 const LOOT_FENCED := &"loot_fenced"                  # {kind, paid}
 const GUN_SOUGHT := &"gun_sought"                    # {outcome, shop}
 const LOOT_TAKEN := &"loot_taken"                    # {square}
+const KIDNAP_ATTEMPTED := &"kidnap_attempted"        # {outcome, creature, victim}
+const OPPRESSED_FREED := &"oppressed_freed"          # {freed, joined}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------
