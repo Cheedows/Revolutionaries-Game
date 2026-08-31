@@ -67,6 +67,8 @@ static func run(state: GameState, rng: Rng,
 		events.append_array(SupremeCourtRules.run(state, rng))
 
 	events.append_array(CongressRules.run(state, rng))
+	# And then whatever the new Congress is minded to do to the constitution.
+	events.append_array(Constitution.check(state, rng))
 
 	# The justice system runs last, and it is the one part of the month that
 	# stops to ask the player something: how the defense should be conducted.

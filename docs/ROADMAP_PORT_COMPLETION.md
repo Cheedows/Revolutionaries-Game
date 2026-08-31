@@ -499,7 +499,24 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
     case, the defense's answer, leniency, funds, and every person's sentence,
     charges, standing, whereabouts and clothes.
 - [ ] Election timing/integration beyond already-ported election primitives.
-- [ ] Constitutional/extreme-government branches: court purge, term limits and original endgame transitions.
+- [x] Constitutional/extreme-government branches:
+    `systems/politics/amendments.gd` ports `ratify()` — both chambers voting
+    with a point of waver either way, then thirty-eight of the fifty states
+    voting on the country's mood bent by how each state leans — and
+    `systems/politics/constitution.gd` ports the four amendments that use it
+    and the conditions Congress checks them under: purging the court,
+    abolishing incumbency (which throws every seat open at once), and the two
+    repeals of the constitution.
+  - **Original defect, reproduced.** The Stalinist repeal is put to the states
+    at level 3, but a state's vote starts at -2 and gains one for each of four
+    rolls, so it can never exceed 2. No state can ever vote for it: the
+    Stalinist ending cannot be reached however Stalinist the country becomes.
+    The port keeps the arithmetic — changing it would be a new game rather
+    than a port of this one — and the probe confirms it never passes.
+  - Verified by the `amendments` probe: four amendments, six tilts of
+    Congress, five tempers of the country and whether it has happened already
+    (720 samples), compared on draw counts, whether it passed, the amendment
+    count, the laws, the court, the executive and the justices' names.
 - [ ] Complete strict/relaxed win/loss/endgame flow around the already-ported checks.
 - [ ] Decide legacy bugs only after parity is demonstrated; do not silently "fix" behavior during conversion.
 

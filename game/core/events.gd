@@ -241,5 +241,6 @@ const SIEGE_ENDED := &"siege_ended"
 # --- Game lifecycle --------------------------------------------------------
 
 const GAME_STARTED := &"game_started"
+const AMENDMENT_PASSED := &"amendment_passed"        # {amendment}
 const GAME_WON := &"game_won"                        # {condition}
 const GAME_LOST := &"game_lost"                      # {condition}

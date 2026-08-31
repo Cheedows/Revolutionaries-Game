@@ -6610,6 +6610,234 @@ static void business_front_block(int loc)
 }
 
 
+
+// Amending the constitution: both chambers, then thirty-eight states.
+static char ratify_block(int level,int lawview,int view,char congress)
+{
+   int mood=publicmood(lawview);
+   if(view>=0) mood=attitude[view];
+
+   bool ratified=false;
+
+   if(congress)
+   {
+      ratified=true;
+      bool yeswin_h=false,yeswin_s=false;
+      int yesvotes_h=0,yesvotes_s=0,vote,s=0;
+
+      for(int l=0;l<HOUSENUM;l++)
+      {
+         vote=house[l];
+         if(vote>=-1&&vote<=1) vote+=LCSrandom(3)-1;
+         if(level==vote) yesvotes_h++;
+         if(l==HOUSENUM-1) if(yesvotes_h>=HOUSESUPERMAJORITY) yeswin_h=true;
+
+         if(l%4==0&&s<SENATENUM)
+         {
+            vote=senate[s++];
+            if(vote>=-1&&vote<=1) vote+=LCSrandom(3)-1;
+            if(level==vote) yesvotes_s++;
+         }
+         if(l==HOUSENUM-1&&yesvotes_s>=SENATESUPERMAJORITY) yeswin_s=true;
+      }
+      if(!yeswin_h||!yeswin_s) ratified=false;
+      if(!ratified) return 0;
+   }
+
+   int yesstate=0,vote,smood;
+   for(int s=0;s<STATENUM;s++)
+   {
+      smood=mood;
+      int multiplier = 5+LCSrandom(3);
+      switch(s)
+      {
+         case 0:smood-=3*multiplier;break;  case 1:smood-=4*multiplier;break;
+         case 2:smood-=1*multiplier;break;  case 3:smood-=2*multiplier;break;
+         case 4:smood+=4*multiplier;break;  case 5:break;
+         case 6:smood+=3*multiplier;break;  case 7:smood+=3*multiplier;break;
+         case 8:break;                      case 9:smood-=2*multiplier;break;
+         case 10:smood+=4*multiplier;break; case 11:smood-=5*multiplier;break;
+         case 12:smood+=4*multiplier;break; case 13:smood-=1*multiplier;break;
+         case 14:smood+=1*multiplier;break; case 15:smood-=3*multiplier;break;
+         case 16:smood-=3*multiplier;break; case 17:smood-=1*multiplier;break;
+         case 18:smood+=2*multiplier;break; case 19:smood+=3*multiplier;break;
+         case 20:smood+=6*multiplier;break; case 21:smood+=2*multiplier;break;
+         case 22:smood+=2*multiplier;break; case 23:smood-=4*multiplier;break;
+         case 24:smood-=1*multiplier;break; case 25:smood-=2*multiplier;break;
+         case 26:smood-=3*multiplier;break; case 27:break;
+         case 28:smood+=1*multiplier;break; case 29:smood+=3*multiplier;break;
+         case 30:smood+=1*multiplier;break; case 31:smood+=5*multiplier;break;
+         case 32:smood-=1*multiplier;break; case 33:smood-=3*multiplier;break;
+         case 34:break;                     case 35:smood-=4*multiplier;break;
+         case 36:smood+=3*multiplier;break; case 37:smood+=2*multiplier;break;
+         case 38:smood+=4*multiplier;break; case 39:smood-=5*multiplier;break;
+         case 40:smood-=3*multiplier;break; case 41:smood-=2*multiplier;break;
+         case 42:smood-=4*multiplier;break; case 43:smood-=6*multiplier;break;
+         case 44:smood+=5*multiplier;break; case 45:break;
+         case 46:smood+=3*multiplier;break; case 47:smood-=2*multiplier;break;
+         case 48:smood+=2*multiplier;break; case 49:smood-=5*multiplier;break;
+      }
+
+      vote=-2;
+      if(LCSrandom(100)<smood)vote++;
+      if(LCSrandom(100)<smood)vote++;
+      if(LCSrandom(100)<smood)vote++;
+      if(LCSrandom(100)<smood)vote++;
+      if(vote==1&&!LCSrandom(2)) vote=2;
+      if(vote==-1&&!LCSrandom(2)) vote=-2;
+
+      if(vote==level) yesstate++;
+   }
+
+   if(yesstate>=STATESUPERMAJORITY) ratified=true;
+   else ratified=false;
+   return ratified;
+}
+
+// The four amendments, with the display and the endgame taken out.
+static int amendment_block(int which)
+{
+   switch(which)
+   {
+   case 0:   // tossjustices()
+      if(ratify_block(2,-1,-1,1))
+      {
+         for(int j=0;j<COURTNUM;j++) if(court[j]!=ALIGN_ELITELIBERAL)
+         {
+            do generate_name(courtname[j]); while(len(courtname[j])>20);
+            court[j]=ALIGN_ELITELIBERAL;
+         }
+         amendnum++;
+         return 1;
+      }
+      return 0;
+   case 1:   // amendment_termlimits(), minus the elections it then holds
+      if(termlimits) return 0;
+      if(ratify_block(2,-1,-1,0))
+      {
+         termlimits = true;
+         amendnum++;
+         return 1;
+      }
+      return 0;
+   case 2:   // reaganify()
+      if(ratify_block(-2,-1,-1,1))
+      {
+         amendnum = 1;
+         for(int e=0;e<EXECNUM;e++) exec[e]=ALIGN_ARCHCONSERVATIVE;
+         for(int l=0;l<LAWNUM;l++) law[l]=ALIGN_ARCHCONSERVATIVE;
+         return 1;
+      }
+      return 0;
+   default:  // stalinize()
+      if(ratify_block(3,-2,-2,1))
+      {
+         amendnum = 1;
+         for(int e=0;e<EXECNUM;e++) exec[e]=ALIGN_STALINIST;
+         for(int l=0;l<LAWNUM;l++) law[l]=stalinview(l,true)?ALIGN_ELITELIBERAL:ALIGN_ARCHCONSERVATIVE;
+         return 1;
+      }
+      return 0;
+   }
+}
+
+void probe_amendments(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 27644437UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+
+      for (int which = 0; which < 4; which++)
+      for (int tilt = 0; tilt < 6; tilt++)
+      for (int temper = 0; temper < 5; temper++)
+      for (int already = 0; already < 2; already++)
+      {
+         unsigned long seed_used = 7900109UL * (unsigned long)
+            ((((which * 6 + tilt) * 5 + temper) * 2 + already)
+             + scenario * 251 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = temper * 25;
+            public_interest[v] = (v * 3) % 40;
+         }
+         // A chamber tilted far enough to pass each of the four.
+         for (int h = 0; h < HOUSENUM; h++)
+            house[h] = (h % 10 < tilt * 2) ? (which == 2 ? -2
+                                          : (which == 3 ? 3 : 2))
+                                          : ((h % 3) - 1);
+         for (int s = 0; s < SENATENUM; s++)
+            senate[s] = (s % 10 < tilt * 2) ? (which == 2 ? -2
+                                           : (which == 3 ? 3 : 2))
+                                           : ((s % 3) - 1);
+         for (int c = 0; c < COURTNUM; c++)
+            court[c] = ((c + already) % 4) - 1;
+         for (int c = 0; c < COURTNUM; c++)
+            snprintf(courtname[c], 20, "Justice %d", c);
+         for (int e = 0; e < EXECNUM; e++) exec[e] = (e % 3) - 1;
+         termlimits = already ? true : false;
+         amendnum = 0;
+         stalinmode = true;
+
+         fprintf(out, "{\"kind\":\"amendments\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"which\":%d,\"tilt\":%d,\"temper\":%d,\"already\":%d",
+                 scenario, seed_used, which, tilt, temper, already);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"house\":[", out);
+         for (int i = 0; i < HOUSENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", house[i]);
+         fputs("],\"senate\":[", out);
+         for (int i = 0; i < SENATENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", senate[i]);
+         fputs("],\"court\":[", out);
+         for (int i = 0; i < COURTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", court[i]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         int passed = amendment_block(which);
+
+         fprintf(out, ",\"draws\":%lld,\"passed\":%d,\"amendnum\":%d,"
+                      "\"termlimits\":%d",
+                 lcs_trace_draw_count() - before, passed, amendnum,
+                 termlimits ? 1 : 0);
+         fputs(",\"law_after\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"court_after\":[", out);
+         for (int i = 0; i < COURTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", court[i]);
+         fputs("],\"exec_after\":[", out);
+         for (int i = 0; i < EXECNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", exec[i]);
+         fputs("],\"court_names\":[", out);
+         for (int i = 0; i < COURTNUM; i++)
+         {
+            if (i) fputs(",", out);
+            write_string(out, courtname[i]);
+         }
+         fputs("]}\n", out);
+      }
+   }
+}
+
 // Buying a compound: what a safehouse can have built into it, and the
 // business front's rejection loop.
 static void invest_block(int loc, int choice)
@@ -7766,6 +7994,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "interrogation")) probe_interrogation(out);
    else if (!strcmp(which, "disband")) probe_disband(out);
    else if (!strcmp(which, "safehouse")) probe_safehouse(out);
+   else if (!strcmp(which, "amendments")) probe_amendments(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

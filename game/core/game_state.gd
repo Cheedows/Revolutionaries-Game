@@ -57,6 +57,10 @@ var next_creature_id: int = 1
 var next_squad_id: int = 1
 var next_vehicle_id: int = 1
 
+## How many constitutional amendments have passed. The two that repeal the
+## constitution set it to one: everything before them is void.
+var amendments: int = 0
+
 ## Whether the squad has scattered, and the year it did. A disbanded squad
 ## still exists — it is in hiding, and the shelter can call it back.
 var disbanded: bool = false
