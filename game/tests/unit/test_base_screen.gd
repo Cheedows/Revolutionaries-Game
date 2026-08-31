@@ -173,3 +173,69 @@ func test_a_record_says_what_is_known() -> void:
 			"the missing arm is on the record")
 	creature.crimes_suspected[Ids.LAW_FLAGS.find(&"arson")] = 1
 	check(DossierText.charges(creature).has("arson"), "and so is the arson")
+
+
+func test_the_agenda_and_the_safehouse_open() -> void:
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(90210)
+	screen.call("setup", session)
+
+	screen.call("_open_panel", &"agenda")
+	var agenda: AgendaPanel = screen.get("_agenda")
+	check(agenda.visible, "the agenda is up")
+	check(not (screen.get("_roster") as Control).visible,
+			"and the roster is out of the way")
+
+	screen.call("_open_panel", &"house")
+	var house: SafehousePanel = screen.get("_house")
+	check(house.visible and not agenda.visible, "one at a time")
+
+	screen.call("_open_panel", &"none")
+	check(not house.visible and (screen.get("_roster") as Control).visible,
+			"and closing puts the roster back")
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
+func test_the_country_reads() -> void:
+	var session := _a_game(555)
+	var state := session.state
+	var lines := AgendaText.government(state)
+	check(lines.size() >= 7, "the government is listed, got %d" % lines.size())
+	check(String(lines[0]).begins_with("President"), "starting at the top")
+	check(AgendaText.issues(state).size() == Ids.VIEWS.size(),
+			"and every issue has a line")
+	equal(AgendaText.heading(state), "The Status of the Liberal Agenda",
+			"while it is still undecided")
+	state.endgame_state = &"won"
+	equal(AgendaText.heading(state), "The Triumph of the Liberal Agenda",
+			"and after")
+
+
+func test_the_safehouse_can_be_built_up() -> void:
+	var session := _a_game(4242)
+	var squad := session.state.active_squad()
+	var members := session.state.squad_members(squad)
+	check(not members.is_empty(), "the founder is in a squad")
+	var here: Location = session.state.locations.get(members[0].location)
+	check(here != null, "and standing somewhere")
+
+	session.state.ledger.funds = 100000
+	var before := here.compound_stores
+	Commands.fortify(session, here, &"rations")
+	equal(here.compound_stores, before + SafehouseUpgrades.RATION_DAYS,
+			"tins bought")
+
+	Commands.flag(session, here, false)
+	check(here.has_flag, "and a flag went up")
+	Commands.flag(session, here, true)
+	check(not here.has_flag, "and came down again in flames")
+
+	Commands.set_slogan(session, "  No gods, no masters  ")
+	equal(session.state.slogan, "No gods, no masters", "the slogan is trimmed")
+	check(SafehouseText.describe(here).contains("food"),
+			"and the pantry is on the record")

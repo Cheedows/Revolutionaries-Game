@@ -21,6 +21,8 @@ var _roster: Roster
 var _squad: SquadPanel
 var _map: SiteMapView
 var _dossier: Dossier
+var _agenda: AgendaPanel
+var _house: SafehousePanel
 var _log: LogView
 var _wait_button: Button
 var _run_button: Button
@@ -113,6 +115,21 @@ func _build() -> void:
 	_dossier.closed.connect(func() -> void: _open_dossier(null))
 	right.add_child(_dossier)
 
+	# The state of the country, and the house the squad lives in. Both are
+	# read one at a time, over everything else, like the record.
+	_agenda = AgendaPanel.new()
+	_agenda.custom_minimum_size = Vector2(0, 320)
+	_agenda.visible = false
+	_agenda.closed.connect(func() -> void: _open_panel(&"none"))
+	right.add_child(_agenda)
+
+	_house = SafehousePanel.new()
+	_house.custom_minimum_size = Vector2(0, 320)
+	_house.visible = false
+	_house.changed.connect(_refresh)
+	_house.closed.connect(func() -> void: _open_panel(&"none"))
+	right.add_child(_house)
+
 	_map = SiteMapView.new()
 	_map.visible = false
 	right.add_child(_map)
@@ -151,7 +168,29 @@ func _controls() -> Control:
 		_running = pressed
 		_run_button.text = "Pause" if pressed else "Let it run")
 	row.add_child(_run_button)
+
+	var agenda := Button.new()
+	agenda.text = "The agenda"
+	agenda.pressed.connect(func() -> void: _open_panel(&"agenda"))
+	row.add_child(agenda)
+
+	var house := Button.new()
+	house.text = "The safehouse"
+	house.pressed.connect(func() -> void: _open_panel(&"house"))
+	row.add_child(house)
 	return row
+
+
+## Opens one of the panels that sit over the roster, closing the others.
+func _open_panel(which: StringName) -> void:
+	_agenda.visible = false
+	_house.visible = false
+	_dossier.show_creature(_session, null)
+	if which == &"agenda":
+		_agenda.show_state(_session.state)
+	elif which == &"house":
+		_house.show_house(_session)
+	_refresh()
 
 
 func _advance_one_day() -> void:
@@ -216,6 +255,9 @@ func _on_answer(id: Variant) -> void:
 
 ## Opens somebody's record, or closes it when given nobody.
 func _open_dossier(creature: Creature) -> void:
+	if creature != null:
+		_agenda.visible = false
+		_house.visible = false
 	_dossier.show_creature(_session, creature)
 	_refresh()
 
@@ -235,7 +277,7 @@ func _refresh() -> void:
 	# The plan is only worth the room it takes while the squad is inside one.
 	var inside := _session.state.mode == &"site" \
 			and _session.state.site.location != -1
-	var reading := _dossier.visible
+	var reading := _dossier.visible or _agenda.visible or _house.visible
 	_map.visible = inside and not reading
 	_squad.visible = not inside and not reading
 	_roster.visible = not inside and not reading

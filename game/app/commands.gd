@@ -122,3 +122,21 @@ static func move_kit(session: Session, wanted: Dictionary,
 		Equipping.move(squad.haul, here.ground_loot, wanted, session.catalog)
 	else:
 		Equipping.move(here.ground_loot, squad.haul, wanted, session.catalog)
+
+
+## Builds [param upgrade] into the safehouse the squad is standing in.
+static func fortify(session: Session, site: Location,
+		upgrade: StringName) -> Array[Event]:
+	return SafehouseUpgrades.buy(session.state, session.rng, site, upgrade)
+
+
+## Puts a flag up outside [param site], or sets fire to the one that is there.
+static func flag(session: Session, site: Location, burning: bool) -> Array[Event]:
+	if burning:
+		return FlagPole.burn(session.state, site, session.state.active_squad())
+	return FlagPole.buy(session.state, site)
+
+
+## Sets what the organisation shouts, and paints on walls.
+static func set_slogan(session: Session, slogan: String) -> void:
+	session.state.slogan = slogan.strip_edges()

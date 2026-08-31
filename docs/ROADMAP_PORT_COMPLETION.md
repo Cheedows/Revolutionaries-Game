@@ -1419,7 +1419,14 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     through the districts with the places the organisation holds listed first,
     then the Conservative Crime Squad's, then everywhere else, and will not
     send anybody into a closed building or across town without a car.
-  - [ ] The compound, the flag, the slogan, the agenda and the funding report.
+  - [x] The compound, the flag, the slogan and the funding report:
+    `ui/widgets/safehouse_panel.gd` builds walls, cameras, booby traps, tank
+    traps, a generator, an anti-aircraft gun, a printing press, a business out
+    front and a pantry of tins into the house the squad is standing in, puts a
+    flag up or sets fire to it, takes the slogan the squad shouts and paints on
+    walls, and shows where the month's money came from and went.
+    `Commands.fortify`, `flag` and `set_slogan` are the seam, and
+    `ui/adapters/safehouse_text.gd` says it.
 - [x] Creature dossier/equipment/squad management.
   - The gear itself was never ported: `systems/items/loot_pile.gd` ports
     `consolidateloot()` and the merge and sort rules of the Item classes, and
@@ -1463,7 +1470,12 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
   - [ ] Picking single items out of the safehouse stores, and equipping a squad
     from them.
 - [ ] News/newspaper/broadcast presentation.
-- [ ] Politics/agenda/review screens.
+- [x] Politics/agenda screens: `ui/widgets/agenda_panel.gd` shows what
+    `liberalagenda()` shows across its three pages at once — who holds each of
+    the four executive posts and for how long, how each chamber and the court
+    lean seat by seat, and where the country stands on every issue against what
+    the law says. `ui/adapters/agenda_text.gd` says it, and the title over it
+    changes once the game is decided, as the original's does.
 - [ ] Justice/trial/prison presentation.
 - [ ] Save/load/settings/game-over flows.
   - [x] Loading, carrying on and the end of a game: the safehouse screen puts
