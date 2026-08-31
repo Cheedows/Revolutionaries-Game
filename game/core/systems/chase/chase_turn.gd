@@ -135,9 +135,20 @@ static func has_escaped(state: GameState, squad: Squad) -> bool:
 	return false
 
 
+## Scraps whatever the chasers were driving. The original keeps their cars in
+## a list of its own that it throws away when the chase ends; here they live in
+## the same registry as everything else, so they have to be taken out of it or
+## the player's fleet quietly fills up with police cruisers.
+static func dismiss_chasers(state: GameState) -> void:
+	for car in state.chase.enemy_cars:
+		state.remove_vehicle(car)
+	state.chase.enemy_cars = PackedInt32Array()
+
+
 ## Getting away: the squad stops bleeding and goes home.
 static func escape(state: GameState) -> Array[Event]:
 	_stop_bleeding(state)
+	dismiss_chasers(state)
 	state.chase.clear()
 	return [Event.new(Event.CHASE_ENDED, {"escaped": true})] as Array[Event]
 
@@ -160,6 +171,7 @@ static func give_up(state: GameState, squad: Squad,
 	squad.member_ids = PackedInt32Array()
 
 	_stop_bleeding(state)
+	dismiss_chasers(state)
 	state.chase.clear()
 	events.append(Event.new(Event.CHASE_PULLED_OVER))
 	events.append(Event.new(Event.CHASE_ENDED, {"escaped": false}))
@@ -180,6 +192,7 @@ static func wipe_out(state: GameState, squad: Squad) -> Array[Event]:
 		events.append(Event.new(Event.CREATURE_DIED,
 				{"creature": member.id, "cause": &"chase"}))
 	squad.member_ids = PackedInt32Array()
+	dismiss_chasers(state)
 	state.chase.clear()
 	events.append(Event.new(Event.CHASE_ENDED, {"escaped": false}))
 	return events

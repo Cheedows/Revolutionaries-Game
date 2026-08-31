@@ -49,6 +49,17 @@ const CREATURE_CONVERTED := &"creature_converted"
 const CREATURE_LEFT := &"creature_left"
 const CREATURE_AUGMENTED := &"creature_augmented"
 
+# --- Stealing a car --------------------------------------------------------
+
+const CAR_FOUND := &"car_found"                      # {creature, wanted, found}
+const CAR_OPENED := &"car_opened"                    # {creature, vehicle, how}
+const CAR_ALARM := &"car_alarm"                      # {vehicle, proximity}
+const CAR_STARTED := &"car_started"                  # {creature, vehicle, how}
+const CAR_SEARCHED := &"car_searched"                # {creature, tries}
+const CAR_NERVES := &"car_nerves"                    # {creature}
+const CAR_STOLEN := &"car_stolen"                    # {creature, vehicle}
+const CAR_THEFT_SPOTTED := &"car_theft_spotted"      # {creature}
+
 # --- Items and money -------------------------------------------------------
 
 const ITEM_ACQUIRED := &"item_acquired"              # {creature, item, count}

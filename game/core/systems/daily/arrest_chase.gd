@@ -35,22 +35,27 @@ static func check(state: GameState, rng: Rng, liberal: Creature,
 ## afterwards — which is what the original does so a lone Liberal can be
 ## chased without disturbing the real squads.
 static func attempt(state: GameState, rng: Rng, liberal: Creature,
-		catalog: Catalog) -> Variant:
+		catalog: Catalog, severity: int = SEVERITY,
+		car: Vehicle = null) -> Variant:
 	# Whatever brought the police opened a story; if nothing did, the arrest
 	# itself is the story.
 	NewsQueue.open_if_idle(state, &"wantedarrest")
 
 	var here: Location = state.locations.get(liberal.location)
-	Chasers.raise(state, rng, &"", here, SEVERITY, catalog)
+	Chasers.raise(state, rng, &"", here, severity, catalog)
 
 	var squad := Squad.new()
 	state.add_squad(squad)
 	squad.member_ids.append(liberal.id)
 	var was := liberal.squad_id
 	liberal.squad_id = squad.id
+	# A thief who got the car started is chased in it rather than on foot.
+	liberal.vehicle_id = car.id if car != null else 0
+	liberal.is_driver = car != null
 
 	var district := here.parent if here != null else -1
-	var result: Variant = ChaseLoop.run(state, rng, squad, district, false, catalog)
+	var result: Variant = ChaseLoop.run(state, rng, squad, district,
+			car != null, catalog)
 	return _dissolve(state, squad, liberal, was, result)
 
 

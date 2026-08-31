@@ -13,8 +13,9 @@ var color: StringName = &""
 ## Body armour rolled at spawn from the type's bounds.
 var armor: int = 0
 
-## Whether the police can tie the vehicle to a crime.
-var is_hot: bool = false
+## How well the police know this car: a stolen one carries the theft with it,
+## and a fence will not touch anything with any heat on it at all.
+var heat: int = 0
 
 ## Id of the location where the vehicle is parked.
 var location: int = -1

@@ -123,6 +123,11 @@ var death_penalty: int = 0
 ## Id of whoever recruited this creature, or -1. Reputation trickles up it.
 var recruiter_id: int = -1
 
+## The car this creature reaches for when a squad needs one, and whether they
+## take the wheel. Set when they steal one and nothing else is theirs.
+var preferred_car_id: int = -1
+var prefers_driving: bool = false
+
 ## The car this creature is in during a chase, or 0 for on foot, and whether
 ## they are the one driving it.
 var vehicle_id: int = 0

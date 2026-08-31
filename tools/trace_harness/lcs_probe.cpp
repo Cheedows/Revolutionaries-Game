@@ -5396,6 +5396,348 @@ void probe_activation_day(FILE *out)
 }
 
 
+// A transcription of stealcar() from src/daily/activities.cpp with the display
+// taken out and the menus answered from parameters rather than the keyboard:
+// the theft is a minigame of prompts, and a probe cannot press keys for the
+// prompts and for the chase it can end in at the same time.
+//
+// entry_policy: 0 picks the lock every time, 1 breaks the window every time,
+// 2 alternates. start_policy: 0 hotwires, 1 searches for keys, 2 alternates.
+// Both give up after ROUNDS_CAP rounds, which is what the player would do.
+#define STEAL_ROUNDS_CAP 400
+
+static int steal_block(Creature &cr, short cartype, int entry_policy,
+                       int start_policy, int *spotted_out, int *window_out,
+                       int *rounds_out)
+{
+   *spotted_out = 0; *window_out = 0; *rounds_out = 0;
+
+   int diff = vehicletype[cartype]->steal_difficultytofind() * 2;
+   Vehicle *v = NULL;
+   int old = cartype;
+
+   cr.train(SKILL_STREETSENSE, 5);
+
+   //ROUGH DAY
+   if(!cr.skill_check(SKILL_STREETSENSE,diff))
+      do cartype=LCSrandom(len(vehicletype));
+      while(cartype==old||LCSrandom(10)<vehicletype[cartype]->steal_difficultytofind());
+
+   v = new Vehicle(*vehicletype[cartype]);
+
+   //SECURITY?
+   bool alarmon=false,sensealarm=LCSrandom(100)<v->sensealarmchance(),
+        touchalarm=LCSrandom(100)<v->touchalarmchance();
+   char windowdamage=0;
+
+   int round = 0;
+   for(bool entered=false;!entered;)
+   {
+      if(++round > STEAL_ROUNDS_CAP) { delete v; return 0; }
+      char method = entry_policy==2 ? (char)((round-1)%2) : (char)entry_policy;
+
+      //PICK LOCK
+      if(method==0)
+      {
+         if(cr.skill_check(SKILL_SECURITY,DIFFICULTY_AVERAGE))
+         {
+            switch (fieldskillrate)
+            {
+               case FIELDSKILLRATE_FAST:
+                  cr.train(SKILL_SECURITY, 25);break;
+               case FIELDSKILLRATE_CLASSIC:
+                  cr.train(SKILL_SECURITY, MAX(5 - cr.get_skill(SKILL_SECURITY), 0));break;
+               case FIELDSKILLRATE_HARD:
+                  cr.train(SKILL_SECURITY, 0);break;
+            }
+            entered=true;
+         }
+      }
+      //BREAK WINDOW
+      if(method==1)
+      {
+         int difficulty = static_cast<int>(DIFFICULTY_EASY / cr.get_weapon().get_bashstrengthmod()) - windowdamage;
+
+         if(cr.attribute_check(ATTRIBUTE_STRENGTH,difficulty))
+         {
+            windowdamage=10;
+            entered=true;
+         }
+         else windowdamage++;
+      }
+
+      //ALARM CHECK
+      if(touchalarm||sensealarm) alarmon=true;
+
+      //NOTICE CHECK
+      if(!LCSrandom(50)||(!LCSrandom(5)&&alarmon))
+      {
+         chaseseq.clean();
+         chaseseq.location=location[cr.location]->parent;
+         newsstoryst *ns=new newsstoryst;
+         ns->type=NEWSSTORY_CARTHEFT;
+         newsstory.push_back(ns);
+         sitestory=ns;
+         makechasers(-1,5);
+         *spotted_out = 1; *window_out = windowdamage; *rounds_out = round;
+         mode=GAMEMODE_BASE;
+         delete v; return 0;
+      }
+   }
+
+   //START CAR
+   char keys_in_car=LCSrandom(5)>0,key_search_total=0;
+   int key_location=LCSrandom(5),nervous_counter=0;
+
+   int start_round = 0;
+   for(bool started=false;!started;)
+   {
+      nervous_counter++;
+      if(++start_round > STEAL_ROUNDS_CAP) { delete v; return 0; }
+      char method = start_policy==2 ? (char)((start_round-1)%2) : (char)start_policy;
+
+      //HOTWIRE CAR
+      if(method==0)
+      {
+         if(cr.skill_check(SKILL_SECURITY,DIFFICULTY_CHALLENGING))
+         {
+            switch (fieldskillrate)
+            {
+               case FIELDSKILLRATE_FAST:
+                  cr.train(SKILL_SECURITY, 50);break;
+               case FIELDSKILLRATE_CLASSIC:
+                  cr.train(SKILL_SECURITY, MAX(10 - cr.get_skill(SKILL_SECURITY), 0));break;
+               case FIELDSKILLRATE_HARD:
+                  cr.train(SKILL_SECURITY, 0);break;
+            }
+            started=true;
+         }
+         else
+         {
+            // The flavour line is rolled for even though nothing reads it.
+            if(cr.get_skill(SKILL_SECURITY) < 4) LCSrandom(3);
+            else LCSrandom(5);
+         }
+      }
+      //KEYS
+      if(method==1)
+      {
+         int difficulty;
+
+         if(!keys_in_car) difficulty = DIFFICULTY_IMPOSSIBLE;
+         else switch(key_location)
+         {
+         case 0: default: difficulty = DIFFICULTY_AUTOMATIC; break;
+         case 1: difficulty = DIFFICULTY_EASY; break;
+         case 2: difficulty = DIFFICULTY_EASY; break;
+         case 3: difficulty = DIFFICULTY_AVERAGE; break;
+         case 4: difficulty = DIFFICULTY_HARD; break;
+         }
+         if(cr.attribute_check(ATTRIBUTE_INTELLIGENCE,difficulty)) started=true;
+         else
+         {
+            key_search_total++;
+            // The three milestone lines are fixed; every other round rolls.
+            if(key_search_total==5) ;
+            else if(key_search_total==10) ;
+            else if(key_search_total==15) ;
+            else LCSrandom(5);
+         }
+      }
+
+      //NOTICE CHECK
+      if(!started&&(!LCSrandom(50)||(!LCSrandom(5)&&alarmon)))
+      {
+         chaseseq.clean();
+         chaseseq.location=location[cr.location]->parent;
+         newsstoryst *ns=new newsstoryst;
+         ns->type=NEWSSTORY_CARTHEFT;
+         newsstory.push_back(ns);
+         sitestory=ns;
+         makechasers(-1,5);
+         *spotted_out = 2; *window_out = windowdamage; *rounds_out = start_round;
+         mode=GAMEMODE_BASE;
+         delete v; return 0;
+      }
+      else if (!started&&(LCSrandom(7)+5)<nervous_counter)
+      {
+         nervous_counter=0;
+      }
+   }
+
+   //CHASE SEQUENCE
+   addjuice(cr,v->steal_juice(),100);
+
+   vehicle.push_back(v);
+   v->add_heat(14+v->steal_extraheat());
+   v->set_location(cr.base);
+   if(cr.pref_carid==-1)
+   {
+      cr.pref_carid = v->id();
+      cr.pref_is_driver = true;
+   }
+
+   chaseseq.clean();
+   chaseseq.location=location[cr.location]->parent;
+   int chaselev=!LCSrandom(13-windowdamage);
+   *window_out = windowdamage; *rounds_out = start_round;
+   if(chaselev>0||(v->vtypeidname()=="POLICECAR"&&LCSrandom(2)))
+   {
+      v->add_heat(10);
+      chaselev=1;
+      newsstoryst *ns=new newsstoryst;
+      ns->type=NEWSSTORY_CARTHEFT;
+      newsstory.push_back(ns);
+      sitestory=ns;
+      makechasers(-1,chaselev);
+      *spotted_out = 3;
+      return 1;
+   }
+
+   return 1;
+}
+
+
+// Adventures in Liberal Car Theft: finding a car, getting into it, getting it
+// started, and the two ways a passerby can end the evening.
+void probe_cartheft(FILE *out)
+{
+   // A spread of cars: cheap and easy, alarmed, and the police cruiser the
+   // escape treats specially.
+   static const char *CARS[] = {
+      "STATIONWAGON", "SPORTSCAR", "SUV", "POLICECAR", "PICKUP",
+   };
+   const int CAR_COUNT = (int)(sizeof(CARS) / sizeof(CARS[0]));
+
+   static const char *WEAPONS[] = {
+      "WEAPON_NONE", "WEAPON_CROWBAR", "WEAPON_BASEBALLBAT",
+   };
+   const int WEAPON_COUNT = (int)(sizeof(WEAPONS) / sizeof(WEAPONS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 55117133UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      // Kept off the settings that field a death squad, so a chase can always
+      // be given up on and the sample terminates.
+      law[LAW_DEATHPENALTY] = 0;
+      law[LAW_POLICEBEHAVIOR] = 0;
+
+      for (int car = 0; car < CAR_COUNT; car++)
+      for (int entry = 0; entry < 3; entry++)
+      for (int start = 0; start < 3; start++)
+      for (int hand = 0; hand < WEAPON_COUNT; hand++)
+      for (int grade = 0; grade < 3; grade++)
+      for (int rate = 0; rate < 3; rate++)
+      {
+         unsigned long seed_used = 2900011UL * (unsigned long)
+            ((((car * 3 + entry) * 3 + start) * WEAPON_COUNT + hand) * 9
+             + grade * 3 + rate + scenario * 149 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         delete_and_clear(vehicle);
+         sitestory = NULL;
+         // Chasers are left standing in the encounter roster when a sample
+         // ends in one, so the roster is cleared rather than inherited.
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         fieldskillrate = rate == 0 ? FIELDSKILLRATE_FAST
+                        : rate == 1 ? FIELDSKILLRATE_CLASSIC
+                                    : FIELDSKILLRATE_HARD;
+
+         Creature *cr = new Creature;
+         makecreature(*cr, CREATURE_POLITICALACTIVIST);
+         cr->id = 700000;
+         cr->align = ALIGN_LIBERAL;
+         cr->location = 1;
+         cr->base = 1;
+         cr->hireid = -1;
+         cr->juice = 20 * grade;
+         cr->pref_carid = -1;
+         cr->set_skill(SKILL_SECURITY, grade * 4);
+         cr->set_skill(SKILL_STREETSENSE, grade * 3 + 1);
+         cr->set_attribute(ATTRIBUTE_INTELLIGENCE, 2 + grade * 4);
+         cr->set_attribute(ATTRIBUTE_STRENGTH, 2 + grade * 4);
+         cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+         if (strcmp(WEAPONS[hand], "WEAPON_NONE"))
+            cr->give_weapon(*weapontype[getweapontype(WEAPONS[hand])], NULL);
+         pool.push_back(cr);
+
+         short cartype = (short)getvehicletype(CARS[car]);
+
+         fprintf(out, "{\"kind\":\"cartheft\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"car\":%d,\"entry\":%d,\"start\":%d,\"hand\":%d,"
+                      "\"grade\":%d,\"rate\":%d,\"cartype\":", scenario,
+                 seed_used, car, entry, start, hand, grade, rate);
+         write_string(out, CARS[car]);
+         fputs(",\"weapon\":", out);
+         write_string(out, WEAPONS[hand]);
+         fputs(",\"thief\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"world_seed\":", out);
+         fprintf(out, "%lu", run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int spotted = 0, windowdamage = 0, rounds = 0;
+         long long before = lcs_trace_draw_count();
+         int drove = steal_block(*cr, cartype, entry, start, &spotted,
+                                 &windowdamage, &rounds);
+
+         fprintf(out, ",\"draws\":%lld,\"drove\":%d,\"spotted\":%d,"
+                      "\"windowdamage\":%d,\"rounds\":%d",
+                 lcs_trace_draw_count() - before, drove, spotted,
+                 windowdamage, rounds);
+         fputs(",\"thief_after\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"cars\":[", out);
+         for (int i = 0; i < len(vehicle); i++)
+            fprintf(out, "%s{\"type\":\"%s\",\"heat\":%d,\"loc\":%d,"
+                         "\"year\":%d,\"color\":\"%s\"}",
+                    i ? "," : "", vehicle[i]->vtypeidname().c_str(),
+                    (int)vehicle[i]->get_heat(), (int)vehicle[i]->get_location(),
+                    (int)vehicle[i]->myear(), vehicle[i]->color().c_str());
+         fputs("],\"stories\":[", out);
+         for (int n = 0; n < len(newsstory); n++)
+            fprintf(out, "%s%d", n ? "," : "", newsstory[n]->type);
+         fputs("],\"chasers\":[", out);
+         {
+            int written = 0;
+            for (int e = 0; e < ENCMAX; e++)
+               if (encounter[e].exists)
+               {
+                  if (written++) fputs(",", out);
+                  chase_write_creature(out, encounter[e], true);
+               }
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(vehicle);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
+
 // A day's activities, run the way the original runs them: everybody grouped by
 // what they are doing, and the groups worked through in a fixed order.
 //
@@ -5745,6 +6087,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "surrender")) probe_siege_surrender(out);
    else if (!strcmp(which, "siege_outcome")) probe_siege_outcome(out);
    else if (!strcmp(which, "newspaper")) probe_newspaper(out);
+   else if (!strcmp(which, "cartheft")) probe_cartheft(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

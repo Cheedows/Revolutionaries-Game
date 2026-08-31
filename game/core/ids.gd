@@ -581,3 +581,18 @@ const CREATURE_TYPES: Array[StringName] = [
 	&"CREATURE_SECRET_SERVICE",
 	&"CREATURE_POLITICIAN",
 ]
+
+## 11 entries, in enum order.
+const VEHICLE_TYPES: Array[StringName] = [
+	&"BUG",
+	&"HMMWV",
+	&"JEEP",
+	&"PICKUP",
+	&"POLICECAR",
+	&"AGENTCAR",
+	&"SPORTSCAR",
+	&"STATIONWAGON",
+	&"SUV",
+	&"TAXICAB",
+	&"VAN",
+]

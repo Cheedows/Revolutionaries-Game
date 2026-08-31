@@ -25,6 +25,7 @@ static func run(state: GameState, rng: Rng, squad: Squad, location: int,
 		in_cars: bool, catalog: Catalog) -> Variant:
 	var opened: Dictionary = ChaseTurn.begin(state, squad, location, in_cars)
 	if bool(opened["over"]):
+		ChaseTurn.dismiss_chasers(state)
 		state.chase.clear()
 		return opened["events"] as Array[Event]
 	return _round(state, rng, squad, catalog, opened["events"] as Array[Event])

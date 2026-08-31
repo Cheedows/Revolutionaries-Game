@@ -8,6 +8,7 @@ list drifting; run this whenever the enums change.
 """
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -254,9 +255,23 @@ def politics_tables():
     return mood, stalin_law, stalin_view
 
 
+def xml_idnames(path: str, tag: str) -> list[str]:
+    """The idnames in an art file, in document order.
+
+    The original indexes these arrays directly — a car is picked with
+    LCSrandom(len(vehicletype)) — so the order the XML lists them in is part
+    of the behaviour, and the alphabetical order the resource loader ends up
+    with is not.
+    """
+    root = ET.parse(ROOT / path).getroot()
+    return [entry.get("idname", "") for entry in root.findall(tag)]
+
+
 def main() -> int:
     groups = [(name, members(source, enum_name, prefix, terminator))
               for name, source, enum_name, prefix, terminator in ENUMS]
+    groups.append(("VEHICLE_TYPES", xml_idnames("art/vehicles.xml",
+                                                "vehicletype")))
 
     lines = [
         "class_name Ids",

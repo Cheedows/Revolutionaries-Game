@@ -45,6 +45,13 @@ const EQUIP_SQUAD := &"equip_squad"
 const CHOOSE_VEHICLE := &"choose_vehicle"
 const CHOOSE_DESTINATION := &"choose_destination"
 
+# --- Stealing a car -------------------------------------------------------
+
+const CHOOSE_CAR_TYPE := &"choose_car_type"          # {creature}
+const APPROACH_CAR := &"approach_car"                # {creature, vehicle, type}
+const FORCE_CAR_DOOR := &"force_car_door"            # {creature, vehicle, alarm}
+const START_CAR := &"start_car"                      # {creature, vehicle, alarm}
+
 # --- Sites, combat and chases ---------------------------------------------
 
 const CHOOSE_SITE_MOVE := &"choose_site_move"

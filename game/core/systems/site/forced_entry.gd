@@ -30,7 +30,7 @@ static func pick_lock(state: GameState, squad: Squad, at: Vector3i,
 		# learns nothing from a garden shed.
 		if level <= difficulty:
 			TrainRules.train(picker, &"security",
-					_lesson(state, 1 + difficulty - level, 10 * difficulty))
+					FieldTraining.lesson(state, 1 + difficulty - level, 10 * difficulty))
 		# Everyone watching who could not have done it picks something up.
 		for watcher: Creature in state.squad_members(squad):
 			if watcher == picker or not watcher.alive:
@@ -38,7 +38,7 @@ static func pick_lock(state: GameState, squad: Squad, at: Vector3i,
 			var watching := watcher.skills.get_value(&"security")
 			if watching < difficulty:
 				TrainRules.train(watcher, &"security",
-						_lesson(state, difficulty - watching, 5 * difficulty))
+						FieldTraining.lesson(state, difficulty - watching, 5 * difficulty))
 		events.append(Event.new(Event.DOOR_UNLOCKED, {
 			"creature": picker.id, "x": at.x, "y": at.y, "z": at.z,
 		}))
@@ -50,7 +50,7 @@ static func pick_lock(state: GameState, squad: Squad, at: Vector3i,
 	var close := false
 	for attempt in 3:
 		if CheckRules.skill_check(rng, picker, &"security", difficulty):
-			TrainRules.train(picker, &"security", _lesson(state, 10, 50, 10))
+			TrainRules.train(picker, &"security", FieldTraining.lesson(state, 10, 50, 10))
 			close = true
 			break
 	events.append(Event.new(Event.DOOR_JAMMED,
@@ -138,17 +138,3 @@ static func _has_a_crowbar(squad: Squad, members: Array[Creature],
 		if item is Weapon and EquipmentRules.breaks_locks(item as Weapon, catalog):
 			return true
 	return false
-
-
-## How much a lesson in the field is worth under the current training rate.
-##
-## The hard rate normally teaches nothing in the field; the near miss is the
-## one exception the original makes, which is why it is a parameter.
-static func _lesson(state: GameState, classic: int, fast: int,
-		hard: int = 0) -> int:
-	match state.field_skill_rate:
-		&"fast":
-			return fast
-		&"hard":
-			return hard
-	return classic

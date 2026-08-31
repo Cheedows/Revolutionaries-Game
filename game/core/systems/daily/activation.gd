@@ -108,6 +108,8 @@ static func run_one(state: GameState, rng: Rng, creature: Creature,
 				ids.append(candidate.id)
 			return [Event.new(Event.RECRUIT_FOUND,
 					{"creature": creature.id, "candidates": ids})] as Array[Event]
+		&"stealcars":
+			return _steal_a_car(state, rng, creature, catalog)
 		&"polls":
 			return PollingActivity.run(state, rng, creature)
 		&"visit":
@@ -130,3 +132,42 @@ static func _call_off_under_siege(state: GameState, creature: Creature) -> void:
 		return
 	if not SIEGE_PROOF.has(creature.activity):
 		creature.activity = &"none"
+
+
+## An evening's car theft, and what it costs to be caught at it.
+##
+## Somebody who drives one home has no reason to go out again tomorrow; anybody
+## still standing in a police station car park when it ends is charged for what
+## they were plainly doing.
+static func _steal_a_car(state: GameState, rng: Rng, thief: Creature,
+		catalog: Catalog) -> Variant:
+	return _after_the_theft(state, thief,
+			CarTheft.begin(state, rng, thief, catalog))
+
+
+static func _after_the_theft(state: GameState, thief: Creature,
+		result: Variant) -> Variant:
+	if result is PendingIntent:
+		var asked: PendingIntent = result
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					return _after_the_theft(state, thief,
+							asked.resume.call(answer)),
+				asked.events)
+
+	var events: Array[Event] = result
+	var drove_home := false
+	for event: Event in events:
+		if event.type == Event.CAR_STOLEN:
+			drove_home = true
+		elif event.type == Event.CHASE_ENDED and not bool(event.data.get(
+				"escaped", false)):
+			# Caught with it is not the same as coming home with it.
+			drove_home = false
+	if drove_home:
+		thief.activity = &"none"
+		return events
+	var here: Location = state.locations.get(thief.location)
+	if here != null and here.type == &"government_policestation":
+		events.append(CrimeRules.charge(state, thief, &"cartheft"))
+	return events

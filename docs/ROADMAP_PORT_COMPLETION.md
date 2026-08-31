@@ -244,8 +244,29 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     sets up a meeting, which is a conversation and waits on the talk system —
     the port does the asking-around half and stops. `ACTIVITY_STEALCARS` is an
     interactive minigame of its own and is listed separately below.
-- [ ] Stealing a car (`stealcar()`): the theft minigame, its alarms and the
-    police response.
+- [x] Stealing a car (`stealcar()`): `systems/daily/car_theft.gd` looks for a
+    car and gets into it, `systems/daily/car_ignition.gd` gets it started and
+    drives it away. The minigame is a chain of prompts in the original, so it
+    is a chain of Intents here, and every round of both loops can end with a
+    passerby and a chase.
+  - **Subtle original behavior, easy to get wrong.** The lines the thief
+    mutters are rolled for even though nothing reads them, and three of the
+    key searches print a fixed line and roll for nothing — so the rummaging
+    consumes a draw on every round but the fifth, tenth and fifteenth. The
+    notice check rolls its second die whether or not an alarm is going off.
+    The getaway's second roll is only made when the first got away with it,
+    and only for a police cruiser.
+  - Verified by the `cartheft` probe: five cars, three ways in, three ways to
+    start them, three weapons, three grades of thief and all three field
+    training rates (3645 samples), compared on draw counts, the state of the
+    window, the thief afterwards, the car driven home and the story filed. The
+    probe is a transcription: the minigame's own prompts are answered by
+    policy, because a scripted keyboard cannot answer both those prompts and
+    the chase they can end in.
+  - `ACTIVITY_STEALCARS` is wired into the individual half of the day,
+    including the charge for being caught at it in a police station car park.
+- [ ] Vehicle upkeep the fleet needs once cars can be acquired: the fence
+    refuses a car with heat on it, which needs the shop system.
 - [x] Injury recovery: the night's nursing block of `advanceday()`. Whoever is
     at a safehouse with the steadiest hands treats everybody hurt enough to
     need a clinic but not in one, and the building itself counts as a medic —
