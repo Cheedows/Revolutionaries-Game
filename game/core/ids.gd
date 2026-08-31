@@ -385,7 +385,44 @@ const CRIMES: Array[StringName] = [
 	&"bankstickup",
 ]
 
-## 6 entries, in enum order.
+## 34 entries, in enum order.
+const NEWS_STORIES: Array[StringName] = [
+	&"majorevent",
+	&"squad_site",
+	&"squad_escaped",
+	&"squad_fledattack",
+	&"squad_defended",
+	&"squad_brokesiege",
+	&"squad_killed_siegeattack",
+	&"squad_killed_siegeescape",
+	&"squad_killed_site",
+	&"ccs_site",
+	&"ccs_defended",
+	&"ccs_killed_siegeattack",
+	&"ccs_killed_site",
+	&"cartheft",
+	&"massacre",
+	&"kidnapreport",
+	&"nudityarrest",
+	&"wantedarrest",
+	&"drugarrest",
+	&"graffitiarrest",
+	&"burialarrest",
+	&"raid_corpsesfound",
+	&"raid_gunsfound",
+	&"hostage_rescued",
+	&"hostage_escapes",
+	&"ccs_nobackers",
+	&"ccs_defeated",
+	&"president_impeached",
+	&"president_believed_dead",
+	&"president_found_dead",
+	&"president_found",
+	&"president_kidnapped",
+	&"president_missing",
+	&"president_assassinated",
+]
+
 ## 5 entries, in enum order.
 const GAME_MODES: Array[StringName] = [
 	&"title",
@@ -403,6 +440,7 @@ const CCS_EXPOSURE: Array[StringName] = [
 	&"nobackers",
 ]
 
+## 6 entries, in enum order.
 const ENDGAME_STATES: Array[StringName] = [
 	&"none",
 	&"ccs_appearance",

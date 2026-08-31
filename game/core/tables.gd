@@ -311,15 +311,15 @@ const SITE_BLOCKS: Dictionary = {
 	&"metal": 4194304,
 }
 
-
-## What a safehouse can have built into it, from the COMPOUND_ bits in
-## src/locations/locations.h.
-const COMPOUND := {
-	&"basic": 1 << 0,
-	&"cameras": 1 << 1,
-	&"tanktraps": 1 << 2,
-	&"traps": 1 << 3,
-	&"generator": 1 << 4,
-	&"printingpress": 1 << 5,
-	&"aagun": 1 << 6,
+## What a safehouse can have built into it, from the COMPOUND_
+## defines. A compound is the squad turning a rented flat into
+## somewhere that can survive a police raid.
+const COMPOUND: Dictionary = {
+	&"basic": 1,
+	&"cameras": 2,
+	&"tanktraps": 4,
+	&"traps": 8,
+	&"generator": 16,
+	&"printingpress": 32,
+	&"aagun": 64,
 }

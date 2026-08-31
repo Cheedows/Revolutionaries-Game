@@ -73,6 +73,9 @@ static func _close_the_day(state: GameState, rng: Rng,
 	DispersalCheck.sweep_empty_squads(state)
 	# Who the police are close to finding, and who else is coming. The
 	# original runs this at the very end of the day, after the date has moved.
+	# The morning paper reports last night, and then the day's sieges run.
+	done.append_array(Newspaper.run(state, rng, catalog))
+	DispersalCheck.sweep_empty_squads(state)
 	done.append_array(SiegeTurn.run(state, rng))
 	done.append_array(SiegeWatch.run(state, rng))
 	DispersalCheck.sweep_empty_squads(state)

@@ -391,11 +391,33 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
 
 Port from `src/news/` without coupling prose generation to state mutation.
 
-- [ ] News-story state and queue lifecycle.
-- [ ] Story selection/prioritization.
-- [ ] Major events.
-- [ ] Squad/site/crime stories.
-- [ ] Broadcast/newspaper effects on public opinion.
+- [x] News-story state and queue lifecycle: `state/news_story.gd` mirrors
+    `newsstoryst`, and `systems/news/newspaper.gd` runs `majornewspaper()`'s
+    passes — the overnight stories, dropping the ones with nothing in them,
+    laying the rest out across the pages, and clearing the queue. The paper is
+    run from `DailyTurn._close_the_day`, and `run()` hands the stories that ran
+    back to its caller so a UI can print them without `core/` writing prose.
+- [x] Story selection/prioritization: `systems/news/news_priority.gd` ports
+    `setpriority()` — the crime sheet scored three ways, the story-type bonus,
+    the places nobody reports and the places that double everything — and the
+    layout loop that walks the paper's page bands.
+- [x] Major events: `systems/news/news_events.gd` ports `new_major_event()`,
+    including its rejection loop over the issues the original has no stories
+    for and the ones the law has already settled.
+- [x] Squad/site/crime stories, and the other side's: `news_events.gd` also
+    ports `ccs_strikes_story()`, `ccs_exposure_story()` (the mass arrests that
+    end their funding) and `ccs_fbi_raid_story()` (the raid that ends them).
+- [x] Broadcast/newspaper effects on public opinion:
+    `Newspaper.impact()` ports `handle_public_opinion_impact()`, including the
+    original's unparenthesised `ABS` macro, which makes a story that hurt an
+    issue move gun control by its whole force and one that helped it move gun
+    control by a tenth.
+- [x] Verified end to end by the `newspaper` probe: twelve story types across
+    six kinds of place, four stages of the endgame and four shapes of crime
+    sheet (3456 samples), compared on draw counts, every printed story's
+    priority, page, Guardian page, politics, violence, location, slant and
+    invented crime sheet, then on attitude, background influence, both
+    chambers, exposure and endgame state.
 - [ ] Headlines/text generation through UI/text adapters, not `core/` prose calls.
 - [ ] Replace legacy ASCII/cutscene presentation rather than reproducing terminal rendering.
 

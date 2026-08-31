@@ -149,6 +149,9 @@ static func _massacred(state: GameState, site: Location,
 	var story := NewsStory.new()
 	story.type = &"massacre"
 	story.location = site.id
+	# The paper's own record of what happened: who came, and how many died.
+	story.crimes.append(Ids.SIEGE_TYPES.find(siege.attacker))
+	story.crimes.append(killed)
 	state.news.append(story)
 
 	siege.active = false

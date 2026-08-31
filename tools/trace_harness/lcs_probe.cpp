@@ -3151,6 +3151,196 @@ static void giveup_block()
 
 
 
+// A transcription of majornewspaper() from src/news/news.cpp with the display
+// passes taken out: those are presentation, and the port replaces them.
+static void newspaper_block()
+{
+   generate_random_event_news_stories();
+   clean_up_empty_news_stories();
+   assign_page_numbers_to_newspaper_stories();
+   for (int n = 0; n < len(newsstory); n++)
+      handle_public_opinion_impact(*newsstory[n]);
+}
+
+// Tomorrow's paper: what happened overnight, how prominently each story runs,
+// and what that does to the country.
+void probe_newspaper(FILE *out)
+{
+   // Enough story types to reach every branch of the scoring.
+   static const int TYPES[] = {
+      NEWSSTORY_SQUAD_SITE, NEWSSTORY_SQUAD_ESCAPED, NEWSSTORY_SQUAD_DEFENDED,
+      NEWSSTORY_SQUAD_BROKESIEGE, NEWSSTORY_SQUAD_KILLED_SITE,
+      NEWSSTORY_CCS_SITE, NEWSSTORY_CCS_DEFENDED, NEWSSTORY_MASSACRE,
+      NEWSSTORY_KIDNAPREPORT, NEWSSTORY_GRAFFITIARREST,
+      NEWSSTORY_CARTHEFT, NEWSSTORY_MAJOREVENT,
+   };
+   const int TYPE_COUNT = (int)(sizeof(TYPES) / sizeof(TYPES[0]));
+
+   static const int SITES[] = {
+      SITE_INDUSTRY_NUCLEAR, SITE_RESIDENTIAL_TENEMENT,
+      SITE_BUSINESS_CRACKHOUSE, SITE_CORPORATE_HEADQUARTERS,
+      SITE_GOVERNMENT_COURTHOUSE, SITE_LABORATORY_GENETIC,
+   };
+   const int SITE_COUNT = (int)(sizeof(SITES) / sizeof(SITES[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 91827431UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int endgame = 0; endgame < 4; endgame++)
+      for (int type = 0; type < TYPE_COUNT; type++)
+      for (int place = 0; place < SITE_COUNT; place++)
+      for (int shape = 0; shape < 4; shape++)
+      {
+         unsigned long seed_used = 1500023UL * (unsigned long)
+            (endgame * 4096 + type * 128 + place * 8 + shape
+             + scenario * 383 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         endgamestate = endgame;
+         ccsexposure = (shape % 3 == 2) ? CCSEXPOSURE_EXPOSED
+                                        : CCSEXPOSURE_NONE;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 11 + scenario * 17 + shape * 5) % 101;
+            public_interest[v] = (v * 3 + scenario * 7) % 40;
+            background_liberal_influence[v] = 0;
+         }
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         // A legislature with a mix of alignments, so the mass arrests in the
+         // exposure story have somebody to arrest.
+         for (int i = 0; i < SENATENUM; i++)
+            senate[i] = ((i + scenario + shape) % 5) - 2;
+         for (int i = 0; i < HOUSENUM; i++)
+            house[i] = ((i * 3 + endgame + type) % 5) - 2;
+
+         int loc = -1;
+         for (int l = 0; l < len(location); l++)
+            if (location[l]->type == SITES[place]) { loc = l; break; }
+         if (loc != -1)
+            location[loc]->renting = (shape == 3) ? RENTING_CCS
+                                                  : RENTING_NOCONTROL;
+
+         // A victim for the kidnap story to be about.
+         Creature *victim = new Creature;
+         makecreature(*victim, (shape % 2) ? CREATURE_CORPORATE_CEO
+                                           : CREATURE_WORKER_JANITOR);
+         victim->id = 910000;
+         victim->align = ALIGN_CONSERVATIVE;
+         victim->location = loc;
+         pool.push_back(victim);
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = TYPES[type];
+         ns->loc = loc;
+         ns->cr = victim;
+         ns->claimed = shape % 3;
+         ns->positive = shape % 3;
+         ns->siegetype = SIEGE_POLICE;
+         // A crime sheet that grows with the sample's shape, with repeats so
+         // the caps are exercised.
+         for (int c = 0; c < CRIMENUM; c++)
+            for (int r = 0; r <= (c + shape) % 4; r++)
+               if ((c + shape) % 3 == 0) ns->crime.push_back(c);
+         if (TYPES[type] == NEWSSTORY_MASSACRE)
+         {
+            ns->crime.clear();
+            ns->crime.push_back(SIEGE_POLICE);
+            ns->crime.push_back(shape * 3);
+         }
+         newsstory.push_back(ns);
+
+         fprintf(out, "{\"kind\":\"newspaper\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"endgame\":%d,\"type\":%d,\"place\":%d,\"shape\":%d,"
+                      "\"loc\":%d,\"exposure\":%d,\"claimed\":%d,"
+                      "\"positive\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, endgame, ns->type, place, shape, loc,
+                 ccsexposure, (int)ns->claimed, (int)ns->positive, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"senate\":[", out);
+         for (int i = 0; i < SENATENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", senate[i]);
+         fputs("],\"house\":[", out);
+         for (int i = 0; i < HOUSENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", house[i]);
+         // The world is built once per scenario and each sample leaves its
+         // mark on it, so who holds what goes into the record rather than
+         // being assumed.
+         fputs("],\"renting\":[", out);
+         for (int l = 0; l < len(location); l++)
+            fprintf(out, "%s%d", l ? "," : "", location[l]->renting);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"crimes\":[", out);
+         for (int c = 0; c < len(ns->crime); c++)
+            fprintf(out, "%s%d", c ? "," : "", ns->crime[c]);
+         fputs("],\"victim\":", out);
+         write_string(out, getcreaturetype(victim->type)->get_idname().c_str());
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         newspaper_block();
+
+         fprintf(out, ",\"draws\":%lld", lcs_trace_draw_count() - before);
+         fputs(",\"attitude_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"senate_after\":[", out);
+         for (int i = 0; i < SENATENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", senate[i]);
+         fputs("],\"house_after\":[", out);
+         for (int i = 0; i < HOUSENUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", house[i]);
+         fprintf(out, "],\"exposure_after\":%d,\"endgame_after\":%d",
+                 ccsexposure, endgamestate);
+         fputs(",\"influence_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", background_liberal_influence[i]);
+         fputs("],\"stories\":[", out);
+         for (int n = 0; n < len(newsstory); n++)
+         {
+            fprintf(out, "%s{\"type\":%d,\"priority\":%ld,\"page\":%ld,"
+                         "\"guardian\":%ld,\"politics\":%d,\"violence\":%d,"
+                         "\"loc\":%d,\"positive\":%d,\"crimes\":[",
+                    n ? "," : "", newsstory[n]->type, newsstory[n]->priority,
+                    newsstory[n]->page, newsstory[n]->guardianpage,
+                    (int)newsstory[n]->politics_level,
+                    (int)newsstory[n]->violence_level, newsstory[n]->loc,
+                    (int)newsstory[n]->positive);
+            for (int c = 0; c < len(newsstory[n]->crime); c++)
+               fprintf(out, "%s%d", c ? "," : "", newsstory[n]->crime[c]);
+            fputs("]}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(newsstory);
+         delete_and_clear(pool);
+      }
+   }
+}
+
+
 // How a siege ends once the fighting is over: winning buys a few weeks before
 // the police come back angrier, and losing costs the house and everything in
 // it.
@@ -5537,6 +5727,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "siege_turn")) probe_siege_turn(out);
    else if (!strcmp(which, "surrender")) probe_siege_surrender(out);
    else if (!strcmp(which, "siege_outcome")) probe_siege_outcome(out);
+   else if (!strcmp(which, "newspaper")) probe_newspaper(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

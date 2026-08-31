@@ -28,6 +28,11 @@ ENUMS = [
     ("SIEGE_TYPES", "src/locations/locations.h", "SiegeTypes", "SIEGE_", "SIEGENUM"),
     ("SITE_SPECIALS", "src/locations/locations.h", "SpecialBlocks", "SPECIAL_", "SPECIALNUM"),
     ("CRIMES", "src/includes.h", "Crimes", "CRIME_", "CRIMENUM"),
+    ("NEWS_STORIES", "src/includes.h", "NewsStories", "NEWSSTORY_",
+     "NEWSSTORYNUM"),
+    ("GAME_MODES", "src/includes.h", "GameModes", "GAMEMODE_", None),
+    ("CCS_EXPOSURE", "src/includes.h", "ccsexposure", "CCSEXPOSURE_",
+     "CCSEXPOSURENUM"),
     ("ENDGAME_STATES", "src/includes.h", "endgame", "ENDGAME_", "ENDGAMENUM"),
     ("CHASE_OBSTACLES", "src/includes.h", "CarChaseObstacles", "CARCHASE_OBSTACLE_",
      "CARCHASE_OBSTACLENUM"),
@@ -145,6 +150,17 @@ def site_blocks():
         flags[name.lower()] = 1 << (int(bit) - 1)
     if not flags:
         raise SystemExit("no SITEBLOCK flags found")
+    return flags
+
+
+def compound_flags():
+    """Parses the COMPOUND_ bit flags into name -> value."""
+    text = (ROOT / "src/locations/locations.h").read_text(errors="replace")
+    flags = {}
+    for name, bit in re.findall(r"#define COMPOUND_([A-Z0-9_]+) BIT(\d+)", text):
+        flags[name.lower()] = 1 << (int(bit) - 1)
+    if not flags:
+        raise SystemExit("no COMPOUND flags found")
     return flags
 
 
@@ -331,6 +347,13 @@ def main() -> int:
         "## The bit flags a map tile can carry, from the SITEBLOCK_ defines.",
         "const SITE_BLOCKS: Dictionary = {"]
     for name, value in sorted(site_blocks().items(), key=lambda pair: pair[1]):
+        table_lines.append(f'\t&"{name}": {value},')
+    table_lines += ["}", "",
+        "## What a safehouse can have built into it, from the COMPOUND_",
+        "## defines. A compound is the squad turning a rented flat into",
+        "## somewhere that can survive a police raid.",
+        "const COMPOUND: Dictionary = {"]
+    for name, value in sorted(compound_flags().items(), key=lambda pair: pair[1]):
         table_lines.append(f'\t&"{name}": {value},')
     table_lines += ["}", ""]
     TABLES.write_text("\n".join(table_lines))
