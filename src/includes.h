@@ -1681,6 +1681,8 @@ void pawnshop(int loc);
 void dealership(int loc);
 /* active squad visits the arms dealer */
 void armsdealer(int loc);
+// Permanent probe instrumentation; see src/sitemode/sitemode.cpp.
+Item *probe_site_loot_switch();
 /* active squad visits the department store */
 void deptstore(int loc);
 /* active squad visits the oubliette */

@@ -739,7 +739,14 @@ Site construction is already strong; now port the gameplay that occurs inside th
     keeps whoever was left in the slots from the previous wave, re-marked as
     present. That is leftover state rather than a rule, and unreachable in
     play: an organisation siege does not send attackers through the door.
-- [ ] Visibility: what the squad can see of the people in the room.
+- [x] Visibility: what the squad can see of the people in the room, which
+    turns out to be everybody. `printencounter()` in
+    `src/sitemode/sitedisplay.cpp` walks the whole roster unconditionally and
+    the original has no per-creature vision rule anywhere in site mode; all it
+    varies is the colour — grey for the dead, green for a Liberal, red for an
+    enemy. **Presentation-replaced:** the roster on [SiteState] is the model
+    and the colour belongs to the UI. Map visibility, which is a real rule, is
+    `knowmap()` in `core/systems/site/site_vision.gd`.
 - [x] Stealth, suspicion and alarm states: `noticecheck()`, `disguisecheck()`,
     `weaponcheck()`, `weapon_in_character()` and `disguisesite()`. The
     outfit-and-weapon pairings that make a weapon look like part of the job are
@@ -929,7 +936,31 @@ Site construction is already strong; now port the gameplay that occurs inside th
       gun (`heyINeedAGun()`), in `site_talk.gd` — which of the conversations
       above an approach turns into, what a particular person can do for the
       squad, and the four places a Liberal can start from.
-- [ ] Loot pickup/drop/carry and site inventory consequences.
+- [x] Loot pickup and site inventory consequences: the `g` branch of the site
+    loop in `src/sitemode/sitemode.cpp`, in `core/systems/site/site_loot.gd`.
+    Two piles are taken at once — whatever a fight left on the floor, which is
+    free, and whatever the marked square was holding, which costs standing,
+    attention and a theft charge when anybody is watching.
+  - What each kind of place holds is a 250-line switch with twenty-three cases,
+    generated into `core/site_loot_rules.gd` by `tools/extract_site_loot.py`
+    rather than transcribed: a wrong denominator is a roll that still happens
+    and produces the wrong thing, which a draw-count test would not catch. The
+    extractor stops rather than dropping anything it does not recognise.
+  - **Original quirk preserved.** A theft in front of witnesses is booked
+    against whoever is in the squad's first slot, chosen by a variable the
+    original declares and never assigns.
+  - **Original quirk preserved.** Looting the squad's own besieged safehouse
+    shares the stores out one marked square at a time, and the last square is
+    worth everything left rather than a share.
+  - The switch was moved out of the site loop into `probe_site_loot_switch()`
+    in the original — a move, not a copy, so there is still one source of
+    truth — because the harness has to call exactly it and nothing else.
+  - Verified by the `site_loot` probe: eleven kinds of place including one with
+    no loot table at all, all five gun-control regimes, the square marked or
+    bare, the building besieged or not, something already on the floor or not,
+    a witness or none, and other marked squares or none — 7,040 samples
+    compared on draw counts, the alarm clock, the crime sheet, the square, what
+    is left in the stores, and every item in the bag with its loaded rounds.
 - [ ] Hostages/kidnapping/hauling.
 - [ ] Graffiti/vandalism/burning/destruction actions present in the original.
 - [x] On-site shops and shop interaction behaviour (`src/sitemode/shop.cpp`),

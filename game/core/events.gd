@@ -73,6 +73,7 @@ const FLIRTED := &"flirted"                          # {creature, by, outcome}
 const ITEM_BOUGHT := &"item_bought"                  # {creature, item, price}
 const LOOT_FENCED := &"loot_fenced"                  # {kind, paid}
 const GUN_SOUGHT := &"gun_sought"                    # {outcome, shop}
+const LOOT_TAKEN := &"loot_taken"                    # {square}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

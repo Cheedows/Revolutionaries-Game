@@ -40,8 +40,6 @@ var bank_swat_teams: int = 0
 ## How much the squad has upset the people who work here.
 var alienated: int = 0
 
-## Whether the squad has been spotted and by whom.
-var creatures_seen: PackedInt32Array = PackedInt32Array()
 
 ## What is lying on the floor where the squad is standing.
 var ground_loot: Array[Item] = []

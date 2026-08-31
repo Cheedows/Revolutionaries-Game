@@ -26,7 +26,6 @@ static func enter(state: GameState, squad: Squad, location: Location,
 	site.on_fire = false
 	site.alienated = 0
 	site.crime_level = 0
-	site.creatures_seen = PackedInt32Array()
 	site.map = SiteBuilder.build(location, catalog, rng)
 
 	# The visit is written onto the story queued for it, which the caller
