@@ -12,3 +12,14 @@ var loaded_clip: StringName = &""
 
 func item_class() -> StringName:
 	return &"weapon"
+
+
+func duplicate_item() -> Item:
+	var twin: Weapon = super() as Weapon
+	twin.ammo = ammo
+	twin.loaded_clip = loaded_clip
+	return twin
+
+
+func _blank() -> Item:
+	return Weapon.new()

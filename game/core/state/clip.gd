@@ -5,3 +5,7 @@ extends Item
 
 func item_class() -> StringName:
 	return &"clip"
+
+
+func _blank() -> Item:
+	return Clip.new()

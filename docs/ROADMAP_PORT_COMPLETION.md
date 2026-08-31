@@ -868,9 +868,25 @@ Site construction is already strong; now port the gameplay that occurs inside th
       site, the square, exactly who is left in the room and in what order, what
       fell on the floor, and each Liberal's standing, disguise, whereabouts,
       hostage, ammunition and charges.
-  - [ ] The rest of `talk.cpp`: `talkToGeneric()`, `talkAboutIssues()`, the
-      bank teller, renting and cancelling a room, buying a gun, and the two
-      animals.
+  - [x] Talking a stranger round (`wannaHearSomethingDisturbing()` and
+      `talkAboutIssues()`), in `persuasion.gd` — the conversation that turns
+      somebody standing in a building into a recruit.
+    - **Original quirk reproduced.** The recruit is built with `new Creature`
+      and overwritten by an assignment on the very next line, so a whole blank
+      creature — an age, a gender, a birthday, thirty-two shuffled attribute
+      points and an alignment, thirty-seven draws in all — is rolled and thrown
+      away. Everything after it in the run depends on those draws happening.
+    - Verified by the `persuade` probe: eight kinds of listener including a
+      dog, a mutant and two whose job is to end the conversation, in three
+      alignments, against five grades of Liberal, dressed and undressed, with
+      the news already carrying the Squad's victories or not, and with the
+      listener called "Prisoner" or by their own name — 2,880 samples reaching
+      all eight endings, compared on draw counts, the branch taken, the issue
+      and the difficulty it set, who is left in the room and in what order,
+      the meeting arranged and how willing the recruit already was.
+  - [ ] The rest of `talk.cpp`: `talkToGeneric()`'s menu, the bank teller,
+      renting and cancelling a room, buying a gun, flirting
+      (`doYouComeHereOften()`), and the two animals.
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.
 - [ ] Graffiti/vandalism/burning/destruction actions present in the original.

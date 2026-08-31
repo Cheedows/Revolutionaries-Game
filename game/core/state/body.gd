@@ -65,3 +65,13 @@ func get_wound(part: StringName) -> int:
 
 func add_wound(part: StringName, flags: int) -> void:
 	wounds[Ids.BODY_PARTS.find(part)] |= flags
+
+
+## A copy that shares nothing with the original.
+func duplicate_body() -> Body:
+	var twin := Body.new()
+	twin.blood = blood
+	twin.stunned = stunned
+	twin.wounds = wounds.duplicate()
+	twin.special = special.duplicate()
+	return twin

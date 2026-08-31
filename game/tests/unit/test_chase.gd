@@ -285,6 +285,13 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 	creature.is_driver = int(entry["driver"]) != 0
 	creature.wheelchair = int(entry["wheelchair"]) != 0
 	creature.animal_gloss = Ids.ANIMAL_GLOSSES[int(entry["animalgloss"])]
+	# Gender and whether they have been named decide how many draws naming
+	# them takes; probes recorded before these were written out do without.
+	if entry.has("gender"):
+		creature.gender_liberal = Gender.name_of(int(entry["gender"]))
+		creature.gender_conservative = Gender.name_of(
+				int(entry["gender_conservative"]))
+		creature.named = int(entry["named"]) != 0
 	creature.vehicle_id = cars.get(int(entry["car"]), 0)
 	var attributes: Array = entry["attributes"]
 	for index in attributes.size():

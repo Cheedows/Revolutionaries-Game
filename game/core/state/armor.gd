@@ -14,3 +14,15 @@ var damaged: bool = false
 
 func item_class() -> StringName:
 	return &"armor"
+
+
+func duplicate_item() -> Item:
+	var twin: Armor = super() as Armor
+	twin.quality = quality
+	twin.bloody = bloody
+	twin.damaged = damaged
+	return twin
+
+
+func _blank() -> Item:
+	return Armor.new()

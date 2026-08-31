@@ -62,6 +62,8 @@ const ENEMY_ROUTED := &"enemy_routed"                # {creature, by}
 const HOSTAGE_THREATENED := &"hostage_threatened"    # {creature, outcome}
 const BLUFF_TRIED := &"bluff_tried"                  # {creature, fooled}
 const SQUAD_SURRENDERED := &"squad_surrendered"      # {creature}
+const RECRUIT_INTERESTED := &"recruit_interested"    # {creature, by, issue}
+const RECRUIT_REFUSED := &"recruit_refused"          # {creature, by, issue}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

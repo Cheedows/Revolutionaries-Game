@@ -191,3 +191,40 @@ func is_naked() -> bool:
 ## Whether this creature belongs to the player's organisation.
 func is_member() -> bool:
 	return squad_id != 0 or join_days > 0
+
+## A separate person with the same everything.
+##
+## The original copies a creature by assignment in several places — the
+## conversation that turns a stranger into a recruit is one — and a shallow
+## copy would leave the two sharing a body and a wardrobe, so everything
+## mutable is copied with them.
+func copy() -> Creature:
+	var twin: Creature = duplicate_shallow()
+	twin.attributes = attributes.duplicate_attributes()
+	twin.skills = skills.duplicate_skills()
+	twin.body = body.duplicate_body()
+	twin.crimes_suspected = crimes_suspected.duplicate()
+	twin.weapon = weapon.duplicate_item() if weapon != null else null
+	twin.armor = armor.duplicate_item() if armor != null else null
+	twin.clips = []
+	for clip: Clip in clips:
+		twin.clips.append(clip.duplicate_item())
+	twin.spare_throwables = []
+	for spare: Weapon in spare_throwables:
+		twin.spare_throwables.append(spare.duplicate_item())
+	twin.carried = []
+	for item: Item in carried:
+		twin.carried.append(item.duplicate_item())
+	twin.augmentations = augmentations.duplicate()
+	return twin
+
+
+## Every plain field, copied one by one. The sub-objects are replaced by
+## [method copy]; this only exists to keep that method short.
+func duplicate_shallow() -> Creature:
+	var twin := Creature.new()
+	for entry: Dictionary in get_property_list():
+		if int(entry["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE == 0:
+			continue
+		twin.set(entry["name"], get(entry["name"]))
+	return twin

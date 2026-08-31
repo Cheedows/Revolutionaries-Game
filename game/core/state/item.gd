@@ -21,3 +21,17 @@ func _init(item_type: StringName = &"", item_count: int = 1) -> void:
 ## Overridden by every subclass.
 func item_class() -> StringName:
 	return &"item"
+
+
+## A copy that shares nothing with the original. Subclasses extend it with
+## whatever else they carry.
+func duplicate_item() -> Item:
+	var twin: Item = _blank()
+	twin.type = type
+	twin.count = count
+	return twin
+
+
+## A fresh instance of the same class, for [method duplicate_item] to fill in.
+func _blank() -> Item:
+	return Item.new()
