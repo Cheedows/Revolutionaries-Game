@@ -34,6 +34,7 @@ const QUESTIONS := {
 	Intent.CHOOSE_SHOP_DEPARTMENT: "Which counter?",
 	Intent.CHOOSE_PURCHASE: "Buy what?",
 	Intent.CHOOSE_ITEMS_TO_FENCE: "Sell what?",
+	Intent.CHOOSE_SPECIAL_EDITION: "What does the Guardian run this month?",
 	Intent.CHOOSE_LIBERAL_AGENDA: "What matters most?",
 	Intent.ACKNOWLEDGE_REPORT: "",
 	Intent.CONFIRM_NEW_GAME: "Start again?",
@@ -45,6 +46,7 @@ const CARRY_ON := "Carry on"
 
 ## What declining looks like, by question. Everything else says "Never mind".
 const REFUSALS := {
+	Intent.CHOOSE_SPECIAL_EDITION: "Run nothing this month",
 	Intent.CONFIRM_RETREAT: "Stay",
 	Intent.CONFIRM_RECRUIT: "Leave them",
 	Intent.CHOOSE_ATTACK_TARGET: "Hold fire",
@@ -86,6 +88,8 @@ static func detail(intent: Intent, state: GameState) -> String:
 static func option(entry: Dictionary, state: GameState) -> String:
 	if entry.has("label"):
 		return String(entry["label"])
+	if entry.has("document"):
+		return SpecialEditionText.name_of(entry["document"])
 	if entry.has("creature"):
 		return _who(state, int(entry["creature"]))
 	if entry.has("name"):

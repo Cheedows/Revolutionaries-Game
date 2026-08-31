@@ -135,6 +135,15 @@ static func _major_line(data: Dictionary) -> String:
 			return "The opposition is growing bolder."
 		&"crime_suspected":
 			return ""  # the heat readout says this better than a line would
+		&"place_renamed":
+			return "%s is called %s now." % [data.get("was", ""),
+					data.get("now", "")]
+		&"promoted":
+			return "Their contact is %s now." % data.get("now", "nobody")
+		&"squad_subdued":
+			return "The police subdue and arrest the squad."
+		&"special_edition":
+			return " ".join(SpecialEditionText.lines(data))
 	return ""
 
 

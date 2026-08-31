@@ -50,6 +50,21 @@ static func run(state: GameState, rng: Rng,
 	events.append_array(DispersalCheck.run(state, rng))
 	_stale_the_news(state)
 
+	# The Liberal Guardian's special edition, which is the first thing the
+	# month does with a press and the one part of it the player chooses.
+	var edition: Variant = SpecialEditionRun.run(state, rng)
+	if edition is PendingIntent:
+		var asked: PendingIntent = edition
+		return _after_edition(state, rng, catalog, events, asked, laws_were)
+	events.append_array(edition as Array[Event])
+
+	return _rest_of_the_month(state, rng, catalog, events, laws_were)
+
+
+## Everything after the special edition, which is where the month can stop and
+## wait for the player.
+static func _rest_of_the_month(state: GameState, rng: Rng, catalog: Catalog,
+		events: Array[Event], laws_were: PackedInt32Array) -> Variant:
 	# The sleepers report first, and what they and the month's tags argued for
 	# feeds straight into the drift, along with the essays already banked as
 	# background influence.
@@ -88,6 +103,22 @@ static func run(state: GameState, rng: Rng,
 		state.endgame_state = &"won"
 		events.append(Event.new(Event.GAME_WON, {"condition": state.win_condition}))
 	return events
+
+
+## Parks the month on the special edition, and picks the rest of it back up
+## once the answer comes back.
+static func _after_edition(state: GameState, rng: Rng, catalog: Catalog,
+		events: Array[Event], pending: PendingIntent,
+		laws_were: PackedInt32Array) -> PendingIntent:
+	return PendingIntent.new(pending.intent,
+			func(answer: Variant) -> Variant:
+				var printed: Variant = pending.resume.call(answer)
+				if printed is PendingIntent:
+					return _after_edition(state, rng, catalog, events,
+							printed, laws_were)
+				return _rest_of_the_month(state, rng, catalog,
+						events + (printed as Array[Event]), laws_were),
+			events + pending.events)
 
 
 ## Parks the month on a question the justice system asked, and finishes it

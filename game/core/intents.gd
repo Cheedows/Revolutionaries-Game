@@ -79,6 +79,7 @@ const CHOOSE_ITEMS_TO_FENCE := &"choose_items_to_fence"
 
 # --- Politics and lifecycle -----------------------------------------------
 
+const CHOOSE_SPECIAL_EDITION := &"choose_special_edition"
 const CHOOSE_LIBERAL_AGENDA := &"choose_liberal_agenda"
 const ACKNOWLEDGE_REPORT := &"acknowledge_report"    # the original's "press any key"
 const CONFIRM_NEW_GAME := &"confirm_new_game"
