@@ -1458,6 +1458,10 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
    fprintf(out, ",\"gender\":%d,\"gender_conservative\":%d,\"named\":%d",
            (int)cr.gender_liberal, (int)cr.gender_conservative,
            cr.dontname ? 1 : 0);
+   fputs(",\"name\":", out);
+   write_string(out, cr.name);
+   fputs(",\"propername\":", out);
+   write_string(out, cr.propername);
    fprintf(out, ",\"age\":%d,\"juice\":%d,\"hireid\":%d,\"stunned\":%d,"
                 "\"cantbluff\":%d,\"forceinc\":%d,\"converted\":%d",
            cr.age, cr.juice, (int)cr.hireid, (int)cr.stunned,
@@ -10209,6 +10213,266 @@ void probe_talk_shop(FILE *out)
    newscherrybusted = 0;
 }
 
+// Chatting somebody up: doYouComeHereOften() from src/sitemode/talk.cpp,
+// transcribed with the display taken out. The opening line is chosen before
+// the roll and the reply is chosen to match, so both stay.
+static void flirt_block(int *outcome)
+{
+   Creature &a = *activesquad->squad[0];
+   Creature &tk = encounter[0];
+   *outcome = 0;
+
+   int line;
+   if(law[LAW_FREESPEECH]==-2) line=LCSrandom(3);
+   else line=LCSrandom(47);
+
+   bool succeeded = false;
+   int difficulty = DIFFICULTY_HARD;
+   if(tk.type == CREATURE_CORPORATE_CEO) difficulty = DIFFICULTY_HEROIC;
+   if(a.is_naked() && a.animalgloss!=ANIMALGLOSS_ANIMAL) difficulty-=4;
+   if(a.skill_check(SKILL_SEDUCTION,difficulty)) succeeded = true;
+
+   if((tk.animalgloss==ANIMALGLOSS_ANIMAL&&law[LAW_ANIMALRESEARCH]!=2&&a.animalgloss!=ANIMALGLOSS_ANIMAL)||
+      tk.animalgloss==ANIMALGLOSS_TANK)
+   {
+      switch(tk.type)
+      {
+      case CREATURE_TANK: break;
+      case CREATURE_GUARDDOG:
+         LCSrandom(3);
+         tk.align=ALIGN_CONSERVATIVE;
+         tk.cantbluff=1;
+         break;
+      case CREATURE_GENETIC:
+         LCSrandom(8);
+         tk.align=ALIGN_CONSERVATIVE;
+         tk.cantbluff=1;
+         break;
+      default: break;
+      }
+      *outcome = 1;
+      return;
+   }
+
+   a.train(SKILL_SEDUCTION,LCSrandom(5)+2);
+
+   if((a.get_armor().get_itemtypename() == "ARMOR_POLICEUNIFORM"
+      || a.get_armor().get_itemtypename() == "ARMOR_POLICEARMOR"
+      || a.get_armor().get_itemtypename() == "ARMOR_SWATARMOR"
+      || (law[LAW_POLICEBEHAVIOR]==-2 && law[LAW_DEATHPENALTY]==-2
+      && a.get_armor().get_itemtypename() == "ARMOR_DEATHSQUADUNIFORM"))
+      && tk.type==CREATURE_PROSTITUTE)
+   {
+      tk.cantbluff=1;
+      *outcome = 2;
+      return;
+   }
+   if(succeeded)
+   {
+      if(strcmp(tk.name,"Prisoner")==0) criminalize(tk,LAWFLAG_ESCAPED);
+
+      datest *newd=NULL;
+      for(int d=0;d<len(date);d++)
+         if(date[d]->mac_id==a.id) newd=date[d];
+      if(newd==NULL)
+      {
+         newd=new datest;
+         newd->mac_id=a.id;
+         newd->city=location[a.location]->city;
+         date.push_back(newd);
+      }
+      Creature *newcr=new Creature;
+      *newcr=tk;
+      newcr->namecreature();
+      newcr->location=a.location;
+      newcr->base=a.base;
+      newd->date.push_back(newcr);
+      delenc(&tk-encounter,0);
+      *outcome = 3;
+      return;
+   }
+   tk.cantbluff=1;
+   *outcome = 4;
+}
+
+void probe_flirt(FILE *out)
+{
+   static const int TARGETS[] = {
+      CREATURE_COLLEGESTUDENT, CREATURE_CORPORATE_CEO, CREATURE_PROSTITUTE,
+      CREATURE_GUARDDOG, CREATURE_GENETIC, CREATURE_TANK,
+   };
+   const int TARGET_COUNT = (int)(sizeof(TARGETS) / sizeof(TARGETS[0]));
+   static const char *OUTFITS[] = {
+      "ARMOR_CLOTHES", "ARMOR_POLICEUNIFORM", "ARMOR_DEATHSQUADUNIFORM", "",
+   };
+   const int OUTFIT_COUNT = (int)(sizeof(OUTFITS) / sizeof(OUTFITS[0]));
+
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 224737UL * (unsigned long)(scenario + 13);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int who = 0; who < TARGET_COUNT; who++)
+      for (int outfit = 0; outfit < OUTFIT_COUNT; outfit++)
+      for (int grade = 0; grade < 5; grade++)
+      for (int censored = 0; censored < 2; censored++)
+      for (int freed = 0; freed < 2; freed++)
+      for (int prisoner = 0; prisoner < 2; prisoner++)
+      for (int existing = 0; existing < 2; existing++)
+      {
+         unsigned long seed_used = 274177UL * (unsigned long)
+            ((((((who * OUTFIT_COUNT + outfit) * 5 + grade) * 2 + censored) * 2
+              + freed) * 2 + prisoner) * 2 + existing + scenario * 1657 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         law[LAW_FREESPEECH] = censored ? -2 : 0;
+         law[LAW_ANIMALRESEARCH] = freed ? 2 : 0;
+         law[LAW_POLICEBEHAVIOR] = -2;
+         law[LAW_DEATHPENALTY] = -2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 37 + scenario * 5) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         delete_and_clear(date);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         cursite = 1;
+         location[cursite]->type = SITE_BUSINESS_BARANDGRILL;
+         location[cursite]->renting = RENTING_NOCONTROL;
+         location[cursite]->siege.siege = 0;
+         sitetype = location[cursite]->type;
+         sitealarm = 0;
+         sitealarmtimer = -1;
+         sitecrime = 0;
+         sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         Creature *cr = new Creature;
+         makecreature(*cr, CREATURE_POLITICALACTIVIST);
+         cr->id = 900000;
+         cr->align = ALIGN_LIBERAL;
+         cr->location = cursite;
+         cr->base = cursite;
+         cr->age = 30;
+         cr->juice = 25 * grade;
+         cr->set_skill(SKILL_SEDUCTION, grade * 4);
+         if (OUTFITS[outfit][0])
+            cr->give_armor(*armortype[getarmortype(OUTFITS[outfit])], NULL);
+         else cr->strip(NULL);
+         cr->squadid = sq->id;
+         sq->squad[0] = cr;
+         pool.push_back(cr);
+
+         // A Liberal who is already seeing somebody, so the second date joins
+         // the same plan rather than starting another.
+         if (existing)
+         {
+            datest *old = new datest;
+            old->mac_id = cr->id;
+            old->city = location[cr->location]->city;
+            Creature *sweetheart = new Creature;
+            makecreature(*sweetheart, CREATURE_TEENAGER);
+            sweetheart->id = 900050;
+            old->date.push_back(sweetheart);
+            date.push_back(old);
+         }
+
+         makecreature(encounter[0], TARGETS[who]);
+         encounter[0].exists = 1;
+         encounter[0].alive = 1;
+         encounter[0].id = 900100;
+         encounter[0].age = 30;
+         encounter[0].align = ALIGN_MODERATE;
+         if (prisoner) strcpy(encounter[0].name, "Prisoner");
+         makecreature(encounter[1], CREATURE_COLLEGESTUDENT);
+         encounter[1].exists = 1;
+         encounter[1].alive = 1;
+         encounter[1].id = 900101;
+         encounter[1].align = ALIGN_MODERATE;
+
+         fprintf(out, "{\"kind\":\"flirt\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"who\":%d,\"outfit\":%d,\"grade\":%d,\"censored\":%d,"
+                      "\"freed\":%d,\"prisoner\":%d,\"existing\":%d,"
+                      "\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, who, outfit, grade, censored, freed,
+                 prisoner, existing, run_seed, cursite);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"speaker\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"room\":[", out);
+         for (int e = 0; e < 2; e++)
+         {
+            if (e) fputs(",", out);
+            chase_write_creature(out, encounter[e], true);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int outcome = 0;
+         long long before = lcs_trace_draw_count();
+         flirt_block(&outcome);
+
+         int encount = 0, ids[ENCMAX];
+         for (int e = 0; e < ENCMAX; e++)
+            if (encounter[e].exists) ids[encount++] = encounter[e].id;
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"encounters\":%d,"
+                      "\"seduction\":%d,\"cantbluff\":%d,\"target_align\":%d,"
+                      "\"plans\":%d",
+                 lcs_trace_draw_count() - before, outcome, encount,
+                 cr->get_skill(SKILL_SEDUCTION), (int)encounter[0].cantbluff,
+                 (int)encounter[0].align, len(date));
+         fputs(",\"left\":[", out);
+         for (int e = 0; e < encount; e++)
+            fprintf(out, "%s%d", e ? "," : "", ids[e]);
+         fputs("],\"dates\":[", out);
+         for (int d = 0; d < len(date); d++)
+         {
+            if (d) fputs(",", out);
+            fprintf(out, "{\"dater\":%d,\"city\":%d,\"seeing\":%d,\"names\":[",
+                    (int)date[d]->mac_id, date[d]->city, len(date[d]->date));
+            for (int k = 0; k < len(date[d]->date); k++)
+            {
+               if (k) fputs(",", out);
+               write_string(out, date[d]->date[k]->name);
+            }
+            fputs("]}", out);
+         }
+         fputs("]}\n", out);
+
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(date);
+         delete_and_clear(newsstory);
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -11830,6 +12094,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "talk_combat")) probe_talk_combat(out);
    else if (!strcmp(which, "persuade")) probe_persuade(out);
    else if (!strcmp(which, "talk_shop")) probe_talk_shop(out);
+   else if (!strcmp(which, "flirt")) probe_flirt(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

@@ -69,6 +69,7 @@ const ROOM_RENTED := &"room_rented"                  # {location, rent, threaten
 const ROOM_REFUSED := &"room_refused"                # {location}
 const ROOM_GIVEN_UP := &"room_given_up"              # {location, moved_to}
 const TELLER_ROBBED := &"teller_robbed"              # {creature, quiet, held_up, worked}
+const FLIRTED := &"flirted"                          # {creature, by, outcome}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

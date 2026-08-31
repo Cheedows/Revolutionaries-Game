@@ -13,8 +13,9 @@ var short_name: String = ""
 ## Idname of the location type, e.g. &"SITE_BUSINESS_BANK".
 var type: StringName = &""
 
-## The city and district this sits in.
-var city: int = 0
+## The city and district this sits in. In a single-city game the original
+## never assigns a city, so every location keeps the -1 it was built with.
+var city: int = -1
 var parent: int = -1
 
 ## Whether the squad has found and can travel here.

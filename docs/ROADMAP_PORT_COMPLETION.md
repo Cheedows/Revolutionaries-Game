@@ -907,9 +907,26 @@ Site construction is already strong; now port the gameplay that occurs inside th
       built into it, the money, the alarm and its clock, the crime sheet, who
       is in the room and whose side they are on, what the squad walked out
       with, and where everybody who lived there ended up.
-  - [ ] The rest of `talk.cpp`: `talkToGeneric()`'s menu, buying a gun
-      (`heyINeedAGun()`, which needs the arms dealer's shop), and flirting
-      (`doYouComeHereOften()`).
+  - [x] Chatting somebody up (`doYouComeHereOften()`), in `flirting.gd`,
+      including `Creature::can_date()`. The opening line is chosen before the
+      roll and the reply is chosen to match, so which of the forty-seven lines
+      it was is simulation rather than presentation.
+    - **Original quirk reproduced.** Whether an animal takes offence turns on
+      the law rather than on the animal: once animal research is banned
+      outright, the guard dog reconsiders.
+    - **Port defect found and fixed.** `Location.city` defaulted to zero where
+      the original leaves it at -1 in a single-city game, which is the number
+      a date's plan records.
+    - Verified by the `flirt` probe: six kinds of target including a chief
+      executive, a working prostitute and three things that are not people, in
+      four outfits including none at all, five grades of charm, free speech
+      abolished or not, animal research banned or not, the target called
+      "Prisoner" or not, and the Liberal already seeing somebody or not —
+      3,840 samples reaching all four endings, compared on draw counts, the
+      ending, who is left in the room, what the Liberal learned, what the
+      target now thinks of the squad, and every date arranged.
+  - [ ] The rest of `talk.cpp`: `talkToGeneric()`'s menu, and buying a gun
+      (`heyINeedAGun()`, which needs the arms dealer's shop).
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.
 - [ ] Graffiti/vandalism/burning/destruction actions present in the original.

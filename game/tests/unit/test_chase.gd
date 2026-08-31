@@ -292,6 +292,8 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 		creature.gender_conservative = Gender.name_of(
 				int(entry["gender_conservative"]))
 		creature.named = int(entry["named"]) != 0
+		creature.name = String(entry["name"])
+		creature.proper_name = String(entry["propername"])
 	creature.vehicle_id = cars.get(int(entry["car"]), 0)
 	var attributes: Array = entry["attributes"]
 	for index in attributes.size():
