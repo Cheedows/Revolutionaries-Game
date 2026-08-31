@@ -148,6 +148,6 @@ static func _allows_disguise(state: GameState) -> bool:
 
 static func _is_high_security(state: GameState, creature: Creature) -> bool:
 	var site: Location = state.locations.get(creature.location)
-	return site != null and site.high_security and state.site.location != -1
+	return site != null and site.high_security > 0 and state.site.location != -1
 
 

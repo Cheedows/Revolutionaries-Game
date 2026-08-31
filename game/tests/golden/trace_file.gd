@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## Traces live in tests/golden/traces as gzipped JSON Lines, one record per
 ## player decision point: what the game drew, how much randomness it consumed,
-## and its whole simulation state. See docs/port/GODOT-PORT-PLAN.md §5.
+## and its whole simulation state.
 
 const TRACE_DIR := "res://tests/golden/traces"
 const MAX_SIZE := 64 * 1024 * 1024

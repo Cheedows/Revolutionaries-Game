@@ -1009,7 +1009,34 @@ Site construction is already strong; now port the gameplay that occurs inside th
     weapons, clothes in four grades of wear and every state of repair, and
     loot — every line checked for whether it appears, whether it can be bought
     and what it costs.
-- [ ] Escape, pursuit and post-site consequences.
+- [x] Escape, pursuit and post-site consequences: the exit branch of the site
+    loop and `resolvesite()`, in `core/systems/site/site_exit.gd`, plus
+    `advancelocations()` from `src/daily/daily.cpp` in
+    `core/systems/daily/site_upkeep.gd`, which was not ported at all.
+  - Whether anybody gives chase is a ladder of second thoughts rather than one
+    decision, and every rung rolls whatever the ones above it decided. A siege
+    overrides all of it; a squad nobody could charge with anything is not
+    chased at all.
+  - **Port defect found and fixed.** `Location.high_security` was a flag where
+    the original keeps a countdown in days, so hired guards never went away.
+    A robbed place now hires them for as many days as the visit was bad, a
+    bank keeps them five times as long, and a place that reopens after being
+    shut either hires them for sixty days or remodels itself — which is what
+    throws away the squad's map and every mark it left.
+  - **Port defect found and fixed.** `kidnaptransfer()` copies the victim into
+    a `new Creature`, so a whole blank person is rolled up and discarded on the
+    way home — thirty-seven draws the port was not making. The victim also
+    arrives with a blank interrogation record, which the port was not creating
+    until the first night of questioning.
+  - Verified by the `site_exit` probe: six kinds of place including the two the
+    Squad takes over rather than closing down and the bank that keeps its
+    guards, four grades of crime, alarmed or not, three stages of the response
+    gathering, a squad anybody could charge or nobody could, besieged or not,
+    three ways the place is held, and a room upset or not — 10,368 samples
+    compared on draw counts for each of the four steps separately, the pursuit
+    level, the tenancy, how long the place shuts and keeps guards, its heat,
+    whether the story stays a good one, the marks left on it, and where
+    everybody who was being carried ended up.
 - [ ] Connect site combat to the completed combat system rather than embedding combat logic in site code.
 - [ ] Add end-to-end site traces using deterministic constructed fixtures when fixed keystroke traces are too brittle.
 
@@ -1022,6 +1049,12 @@ Do not port the old raw save format; the new serializer is already the canonical
 - [ ] Character/founder creation and all original starting choices worth preserving for parity.
 - [ ] New-game world/session initialization.
 - [ ] Load/save UI-facing commands around the versioned serializer.
+  - **Newly discovered required work.** The serializer writes the calendar,
+    the ledger, the law, the government, public opinion, a handful of world
+    scalars, the creatures and the squads — and nothing else. Locations,
+    vehicles, sieges, dates, recruit meetings and the news queue are all
+    dropped, so a reloaded game has no city. Every one of those has to be
+    written and read back before the lifecycle can be called done.
 - [ ] Autosave behavior.
 - [ ] Game-over/victory/restart transitions.
 - [ ] High-score/history behavior if retained.

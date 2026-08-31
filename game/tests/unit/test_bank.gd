@@ -252,7 +252,7 @@ func _world(sample: Dictionary) -> GameState:
 	var site: Location = state.locations.get(int(sample["site"]))
 	site.type = &"government_white_house" if which == 3 \
 			else (&"business_barandgrill" if which == 4 else &"business_bank")
-	site.high_security = false
+	site.high_security = 0
 	if standing >= 2:
 		var siege := Siege.new()
 		siege.active = true

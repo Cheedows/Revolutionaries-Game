@@ -4,8 +4,8 @@ extends RefCounted
 ##
 ## The original writes raw structs with fwrite, in declaration order, including
 ## its RNG words — a format that is endian-, padding- and compiler-dependent and
-## cannot be read by anything else. It is deliberately not ported (see
-## docs/port/GODOT-PORT-PLAN.md section 6). Old saves do not transfer.
+## cannot be read by anything else. It is deliberately not ported; old saves
+## do not transfer.
 ##
 ## Every field is named, so a save written by an older build can be migrated
 ## rather than guessed at; see migrations.gd.

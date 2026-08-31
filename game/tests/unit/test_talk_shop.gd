@@ -262,7 +262,7 @@ func _world(sample: Dictionary) -> GameState:
 	site.type = &"business_bank" if which == TELLER \
 			else (&"residential_apartment" if which >= CANCEL
 			else &"corporate_headquarters")
-	site.high_security = int(sample["secure"]) != 0
+	site.high_security = int(sample["secure"])
 	site.renting = 500 if which == CANCEL else Renting.NOBODY
 	site.rented_by = Renting.name_of(site.renting)
 	site.compound_walls = int(Tables.COMPOUND[&"printingpress"])

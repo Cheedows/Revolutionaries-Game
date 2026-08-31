@@ -173,7 +173,7 @@ func _world(sample: Dictionary) -> GameState:
 		state.opinion.background_influence[index] = 0
 
 	var site: Location = state.locations.get(int(sample["site"]))
-	site.high_security = int(sample["guarded"]) != 0
+	site.high_security = int(sample["guarded"])
 	site.changes.clear()
 	if int(sample["guarded"]) == 0:
 		var old := SiteChange.new()

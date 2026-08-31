@@ -11,7 +11,8 @@ extends RefCounted
 
 ## Save format version. Bumped whenever the shape below changes; migrations
 ## live in core/save/migrations.gd. The original's raw-struct save format is
-## deliberately not ported — see docs/port/GODOT-PORT-PLAN.md section 6.
+## deliberately not ported: it writes raw structs in declaration order, which
+## nothing but the same compiler can read. Old saves do not transfer.
 const SAVE_VERSION := 1
 
 var calendar := Calendar.new()

@@ -180,7 +180,7 @@ func _world(sample: Dictionary) -> GameState:
 	var site: Location = state.locations.get(int(sample["site"]))
 	site.type = &"government_armybase" if int(sample["army"]) != 0 \
 			else &"corporate_headquarters"
-	site.high_security = false
+	site.high_security = 0
 
 	state.deagle_taken = int(sample["taken"]) != 0
 	state.machinegun_taken = int(sample["taken"]) != 0

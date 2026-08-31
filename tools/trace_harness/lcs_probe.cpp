@@ -11181,6 +11181,300 @@ void probe_site_hostage(FILE *out)
    offended_cablenews = 0;
 }
 
+// Walking out, and what the building makes of the visit: the pursuit ladder
+// and the post-chase tidy-up from the exit branch of the site loop,
+// resolvesite(), and advancelocations() from src/daily/daily.cpp.
+static long site_exit_level()
+{
+   long level=sitecrime;
+   if(sitealarm==0)level=0;
+   if(LCSrandom(3)&&level<4)level=0;
+   if(LCSrandom(2)&&level<8)level=0;
+   if(postalarmtimer<10+(int)LCSrandom(20))level=0;
+   else if(postalarmtimer<20+(int)LCSrandom(20)&&LCSrandom(3))level=0;
+   else if(postalarmtimer<40+(int)LCSrandom(20)&&!LCSrandom(3))level=0;
+   if(location[cursite]->siege.siege)level=1000;
+
+   bool guilty=0;
+   for(int p=0;p<6;p++)
+      if(activesquad->squad[p]!=NULL)
+         if(iscriminal(*activesquad->squad[p]))guilty=1;
+   if(!guilty)level=0;
+   return level;
+}
+
+static void site_exit_got_away()
+{
+   for(int p=0;p<6;p++)
+   {
+      if(activesquad->squad[p]==NULL)continue;
+      if(activesquad->squad[p]->prisoner!=NULL)
+      {
+         if(activesquad->squad[p]->prisoner->squadid!=-1)
+         {
+            activesquad->squad[p]->prisoner->squadid=-1;
+            activesquad->squad[p]->prisoner->location=activesquad->squad[p]->base;
+            activesquad->squad[p]->prisoner->base=activesquad->squad[p]->base;
+         }
+         else
+         {
+            kidnaptransfer(*activesquad->squad[p]->prisoner);
+            delete activesquad->squad[p]->prisoner;
+         }
+         activesquad->squad[p]->prisoner=NULL;
+      }
+   }
+   for(int p=0;p<len(pool);p++)
+   {
+      pool[p]->flag&=~CREATUREFLAG_JUSTESCAPED;
+      for(int w=0;w<BODYPARTNUM;w++)
+         pool[p]->wound[w]&=~WOUND_BLEEDING;
+   }
+}
+
+void probe_site_exit(FILE *out)
+{
+   static const int SITES[] = {
+      SITE_CORPORATE_HEADQUARTERS, SITE_INDUSTRY_WAREHOUSE,
+      SITE_BUSINESS_CRACKHOUSE, SITE_BUSINESS_BANK,
+      SITE_RESIDENTIAL_TENEMENT, SITE_OUTDOOR_BUNKER,
+   };
+   const int SITE_COUNT = (int)(sizeof(SITES) / sizeof(SITES[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 236887691UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int place = 0; place < SITE_COUNT; place++)
+      // Four grades of crime and three stages of the response: enough to
+      // reach every rung of the ladder without recording a creature per
+      // combination twice over.
+      for (int crime = 0; crime < 4; crime++)
+      for (int alarmed = 0; alarmed < 2; alarmed++)
+      for (int response = 0; response < 3; response++)
+      for (int guilty = 0; guilty < 2; guilty++)
+      for (int besieged = 0; besieged < 2; besieged++)
+      for (int renting = 0; renting < 3; renting++)
+      for (int upset = 0; upset < 2; upset++)
+      {
+         unsigned long seed_used = 314606869UL * (unsigned long)
+            (((((((place * 4 + crime) * 2 + alarmed) * 3 + response) * 2
+              + guilty) * 2 + besieged) * 3 + renting) * 2 + upset
+             + scenario * 4409 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 47 + scenario * 3) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->closed = 0;
+            location[l]->highsecurity = 0;
+            // Heat and tenancy survive a sample otherwise: a warehouse
+            // captured by one sample is still the Squad's in the next.
+            location[l]->heat = 0;
+            location[l]->renting = RENTING_NOCONTROL;
+            location[l]->changes.clear();
+         }
+
+         cursite = 1;
+         location[cursite]->type = SITES[place];
+         location[cursite]->renting = renting == 0 ? RENTING_NOCONTROL
+                                    : renting == 1 ? RENTING_CCS : 900;
+         location[cursite]->siege.siege = besieged;
+         location[cursite]->siege.siegetype = SIEGE_POLICE;
+         sitetype = SITES[place];
+         sitealarm = alarmed;
+         sitealarmtimer = -1;
+         postalarmtimer = response == 0 ? 0 : response == 1 ? 15 : 70;
+         sitecrime = crime == 0 ? 0 : crime == 1 ? 6 : crime == 2 ? 20 : 90;
+         sitealienate = upset ? 2 : 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         ns->positive = 1;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < 2; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 870000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = 1;
+            cr->flag |= CREATUREFLAG_JUSTESCAPED;
+            cr->wound[BODYPART_HEAD] |= WOUND_BLEEDING;
+            if (guilty) cr->crimes_suspected[LAWFLAG_THEFT] = 1;
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+         // A hurt Liberal being carried, and a kidnapped Conservative.
+         Creature *carried = new Creature;
+         makecreature(*carried, CREATURE_POLITICALACTIVIST);
+         carried->id = 870050;
+         carried->align = ALIGN_LIBERAL;
+         carried->squadid = sq->id;
+         carried->alive = 1;
+         sq->squad[0]->prisoner = carried;
+         Creature *taken = new Creature;
+         makecreature(*taken, CREATURE_CORPORATE_CEO);
+         taken->id = 870051;
+         taken->align = ALIGN_CONSERVATIVE;
+         taken->squadid = -1;
+         taken->alive = 1;
+         sq->squad[1]->prisoner = taken;
+         // A sleeper working in the building, for the CCS-safehouse case.
+         Creature *asleep = new Creature;
+         makecreature(*asleep, CREATURE_WORKER_JANITOR);
+         asleep->id = 870060;
+         asleep->align = ALIGN_LIBERAL;
+         asleep->flag |= CREATUREFLAG_SLEEPER;
+         asleep->location = cursite;
+         asleep->base = cursite;
+         pool.push_back(asleep);
+
+         fprintf(out, "{\"kind\":\"site_exit\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"place\":%d,\"crime\":%d,\"alarmed\":%d,"
+                      "\"response\":%d,\"guilty\":%d,\"besieged\":%d,"
+                      "\"renting\":%d,\"upset\":%d,\"world_seed\":%lu,"
+                      "\"site\":%d,\"sitecrime\":%d,\"postalarm\":%d",
+                 scenario, seed_used, place, crime, alarmed, response, guilty,
+                 besieged, renting, upset, run_seed, cursite, (int)sitecrime,
+                 (int)postalarmtimer);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < 2; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"carried\":", out);
+         chase_write_creature(out, *carried, true);
+         fputs(",\"taken\":", out);
+         chase_write_creature(out, *taken, true);
+         fputs(",\"asleep\":", out);
+         chase_write_creature(out, *asleep, true);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         long level = site_exit_level();
+         long long after_level = lcs_trace_draw_count();
+         site_exit_got_away();
+         long long after_away = lcs_trace_draw_count();
+         resolvesite();
+         long long after_resolve = lcs_trace_draw_count();
+         int closed_before = location[cursite]->closed;
+         int security_before = location[cursite]->highsecurity;
+         int renting_before = location[cursite]->renting;
+         // A fortnight of upkeep, so a closed place reopens inside the sample.
+         for (int day = 0; day < 14; day++) advancelocations();
+
+         fprintf(out, ",\"level_draws\":%lld,\"away_draws\":%lld,"
+                      "\"resolve_draws\":%lld,\"upkeep_draws\":%lld,"
+                      "\"level\":%ld,\"renting_after\":%d,\"closed\":%d,"
+                      "\"security\":%d,\"heat\":%d,\"positive\":%d,"
+                      "\"pool\":%d,\"changes\":%d,\"closed_before\":%d,"
+                      "\"security_before\":%d,\"renting_before\":%d",
+                 after_level - before, after_away - after_level,
+                 after_resolve - after_away,
+                 lcs_trace_draw_count() - after_resolve, level,
+                 (int)location[cursite]->renting, (int)location[cursite]->closed,
+                 (int)location[cursite]->highsecurity,
+                 (int)location[cursite]->heat, (int)ns->positive, len(pool),
+                 len(location[cursite]->changes), closed_before,
+                 security_before, renting_before);
+         fputs(",\"squad_after\":[", out);
+         for (int n = 0; n < 2; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"prisoner\":%d,\"escaped\":%d,\"bleeding\":%d}",
+                    sq->squad[n]->prisoner ? (int)sq->squad[n]->prisoner->id : 0,
+                    (sq->squad[n]->flag & CREATUREFLAG_JUSTESCAPED) ? 1 : 0,
+                    (sq->squad[n]->wound[BODYPART_HEAD] & WOUND_BLEEDING) ? 1 : 0);
+         }
+         fputs("],\"carried_after\":", out);
+         {
+            Creature *found = NULL;
+            for (int p = 0; p < len(pool); p++)
+               if (pool[p]->id == 870050) found = pool[p];
+            if (found)
+               fprintf(out, "{\"squadid\":%d,\"location\":%d,\"base\":%d}",
+                       (int)found->squadid, found->location, found->base);
+            else fputs("null", out);
+         }
+         fputs(",\"taken_after\":", out);
+         {
+            // The kidnapped Conservative is a fresh copy in the pool; the
+            // original was deleted.
+            Creature *found = NULL;
+            for (int p = 0; p < len(pool); p++)
+               if (pool[p]->type == CREATURE_CORPORATE_CEO) found = pool[p];
+            if (found)
+               fprintf(out, "{\"base\":%d,\"location\":%d,\"missing\":%d,"
+                            "\"armed\":%d,\"interrogation\":%d}",
+                       found->base, found->location,
+                       (found->flag & CREATUREFLAG_MISSING) ? 1 : 0,
+                       found->is_armed() ? 1 : 0,
+                       found->activity.intr() ? 1 : 0);
+            else fputs("null", out);
+         }
+         fputs(",\"sleeper_after\":", out);
+         {
+            Creature *found = NULL;
+            for (int p = 0; p < len(pool); p++)
+               if (pool[p]->id == 870060) found = pool[p];
+            if (found)
+               fprintf(out, "{\"sleeper\":%d,\"base\":%d,\"location\":%d}",
+                       (found->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                       found->base, found->location);
+            else fputs("null", out);
+         }
+         fputs("}\n", out);
+
+         for (int i = 0; i < 6; i++)
+            if (sq->squad[i]) sq->squad[i]->prisoner = NULL;
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -12806,6 +13100,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "shop")) probe_shop(out);
    else if (!strcmp(which, "site_loot")) probe_site_loot(out);
    else if (!strcmp(which, "site_hostage")) probe_site_hostage(out);
+   else if (!strcmp(which, "site_exit")) probe_site_exit(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

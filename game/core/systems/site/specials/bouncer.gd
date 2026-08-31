@@ -139,7 +139,7 @@ static func _size_up(state: GameState, rng: Rng, squad: Squad, site: Location,
 			rejected = Rejection.worse(rejected, Rejection.UNDERAGE)
 		rejected = _gentlemen(state, rng, member, club, checked, rejected,
 				_looking_at(state, member, catalog))
-		if club and site != null and site.high_security:
+		if club and site != null and site.high_security > 0:
 			rejected = Rejection.worse(rejected, Rejection.GUEST_LIST)
 		if site != null and site.renting == Renting.CCS \
 				and site.type != &"business_barandgrill":

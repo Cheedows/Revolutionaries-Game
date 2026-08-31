@@ -87,6 +87,11 @@ static func free_hostage(state: GameState, holder: Creature,
 ## which is a draw — the only one in this file.
 static func kidnap_transfer(state: GameState, rng: Rng, victim: Creature,
 		base: int) -> Array[Event]:
+	# **Original quirk, reproduced.** The victim is copied into a `new
+	# Creature` and the original thrown away, so a whole blank person — an age,
+	# a gender, a birthday, thirty-two shuffled attribute points and an
+	# alignment — is rolled up and discarded on the way home.
+	CreatureFactory.blank(rng)
 	if not victim.named:
 		var chosen: Array = NamingRules.first_and_last(rng,
 				Gender.value_of(victim.gender_liberal))
@@ -99,6 +104,8 @@ static func kidnap_transfer(state: GameState, rng: Rng, victim: Creature,
 	victim.missing = true
 	var here: Location = state.locations.get(base)
 	_disarm(victim, here)
+	# Somebody brought home for questioning arrives with a blank record.
+	victim.interrogation = Interrogation.new()
 	state.kidnappings += 1
 	return [Event.new(Event.CREATURE_KIDNAPPED,
 			{"creature": victim.id, "base": base})] as Array[Event]

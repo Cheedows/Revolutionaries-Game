@@ -87,7 +87,7 @@ static func _rebuild(state: GameState, rng: Rng, site: Location) -> void:
 	site.heat_protection = 0
 	site.closed = 0
 	site.mapped = false
-	site.high_security = false
+	site.high_security = 0
 	WorldBuilder.seed_map(site, rng)
 	site.changes.clear()
 	site.compound_walls = 0

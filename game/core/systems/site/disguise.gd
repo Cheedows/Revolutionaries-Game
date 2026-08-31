@@ -63,7 +63,7 @@ static func _apply(state: GameState, creature: Creature, site: Location,
 			continue
 		var value: Variant = rule[&"value"]
 		if value is StringName:
-			uniformed = CONVINCING if site.high_security else PARTIAL
+			uniformed = CONVINCING if site.high_security > 0 else PARTIAL
 		else:
 			uniformed = int(value)
 	return uniformed
@@ -76,7 +76,7 @@ static func _matches(state: GameState, creature: Creature, site: Location,
 		if not (state.site.map.get_flag(state.site.x, state.site.y, state.site.z)
 				& restricted):
 			return false
-	if rule.get(&"high_security", false) and not site.high_security:
+	if rule.get(&"high_security", false) and site.high_security == 0:
 		return false
 	if rule.get(&"naked", false) and creature.armor != null:
 		return false
@@ -126,7 +126,7 @@ static func _last_resorts(state: GameState, creature: Creature,
 			and state.law.get_value(&"policebehavior") == -2 \
 			and state.law.get_value(&"deathpenalty") == -2:
 		uniformed = PARTIAL
-	if site.high_security and worn == &"ARMOR_SWATARMOR":
+	if site.high_security > 0 and worn == &"ARMOR_SWATARMOR":
 		uniformed = PARTIAL
 
 	var fire: int = Tables.SITE_BLOCKS[&"fire_start"] \

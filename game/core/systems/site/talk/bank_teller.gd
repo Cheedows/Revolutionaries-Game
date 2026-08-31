@@ -66,7 +66,7 @@ static func _note(state: GameState, rng: Rng, speaker: Creature,
 		teller: Creature, catalog: Catalog) -> Array[Event]:
 	var events: Array[Event] = []
 	var site: Location = state.locations.get(state.site.location)
-	var watched := site != null and site.high_security
+	var watched := site != null and site.high_security > 0
 	# What the note says, and what the teller does about it.
 	rng.below(NOTES)
 	rng.below(REACTIONS)
@@ -96,7 +96,7 @@ static func _stick_up(state: GameState, rng: Rng, speaker: Creature,
 		catalog: Catalog) -> Array[Event]:
 	var events: Array[Event] = []
 	var site: Location = state.locations.get(state.site.location)
-	var watched := site != null and site.high_security
+	var watched := site != null and site.high_security > 0
 	var backup := TalkBackup.armed(state, catalog)
 
 	var roll := CheckRules.skill_roll(rng, speaker, &"persuasion")

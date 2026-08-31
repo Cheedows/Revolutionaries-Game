@@ -150,7 +150,7 @@ func _world(sample: Dictionary) -> GameState:
 	var renting := int(sample["renting"])
 	var site: Location = state.locations.get(int(sample["site"]))
 	site.type = PLACES[int(sample["place"])]
-	site.high_security = int(sample["wear"]) & 1 != 0
+	site.high_security = 1 if int(sample["wear"]) & 1 != 0 else 0
 	site.renting = Renting.CCS if renting == 1 \
 			else (Renting.PERMANENT if renting == 2 else Renting.NOBODY)
 	site.rented_by = Renting.name_of(site.renting)

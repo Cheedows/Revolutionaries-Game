@@ -53,7 +53,10 @@ var heat: int = 0
 var secrecy: int = 100
 
 ## Whether the place keeps armed staff and locked doors.
-var high_security: bool = false
+## Days of hired guards left. The original keeps this as a countdown rather
+## than a flag: a place that was robbed puts guards on for as long as the visit
+## was bad, and a bank keeps them five times as long.
+var high_security: int = 0
 
 ## Fortifications and stores, for a safehouse that has been built up. The
 ## original calls these the compound.

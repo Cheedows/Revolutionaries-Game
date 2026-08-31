@@ -20,7 +20,7 @@ func test_an_outfit_passes_where_the_original_says_it_does() -> void:
 		var state := _state(sample)
 		var site: Location = state.locations[1]
 		site.type = Ids.SITE_TYPES[int(sample["site"])]
-		site.high_security = int(sample["highsecurity"]) != 0
+		site.high_security = int(sample["highsecurity"])
 		if int(sample["restricted"]) != 0:
 			state.site.map.set_flag(state.site.x, state.site.y, state.site.z,
 					Tables.SITE_BLOCKS[&"restricted"])

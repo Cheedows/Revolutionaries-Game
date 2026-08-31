@@ -89,7 +89,7 @@ static func tag(state: GameState, rng: Rng, squad: Squad,
 			Tables.SITE_BLOCKS[&"graffiti_ccs"]
 			| Tables.SITE_BLOCKS[&"graffiti_other"])
 	# A place with real security paints over it; anywhere else it stays.
-	if here != null and not here.high_security:
+	if here != null and here.high_security == 0:
 		_repaint(here, site)
 
 	site.crime_level += TAG_CRIME
