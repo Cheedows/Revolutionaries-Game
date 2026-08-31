@@ -17,6 +17,12 @@ const PERMANENT := 0
 
 
 ## Whether [param value] is a rent rather than a holder.
+## Whether the organisation holds the place, outright or on a lease. The
+## original writes this as [code]renting >= 0[/code] wherever it asks.
+static func is_ours(value: int) -> bool:
+	return value >= PERMANENT
+
+
 static func is_rented(value: int) -> bool:
 	return value > 0
 

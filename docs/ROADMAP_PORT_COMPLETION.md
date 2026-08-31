@@ -498,6 +498,26 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     three crowd sizes, besieged and not, compared on draw counts, news stories
     queued, and every Liberal's age, type, blood, wounds, organs, attributes,
     skills, whereabouts and time left.
+- [x] **Newly discovered required work, now done.** The squads' half of the
+    day, in `systems/daily/squad_turn.gd` and `systems/daily/squad_cars.gd`.
+    The roadmap had every other pass of `advanceday()` and not this one, and
+    without it a squad could be given a destination and would never go
+    anywhere — which is to say the whole of site mode was unreachable from a
+    day. The pass sends everybody without a squad back to their base (and
+    re-homes anybody whose base is under siege), turns squads away from a
+    closed or besieged site, seats everybody in whatever cars they can claim
+    with the best of them at each wheel, trains the drivers who actually
+    drove, charges a hundred a head to leave town, and then does what the
+    destination is: a city is moved to, a shop is shopped in, a hospital takes
+    whoever needs a bed, a place the squad owns asks whether it is moving in or
+    looking round, and anywhere else is walked into.
+  - `systems/base/shop_visit.gd` and `systems/base/hospital_visit.gd` are the
+    two dispatches that needed a front end: the shop loop over [Shopping] and
+    the dealership, and the ward that asks who is being left in.
+  - **Original dead code, documented rather than ported.** `Location::needcar`
+    is initialised false, inherited from a parent that is also false, and never
+    set anywhere — so the "you need a car to get there" branch of the squad
+    pass cannot be reached.
 - [x] `advanceday()` is now composable systems in the original's order, which
     is load-bearing: the date does not move until most of the day is over, so
     rent falls due before the day counter ticks and a birthday is checked after

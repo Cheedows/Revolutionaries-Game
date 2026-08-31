@@ -8,13 +8,13 @@ extends RefCounted
 ## ticks; a birthday is checked after it. The pieces themselves live in their
 ## own systems and are strung together here.
 ##
-## Scope: the parts below are ported and checked. Sieges, interrogation, dating
-## and the news pass are not yet; the unchecked items in
-## docs/ROADMAP_PORT_COMPLETION.md name them rather than this comment drifting
-## out of date.
+## Scope: every pass of the original's day is here. The unchecked items in
+## docs/ROADMAP_PORT_COMPLETION.md name what is left rather than this comment
+## drifting out of date.
 
 ## The day's parts, in the order the original runs them. Each one that can stop
 ## to ask the player something is a stage of its own.
+const SQUADS := &"squads"
 const HOSTAGES := &"hostages"
 const INDIVIDUAL := &"individual"
 const GROUPS := &"groups"
@@ -41,10 +41,11 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
 	if state.disbanded:
 		return _close_the_day(state, rng, [] as Array[Event], catalog)
 
-	# The hostages come first: the original works through them before anybody
-	# gets on with their own day.
-	return _continue(state, rng, catalog, HOSTAGES, [] as Array[Event],
-			HostageQueue.advance(state, rng, catalog))
+	# The squads go out first — everybody without one is sent home, and every
+	# squad with somewhere to be goes there — and only then does anybody get
+	# on with their own day.
+	return _continue(state, rng, catalog, SQUADS, [] as Array[Event],
+			SquadTurn.run(state, rng, catalog))
 
 
 ## Picks the day back up after whatever it stopped to ask.
@@ -62,6 +63,9 @@ static func _continue(state: GameState, rng: Rng, catalog: Catalog,
 				events + asked.events)
 
 	var done: Array[Event] = events + (result as Array[Event])
+	if stage == SQUADS:
+		return _continue(state, rng, catalog, HOSTAGES, done,
+				HostageQueue.advance(state, rng, catalog))
 	if stage == HOSTAGES:
 		return _continue(state, rng, catalog, INDIVIDUAL, done,
 				DailyActivation.run(state, rng, catalog))
