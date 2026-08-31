@@ -70,6 +70,6 @@ graffiti = true
 suspicious = false
 auto_break_locks = false
 legality = 2
-bashstrengthmod = 1
+bashstrengthmod = 1.0
 size = 5
 attacks = Array[Resource]([SubResource("Sub_1")])

@@ -188,7 +188,12 @@ def extract_weapons(report: Report):
             "suspicious": to_bool(child_text(entry, "suspicious"), True),
             "auto_break_locks": to_bool(child_text(entry, "auto_break_locks"), False),
             "legality": to_int(child_text(entry, "legality"), 2),
-            "bashstrengthmod": to_int(child_text(entry, "bashstrengthmod"), 1),
+            # The original reads this as a percentage and divides it down at
+            # load time; a weapon that does not carry the tag keeps the field's
+            # own default of 1.0, which is not one percent.
+            "bashstrengthmod": (
+                to_int(child_text(entry, "bashstrengthmod")) / 100.0
+                if child_text(entry, "bashstrengthmod") else 1.0),
             "size": to_int(child_text(entry, "size"), 15),
         }
         for tag in {child.tag for child in entry} - handled:

@@ -28,8 +28,10 @@ extends ItemType
 ## Most liberal gun law under which the weapon is legal; -3 is always illegal.
 @export var legality: int = 2
 
-## Percent modifier applied to strength when bashing while holding this.
-@export var bashstrengthmod: int = 100
+## Multiplier applied to strength when bashing while holding this. The data
+## files carry it as a percentage; it is divided down on extraction, as the
+## original divides it down on load.
+@export var bashstrengthmod: float = 1.0
 
 ## Concealment size; clothing conceals up to its own limit.
 @export var size: int = 15

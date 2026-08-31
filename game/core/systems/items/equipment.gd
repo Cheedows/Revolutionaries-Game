@@ -155,15 +155,13 @@ static func quality_levels(armor: Armor, catalog: Catalog) -> int:
 
 ## How much a weapon multiplies its wielder's strength when kicking in a door.
 ##
-## Bare hands are 1. The data files carry percentages for real weapons — a
-## crowbar is 125 — which the original never divides down, so anything heavier
-## than a fist makes a door a formality. Reproduced: it is the number the
-## original reads.
+## Bare hands are 1; an axe is 2. The data files carry percentages, divided
+## down on extraction as the original divides them down on load.
 static func bash_modifier(weapon: Weapon, catalog: Catalog) -> float:
 	if weapon == null:
 		return 1.0
 	var type := catalog.get_entry(&"weapon", weapon.type)
-	return float(type.bashstrengthmod) if type != null else 1.0
+	return type.bashstrengthmod if type != null else 1.0
 
 
 ## Whether the weapon opens a lock by itself, no roll needed.
