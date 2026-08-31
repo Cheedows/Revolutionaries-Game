@@ -1269,8 +1269,19 @@ Do not port the old raw save format; the new serializer is already the canonical
 
 This is functional UI coverage, not final art direction. Keep mechanics in `core/` and presentation in `ui/`.
 
-- [ ] Render all PendingIntents with reusable choice/confirmation/select-target widgets.
+- [x] Render all PendingIntents with reusable choice/confirmation/select-target
+    widgets. `ui/widgets/intent_dialog.gd` renders any [Intent] there is: every
+    system parks on the same shape — a type, some context and a list of options
+    — so one widget answers all of them, and `ui/adapters/intent_text.gd` is
+    the only place that knows what each question should say. A screen needs a
+    bespoke one only where a list of buttons is genuinely not enough.
 - [ ] New-game/title/load screens.
+  - [x] The new game: `ui/screens/new_game_screen.gd` asks the difficulty
+    switches, the win condition, the field skill rate and the founder's ten
+    questions through the same dialog, and hands the started session to the
+    safehouse screen. The questions' words are the original's, extracted into
+    `ui/adapters/founder_text.gd`.
+  - [ ] The title screen and loading a saved game.
 - [ ] Safehouse/base management screens beyond the current first pass.
 - [ ] Creature dossier/equipment/squad management.
 - [ ] Activity assignment/recruitment interfaces.

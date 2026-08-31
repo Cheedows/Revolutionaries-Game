@@ -18,24 +18,30 @@ var _roster: Roster
 var _log: LogView
 var _wait_button: Button
 var _run_button: Button
+var _dialog: IntentDialog
 var _running := false
 var _elapsed := 0.0
 
 
 func _ready() -> void:
-	setup(int(Time.get_unix_time_from_system()) & 0xffffffff)
+	# Nothing to show until a game has been started; new_game_screen.gd hands
+	# one over. A screen opened on its own rolls one so it can be looked at.
+	if _session == null:
+		var opening := Session.new(
+				int(Time.get_unix_time_from_system()) & 0xffffffff)
+		var choosing := Founder.begin(opening.rng)
+		var outcome := {}
+		for question in FounderBackgrounds.QUESTIONS:
+			Founder.answer(opening.state, choosing, question,
+					Founder.suggestion(opening.rng), outcome)
+		NewGame.begin(opening.state, opening.rng, choosing, outcome,
+				opening.catalog)
+		setup(opening)
 
 
-## Builds the screen and starts a game.
-##
-## Separate from [method _ready] so a test can drive the screen without waiting
-## on the scene tree to get around to it.
-func setup(seed_value: int) -> void:
-	_session = Session.new(seed_value)
-	WorldBuilder.build(_session.state, _session.rng)
-	_seed_a_starting_country()
-	_recruit_a_founder()
-
+## Builds the screen around a game that has already been started.
+func setup(session: Session) -> void:
+	_session = session
 	theme = UiTheme.build()
 	_build()
 	_log.append_heading("%s. The %s begins." % [
@@ -94,6 +100,11 @@ func _build() -> void:
 	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(_log)
 
+	_dialog = IntentDialog.new()
+	_dialog.chosen.connect(_on_answer)
+	_dialog.declined.connect(func() -> void: _on_answer(null))
+	right.add_child(_dialog)
+
 	page.add_child(_controls())
 
 
@@ -117,16 +128,44 @@ func _controls() -> Control:
 
 
 func _advance_one_day() -> void:
-	_session.submit(DailyTurn.run(_session.state, _session.rng, _session.catalog))
+	if _session.is_waiting():
+		return
+	Commands.advance_day(_session)
+	_settle()
+
+
+## Drains what has happened, and puts up whatever the day stopped to ask.
+##
+## The simulation never blocks: it hands back a question and waits, so the
+## screen's whole job here is to show it and hand the answer back.
+func _settle() -> void:
 	for event in _session.drain_events():
-		_log.append(EventText.describe(event, _session.state),
-				EventText.colour_of(event))
+		var line := EventText.describe(event, _session.state)
+		if not line.is_empty():
+			_log.append(line, EventText.colour_of(event))
 	_refresh()
 
-	if _session.state.endgame_state == &"won":
+	if _session.is_waiting():
+		_running = false
+		_run_button.button_pressed = false
+		_dialog.ask(_session.pending().intent, _session.state)
+	else:
+		_dialog.dismiss()
+
+	var over := _session.state.endgame_state
+	if over == &"won" or over == &"lost":
 		_running = false
 		_run_button.button_pressed = false
 		_wait_button.disabled = true
+		_log.append_heading("It is over. The squad %s."
+				% ("won" if over == &"won" else "is finished"))
+
+
+func _on_answer(id: Variant) -> void:
+	if not _session.is_waiting():
+		return
+	_session.answer(id)
+	_settle()
 
 
 func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
@@ -140,51 +179,3 @@ func _refresh() -> void:
 	_status.refresh(_session.state)
 	_laws.refresh(_session.state)
 	_roster.refresh(_session.state)
-
-
-## Puts one person in the organisation, so there is somebody to give orders to.
-##
-## The original's character creation is not ported; until it is, the founder is
-## rolled from a creature type like anyone else.
-func _recruit_a_founder() -> void:
-	var state := _session.state
-	var type: CreatureType = _session.catalog.get_entry(&"creature", &"CREATURE_WORKER_SERVANT")
-	if type == null:
-		type = _session.catalog.all_of(&"creature")[0]
-	var founder := CreatureFactory.create(type, _session.rng, state.law,
-			_session.catalog, OpinionRules.public_mood(state.opinion, &"mood"))
-	founder.name = NamingRules.full_name(_session.rng)
-	founder.alignment = &"liberal"
-	founder.join_days = 1
-	founder.recruiter_id = -1
-	# The original starts the squad in a homeless shelter. Somebody with
-	# nowhere to be is not assigned anything, so this is not cosmetic.
-	var home := WorldLookup.homeless_shelter(state, null)
-	if home != null:
-		founder.location = home.id
-		founder.base = home.id
-		home.is_safehouse = true
-		home.renting = Renting.PERMANENT
-	state.add_creature(founder)
-
-
-## Gives the country a government and an opinion to start from.
-##
-## The original does this in its new-game sequence, which is not ported yet;
-## until it is, the screen seats a plausible starting country so the political
-## systems have something to act on.
-func _seed_a_starting_country() -> void:
-	var state := _session.state
-	for index in state.government.house.size():
-		state.government.house[index] = -1 if index % 3 else 0
-	for index in state.government.senate.size():
-		state.government.senate[index] = -1 if index % 3 else 0
-	for index in state.government.court.size():
-		state.government.court[index] = -1 if index % 2 else 1
-	for index in state.government.executive.size():
-		state.government.executive[index] = -1
-	for index in Ids.VIEWS.size():
-		state.opinion.attitude[index] = 35 + index % 25
-		state.opinion.interest[index] = 5
-	for index in Ids.LAWS.size():
-		state.law.values[index] = -1 if index % 3 == 0 else 0
