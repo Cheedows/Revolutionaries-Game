@@ -1567,7 +1567,15 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     of these globals are ordinary English words (`law`, `court`, `mode`,
     `pool`, `score`) that would match by accident — so every one is written
     out by hand.
-- [ ] Search the original blocking input sites and ensure every meaningful decision is covered by Command/Intent flow.
+- [x] Search the original blocking input sites and ensure every meaningful
+    decision is covered by Command/Intent flow. `tools/audit_choices.py` finds
+    every `getkey()` whose answer is afterwards tested against a particular
+    key — a call with nothing compared to it is the original's "press any key",
+    not a decision — attributes each to the function it sits in, and takes that
+    function's verdict from the function audit. 78 functions stop for a
+    decision; 64 are named by the code that ported them and 14 are classified,
+    with three of those fourteen being questions the original asks and then
+    never reads the answer to. Run in CI.
 - [ ] Record final golden traces/probes for all tractable modes.
 - [ ] Add deterministic fixture-based tests where the original interactive harness cannot reliably reach a mode.
 - [ ] Run long deterministic simulations across multiple seeds.

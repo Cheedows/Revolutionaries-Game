@@ -20,6 +20,8 @@ jobs:
         run: python3 tools/audit_parity.py
       - name: Every piece of legacy state is accounted for
         run: python3 tools/audit_state.py
+      - name: Every decision the original stops for is answerable
+        run: python3 tools/audit_choices.py
 
   tests:
     name: Headless tests
