@@ -13,6 +13,19 @@ extends RefCounted
 ## Arch-Conservative is limited to that list.
 
 
+## Gives [param creature] a name of their own, if they have not got one.
+##
+## Ports Creature::namecreature(). Somebody already named keeps the name, and
+## the roll does not happen — which is why the original guards it rather than
+## naming twice.
+static func name_creature(rng: Rng, creature: Creature) -> void:
+	if creature.named:
+		return
+	creature.name = full_name(rng, Gender.value_of(creature.gender_liberal))
+	creature.proper_name = creature.name
+	creature.named = true
+
+
 ## A full name, "First Last".
 static func full_name(rng: Rng, gender: int = Gender.NEUTRAL) -> String:
 	var parts := first_and_last(rng, gender)

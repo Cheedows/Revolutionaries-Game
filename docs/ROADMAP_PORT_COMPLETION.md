@@ -1134,8 +1134,30 @@ Site construction is already strong; now port the gameplay that occurs inside th
 
 Do not port the old raw save format; the new serializer is already the canonical format.
 
-- [ ] Character/founder creation and all original starting choices worth preserving for parity.
-- [ ] New-game world/session initialization.
+- [x] Character/founder creation and all original starting choices worth
+    preserving for parity, in `systems/world/founder.gd` with the ten questions
+    as a table in `core/founder_backgrounds.gd`. The founder is built blank,
+    given the original's fixed spread of attributes, offered three first names
+    and a surname that they can re-roll separately, and then walked through the
+    ten questions; the answers are worth attributes and skills, and the last
+    three hand out a hot sports car, an AK and nine clips, a thousand dollars,
+    a lawyer or the city's floor plans, then a career, a home and — for the
+    gang member — four people to bring along. The per-question suggestion is
+    rolled whether or not it is used, as the original does.
+- [x] New-game world/session initialization, in `systems/world/new_game.gd`:
+    the difficulty switches (classic, a strong Conservative Crime Squad,
+    nightmare laws, multiple cities, no court purge, Stalin mode), the win
+    condition and the field skill rate, then the world itself — the President's
+    name rolled for the log, the city built with or without its floor plans,
+    the squad formed, the founder housed and charged rent, the gang armed and
+    renamed, and the lawyer talked into it.
+  - **Original quirk, reproduced.** The nightmare court's fourth band is
+    unreachable: the third and fourth both stop at eight seats, so no Liberal
+    ever sits on that bench.
+  - The original's menus cannot be driven headless, so `test_new_game.gd` is
+    deterministic by construction: every answer to every question, checked
+    against what the source says that answer is worth, and each of the five
+    careers played through to the world it leaves behind.
 - [ ] Load/save UI-facing commands around the versioned serializer.
   - [x] The serializer now writes the whole state. `core/save/` is split into
     `serializer.gd` and four codecs beside it — `creature_codec.gd`,
