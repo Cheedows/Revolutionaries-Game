@@ -1412,7 +1412,7 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     on from the autosave, opens any saved game by its slogan and date, and
     reads the book of names. `ui/screens/main.gd` is the only thing that knows
     what follows what.
-- [ ] Safehouse/base management screens beyond the current first pass.
+- [x] Safehouse/base management screens beyond the current first pass.
   - [x] The squad: `ui/widgets/squad_panel.gd` says who is in it and where it
     is going, takes people in and drops them, and opens the destination picker
     — `systems/base/destination.gd`, which ports `giveorders()`'s drill-down
@@ -1453,13 +1453,17 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     shows their standing and condition, and `Commands.assign_activity` is the
     seam. Recruitment is an assignment like the others, and the meetings it
     books come back through the same [Intent] dialog as everything else.
-- [ ] Site/infiltration map view and interaction controls.
+- [x] Site/infiltration map view and interaction controls.
   - [x] The plan: `ui/widgets/site_map_view.gd` draws the part of the floor
     plan the squad has seen, around where it is standing — rock, floor, doors,
     the way out, fire, blood, loot and whatever is worth using — and takes the
     roster's place while a visit is under way. The controls are the site loop's
     own options, rendered by the shared dialog.
-  - [ ] Picking a target on the map, and reading a room at a glance.
+  - [x] Picking a target on the map, and reading a room at a glance: a square
+    next to the squad can be clicked to walk that way — the same four choices
+    the site loop offers — and `ui/adapters/site_text.gd` says what is
+    underfoot, what is on the floor, who is in the room and whether the
+    building knows the squad is there.
 - [x] Combat presentation and target/action controls: `ui/widgets/fight_panel.gd`
     shows both sides while there is a fight on — everybody's name, how badly
     hurt they are, what they are holding, who they are holding, and which car
@@ -1472,7 +1476,7 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     each person's car when a chase is on; the chase's own decisions come
     through `CHOOSE_CHASE_ACTION`, and what happens between the cars reads
     through `ChaseText`.
-- [ ] Shops/inventory/loot interfaces.
+- [x] Shops/inventory/loot interfaces.
   - [x] The counter itself: `systems/base/shop_visit.gd` walks the departments,
     buys what is on the shelves and sells what the squad brought home, and the
     car dealership sells one thing and buys one thing. It renders through the
@@ -1496,8 +1500,13 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     lean seat by seat, and where the country stands on every issue against what
     the law says. `ui/adapters/agenda_text.gd` says it, and the title over it
     changes once the game is decided, as the original's does.
-- [ ] Justice/trial/prison presentation.
-- [ ] Save/load/settings/game-over flows.
+- [x] Justice/trial/prison presentation: `ui/widgets/justice_panel.gd` is the
+    standing list of everyone the state is holding — in a cell, waiting on a
+    verdict, or in prison — with what they are charged with, how many names
+    they have already given up, and how long they have left, with a death
+    sentence said plainly and in the colour it deserves. The trial itself asks
+    its one question (`CHOOSE_DEFENSE`) through the shared dialog.
+- [x] Save/load/settings/game-over flows.
   - [x] Loading, carrying on and the end of a game: the safehouse screen puts
     the score in the book, throws the autosave away and offers the way back to
     the title.
@@ -1507,8 +1516,21 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     how the world was built — saves under a name taken from the slogan and the
     date, lists what is already saved, and throws a save away. The name is
     scrubbed of everything that could point at another file.
-- [ ] Mouse/keyboard navigation, focus handling and scalable layout.
-- [ ] Headless scene-instantiation smoke tests for every major screen.
+- [x] Mouse/keyboard navigation, focus handling and scalable layout: every
+    question takes the number keys for its first nine options — which are
+    printed on the buttons rather than left as folklore — and escape backs out
+    of one that allows it; the first enabled option takes focus as a question
+    goes up, so the arrow keys walk the list from there; the floor plan takes
+    clicks; and the window is resizable with the canvas scaled to it, the
+    screen being laid out with anchors and expand flags rather than fixed
+    positions.
+- [x] Headless scene-instantiation smoke tests for every major screen:
+    `test_ui_smoke` walks `ui/screens/` for every scene and `ui/widgets/` for
+    every widget rather than keeping a list that drifts, builds each one
+    headless, and checks it built something. Every screen now builds on demand
+    through a public `build()` rather than waiting for a frame, which is what
+    lets a test drive one; the two widgets that only built on `_ready` were
+    fixed while proving it.
 
 **Gate I:** all parity mechanics are accessible without a terminal/curses fallback.
 

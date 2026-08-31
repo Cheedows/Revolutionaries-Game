@@ -7,6 +7,12 @@ extends Control
 
 
 func _ready() -> void:
+	build()
+
+
+## Opens the first screen. See title_screen.gd's build() for why this is
+## public.
+func build() -> void:
 	_title()
 
 

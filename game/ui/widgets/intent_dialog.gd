@@ -17,6 +17,10 @@ signal declined
 const SCROLL_AFTER := 8
 const ROW_HEIGHT := 34
 
+## The number keys pick the first nine options, as the original's letters pick
+## its own. Past nine there is no key for it and the list is walked instead.
+const SHORTCUTS := 9
+
 var _title: Label
 var _detail: Label
 var _options: VBoxContainer
@@ -31,6 +35,39 @@ var _ids: Dictionary = {}
 func _init() -> void:
 	visible = false
 	_build()
+
+
+## The keyboard: a number picks that option, escape backs out of a question
+## that allows it, and the arrow keys walk the list on their own.
+func _gui_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return
+	if key.keycode == KEY_ESCAPE and _refuse.visible:
+		declined.emit()
+		accept_event()
+		return
+	var index := key.keycode - KEY_1
+	if index < 0 or index >= SHORTCUTS:
+		return
+	var button := _button_at(index)
+	if button == null or button.disabled:
+		return
+	chosen.emit(_ids.get(button))
+	accept_event()
+
+
+## The nth option's button, or null.
+func _button_at(index: int) -> Button:
+	var seen := 0
+	for row in _options.get_children():
+		for child in (row as Control).get_children():
+			if not (child is Button):
+				continue
+			if seen == index:
+				return child
+			seen += 1
+	return null
 
 
 ## Shows [param intent]. The dialog stays up until an option is taken.
@@ -70,7 +107,9 @@ func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
 	row.add_theme_constant_override("separation", 8)
 
 	var button := Button.new()
-	button.text = label
+	# The number that picks it, so the shortcut is visible rather than folklore.
+	var place := _ids.size() + 1
+	button.text = "%d. %s" % [place, label] if place <= SHORTCUTS else label
 	button.disabled = not enabled
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -100,6 +139,8 @@ func _focus_first() -> void:
 
 
 func _build() -> void:
+	# The dialog takes the keyboard so its shortcuts work wherever focus is.
+	focus_mode = Control.FOCUS_ALL
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)

@@ -43,6 +43,12 @@ var _question := 0
 
 
 func _ready() -> void:
+	build()
+
+
+## Builds the screen on a seed of the moment. See title_screen.gd's build()
+## for why this is public.
+func build() -> void:
 	begin(int(Time.get_unix_time_from_system()) & 0xffffffff)
 
 

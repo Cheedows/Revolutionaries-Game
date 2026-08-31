@@ -14,6 +14,12 @@ var _rows: Dictionary = {}
 
 
 func _ready() -> void:
+	_build()
+
+
+func _build() -> void:
+	if not _rows.is_empty():
+		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 2)
@@ -40,6 +46,10 @@ func _ready() -> void:
 
 ## Redraws from [param state].
 func refresh(state: GameState) -> void:
+	# As everywhere else: a caller may fill this in before it reaches the tree,
+	# and a view that silently drops what it was given is worse than one that
+	# builds early.
+	_build()
 	for law: StringName in _rows:
 		var value := state.law.get_value(law)
 		var label: Label = _rows[law]

@@ -20,6 +20,7 @@ const HOUSE := &"house"
 const PAPER := &"paper"
 const STORES := &"stores"
 const SETTINGS := &"settings"
+const JUSTICE := &"justice"
 
 var _dossier: Dossier
 var _agenda: AgendaPanel
@@ -27,6 +28,7 @@ var _house: SafehousePanel
 var _paper: NewspaperPanel
 var _stores: StoresPanel
 var _settings: SettingsPanel
+var _justice: JusticePanel
 
 
 func _ready() -> void:
@@ -42,6 +44,7 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 	_paper.visible = false
 	_stores.visible = false
 	_settings.visible = false
+	_justice.visible = false
 	_dossier.show_creature(session, null)
 	match which:
 		DOSSIER:
@@ -56,6 +59,8 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 			_stores.show_stores(session)
 		SETTINGS:
 			_settings.show_settings(session)
+		JUSTICE:
+			_justice.show_state(session.state)
 	visible = is_open()
 
 
@@ -63,7 +68,8 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 func is_open() -> bool:
 	_build()
 	return _dossier.visible or _agenda.visible or _house.visible \
-			or _paper.visible or _stores.visible or _settings.visible
+			or _paper.visible or _stores.visible or _settings.visible \
+			or _justice.visible
 
 
 func _build() -> void:
@@ -76,8 +82,9 @@ func _build() -> void:
 	_paper = NewspaperPanel.new()
 	_stores = StoresPanel.new()
 	_settings = SettingsPanel.new()
+	_justice = JusticePanel.new()
 	for panel: Control in [_dossier, _agenda, _house, _paper, _stores,
-			_settings]:
+			_settings, _justice]:
 		panel.custom_minimum_size = Vector2(0, 320)
 		panel.visible = false
 		panel.connect(&"closed", func() -> void:

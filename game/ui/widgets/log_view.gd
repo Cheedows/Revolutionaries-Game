@@ -37,6 +37,12 @@ func _build() -> void:
 	_scroll.add_child(_lines)
 
 
+## Builds the widget without writing to it, so a screen can lay it out before
+## anything has happened.
+func refresh(_state: GameState) -> void:
+	_build()
+
+
 ## Adds one line.
 func append(text: String, colour: Color = Palette.TEXT) -> void:
 	if text.is_empty():

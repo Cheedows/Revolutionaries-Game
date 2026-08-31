@@ -14,14 +14,7 @@ signal finished
 
 const AUTO_ADVANCE_SECONDS := 0.35
 
-## The panels the player can open, and what the button for each says.
-const PANEL_BUTTONS: Array = [
-	[PanelStack.AGENDA, "The agenda"],
-	[PanelStack.HOUSE, "The safehouse"],
-	[PanelStack.PAPER, "The paper"],
-	[PanelStack.STORES, "The stores"],
-	[PanelStack.SETTINGS, "Save & settings"],
-]
+
 
 var _session: Session
 var _status: StatusBar
@@ -36,6 +29,7 @@ var _log: LogView
 var _wait_button: Button
 var _run_button: Button
 var _dialog: IntentDialog
+var _buttons: Dictionary = {}
 var _running := false
 var _ended := false
 var _elapsed := 0.0
@@ -78,111 +72,42 @@ func _process(delta: float) -> void:
 
 
 func _build() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = Palette.BACKGROUND
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
+	var parts := BaseLayout.build(self)
+	_status = parts["status"]
+	_laws = parts["laws"]
+	_roster = parts["roster"]
+	_panels = parts["panels"]
+	_map = parts["map"]
+	_fight = parts["fight"]
+	_squad = parts["squad"]
+	_log = parts["log"]
+	_dialog = parts["dialog"]
+	_wait_button = parts["wait"]
+	_run_button = parts["run"]
+	_buttons = parts["buttons"]
+	_connect()
 
-	var page := VBoxContainer.new()
-	page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	page.add_theme_constant_override("separation", 12)
-	page.offset_left = 16
-	page.offset_top = 16
-	page.offset_right = -16
-	page.offset_bottom = -16
-	add_child(page)
 
-	_status = StatusBar.new()
-	page.add_child(_status)
-
-	var columns := HBoxContainer.new()
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 12)
-	page.add_child(columns)
-
-	_laws = LawList.new()
-	columns.add_child(_laws)
-
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 12)
-	columns.add_child(right)
-
-	_roster = Roster.new()
-	_roster.custom_minimum_size = Vector2(0, 170)
+## Wires the widgets to the screen. Split from building them so that the shape
+## of the screen and what it does with it stay separate things.
+func _connect() -> void:
 	_roster.activity_chosen.connect(_on_activity_chosen)
 	_roster.dossier_wanted.connect(_open_dossier)
-	right.add_child(_roster)
-
-	# Everything that opens over the roster: a person's record, the state of
-	# the country, the safehouse, and the morning's paper.
-	_panels = PanelStack.new()
-	_panels.visible = false
 	_panels.changed.connect(_refresh)
 	_panels.reported.connect(func(message: String) -> void:
 		_log.append(message, Palette.TEXT_DIM))
-	right.add_child(_panels)
-
-	_map = SiteMapView.new()
-	_map.visible = false
-	right.add_child(_map)
-
-	# Who is in the room, or in the cars, while there is a fight on.
-	_fight = FightPanel.new()
-	_fight.visible = false
-	right.add_child(_fight)
-
-	_squad = SquadPanel.new()
-	_squad.custom_minimum_size = Vector2(0, 150)
+	_map.step_wanted.connect(_on_step)
 	_squad.changed.connect(_refresh)
 	_squad.destination_wanted.connect(_choose_destination)
-	right.add_child(_squad)
-
-	_log = LogView.new()
-	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(_log)
-
-	_dialog = IntentDialog.new()
 	_dialog.chosen.connect(_on_answer)
 	_dialog.declined.connect(func() -> void: _on_answer(null))
-	right.add_child(_dialog)
-
-	page.add_child(_controls())
-
-
-func _controls() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-
-	_wait_button = Button.new()
-	_wait_button.text = "Wait a day"
 	_wait_button.pressed.connect(_advance_one_day)
-	row.add_child(_wait_button)
-
-	_run_button = Button.new()
-	_run_button.text = "Let it run"
-	_run_button.toggle_mode = true
-	_run_button.toggled.connect(func(pressed: bool):
+	_run_button.toggled.connect(func(pressed: bool) -> void:
 		_running = pressed
 		_run_button.text = "Pause" if pressed else "Let it run")
-	row.add_child(_run_button)
-
-	# One button per panel, in the order the original's keys ran.
-	for entry: Array in PANEL_BUTTONS:
-		var button := Button.new()
-		button.text = String(entry[1])
-		var which: StringName = entry[0]
+	for which: StringName in _buttons:
+		var button: Button = _buttons[which]
 		button.pressed.connect(func() -> void: _open_panel(which))
-		row.add_child(button)
-	return row
-
-
-## Opens one of the panels that sit over the roster, closing the others.
-func _open_panel(which: StringName) -> void:
-	_panels.open(which, _session, _news if which == PanelStack.PAPER else null)
-	_refresh()
-
 
 func _advance_one_day() -> void:
 	if _session.is_waiting():
@@ -255,10 +180,26 @@ func _on_answer(id: Variant) -> void:
 
 
 ## Opens somebody's record, or closes it when given nobody.
+## Opens one of the panels that sit over the roster, closing the others.
+func _open_panel(which: StringName) -> void:
+	_panels.open(which, _session, _news if which == PanelStack.PAPER else null)
+	_refresh()
+
+
 func _open_dossier(creature: Creature) -> void:
 	_panels.open(PanelStack.DOSSIER if creature != null else PanelStack.NONE,
 			_session, creature)
 	_refresh()
+
+
+## A square next to the squad was clicked: walk that way, if the site loop is
+## the thing waiting for an answer.
+func _on_step(direction: int) -> void:
+	if not _session.is_waiting():
+		return
+	if _session.pending().intent.type != Intent.CHOOSE_SITE_MOVE:
+		return
+	_on_answer(direction)
 
 
 func _on_activity_chosen(creature: Creature, activity: StringName) -> void:

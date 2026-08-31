@@ -29,7 +29,8 @@ func refresh(state: GameState) -> void:
 		child.queue_free()
 
 	var squad := state.active_squad()
-	var members := state.squad_members(squad) if squad != null else []
+	var members: Array[Creature] = state.squad_members(squad) if squad != null \
+			else ([] as Array[Creature])
 	_heading.text = "%s (%d/%d)" % [squad.name if squad != null else "No squad",
 			members.size(), Squad.MAX_SIZE]
 

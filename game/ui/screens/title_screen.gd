@@ -26,6 +26,13 @@ var _listing := false
 
 
 func _ready() -> void:
+	build()
+
+
+## Builds the screen. Called from _ready(), and callable before the tree has
+## got round to it, so a caller — a test, or a host that wants the screen
+## ready the moment it has one — never has to wait a frame for it.
+func build() -> void:
 	theme = UiTheme.build()
 	_build()
 	_menu()

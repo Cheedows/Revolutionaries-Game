@@ -12,6 +12,17 @@ config/version="0.1.0-port"
 run/main_scene="res://ui/screens/main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
+[display]
+
+; The screen is laid out with anchors and expand flags rather than fixed
+; positions, so it survives being resized; the scale mode keeps it legible on
+; a large display without redrawing everything.
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/size/resizable=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
 [autoload]
 
 Branding="*res://branding.gd"
