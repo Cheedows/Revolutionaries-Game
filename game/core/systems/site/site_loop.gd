@@ -23,6 +23,7 @@ const RELEASE := 8
 const FREE := 9
 const RELOAD := 10
 const WAIT := 11
+const FIGHT := 12
 
 ## The directions, by option.
 const STEPS := {
@@ -94,6 +95,7 @@ static func _options(state: GameState, squad: Squad,
 				"enabled": quiet and _anybody_to_free(state)},
 		{"id": RELOAD, "label": "Reload", "enabled": quiet},
 		{"id": WAIT, "label": "Wait", "enabled": true},
+		{"id": FIGHT, "label": "Attack", "enabled": SiteFight.available(state)},
 	]
 	return options
 
@@ -140,6 +142,8 @@ static func _action(state: GameState, rng: Rng, squad: Squad, choice: int,
 			return _reload(state, squad, catalog)
 		WAIT:
 			return [] as Array[Event]
+		FIGHT:
+			return SiteFight.run(state, rng, squad, catalog)
 	return SiteMovement.step(state, squad, STEPS[choice], catalog, rng)
 
 
