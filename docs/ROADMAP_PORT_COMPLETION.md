@@ -184,8 +184,23 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     levels by four occupancies by four safehouse arrangements, compared on
     draw counts, every site's heat, protection, siege state and three
     countdowns, and every Liberal's heat and charge sheet.
-- [ ] The siege itself (`siegeturn()`, `sally_forth()`, `escapesiege()`) and
-    what a safehouse loses when it falls.
+- [x] A day of being under siege (`siegeturn()`): the stores are eaten, the
+    house starves without them, the power goes, snipers work on whoever has the
+    least standing to protect them, helicopters arrive once the escalation is
+    high enough, and the tank traps eventually come down. A house nobody is
+    left to defend falls and is stripped — and a warehouse the Conservative
+    Crime Squad takes, they keep.
+  - On a day when none of that happens, a reporter occasionally gets in, which
+    is the one thing a siege is good for: whoever is best at talking does the
+    talking, and the segment moves the organisation's name, its standing and
+    five issues at random. Their name comes off the main RNG stream here,
+    unlike the attorney's.
+  - Verified by the `siege_turn` probe: every combination of what a compound
+    can have built into it, four levels of escalation, three of stores and four
+    occupancies, compared on draw counts, the stores, the compound, the siege
+    state, the lease, the loot left, public opinion and every defender.
+- [ ] The assault itself (`sally_forth()`, `escape_engage()`, `escapesiege()`)
+    and surrendering (`giveup()`).
 - [ ] News hooks for daily arrests (the story types the original queues).
 - [x] The individual half of the day: `advanceday()`'s "ACTIVITIES FOR
     INDIVIDUALS" loop, which runs before anybody is sorted into a group.

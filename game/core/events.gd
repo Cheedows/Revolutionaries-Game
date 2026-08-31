@@ -195,6 +195,13 @@ const SIEGE_STARTED := &"siege_started"              # {location, attacker}
 const SIEGE_PLANNED := &"siege_planned"              # {location, attacker}
 const SIEGE_WARNED := &"siege_warned"                # {location, escalation}
 const SIEGE_RAIDED_EMPTY := &"siege_raided_empty"    # {location}
+const SIEGE_ASSAULT := &"siege_assault"              # {location}
+const SIEGE_BLACKOUT := &"siege_blackout"            # {location}
+const SIEGE_NEAR_MISS := &"siege_near_miss"          # {creature, manner}
+const SIEGE_AIR_REPELLED := &"siege_air_repelled"    # {location}
+const SIEGE_AIR_MISSED := &"siege_air_missed"        # {location}
+const SIEGE_WALLS_BREACHED := &"siege_walls_breached" # {location, what}
+const SIEGE_INTERVIEW := &"siege_interview"          # {location, creature, power, outlet, flavour}
 const SIEGE_ENDED := &"siege_ended"
 
 # --- Game lifecycle --------------------------------------------------------

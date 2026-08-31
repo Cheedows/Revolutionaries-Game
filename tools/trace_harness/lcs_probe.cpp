@@ -2903,6 +2903,142 @@ static void justice_stage(Creature &g, char &clearformess)
       prison(g);
 }
 
+// A day of being under siege: eating the stores, starving without them, the
+// power going, snipers, helicopters, and the reporter who occasionally gets in.
+void probe_siege_turn(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 51823607UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int walls = 0; walls < 8; walls++)
+      for (int escalation = 0; escalation < 4; escalation++)
+      for (int stores = 0; stores < 3; stores++)
+      for (int crowd = 0; crowd <= 3; crowd++)
+      {
+         unsigned long seed_used = 1200013UL * (unsigned long)
+            (walls * 512 + escalation * 64 + stores * 8 + crowd
+             + scenario * 307 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 7 + scenario * 13) % 101;
+            public_interest[v] = (v * 3 + scenario * 5) % 40;
+            background_liberal_influence[v] = 0;
+         }
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->siege = siegest();
+            // siegest()'s constructor leaves these uninitialised, and a
+            // garbage lights_off silently skips the blackout roll.
+            location[l]->siege.lights_off = 0;
+            location[l]->siege.cameras_off = 0;
+            location[l]->siege.kills = 0;
+            location[l]->siege.tanks = 0;
+            location[l]->siege.attacktime = 0;
+            location[l]->compound_walls = 0;
+            location[l]->compound_stores = 0;
+            delete_and_clear(location[l]->loot);
+         }
+         location[1]->renting = RENTING_PERMANENT;
+         location[1]->siege.siege = 1;
+         location[1]->siege.siegetype = SIEGE_POLICE;
+         location[1]->siege.underattack = 0;
+         location[1]->siege.escalationstate = escalation;
+         location[1]->compound_stores = stores * 3;
+         // Every combination of the four things a compound can have that the
+         // day's rules read.
+         if (walls & 1) location[1]->compound_walls |= COMPOUND_BASIC;
+         if (walls & 2) location[1]->compound_walls |= COMPOUND_GENERATOR;
+         if (walls & 4) location[1]->compound_walls |= COMPOUND_AAGUN;
+         if (escalation == 3) location[1]->compound_walls |= COMPOUND_TANKTRAPS;
+         location[1]->loot.push_back(
+            new Loot(*loottype[getloottype("LOOT_COMPUTER")]));
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 940000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = 1;
+            cr->base = 1;
+            cr->hireid = n ? 940000 : -1;
+            cr->juice = 10 + n * 40;
+            cr->blood = 30 + n * 20;
+            cr->set_skill(SKILL_PERSUASION, 2 + n * 3);
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"siege_turn\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"walls\":%d,\"escalation\":%d,\"stores\":%d,"
+                      "\"crowd\":%d,\"compound\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, walls, escalation, stores, crowd,
+                 location[1]->compound_walls, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s", p ? "," : "");
+            chase_write_creature(out, *pool[p], true);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         siegeturn(clearformess);
+
+         fprintf(out, ",\"draws\":%lld,\"stores_after\":%d,\"walls_after\":%d,"
+                      "\"siege\":%d,\"underattack\":%d,\"lights\":%d,"
+                      "\"renting\":%d,\"loot\":%d",
+                 lcs_trace_draw_count() - before, location[1]->compound_stores,
+                 location[1]->compound_walls, location[1]->siege.siege ? 1 : 0,
+                 location[1]->siege.underattack ? 1 : 0,
+                 location[1]->siege.lights_off ? 1 : 0,
+                 location[1]->renting, len(location[1]->loot));
+         fputs(",\"attitude_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s", p ? "," : "");
+            chase_write_creature(out, *pool[p], true);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         delete_and_clear(location[1]->loot);
+      }
+   }
+}
+
+
 // The nightly siege watch: how close the police are to each safehouse, and
 // whether anybody else has decided to pay a visit.
 void probe_siege_watch(FILE *out)
@@ -4825,6 +4961,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "sleepers")) probe_sleepers(out);
    else if (!strcmp(which, "justice")) probe_justice(out);
    else if (!strcmp(which, "siege_watch")) probe_siege_watch(out);
+   else if (!strcmp(which, "siege_turn")) probe_siege_turn(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
