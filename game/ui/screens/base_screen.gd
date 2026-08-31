@@ -9,6 +9,9 @@ extends Control
 ## The screen owns no game state. It reads a [Session], sends it decisions, and
 ## renders the events that come back.
 
+## Emitted when the game is over and the player is done reading about it.
+signal finished
+
 const AUTO_ADVANCE_SECONDS := 0.35
 
 var _session: Session
@@ -20,6 +23,7 @@ var _wait_button: Button
 var _run_button: Button
 var _dialog: IntentDialog
 var _running := false
+var _ended := false
 var _elapsed := 0.0
 
 
@@ -154,11 +158,30 @@ func _settle() -> void:
 
 	var over := _session.state.endgame_state
 	if over == &"won" or over == &"lost":
-		_running = false
-		_run_button.button_pressed = false
-		_wait_button.disabled = true
-		_log.append_heading("It is over. The squad %s."
-				% ("won" if over == &"won" else "is finished"))
+		_end(over)
+
+
+## The game is over: the score goes in the book, the autosave is thrown away,
+## and the only thing left to do is go back to the title.
+func _end(how: StringName) -> void:
+	if _ended:
+		return
+	_ended = true
+	_running = false
+	_run_button.button_pressed = false
+	_wait_button.disabled = true
+	var ending: StringName = &"won" if how == &"won" \
+			else EndCheck.cause(_session.state)
+	var place := ScoreFile.finish(_session, ending)
+	_log.append_heading("It is over. The squad %s."
+			% ("won" if how == &"won" else "is finished"))
+	if place >= 0:
+		_log.append("That is number %d in the book." % (place + 1),
+				Palette.ACCENT)
+	_wait_button.text = "Back to the title"
+	_wait_button.disabled = false
+	_wait_button.pressed.disconnect(_advance_one_day)
+	_wait_button.pressed.connect(func() -> void: finished.emit())
 
 
 func _on_answer(id: Variant) -> void:

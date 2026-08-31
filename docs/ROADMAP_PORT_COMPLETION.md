@@ -1275,13 +1275,16 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     — so one widget answers all of them, and `ui/adapters/intent_text.gd` is
     the only place that knows what each question should say. A screen needs a
     bespoke one only where a list of buttons is genuinely not enough.
-- [ ] New-game/title/load screens.
-  - [x] The new game: `ui/screens/new_game_screen.gd` asks the difficulty
-    switches, the win condition, the field skill rate and the founder's ten
-    questions through the same dialog, and hands the started session to the
-    safehouse screen. The questions' words are the original's, extracted into
+- [x] New-game/title/load screens.
+  - The new game: `ui/screens/new_game_screen.gd` asks the difficulty switches,
+    the win condition, the field skill rate and the founder's ten questions
+    through the same dialog, and hands the started session to the safehouse
+    screen. The questions' words are the original's, extracted into
     `ui/adapters/founder_text.gd`.
-  - [ ] The title screen and loading a saved game.
+  - The title: `ui/screens/title_screen.gd` starts a new organisation, carries
+    on from the autosave, opens any saved game by its slogan and date, and
+    reads the book of names. `ui/screens/main.gd` is the only thing that knows
+    what follows what.
 - [ ] Safehouse/base management screens beyond the current first pass.
 - [ ] Creature dossier/equipment/squad management.
 - [ ] Activity assignment/recruitment interfaces.
@@ -1293,6 +1296,10 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
 - [ ] Politics/agenda/review screens.
 - [ ] Justice/trial/prison presentation.
 - [ ] Save/load/settings/game-over flows.
+  - [x] Loading, carrying on and the end of a game: the safehouse screen puts
+    the score in the book, throws the autosave away and offers the way back to
+    the title. Settings and saving to a named slot from inside a game are
+    still to do.
 - [ ] Mouse/keyboard navigation, focus handling and scalable layout.
 - [ ] Headless scene-instantiation smoke tests for every major screen.
 

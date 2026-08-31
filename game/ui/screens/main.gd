@@ -1,21 +1,36 @@
 extends Control
-## The entry point: start a game, then play it.
+## The entry point, and the only thing that knows what follows what.
 ##
-## The two screens do not know about each other — this swaps one for the other
-## when the new-game questions are answered, so either can be opened on its own
-## in the editor or a test.
+## Title, then either the new-game questions or a game read off disk, then the
+## safehouse. Each screen only announces what happened; none of them knows
+## about any of the others, so any of them can be opened on its own.
 
 
 func _ready() -> void:
-	var opening: Control = preload("res://ui/screens/new_game_screen.tscn").instantiate()
-	opening.started.connect(_play)
-	add_child(opening)
+	_title()
+
+
+func _title() -> void:
+	var screen: Control = _swap("res://ui/screens/title_screen.tscn")
+	screen.new_game_wanted.connect(_new_game)
+	screen.loaded.connect(_play)
+
+
+func _new_game() -> void:
+	var screen: Control = _swap("res://ui/screens/new_game_screen.tscn")
+	screen.started.connect(_play)
 
 
 func _play(session: Session) -> void:
-	for child in get_children():
-		child.queue_free()
-		remove_child(child)
-	var screen: Control = preload("res://ui/screens/base_screen.tscn").instantiate()
-	add_child(screen)
+	var screen: Control = _swap("res://ui/screens/base_screen.tscn")
 	screen.setup(session)
+	screen.finished.connect(_title)
+
+
+func _swap(scene_path: String) -> Control:
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+	var screen: Control = (load(scene_path) as PackedScene).instantiate()
+	add_child(screen)
+	return screen

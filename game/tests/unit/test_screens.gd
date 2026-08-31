@@ -84,6 +84,65 @@ func test_a_fortnight_can_be_played_through_the_screen() -> void:
 	screen.free()
 
 
+func test_the_title_screen_offers_what_is_there() -> void:
+	SaveGame.erase(SaveGame.AUTOSAVE)
+	var screen: Object = (load("res://ui/screens/title_screen.gd") as GDScript).new()
+	screen.theme = UiTheme.build()
+	screen._build()
+	screen._menu()
+	check(not screen.can_continue(), "there is nothing to carry on with")
+
+	var dialog: IntentDialog = screen._dialog
+	check(dialog.visible, "the menu is up")
+	var enabled := {}
+	for row in dialog._options.get_children():
+		for child in (row as Control).get_children():
+			if child is Button:
+				enabled[dialog._ids.get(child)] = not (child as Button).disabled
+	check(bool(enabled[&"new"]), "a new game can always be started")
+	check(not bool(enabled[&"continue"]),
+			"but there is nothing to carry on")
+
+	# The book opens even when it is empty.
+	screen._on_chosen(&"scores")
+	check(not String(screen._body.text).is_empty(), "the book says something")
+	screen.free()
+
+
+func test_a_saved_game_can_be_opened_from_the_title() -> void:
+	var opening: Object = (load("res://ui/screens/new_game_screen.gd") as GDScript).new()
+	opening.begin(SEED)
+	var started: Array[Session] = []
+	opening.started.connect(func(session: Session) -> void: started.append(session))
+	var answered := 0
+	while started.is_empty() and answered < PATIENCE:
+		answered += 1
+		opening._on_chosen(_option(opening._dialog, true))
+	opening.free()
+	if started.is_empty():
+		fail("could not start a game")
+		return
+	started[0].state.slogan = "Something worth reading back"
+	check(SaveGame.write(started[0]), "the game was saved")
+
+	var screen: Object = (load("res://ui/screens/title_screen.gd") as GDScript).new()
+	screen.theme = UiTheme.build()
+	screen._build()
+	screen._menu()
+	check(screen.can_continue(), "there is a game to carry on with")
+
+	var opened: Array[Session] = []
+	screen.loaded.connect(func(session: Session) -> void: opened.append(session))
+	screen._on_chosen(&"continue")
+	if opened.is_empty():
+		fail("carrying on did not open the save")
+		return
+	equal(opened[0].state.slogan, "Something worth reading back",
+			"and it is the game that was saved")
+	screen.free()
+	SaveGame.erase(SaveGame.AUTOSAVE)
+
+
 ## The id of an option the dialog is offering that can be taken.
 func _option(dialog: IntentDialog, last: bool) -> Variant:
 	var found: Variant = null
