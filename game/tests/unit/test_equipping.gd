@@ -112,3 +112,34 @@ func test_the_commands_refuse_somebody_who_is_not_there() -> void:
 	var stranger := session.state.add_creature(Creature.new())
 	equal(Commands.equip(session, stranger, Weapon.new(&"WEAPON_SEMIPISTOL_9MM")),
 			"They are not with the squad.", "the squad is who this is for")
+
+
+func test_a_tailor_is_told_what_to_sew() -> void:
+	_load()
+	var state := GameState.new()
+	check(AssignmentChoice.needs_more(&"make_armor"), "sewing needs a garment")
+	check(not AssignmentChoice.needs_more(&"donations"),
+			"and soliciting does not")
+
+	var choices := AssignmentChoice.garments(state, _catalog)
+	check(choices.size() > 3, "there are things to make, got %d" % choices.size())
+	for garment: StringName in choices:
+		var type: ArmorType = _catalog.get_entry(&"armor", garment)
+		check(type.make_difficulty > 0, "%s can actually be made" % garment)
+		check(not type.deathsquad_legality,
+				"%s is not the death squad's own" % garment)
+
+	var tailor := Creature.new()
+	AssignmentChoice.choose(tailor, &"make_armor", choices[0])
+	equal(tailor.making, choices[0], "and they know what to work on")
+
+
+func test_the_death_squad_uniform_needs_a_death_squad() -> void:
+	_load()
+	var state := GameState.new()
+	state.law.values[Ids.LAWS.find(&"policebehavior")] = Law.ARCH_CONSERVATIVE
+	state.law.values[Ids.LAWS.find(&"deathpenalty")] = Law.ARCH_CONSERVATIVE
+	var harsh := AssignmentChoice.garments(state, _catalog)
+	var mild := AssignmentChoice.garments(GameState.new(), _catalog)
+	check(harsh.size() > mild.size(),
+			"a country with death squads has one more uniform to sew")

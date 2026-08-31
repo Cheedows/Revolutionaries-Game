@@ -13,6 +13,11 @@ signal dossier_wanted(creature: Creature)
 
 var _rows: VBoxContainer
 
+## The garments a tailor could be told to make, worked out from the state and
+## the catalog as the roster is drawn. Kept as a list rather than as the state
+## itself, because a widget has no business holding onto [GameState].
+var _garment_choices: Array[StringName] = []
+
 
 func _ready() -> void:
 	_build()
@@ -42,6 +47,12 @@ func _build() -> void:
 	_rows = VBoxContainer.new()
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_rows)
+
+
+## What a tailor can be told to make. The screen works it out, because doing so
+## needs the catalog and the law and a widget should hold neither.
+func offer_garments(choices: Array[StringName]) -> void:
+	_garment_choices = choices
 
 
 ## Redraws from [param state].
@@ -99,12 +110,33 @@ func _row(creature: Creature) -> Control:
 		activity_chosen.emit(creature, ActivityAssignment.AVAILABLE[index]))
 	row.add_child(activities)
 
+	# Sewing needs to be told what to sew, which the original asks on a screen
+	# of its own. It is a second picker here, shown only when it applies.
+	if AssignmentChoice.needs_more(creature.activity):
+		row.add_child(_garments(creature))
+
 	var look := Button.new()
 	look.text = "Look"
 	look.tooltip_text = "Read %s's record and hand them their gear" % creature.name
 	look.pressed.connect(func() -> void: dossier_wanted.emit(creature))
 	row.add_child(look)
 	return row
+
+
+## Which garment a tailor is working on.
+func _garments(creature: Creature) -> Control:
+	var picker := OptionButton.new()
+	picker.custom_minimum_size = Vector2(180, 0)
+	var choices := _garment_choices
+	for index in choices.size():
+		picker.add_item(String(choices[index]).trim_prefix("ARMOR_")
+				.capitalize(), index)
+		if creature.making == choices[index]:
+			picker.select(index)
+	picker.item_selected.connect(func(index: int) -> void:
+		AssignmentChoice.choose(creature, creature.activity, choices[index])
+		activity_chosen.emit(creature, creature.activity))
+	return picker
 
 
 ## What is currently true of this person, in a word or two.

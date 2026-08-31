@@ -212,6 +212,8 @@ func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
 func _refresh() -> void:
 	_status.refresh(_session.state)
 	_laws.refresh(_session.state)
+	_roster.offer_garments(AssignmentChoice.garments(_session.state,
+			_session.catalog))
 	_roster.refresh(_session.state)
 	_squad.refresh(_session.state)
 	# The plan is only worth the room it takes while the squad is inside one.
