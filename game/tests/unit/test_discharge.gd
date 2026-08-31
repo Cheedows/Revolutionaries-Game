@@ -96,7 +96,8 @@ func test_an_execution_kills_and_the_killer_feels_it() -> void:
 	# went, one more draw follows: the reaction, or the hardening.
 	check(rng.bounds.size() >= 3, "three draws at least")
 	equal(rng.bounds[0], Discharge.MANNERS, "how it was done")
-	equal(rng.bounds[1], 10, "the killer's raw heart")
+	equal(rng.bounds[1], AttributeRules.effective(founder, &"heart") + 1,
+			"the killer's heart, before it fell")
 	equal(rng.bounds[2], Discharge.MANNERS, "against a three")
 
 
@@ -120,4 +121,7 @@ func _person(state: GameState, name: String, contact: int) -> Creature:
 	creature.join_days = 1
 	creature.hire_id = contact
 	creature.recruiter_id = contact
+	# Out of the age bands that shift an attribute, so a test that sets one
+	# gets the number it set.
+	creature.age = 30
 	return creature

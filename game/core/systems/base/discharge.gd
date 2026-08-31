@@ -112,9 +112,9 @@ static func execute(state: GameState, rng: Rng,
 		"manner": rng.below(MANNERS),
 	})]
 
-	# How the killer takes it. Note the heart here is the raw attribute, not
-	# the effective one, so a badly hurt Liberal is no less likely to feel it.
-	var felt := rng.below(boss.attributes.get_value(&"heart"))
+	# How the killer takes it. The bound is their heart as modified by age and
+	# injury but not by juice — the original's get_attribute(..., false).
+	var felt := rng.below(AttributeRules.effective(boss, &"heart"))
 	if felt > rng.below(MANNERS):
 		boss.attributes.set_value(&"heart",
 				boss.attributes.get_value(&"heart") - 1)

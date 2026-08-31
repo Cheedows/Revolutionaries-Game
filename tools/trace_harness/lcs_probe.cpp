@@ -12726,6 +12726,148 @@ void probe_surgery(FILE *out)
 
 // checkforarrest() from src/daily/activities.cpp, with attemptarrest()
 // inlined as far as the foot chase — which has a probe of its own.
+// The 'R' and 'K' branches of review_mode() in src/basemode/reviewmode.cpp:
+// releasing a squad member for good, and having their contact kill them.
+// Both roll, and both change the world afterwards, so both are traced with
+// the drawing taken out and the branches left exactly where they were.
+void probe_discharge(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      // The world is built once per scenario: initlocation() overflows a
+      // twenty-character buffer when an apartment block draws a long enough
+      // name, and rebuilding it for every case eventually finds one.
+      lcs_trace_set_seed(715827883UL * (unsigned long)(scenario + 1));
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(pool);
+      delete_and_clear(squad);
+      make_world(false);
+      uniqueCreatures.initialize();
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+
+   for (int kill = 0; kill < 2; kill++)
+   for (int criminal = 0; criminal < 2; criminal++)
+   for (int heart = 0; heart <= 10; heart += 2)
+   for (int wisdom = 1; wisdom <= 9; wisdom += 4)
+   for (int hot = 0; hot < 2; hot++)
+   {
+      unsigned long seed_used = 2147483647UL * (unsigned long)
+         (((((kill * 2 + criminal) * 6 + heart / 2) * 3 + wisdom / 4) * 2
+           + hot) + scenario * 907 + 1);
+      lcs_trace_set_seed(seed_used);
+      initMainRNG();
+      delete_and_clear(pool);
+      stat_kills = 0;
+
+      Creature *boss = new Creature;
+      makecreature(*boss, CREATURE_POLITICALACTIVIST);
+      boss->align = ALIGN_LIBERAL;
+      boss->location = 2;
+      boss->base = 2;
+      boss->hireid = -1;
+      // Pinned so the age band that modifies an attribute is not an axis.
+      boss->age = 30;
+      boss->set_attribute(ATTRIBUTE_HEART, heart);
+      boss->set_attribute(ATTRIBUTE_WISDOM, 5);
+      for (int i = 0; i < LAWFLAGNUM; i++) boss->crimes_suspected[i] = 0;
+      if (criminal) boss->crimes_suspected[LAWFLAG_MURDER] = 1;
+      pool.push_back(boss);
+
+      Creature *cr = new Creature;
+      makecreature(*cr, CREATURE_POLITICALACTIVIST);
+      cr->align = ALIGN_LIBERAL;
+      cr->location = 2;
+      cr->base = 2;
+      cr->hireid = boss->id;
+      cr->age = 30;
+      cr->set_attribute(ATTRIBUTE_HEART, 3);
+      cr->set_attribute(ATTRIBUTE_WISDOM, wisdom);
+      for (int i = 0; i < LAWFLAGNUM; i++) cr->crimes_suspected[i] = 0;
+      pool.push_back(cr);
+
+      location[boss->base]->heat = hot ? 40 : 5;
+      location[boss->base]->siege.timeuntillocated = -1;
+
+      fprintf(out, "{\"kind\":\"discharge\",\"scenario\":%d,\"seed\":%lu,"
+                   "\"kill\":%d,\"criminal\":%d,\"heart\":%d,\"wisdom\":%d,"
+                   "\"hot\":%d,\"rng\":[",
+              scenario, seed_used, kill, criminal, heart, wisdom, hot);
+      for (int i = 0; i < RNG_SIZE; i++)
+         fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+      fputs("]", out);
+
+      long long before = lcs_trace_draw_count();
+      int ratted = 0, manner = -1, sickened = 0, colder = 0, reaction = -1;
+      int bossid = getpoolcreature(cr->hireid);
+      if (!kill)
+      {
+         lcs_trace_note("release");
+         if (cr->get_attribute(ATTRIBUTE_HEART, true) <
+                cr->get_attribute(ATTRIBUTE_WISDOM, true) + LCSrandom(5)
+             && iscriminal(*pool[bossid]))
+         {
+            ratted = 1;
+            criminalize(*pool[bossid], LAWFLAG_RACKETEERING);
+            pool[bossid]->confessions++;
+            if (location[pool[bossid]->base]->heat > 20)
+               location[pool[bossid]->base]->siege.timeuntillocated = 3;
+            else
+               location[pool[bossid]->base]->heat += 20;
+         }
+         removesquadinfo(*cr);
+         cleangonesquads();
+      }
+      else
+      {
+         lcs_trace_note("execute");
+         if (pool[bossid]->location == cr->location)
+         {
+            cr->die();
+            cleangonesquads();
+            stat_kills++;
+            manner = LCSrandom(3);
+            if (bossid != -1)
+            {
+               if (LCSrandom(pool[bossid]->get_attribute(ATTRIBUTE_HEART,
+                                                         false))
+                   > LCSrandom(3))
+               {
+                  sickened = 1;
+                  pool[bossid]->adjust_attribute(ATTRIBUTE_HEART, -1);
+                  reaction = LCSrandom(4);
+               }
+               else if (!LCSrandom(3))
+               {
+                  colder = 1;
+                  pool[bossid]->adjust_attribute(ATTRIBUTE_WISDOM, +1);
+               }
+            }
+         }
+      }
+
+      fprintf(out, ",\"draws\":%lld,\"ratted\":%d,\"manner\":%d,"
+                   "\"sickened\":%d,\"colder\":%d,\"reaction\":%d,"
+                   "\"confessions\":%d,\"base_heat\":%d,\"located\":%d,"
+                   "\"kills\":%d,\"alive\":%d,\"boss_heart\":%d,"
+                   "\"boss_wisdom\":%d,\"boss_crimes\":[",
+              lcs_trace_draw_count() - before, ratted, manner, sickened,
+              colder, reaction, (int)pool[bossid]->confessions,
+              (int)location[pool[bossid]->base]->heat,
+              (int)location[pool[bossid]->base]->siege.timeuntillocated,
+              stat_kills, cr->alive ? 1 : 0,
+              pool[bossid]->get_attribute(ATTRIBUTE_HEART, false),
+              pool[bossid]->get_attribute(ATTRIBUTE_WISDOM, false));
+      for (int i = 0; i < LAWFLAGNUM; i++)
+         fprintf(out, "%s%d", i ? "," : "",
+                 (int)pool[bossid]->crimes_suspected[i]);
+      fputs("]}\n", out);
+
+      delete_and_clear(pool);
+   }
+   }
+}
+
 void probe_arrest(FILE *out)
 {
    for (int scenario = 0; scenario < 3; scenario++)
@@ -14495,6 +14637,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "dealership")) probe_dealership(out);
    else if (!strcmp(which, "surgery")) probe_surgery(out);
    else if (!strcmp(which, "arrest")) probe_arrest(out);
+   else if (!strcmp(which, "discharge")) probe_discharge(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else
