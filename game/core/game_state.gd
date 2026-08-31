@@ -38,6 +38,11 @@ var vehicles: Dictionary = {}
 ## Stories waiting to run in tomorrow's paper.
 var news: Array[NewsStory] = []
 
+## What the game is doing right now, from [constant Ids.GAME_MODES]. Some
+## encounter rules read it: an apartment block only fields security guards for
+## a squad that is actually standing in it.
+var mode: StringName = &"base"
+
 ## Sieges under way, keyed by location id.
 var sieges: Dictionary = {}
 

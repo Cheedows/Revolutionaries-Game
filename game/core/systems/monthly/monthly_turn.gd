@@ -25,7 +25,8 @@ const CCS_THRESHOLDS := {
 }
 
 
-static func run(state: GameState, rng: Rng) -> Array[Event]:
+static func run(state: GameState, rng: Rng,
+		catalog: Catalog = null) -> Array[Event]:
 	var events: Array[Event] = []
 
 	# The clinics discharge first: the original runs this before anything else
@@ -38,11 +39,13 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 	events.append_array(DispersalCheck.run(state, rng))
 	_stale_the_news(state)
 
-	# What the month's tags argued for feeds straight into the drift, along
-	# with the essays already banked as background influence.
-	events.append_array(GraffitiUpkeep.run(state, rng))
+	# The sleepers report first, and what they and the month's tags argued for
+	# feeds straight into the drift, along with the essays already banked as
+	# background influence.
 	var liberal_power := PackedInt32Array()
 	liberal_power.resize(Ids.VIEWS.size())
+	events.append_array(_the_sleepers(state, rng, liberal_power, catalog))
+	events.append_array(GraffitiUpkeep.run(state, rng))
 	events.append_array(OpinionDrift.run(state, rng, liberal_power))
 	OpinionDrift.stipends(state)
 	state.ledger.reset_monthly()
@@ -60,6 +63,25 @@ static func run(state: GameState, rng: Rng) -> Array[Event]:
 	if WinCheck.is_won(state):
 		state.endgame_state = &"won"
 		events.append(Event.new(Event.GAME_WON, {"condition": state.win_condition}))
+	return events
+
+
+## Everybody the squad has left in place, worked from the back of the pool
+## forwards — and never the founder, whom the original's loop stops short of.
+static func _the_sleepers(state: GameState, rng: Rng,
+		liberal_power: PackedInt32Array, catalog: Catalog) -> Array[Event]:
+	var pool: Array[Creature] = []
+	for creature: Creature in state.creatures.values():
+		if creature.is_member():
+			pool.append(creature)
+	pool.sort_custom(func(a: Creature, b: Creature) -> bool: return a.id < b.id)
+
+	var events: Array[Event] = []
+	for index in range(pool.size() - 1, 0, -1):
+		var sleeper := pool[index]
+		if sleeper.alive and sleeper.sleeper:
+			events.append_array(SleeperEffect.run(state, rng, sleeper,
+					liberal_power, catalog))
 	return events
 
 

@@ -42,6 +42,7 @@ static func to_dict(game: GameState) -> Dictionary:
 			"background_influence": Array(game.opinion.background_influence),
 		},
 		"world": {
+			"mode": String(game.mode),
 			"police_heat": game.police_heat,
 			"ccs_exposure": game.ccs_exposure,
 			"endgame_state": String(game.endgame_state),
@@ -102,6 +103,7 @@ static func from_dict(document: Dictionary) -> GameState:
 
 	var world: Dictionary = migrated["world"]
 	game.police_heat = world["police_heat"]
+	game.mode = StringName(world["mode"])
 	game.ccs_exposure = world["ccs_exposure"]
 	game.endgame_state = StringName(world["endgame_state"])
 	game.win_condition = StringName(world["win_condition"])
@@ -160,6 +162,22 @@ static func _creatures_to_array(game: GameState) -> Array:
 			"wounds": Array(creature.body.wounds),
 			"special": Array(creature.body.special),
 			"crimes_suspected": Array(creature.crimes_suspected),
+			"hire_id": creature.hire_id,
+			"recruiter_id": creature.recruiter_id,
+			"work_location": creature.work_location,
+			"meetings": creature.meetings,
+			"death_days": creature.death_days,
+			"sleeper": creature.sleeper,
+			"love_slave": creature.love_slave,
+			"brainwashed": creature.brainwashed,
+			"converted": creature.converted,
+			"wheelchair": creature.wheelchair,
+			"missing": creature.missing,
+			"kidnapped": creature.kidnapped,
+			"named": creature.named,
+			"mural": String(creature.mural),
+			"making": String(creature.making),
+			"recruiting": String(creature.recruiting),
 		})
 	return encoded
 
@@ -197,6 +215,22 @@ static func _creature_from(recorded: Dictionary) -> Creature:
 	creature.body.wounds = _ints(recorded["wounds"])
 	creature.body.special = _ints(recorded["special"])
 	creature.crimes_suspected = _ints(recorded["crimes_suspected"])
+	creature.hire_id = recorded["hire_id"]
+	creature.recruiter_id = recorded["recruiter_id"]
+	creature.work_location = recorded["work_location"]
+	creature.meetings = recorded["meetings"]
+	creature.death_days = recorded["death_days"]
+	creature.sleeper = recorded["sleeper"]
+	creature.love_slave = recorded["love_slave"]
+	creature.brainwashed = recorded["brainwashed"]
+	creature.converted = recorded["converted"]
+	creature.wheelchair = recorded["wheelchair"]
+	creature.missing = recorded["missing"]
+	creature.kidnapped = recorded["kidnapped"]
+	creature.named = recorded["named"]
+	creature.mural = StringName(recorded["mural"])
+	creature.making = StringName(recorded["making"])
+	creature.recruiting = StringName(recorded["recruiting"])
 	return creature
 
 

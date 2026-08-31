@@ -17,6 +17,7 @@ const ENTRANCE_Y := 1
 static func enter(state: GameState, squad: Squad, location: Location,
 		catalog: Catalog, rng: Rng) -> Array[Event]:
 	var site := state.site
+	state.mode = &"site"
 	site.location = location.id
 	site.type = location.type
 	site.alarm = false
@@ -75,6 +76,7 @@ static func _has_a_floor_plan(state: GameState, location: Location) -> bool:
 static func leave(state: GameState) -> Array[Event]:
 	var site := state.site
 	var left := site.location
+	state.mode = &"base"
 	site.location = -1
 	site.type = &""
 	site.map = null

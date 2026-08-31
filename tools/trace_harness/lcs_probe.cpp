@@ -2842,6 +2842,171 @@ static void monthly_drift_block(int *libpower)
    }
 }
 
+// A month for the people the squad has left in place: influencing the room,
+// snooping through filing cabinets, skimming the accounts, taking things home
+// and quietly recruiting the next one.
+void probe_sleepers(FILE *out)
+{
+   // Enough professions to reach every block of the influence table, both
+   // broadcasters, the politician who picks three issues at random, the
+   // firefighter with an opinion only under censorship, and the ones with
+   // nothing to offer at all.
+   static const int WHO[] = {
+      CREATURE_CORPORATE_CEO, CREATURE_POLITICIAN, CREATURE_SCIENTIST_EMINENT,
+      CREATURE_RADIOPERSONALITY, CREATURE_NEWSANCHOR, CREATURE_FIREFIGHTER,
+      CREATURE_JUDGE_CONSERVATIVE, CREATURE_LAWYER, CREATURE_COP,
+      CREATURE_DEATHSQUAD, CREATURE_AGENT, CREATURE_PRISONGUARD,
+      CREATURE_SOLDIER, CREATURE_WORKER_SWEATSHOP, CREATURE_PRIEST,
+      CREATURE_NUN, CREATURE_HIPPIE, CREATURE_BANK_MANAGER,
+      CREATURE_CORPORATE_MANAGER, CREATURE_SCIENTIST_LABTECH,
+      CREATURE_SECRET_SERVICE, CREATURE_MERC,
+   };
+   const int WHO_COUNT = (int)(sizeof(WHO) / sizeof(WHO[0]));
+
+   static const int JOBS[] = {
+      ACTIVITY_SLEEPER_LIBERAL, ACTIVITY_SLEEPER_SPY,
+      ACTIVITY_SLEEPER_EMBEZZLE, ACTIVITY_SLEEPER_STEAL,
+      ACTIVITY_SLEEPER_SCANDAL, ACTIVITY_SLEEPER_RECRUIT,
+   };
+   const int JOB_COUNT = (int)(sizeof(JOBS) / sizeof(JOBS[0]));
+
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 44017231UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      int shelter = -1;
+      for (int l = 0; l < len(location); l++)
+         if (shelter == -1 && location[l]->type == SITE_RESIDENTIAL_SHELTER)
+            shelter = l;
+
+      for (int job = 0; job < JOB_COUNT; job++)
+      for (int who = 0; who < WHO_COUNT; who++)
+      for (int depth = 0; depth < 3; depth++)
+      {
+         unsigned long seed_used = 8800021UL * (unsigned long)
+            (job * 1024 + who * 8 + depth + scenario * 211 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(location[shelter]->loot);
+         ledger.force_funds(1000);
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 9 + scenario * 23) % 101;
+            public_interest[v] = (v * 5 + scenario * 7) % 40;
+            background_liberal_influence[v] = 0;
+         }
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario + depth) % 5) - 2;
+         ccsexposure = CCSEXPOSURE_NONE;
+
+         // Where a thief works decides what they bring home, so the sleeper
+         // is put somewhere different each time round.
+         static const int WORKPLACES[] = {
+            SITE_GOVERNMENT_POLICESTATION, SITE_CORPORATE_HOUSE,
+            SITE_RESIDENTIAL_APARTMENT_UPSCALE,
+         };
+         int workplace = 1;
+         for (int l = 0; l < len(location); l++)
+            if (location[l]->type == WORKPLACES[depth]) { workplace = l; break; }
+
+         Creature *cr = new Creature;
+         makecreature(*cr, WHO[who]);
+         cr->id = 990000;
+         cr->align = ALIGN_LIBERAL;
+         cr->location = workplace;
+         cr->base = workplace;
+         cr->worklocation = workplace;
+         cr->hireid = -1;
+         cr->juice = depth == 0 ? -2 : 40;
+         cr->infiltration = 0.15f + depth * 0.4f;
+         cr->flag |= CREATUREFLAG_SLEEPER;
+         cr->activity.type = JOBS[job];
+         pool.push_back(cr);
+
+         fprintf(out, "{\"kind\":\"sleeper\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"job\":%d,\"who\":%d,\"depth\":%d,\"workplace\":%d,"
+                      "\"shelter\":%d,\"activity\":%d,\"infiltration\":%.9g,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, job, who, depth, workplace, shelter,
+                 cr->activity.type, (double)cr->infiltration, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"person\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char clearformess = 0;
+         int libpower[VIEWNUM] = {0};
+         long long before = lcs_trace_draw_count();
+         sleepereffect(*cr, clearformess, 1, libpower);
+
+         fprintf(out, ",\"draws\":%lld,\"funds\":%d,\"exposure\":%d,"
+                      "\"infiltration_after\":%.9g,\"sleeper_after\":%d,"
+                      "\"activity_after\":%d,\"pool_size\":%d",
+                 lcs_trace_draw_count() - before, ledger.get_funds(),
+                 ccsexposure, (double)cr->infiltration,
+                 (cr->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                 cr->activity.type, len(pool));
+         fputs(",\"libpower\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", libpower[i]);
+         fputs("],\"attitude_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"stash\":[", out);
+         for (int i = 0; i < len(location[shelter]->loot); i++)
+            fprintf(out, "%s\"%s\"", i ? "," : "",
+                    location[shelter]->loot[i]->get_itemtypename().c_str());
+         fputs("],\"person_after\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"encounters\":[", out);
+         for (int e = 0; e < ENCMAX; e++)
+         {
+            if (!encounter[e].exists) break;
+            fprintf(out, "%s\"%s\"", e ? "," : "",
+                    getcreaturetype(encounter[e].type)->get_idname().c_str());
+         }
+         fputs("],\"recruits\":[", out);
+         for (int p = 1; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"align\":%d,\"sleeper\":%d,\"work\":%d,"
+                         "\"infiltration\":%.9g,\"person\":",
+                    p > 1 ? "," : "", pool[p]->align,
+                    (pool[p]->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                    pool[p]->worklocation, (double)pool[p]->infiltration);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         delete_and_clear(location[shelter]->loot);
+      }
+   }
+}
+
+
 // A month of tags on walls and opinion drifting on its own.
 void probe_monthly_drift(FILE *out)
 {
@@ -4212,6 +4377,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "dispersal")) probe_dispersal(out);
    else if (!strcmp(which, "ageing")) probe_ageing(out);
    else if (!strcmp(which, "drift")) probe_monthly_drift(out);
+   else if (!strcmp(which, "sleepers")) probe_sleepers(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

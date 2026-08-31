@@ -134,7 +134,7 @@ static func ask_around(state: GameState, rng: Rng, recruiter: Creature,
 				recruiter.location, catalog)
 		if candidate == null:
 			break
-		_name(rng, candidate)
+		name_candidate(rng, candidate)
 		state.add_creature(candidate)
 		found.append(candidate)
 	return found
@@ -184,7 +184,7 @@ static func subordinates_left(state: GameState, recruiter: Creature) -> int:
 
 
 ## Gives a candidate a name, once, the way the original does.
-static func _name(rng: Rng, candidate: Creature) -> void:
+static func name_candidate(rng: Rng, candidate: Creature) -> void:
 	if candidate.named:
 		return
 	var chosen: Array = NamingRules.first_and_last(rng,

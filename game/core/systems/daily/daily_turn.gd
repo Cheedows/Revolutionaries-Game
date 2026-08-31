@@ -59,15 +59,15 @@ static func _continue(state: GameState, rng: Rng, catalog: Catalog,
 		done.append_array(DispersalCheck.run(state, rng))
 		done.append_array(RentRules.run(state))
 		if catalog == null:
-			return _close_the_day(state, rng, done)
+			return _close_the_day(state, rng, done, catalog)
 		return _continue(state, rng, catalog, MEETINGS, done,
 				RecruitQueue.advance(state, rng, catalog))
-	return _close_the_day(state, rng, done)
+	return _close_the_day(state, rng, done, catalog)
 
 
 ## The date moves last, and the month with it.
 static func _close_the_day(state: GameState, rng: Rng,
-		events: Array[Event]) -> Array[Event]:
+		events: Array[Event], catalog: Catalog = null) -> Array[Event]:
 	var aged := DailyAgeing.run(state, rng)
 	var done: Array[Event] = events + (aged["events"] as Array[Event])
 	DispersalCheck.sweep_empty_squads(state)
@@ -78,5 +78,5 @@ static func _close_the_day(state: GameState, rng: Rng,
 			"month": state.calendar.month,
 			"year": state.calendar.year,
 		}))
-		done.append_array(MonthlyTurn.run(state, rng))
+		done.append_array(MonthlyTurn.run(state, rng, catalog))
 	return done

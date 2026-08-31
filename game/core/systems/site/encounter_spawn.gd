@@ -170,7 +170,7 @@ static func _holds(state: GameState, when: Variant, context: Dictionary) -> bool
 			return state.government.executive[Government.PRESIDENT] \
 					< Alignment.CONSERVATIVE
 		"in_site":
-			return state.site.location != -1
+			return state.mode == &"site"
 		"restricted":
 			return _on_restricted(state)
 		"unrestricted":

@@ -386,6 +386,23 @@ const CRIMES: Array[StringName] = [
 ]
 
 ## 6 entries, in enum order.
+## 5 entries, in enum order.
+const GAME_MODES: Array[StringName] = [
+	&"title",
+	&"base",
+	&"site",
+	&"chasecar",
+	&"chasefoot",
+]
+
+## 4 entries, in enum order.
+const CCS_EXPOSURE: Array[StringName] = [
+	&"none",
+	&"lcsgotdata",
+	&"exposed",
+	&"nobackers",
+]
+
 const ENDGAME_STATES: Array[StringName] = [
 	&"none",
 	&"ccs_appearance",

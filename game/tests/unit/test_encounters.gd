@@ -109,6 +109,9 @@ func _world(sample: Dictionary) -> GameState:
 			state.government.executive[index] = int(posts[index])
 
 	WorldBuilder.build(state, Rng.new(int(sample["world_seed"])), false)
+	# The probe runs the building in site mode, and some rules read that: an
+	# apartment block only fields security guards for a squad standing in it.
+	state.mode = &"site"
 	state.site.location = 1
 	state.site.type = Ids.SITE_TYPES[int(sample["sitetype"])]
 	state.site.map = LevelMap.new()
