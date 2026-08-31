@@ -51,7 +51,8 @@ static func turn(state: GameState, rng: Rng, squad: Squad,
 	if state.site.location == -1:
 		return [] as Array[Event]
 	return PendingIntent.new(
-			Intent.new(Intent.CHOOSE_SITE_MOVE, _options(state, squad),
+			Intent.new(Intent.CHOOSE_SITE_MOVE,
+					_options(state, squad, catalog),
 					_situation(state, squad), false),
 			func(answer: Variant) -> Variant:
 				return _act(state, rng, squad, int(answer), catalog),
@@ -68,7 +69,8 @@ static func _situation(state: GameState, squad: Squad) -> Dictionary:
 	}
 
 
-static func _options(state: GameState, squad: Squad) -> Array[Dictionary]:
+static func _options(state: GameState, squad: Squad,
+		catalog: Catalog) -> Array[Dictionary]:
 	var site := state.site
 	var enemy := _anybody_hostile(state)
 	var quiet := not enemy or not site.alarm
@@ -78,7 +80,7 @@ static func _options(state: GameState, squad: Squad) -> Array[Dictionary]:
 		{"id": MOVE_LEFT, "label": "West", "enabled": true},
 		{"id": MOVE_RIGHT, "label": "East", "enabled": true},
 		{"id": USE, "label": "Use what is here",
-				"enabled": site.map.get_special(site.x, site.y, site.z) >= 0},
+				"enabled": SiteUse.available(state, squad, catalog)},
 		{"id": TALK, "label": "Talk to somebody",
 				"enabled": not site.encounter_ids.is_empty()},
 		{"id": TAKE, "label": "Pick things up",
@@ -123,7 +125,7 @@ static func _action(state: GameState, rng: Rng, squad: Squad, choice: int,
 		catalog: Catalog) -> Variant:
 	match choice:
 		USE:
-			return SiteMovement.use(state)
+			return SiteUse.use(state, rng, squad, catalog)
 		TALK:
 			return _talk(state, rng, squad, catalog)
 		TAKE:

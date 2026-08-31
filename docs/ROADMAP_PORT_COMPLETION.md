@@ -819,10 +819,17 @@ Site construction is already strong; now port the gameplay that occurs inside th
     at three stages of suspicion. Compared on draw counts, the alarm, the
     suspicion countdown and what each Liberal learned.
 - [x] Restricted areas/doors/locks/security behavior.
-- [ ] Site specials and interaction rules from `mapspecials.cpp`, in
+- [x] Site specials and interaction rules from `mapspecials.cpp`, in
     `core/systems/site/specials/`. Each is transcribed with its prompt answered
     and the display taken out, because several of the original's rolls sit in
     the middle of the printing.
+  - [x] **Newly discovered required work, now done.** They are reached.
+    `systems/site/site_use.gd` ports the `u` branch of the site loop — the
+    switch over the square's special, and the spray can that answers when there
+    is none, which needs a blank square, a wall beside it and somebody carrying
+    a can, and is the one use the original follows with an enemy round. Until
+    this landed the site loop's use key only took the stairs, so every special
+    below was verified against the original and unreachable in play.
   - [x] Wrecking the fittings (`special_sweatshop_equipment()`,
       `special_polluter_equipment()`, `special_display_case()`,
       `special_graffiti()`), the two cages
@@ -908,8 +915,11 @@ Site construction is already strong; now port the gameplay that occurs inside th
       compared on draw counts, whether it aired, how well it went, the alarm,
       whether the room forgave the squad, who came to investigate, and opinion
       and interest on every issue.
-  - [ ] `special_readsign()`, which is presentation and lands with the site UI.
-- [ ] Dialogue/talk/persuasion/intimidation/recruit-like site interactions
+  - [x] `special_readsign()` changes nothing and rolls nothing — it is three
+      signs and what a handful of buildings put on them. The simulation emits
+      `SIGN_READ` with which sign and what kind of building it is on, and the
+      words are the UI's.
+- [x] Dialogue/talk/persuasion/intimidation/recruit-like site interactions
     (`src/sitemode/talk.cpp`), in `core/systems/site/talk/`.
   - [x] Talking your way out of a fight (`talkInCombat()`), in
       `combat_talk.gd`, `combat_hostage.gd`, `combat_bluff.gd` and

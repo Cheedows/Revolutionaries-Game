@@ -231,6 +231,7 @@ const DOOR_LOCKED := &"door_locked"                  # {x, y, z, pickable}
 const DOOR_UNLOCKED := &"door_unlocked"              # {creature, x, y, z}
 const DOOR_JAMMED := &"door_jammed"                  # {creature}
 const DOOR_IMPENETRABLE := &"door_impenetrable"      # {x, y, z}
+const SIGN_READ := &"sign_read"                      # {sign, site}
 const STAIRS_TAKEN := &"stairs_taken"                # {z, up}
 const ENCOUNTER_STARTED := &"encounter_started"
 const ATTACK_MADE := &"attack_made"                  # {attacker, target, weapon, sneak}
