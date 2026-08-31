@@ -4,6 +4,7 @@ extends TestCase
 
 func test_rent_falls_due_on_the_third() -> void:
 	var session := Session.new(3)
+	found_squad(session.state)
 	WorldBuilder.build(session.state, session.rng)
 	var flat := _rent_a_flat(session.state, 100)
 	session.state.ledger.funds = 500
@@ -27,6 +28,7 @@ func test_rent_falls_due_on_the_third() -> void:
 
 func test_an_unpayable_rent_means_eviction() -> void:
 	var session := Session.new(5)
+	found_squad(session.state)
 	WorldBuilder.build(session.state, session.rng)
 	var flat := _rent_a_flat(session.state, 100)
 	session.state.ledger.funds = 10
@@ -57,6 +59,7 @@ func test_an_unpayable_rent_means_eviction() -> void:
 
 func test_a_new_lease_skips_its_first_rent() -> void:
 	var session := Session.new(9)
+	found_squad(session.state)
 	WorldBuilder.build(session.state, session.rng)
 	var flat := _rent_a_flat(session.state, 100)
 	flat.new_rental = true

@@ -21,9 +21,21 @@ var special: PackedInt32Array = PackedInt32Array()
 var stunned: int = 0
 
 
+## How many of each a body starts with.
+const TEETH := 32
+const RIBS := 10
+
+
 func _init() -> void:
 	wounds.resize(Ids.BODY_PARTS.size())
 	special.resize(Ids.SPECIAL_WOUNDS.size())
+	# A body starts intact. The original sets this in the creature's own
+	# constructor; keeping it here means a creature built by hand — in a test,
+	# or by a system that does not go through the factory — is not born
+	# missing every organ it has.
+	special.fill(1)
+	set_special(&"teeth", TEETH)
+	set_special(&"ribs", RIBS)
 
 
 func is_alive() -> bool:

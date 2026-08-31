@@ -25,6 +25,11 @@ const DATES := &"dates"
 ## Returns the day's events, or a [PendingIntent] when something in it needs
 ## the player — the evening's recruitment meetings and dates both do.
 static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
+	# Nobody left is the end of the game, and the original checks it before
+	# and after everything that can kill somebody.
+	if EndCheck.is_lost(state):
+		return EndCheck.run(state)
+
 	if catalog == null:
 		# No content loaded, so nobody can do a day's work — but the rest of
 		# the day still happens.
@@ -98,6 +103,10 @@ static func _close_the_day(state: GameState, rng: Rng,
 	DispersalCheck.sweep_empty_squads(state)
 
 	state.ledger.reset_daily()
+	# A siege can finish the last of them; the day ends there if it did.
+	done.append_array(EndCheck.run(state))
+	if state.endgame_state == &"lost":
+		return done
 	if not bool(aged["month_rolled"]):
 		return done
 

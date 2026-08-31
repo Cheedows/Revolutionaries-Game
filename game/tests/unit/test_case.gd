@@ -17,3 +17,17 @@ func equal(actual: Variant, expected: Variant, message: String) -> void:
 
 func fail(message: String) -> void:
 	failures.append(message)
+
+
+## Puts one Liberal into a fresh state, because a game with nobody in it is
+## already over: [EndCheck] ends the day before it starts.
+func found_squad(state: GameState, id: int = 90001) -> Creature:
+	var founder := Creature.new()
+	founder.id = id
+	founder.alive = true
+	founder.alignment = &"liberal"
+	founder.join_days = 1
+	# Old enough not to be aged into a teenager, young enough not to die of it.
+	founder.age = 25
+	state.creatures[founder.id] = founder
+	return founder

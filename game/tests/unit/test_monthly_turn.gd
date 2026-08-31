@@ -8,6 +8,7 @@ extends TestCase
 
 func test_a_year_runs_the_political_cycle() -> void:
 	var session := Session.new(4242)
+	found_squad(session.state)
 	_seat_a_government(session.state)
 	# Congress is elected in even years only, so the year has to be one.
 	session.state.calendar.year = 2010
@@ -35,6 +36,7 @@ func test_a_year_runs_the_political_cycle() -> void:
 
 func test_the_news_goes_stale_every_month() -> void:
 	var session := Session.new(7)
+	found_squad(session.state)
 	for index in Ids.VIEWS.size():
 		session.state.opinion.interest[index] = 80
 	var before: int = session.state.opinion.interest[0]
@@ -48,6 +50,7 @@ func test_the_news_goes_stale_every_month() -> void:
 
 func test_the_opposition_escalates_as_the_country_turns() -> void:
 	var session := Session.new(11)
+	found_squad(session.state)
 	_seat_a_government(session.state)
 	# A country well past the first threshold.
 	for index in Ids.VIEWS.size():

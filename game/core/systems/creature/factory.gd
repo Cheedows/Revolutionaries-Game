@@ -281,8 +281,7 @@ static func _resolve_clip(cliptype: StringName, weapon_type: StringName,
 
 
 static func _set_intact_organs(creature: Creature) -> void:
-	# Every organ starts present; the original counts teeth and ribs.
-	for wound: StringName in Ids.SPECIAL_WOUNDS:
-		creature.body.set_special(wound, 1)
-	creature.body.set_special(&"teeth", TEETH)
-	creature.body.set_special(&"ribs", RIBS)
+	# A body is born intact; this puts one back that has been reused.
+	creature.body.special.fill(1)
+	creature.body.set_special(&"teeth", Body.TEETH)
+	creature.body.set_special(&"ribs", Body.RIBS)

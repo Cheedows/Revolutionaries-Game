@@ -8,6 +8,7 @@ extends TestCase
 
 func test_a_day_advances_and_reports_itself() -> void:
 	var session := Session.new(99)
+	found_squad(session.state)
 	session.submit(DailyTurn.run(session.state, session.rng))
 
 	var events := session.drain_events()
@@ -19,6 +20,7 @@ func test_a_day_advances_and_reports_itself() -> void:
 
 func test_events_are_numbered_in_order() -> void:
 	var session := Session.new(1)
+	found_squad(session.state)
 	for day in 5:
 		session.submit(DailyTurn.run(session.state, session.rng))
 	var events := session.drain_events()
@@ -28,6 +30,7 @@ func test_events_are_numbered_in_order() -> void:
 
 func test_a_month_rolls_over_after_thirty_one_days() -> void:
 	var session := Session.new(3)
+	found_squad(session.state)
 	var rolled := false
 	for day in 31:
 		session.submit(DailyTurn.run(session.state, session.rng))
@@ -40,6 +43,7 @@ func test_a_month_rolls_over_after_thirty_one_days() -> void:
 
 func test_the_session_parks_on_a_decision_instead_of_blocking() -> void:
 	var session := Session.new(1)
+	found_squad(session.state)
 	# A lambda captures locals by value, so the answer is collected in a
 	# container the closure and the test both hold a reference to.
 	var answered := []
@@ -58,6 +62,7 @@ func test_the_session_parks_on_a_decision_instead_of_blocking() -> void:
 
 func test_hiding_ticks_down_daily_but_a_sentence_does_not() -> void:
 	var session := Session.new(5)
+	found_squad(session.state)
 	var creature := session.state.add_creature(Creature.new())
 	creature.join_days = 1
 	creature.clinic = 2

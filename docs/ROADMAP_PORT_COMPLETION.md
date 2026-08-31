@@ -545,7 +545,21 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
     Congress, five tempers of the country and whether it has happened already
     (720 samples), compared on draw counts, whether it passed, the amendment
     count, the laws, the court, the executive and the justices' names.
-- [ ] Complete strict/relaxed win/loss/endgame flow around the already-ported checks.
+- [x] Complete strict/relaxed win/loss/endgame flow: `WinCheck.is_won()`
+    already covered both win conditions; `systems/monthly/end_check.gd` now
+    ports `endcheck()`, the loss condition — no living Liberal anywhere, with
+    the exception the original makes for a sleeper who answers to nobody, who
+    is what is left of the organisation and may carry on alone. The cause is
+    the siege that finished them, or simply that they are dead. The day checks
+    it before it starts and again after the night's sieges, and a lost game
+    stops there.
+  - The two constitutional repeals are the other two losses, and the fifty
+    years of a disband running out is the third.
+  - **A defect this found.** A body was starting with every organ missing:
+    the original's creature constructor sets them all present and counts the
+    teeth and ribs, and the port only did it in the creature factory, so
+    anything built by hand bled to death in a week. Bodies are born intact
+    now.
 - [ ] Decide legacy bugs only after parity is demonstrated; do not silently "fix" behavior during conversion.
 
 **Gate C:** multi-year headless simulations can pass through elections, trials, prisoners, sleepers, government shifts and all original end states.
