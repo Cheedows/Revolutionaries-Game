@@ -26,6 +26,10 @@ void lcs_trace_char(char ch);
 
 /* Counts an RNG draw, so a trace shows how much randomness each step consumed. */
 void lcs_trace_draw();
+// Records the bound of every draw, when LCS_TRACE_BOUNDS names a file. Used to
+// diff the port's sequence against the original's draw by draw.
+void lcs_trace_bound(long max);
+void lcs_trace_note(const char *text);
 
 /* Counts an RNG state swap. The game keeps side streams (per-location map
    seeds, an attorney seed) and splices them into the main generator with

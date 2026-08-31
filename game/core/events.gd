@@ -195,6 +195,8 @@ const ELECTION_HELD := &"election_held"              # {body, results}
 const OPINION_SHIFTED := &"opinion_shifted"          # {view, amount, cause}
 const NEWS_PUBLISHED := &"news_published"            # {story, prominence}
 const MAJOR_EVENT := &"major_event"
+const NEWS_SEGMENT := &"news_segment"                # {view, positive, film, ...}
+const HEADLINE_RUN := &"headline_run"                # {story, headline, guardian}
 
 # --- Justice ---------------------------------------------------------------
 

@@ -3359,6 +3359,342 @@ void probe_newspaper(FILE *out)
 }
 
 
+// The filler every printed story is padded with. It is nothing but rows of
+// tildes on the screen, and it is most of what the newspaper takes out of the
+// sequence, so it gets a probe of its own.
+void probe_filler(FILE *out)
+{
+   static char story[400000];
+   for (int sample = 0; sample < 400; sample++)
+   {
+      unsigned long seed_used = 3300017UL * (unsigned long)(sample + 1);
+      lcs_trace_set_seed(seed_used);
+      initMainRNG();
+
+      int amount = 1 + (sample % 7) * 40;
+      fprintf(out, "{\"kind\":\"filler\",\"sample\":%d,\"seed\":%lu,"
+                   "\"amount\":%d,\"rng\":[",
+              sample, seed_used, amount);
+      for (int i = 0; i < RNG_SIZE; i++)
+         fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+      fputs("]", out);
+
+      long long before = lcs_trace_draw_count();
+      strcpy(story, "");
+      generatefiller(story, amount);
+      fprintf(out, ",\"draws\":%lld,\"text\":", lcs_trace_draw_count() - before);
+      write_string(out, story);
+      fputs("}\n", out);
+   }
+}
+
+
+// The television pass and the reading pass with the drawing taken out of them.
+//
+// The original writes the paper straight onto the screen, and its rendering
+// draws: filler tildes, advertisements, the words each story picks, and the
+// spaces it inserts to justify each line, which depend on the eighty-column
+// layout and the literal English of the story. The port writes the same paper
+// from a stream of its own so that none of that reaches the simulation's
+// sequence (see Newspaper._presentation_rng), so these transcriptions keep the
+// mechanical half — which stories television takes, what the Liberal
+// Guardian's writers cost and earn, what the country learns, and the front
+// page's bonus — and leave the drawing out.
+static bool newsread_on_television(newsstoryst &ns)
+{
+   if (ns.type != NEWSSTORY_MAJOREVENT) return false;
+   if (ns.positive)
+      return ns.view == VIEW_POLICEBEHAVIOR || ns.view == VIEW_CABLENEWS;
+   return ns.view == VIEW_CEOSALARY || ns.view == VIEW_CABLENEWS
+          || ns.view == VIEW_WOMEN;
+}
+
+static void newsread_television()
+{
+   for (int n = len(newsstory) - 1; n >= 0; n--)
+      if (newsread_on_television(*newsstory[n]))
+         delete_and_remove(newsstory, n);
+}
+
+// Which issue a raid bore on, as display_newspaper() works it out.
+static int newsread_header(newsstoryst &ns)
+{
+   if (ns.type != NEWSSTORY_SQUAD_SITE && ns.type != NEWSSTORY_SQUAD_KILLED_SITE)
+      return -1;
+   if (ns.loc == -1) return -1;
+   switch (location[ns.loc]->type)
+   {
+   case SITE_LABORATORY_COSMETICS: return VIEW_ANIMALRESEARCH;
+   case SITE_LABORATORY_GENETIC: return VIEW_GENETICS;
+   case SITE_GOVERNMENT_POLICESTATION: return VIEW_POLICEBEHAVIOR;
+   case SITE_GOVERNMENT_COURTHOUSE: return VIEW_JUSTICES;
+   case SITE_GOVERNMENT_PRISON: return VIEW_DEATHPENALTY;
+   case SITE_GOVERNMENT_INTELLIGENCEHQ: return VIEW_INTELLIGENCE;
+   case SITE_INDUSTRY_SWEATSHOP: return VIEW_SWEATSHOPS;
+   case SITE_INDUSTRY_POLLUTER: return VIEW_POLLUTION;
+   case SITE_INDUSTRY_NUCLEAR: return VIEW_NUCLEARPOWER;
+   case SITE_CORPORATE_HEADQUARTERS: return VIEW_CORPORATECULTURE;
+   case SITE_CORPORATE_HOUSE: return VIEW_CEOSALARY;
+   case SITE_MEDIA_AMRADIO: return VIEW_AMRADIO;
+   case SITE_MEDIA_CABLENEWS: return VIEW_CABLENEWS;
+   case SITE_RESIDENTIAL_APARTMENT_UPSCALE:
+   case SITE_BUSINESS_CIGARBAR:
+   case SITE_BUSINESS_BANK: return VIEW_TAXES;
+   }
+   return -1;
+}
+
+// The stories displaystory() prints as raid coverage, which is the group that
+// makes the country aware of the squad.
+static bool newsread_is_coverage(int type)
+{
+   switch (type)
+   {
+   case NEWSSTORY_CCS_NOBACKERS: case NEWSSTORY_CCS_DEFEATED:
+   case NEWSSTORY_SQUAD_SITE: case NEWSSTORY_SQUAD_ESCAPED:
+   case NEWSSTORY_SQUAD_FLEDATTACK: case NEWSSTORY_SQUAD_DEFENDED:
+   case NEWSSTORY_SQUAD_BROKESIEGE:
+   case NEWSSTORY_SQUAD_KILLED_SIEGEATTACK:
+   case NEWSSTORY_SQUAD_KILLED_SIEGEESCAPE:
+   case NEWSSTORY_SQUAD_KILLED_SITE:
+   case NEWSSTORY_CCS_SITE: case NEWSSTORY_CCS_KILLED_SITE:
+   case NEWSSTORY_CARTHEFT: case NEWSSTORY_NUDITYARREST:
+   case NEWSSTORY_WANTEDARREST: case NEWSSTORY_DRUGARREST:
+   case NEWSSTORY_GRAFFITIARREST: case NEWSSTORY_BURIALARREST:
+      return true;
+   }
+   return false;
+}
+
+// displaystoryheader() only reaches its default arm — the one that can pay a
+// bonus — for the squad's own raids; every other kind of story has a fixed
+// headline above it.
+static bool newsread_is_arrest_or_siege(int type)
+{
+   return type != NEWSSTORY_SQUAD_SITE && type != NEWSSTORY_SQUAD_KILLED_SITE;
+}
+
+static void newsread_read()
+{
+   int writers = liberal_guardian_writing_power();
+   for (int n = 0; n < len(newsstory); n++)
+   {
+      newsstoryst &ns = *newsstory[n];
+      bool lg = writers && ns.type != NEWSSTORY_MAJOREVENT;
+      int header = newsread_header(ns);
+      if (lg && (ns.type == NEWSSTORY_CCS_SITE
+                 || ns.type == NEWSSTORY_CCS_KILLED_SITE))
+         ns.positive = 0;
+
+      // The front page's bonus, from displaystoryheader(). A raid on a place
+      // that bears on nothing leaves header at -1, which the original then
+      // indexes its opinion arrays with; that is a stray write rather than a
+      // rule, so it is skipped here as it is in the port.
+      bool leads = lg ? (ns.guardianpage == 1) : (ns.page == 1);
+      if (leads && lg && ns.positive && ns.priority > 150 && header != -1
+          && !newsread_is_arrest_or_siege(ns.type))
+         change_public_opinion(header, 5, 1);
+
+      if (newsread_is_coverage(ns.type))
+      {
+         if (!newscherrybusted) newscherrybusted = 1;
+         if (ns.type == NEWSSTORY_CCS_SITE || ns.type == NEWSSTORY_CCS_KILLED_SITE)
+            newscherrybusted = 2;
+      }
+      if (lg && ns.positive) ns.positive += 1;
+   }
+}
+
+
+// The morning the paper is actually read: the Liberal Guardian's writers, the
+// evening's television, the headlines and the story text. Unlike probe_newspaper
+// this calls the real display passes, because their draws and their side
+// effects are what the port has to match.
+void probe_newsread(FILE *out)
+{
+   static const int TYPES[] = {
+      NEWSSTORY_SQUAD_SITE, NEWSSTORY_SQUAD_KILLED_SITE,
+      NEWSSTORY_SQUAD_ESCAPED, NEWSSTORY_SQUAD_KILLED_SIEGEATTACK,
+      NEWSSTORY_CCS_SITE, NEWSSTORY_CCS_KILLED_SITE,
+      NEWSSTORY_GRAFFITIARREST, NEWSSTORY_CARTHEFT,
+      NEWSSTORY_MASSACRE, NEWSSTORY_KIDNAPREPORT, NEWSSTORY_MAJOREVENT,
+   };
+   const int TYPE_COUNT = (int)(sizeof(TYPES) / sizeof(TYPES[0]));
+
+   static const int SITES[] = {
+      SITE_INDUSTRY_NUCLEAR, SITE_LABORATORY_GENETIC,
+      SITE_CORPORATE_HEADQUARTERS, SITE_MEDIA_AMRADIO,
+      SITE_GOVERNMENT_COURTHOUSE, SITE_RESIDENTIAL_TENEMENT,
+   };
+   const int SITE_COUNT = (int)(sizeof(SITES) / sizeof(SITES[0]));
+
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 55501277UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int view = 0; view < VIEWNUM - 3; view++)
+      for (int type = 0; type < TYPE_COUNT; type++)
+      for (int place = 0; place < SITE_COUNT; place++)
+      for (int shape = 0; shape < 4; shape++)
+      {
+         unsigned long seed_used = 1700021UL * (unsigned long)
+            (view * 8192 + type * 256 + place * 16 + shape
+             + scenario * 421 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         endgamestate = ENDGAME_NONE;
+         ccsexposure = CCSEXPOSURE_NONE;
+         newscherrybusted = (char)(shape % 3);
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 7 + scenario * 13 + shape * 5) % 101;
+            public_interest[v] = (v * 3 + scenario * 7) % 40;
+            background_liberal_influence[v] = 0;
+         }
+         for (int l = 0; l < LAWNUM; l++)
+            law[l] = ((l + shape + scenario) % 5) - 2;
+         presparty = (shape % 2) ? CONSERVATIVE_PARTY : LIBERAL_PARTY;
+
+         int loc = -1;
+         for (int l = 0; l < len(location); l++)
+            if (location[l]->type == SITES[place]) { loc = l; break; }
+
+         // A safehouse with a press in it, and a writer at the desk on half
+         // the samples, so the Liberal Guardian runs on some and not others.
+         int desk = -1;
+         for (int l = 0; l < len(location); l++)
+            if (location[l]->type == SITE_RESIDENTIAL_SHELTER) { desk = l; break; }
+         if (desk == -1) desk = 1;
+         location[desk]->compound_walls = (shape < 2) ? COMPOUND_PRINTINGPRESS : 0;
+
+         Creature *writer = new Creature;
+         makecreature(*writer, CREATURE_POLITICALACTIVIST);
+         writer->id = 920000;
+         writer->align = ALIGN_LIBERAL;
+         writer->location = desk;
+         writer->activity.type = ACTIVITY_WRITE_GUARDIAN;
+         // A plain adult with nothing wrong with them, so the attributes
+         // recorded below are the raw ones: no age band and no injury is
+         // adjusting them on the way out.
+         writer->age = 30;
+         writer->set_skill(SKILL_WRITING, 3 + shape);
+         pool.push_back(writer);
+
+         Creature *victim = new Creature;
+         makecreature(*victim, CREATURE_CORPORATE_CEO);
+         victim->id = 920001;
+         victim->align = ALIGN_CONSERVATIVE;
+         victim->location = loc;
+         pool.push_back(victim);
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = TYPES[type];
+         ns->loc = loc;
+         ns->cr = victim;
+         ns->claimed = shape % 3;
+         ns->positive = shape % 2;
+         ns->view = view;
+         ns->siegetype = SIEGE_POLICE;
+         for (int c = 0; c < CRIMENUM; c++)
+            if ((c + shape) % 3 == 0) ns->crime.push_back(c);
+         if (TYPES[type] == NEWSSTORY_MASSACRE)
+         {
+            ns->crime.clear();
+            ns->crime.push_back(SIEGE_POLICE);
+            ns->crime.push_back(shape * 3);
+         }
+         newsstory.push_back(ns);
+
+         fprintf(out, "{\"kind\":\"newsread\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"view\":%d,\"type\":%d,\"place\":%d,\"shape\":%d,"
+                      "\"loc\":%d,\"desk\":%d,\"press\":%d,\"cherry\":%d,"
+                      "\"positive\":%d,\"claimed\":%d,\"presparty\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, view, ns->type, place, shape, loc, desk,
+                 (int)((location[desk]->compound_walls & COMPOUND_PRINTINGPRESS) != 0),
+                 (int)newscherrybusted, (int)ns->positive, (int)ns->claimed,
+                 presparty, run_seed);
+         fprintf(out, ",\"writing\":%d,\"writing_ip\":%d,\"juice\":%d",
+                 writer->get_skill(SKILL_WRITING),
+                 writer->get_skill_ip(SKILL_WRITING), writer->juice);
+         fputs(",\"attributes\":[", out);
+         for (int i = 0; i < ATTNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", writer->get_attribute(i, false));
+         fputs("]", out);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"crimes\":[", out);
+         for (int c = 0; c < len(ns->crime); c++)
+            fprintf(out, "%s%d", c ? "," : "", ns->crime[c]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         clean_up_empty_news_stories();
+         newsread_television();
+         long long after_tv = lcs_trace_draw_count();
+         assign_page_numbers_to_newspaper_stories();
+         long long after_layout = lcs_trace_draw_count();
+         newsread_read();
+         long long after_read = lcs_trace_draw_count();
+         for (int n = 0; n < len(newsstory); n++)
+            handle_public_opinion_impact(*newsstory[n]);
+
+         fprintf(out, ",\"tv_draws\":%lld,\"layout_draws\":%lld,"
+                      "\"read_draws\":%lld,\"draws\":%lld",
+                 after_tv - before, after_layout - after_tv,
+                 after_read - after_layout,
+                 lcs_trace_draw_count() - before);
+         fprintf(out, ",\"cherry_after\":%d,\"writer_activity\":%d,"
+                      "\"writer_writing\":%d,\"writer_ip\":%d,"
+                      "\"writer_speech\":%d,\"writer_heat\":%d",
+                 (int)newscherrybusted, (int)writer->activity.type,
+                 writer->get_skill(SKILL_WRITING),
+                 writer->get_skill_ip(SKILL_WRITING),
+                 writer->crimes_suspected[LAWFLAG_SPEECH], writer->heat);
+         fputs(",\"attitude_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"influence_after\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", background_liberal_influence[i]);
+         fputs("],\"stories\":[", out);
+         for (int n = 0; n < len(newsstory); n++)
+            fprintf(out, "%s{\"type\":%d,\"priority\":%ld,\"page\":%ld,"
+                         "\"guardian\":%ld,\"positive\":%d,\"view\":%d}",
+                    n ? "," : "", newsstory[n]->type, newsstory[n]->priority,
+                    newsstory[n]->page, newsstory[n]->guardianpage,
+                    (int)newsstory[n]->positive, newsstory[n]->view);
+         fputs("]}\n", out);
+
+         delete_and_clear(newsstory);
+         delete_and_clear(pool);
+      }
+   }
+}
+
+
 // How a siege ends once the fighting is over: winning buys a few weeks before
 // the police come back angrier, and losing costs the house and everything in
 // it.
@@ -13921,6 +14257,8 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "surrender")) probe_siege_surrender(out);
    else if (!strcmp(which, "siege_outcome")) probe_siege_outcome(out);
    else if (!strcmp(which, "newspaper")) probe_newspaper(out);
+   else if (!strcmp(which, "newsread")) probe_newsread(out);
+   else if (!strcmp(which, "filler")) probe_filler(out);
    else if (!strcmp(which, "cartheft")) probe_cartheft(out);
    else if (!strcmp(which, "dating")) probe_dating(out);
    else if (!strcmp(which, "interrogation")) probe_interrogation(out);

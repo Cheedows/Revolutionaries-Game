@@ -232,6 +232,7 @@ unsigned long r_num()
 // Picks a random number from 0 to max-1
 long LCSrandom(long max)
 {  // This expects r_num() to return a random number between 1 and 0xffffffff (any 32-bit integer except 0)... which it does
+   lcs_trace_bound(max);
    return (long)(max*(((long double)(r_num()-1))/((long double)0xffffffffUL)));
 }
 

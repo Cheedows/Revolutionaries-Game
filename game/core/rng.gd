@@ -27,6 +27,12 @@ var _lcg_seed: int = 0
 ## went differently" into "the fight took one roll fewer, here".
 var draws: int = 0
 
+## Set by a test that is hunting a divergence: every bound asked for is kept,
+## so the two sequences can be diffed against the original's own log of the
+## same. Off by default and costs nothing then.
+var record_bounds: bool = false
+var bounds: PackedInt32Array = PackedInt32Array()
+
 
 func _init(seed_value: int = 0) -> void:
 	seed_from(seed_value)
@@ -90,6 +96,8 @@ func next() -> int:
 ## [code]LCSrandom(dy - 3)[/code] without checking that dy exceeds three, and
 ## skipping the draw there rearranges every building.
 func below(max_exclusive: int) -> int:
+	if record_bounds:
+		bounds.append(max_exclusive)
 	return (max_exclusive * (next() - 1)) / _MASK
 
 

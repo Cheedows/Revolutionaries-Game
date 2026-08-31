@@ -53,14 +53,36 @@ const MAJOR_EVENT_ODDS := 60
 
 
 ## Runs the morning's paper. Returns the events.
+##
+## With nobody in the organisation left to read it — everyone dead, in custody,
+## on a date or laying low — the world's news still happens, but nothing that
+## depends on somebody having seen it does; see [NewsReading].
 ## [param printed] is filled with the stories that ran, for a caller that wants
 ## to show the paper — [method run] clears the queue on its way out.
 static func run(state: GameState, rng: Rng, catalog: Catalog = null,
 		printed: Array[NewsStory] = []) -> Array[Event]:
+	var events: Array[Event] = _overnight(state, rng, catalog)
+	events.append_array(deliver(state, rng, printed))
+	return events
+
+
+## Everything the paper does with the stories it already has: what television
+## takes, where the rest land, the reading of them, and what that does to the
+## country. Split out from [method run] because the original's own probe of
+## this half starts here, with the queue already filled.
+static func deliver(state: GameState, rng: Rng,
+		printed: Array[NewsStory] = []) -> Array[Event]:
 	var events: Array[Event] = []
-	events.append_array(_overnight(state, rng, catalog))
 	_drop_the_dull(state)
+	# Television gets the major events first, and keeps the ones it covers out
+	# of the paper — but only if anybody is watching.
+	var watching := Awareness.can_see(state)
+	var paper := _presentation_rng(state)
+	if watching:
+		events.append_array(NewsBroadcast.run(state, paper))
 	events.append_array(_lay_out(state, rng))
+	if watching:
+		events.append_array(NewsReading.run(state, rng, paper))
 	printed.append_array(state.news)
 	for story: NewsStory in state.news:
 		events.append_array(impact(state, story))
@@ -69,6 +91,24 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null,
 	# leaves its pointer dangling here instead.
 	state.current_story = null
 	return events
+
+
+## The stream the paper is written and laid out from.
+##
+## **Deliberate departure from the original, and the only one in the
+## newspaper.** The original writes the paper out of the same sequence
+## everything else runs on: the filler tildes, the advertisements, the words a
+## story picks and — the reason this cannot simply be reproduced — the spaces
+## it inserts to justify each line, which depend on the eighty-column layout
+## and on the literal English of every story. Reproducing that would mean
+## porting a terminal renderer into core/, which the architecture forbids and
+## docs/ROADMAP_PORT_COMPLETION.md explicitly asks not to be done. So the paper
+## draws from a stream of its own, seeded from the date, and the simulation's
+## own sequence is untouched by how the morning's news is presented. The paper
+## still reads the same on a replay of the same game.
+static func _presentation_rng(state: GameState) -> Rng:
+	var calendar := state.calendar
+	return Rng.new(calendar.year * 10000 + calendar.month * 100 + calendar.day)
 
 
 ## What happened while nobody was watching: the other side's own raids, the

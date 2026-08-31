@@ -152,6 +152,32 @@ void lcs_trace_char(char ch)
    g_screen += ch;
 }
 
+static FILE *g_bounds = NULL;
+static bool g_bounds_tried = false;
+
+static FILE *bounds_file()
+{
+   if (!g_bounds_tried)
+   {
+      g_bounds_tried = true;
+      const char *path = getenv("LCS_TRACE_BOUNDS");
+      if (path) g_bounds = fopen(path, "w");
+   }
+   return g_bounds;
+}
+
+void lcs_trace_bound(long max)
+{
+   FILE *out = bounds_file();
+   if (out) fprintf(out, "%ld\n", max);
+}
+
+void lcs_trace_note(const char *text)
+{
+   FILE *out = bounds_file();
+   if (out) fprintf(out, "# %s\n", text);
+}
+
 void lcs_trace_draw()
 {
    if (!g_active) return;

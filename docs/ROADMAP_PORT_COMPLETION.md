@@ -710,8 +710,62 @@ Port from `src/news/` without coupling prose generation to state mutation.
     priority, page, Guardian page, politics, violence, location, slant and
     invented crime sheet, then on attitude, background influence, both
     chambers, exposure and endgame state.
-- [ ] Headlines/text generation through UI/text adapters, not `core/` prose calls.
-- [ ] Replace legacy ASCII/cutscene presentation rather than reproducing terminal rendering.
+- [x] The morning the paper is read, which the original does inside its own
+    rendering code and which carries four things that are not rendering:
+    `Awareness` ports the `canseethings` test from `mode_base()` — with
+    everybody dead, in custody, on a date or laying low the news still happens
+    but nobody in the organisation learns of it; `NewsReading.power()` ports
+    `liberal_guardian_writing_power()`, which trains the Guardian's writers,
+    books them for illegal speech and decides whether the second paper runs at
+    all; `NewsReading` ports the rest of `display_newspaper()` — the first
+    printed story is what makes the country aware of the squad
+    (`newscherrybusted`, which three conversations and the opinion report turn
+    on), a story the Guardian ran well is promoted from good to glowing, and a
+    raid the Guardian leads with pays a bonus to the issue it bore on;
+    `NewsBroadcast` ports `run_television_news_stories()`, which keeps five
+    kinds of major event out of the paper entirely; and `HeadlineRules` ports
+    the choice `displaystoryheader()` makes, as an id rather than as words.
+  - **Original quirk, not reproduced.** The front-page bonus is paid with
+    whatever issue the raid bore on, and a raid on a place that bears on none
+    leaves that at -1, which the original indexes two opinion arrays with.
+    That is a stray write past the front of both rather than a rule, so the
+    bonus is skipped there instead.
+  - Verified by the `newsread` probe: eleven kinds of story about six kinds of
+    place, under every issue a major event can be about and four shapes of law,
+    crime sheet and printing press (12672 samples), compared on draw counts,
+    how well the country knows the squad, the writer's assignment, skill,
+    practice, speech charges and heat, which stories television left in the
+    paper and where each landed, and then on attitude and background influence.
+- [x] Headlines/text generation through UI/text adapters, not `core/` prose
+    calls: `core/` decides and records, `ui/adapters/` says. A story arrives as
+    a headline id and a dictionary of slots — the names, times, counts and
+    which-of-five choices it rolled — and the words that use them live in
+    `ui/adapters/`. The generators are `MajorEventGood`, `MajorEventBad`,
+    `MajorEventIndustry` and `MajorEventStory` for the world's own news,
+    `SquadStory` for a raid, `NewsAds` and `Personals` for the advertisements
+    around it, `StoryFiller` for the padding and `Dateline` for where a story
+    says it happened.
+- [x] Replace legacy ASCII/cutscene presentation rather than reproducing
+    terminal rendering.
+  - **Deliberate departure from the original, and the only one in the
+    newspaper.** The original writes the paper out of the same sequence
+    everything else runs on, and its rendering draws heavily: filler tildes,
+    advertisements, the words a story picks, and — the reason this cannot
+    simply be reproduced — the spaces it inserts to justify each line, which
+    depend on the eighty-column layout, on where the advertisement boxes landed
+    and on the literal English of every story. Reproducing that would mean
+    porting a terminal renderer into `core/`, which `docs/port/ARCHITECTURE.md`
+    forbids and which this line asks not to be done. So the paper is written
+    from a presentation stream of its own, seeded from the date
+    (`Newspaper._presentation_rng`), and the simulation's sequence is untouched
+    by how the morning's news is presented. The paper still reads the same on a
+    replay of the same game, and the `newsread` probe compares the mechanical
+    pass draw for draw with the drawing taken out of both sides.
+  - The presentation stream's own generators are verified against the original
+    from a recorded sequence rather than in place: the `filler` probe compares
+    `StoryFiller` word for word and draw for draw across seven lengths (400
+    samples), including the original's re-rolled loop bound, which costs
+    several draws a word.
 
 **Gate D:** daily/monthly/site/crime events can generate and resolve mechanically equivalent news effects headlessly.
 
