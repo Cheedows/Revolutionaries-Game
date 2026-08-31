@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <deque>
 #include <vector>
 
 namespace {
@@ -168,10 +169,55 @@ void lcs_trace_swap()
    g_swaps++;
 }
 
+// Keys a probe has queued up, answered before the script is consulted. A probe
+// that needs a particular answer to a particular prompt cannot get it out of a
+// looping keystroke file, so it pushes the answer instead.
+static std::deque<int> g_pushed;
+
+void lcs_trace_push_key(int key)
+{
+   g_pushed.push_back(key);
+}
+
+void lcs_trace_clear_keys()
+{
+   g_pushed.clear();
+}
+
+// Draws made on a side stream, which a probe subtracts from its own count.
+static long long g_side_draws = 0;
+static long long g_side_at = 0;
+
+void lcs_trace_side_begin()
+{
+   g_side_at = g_draws;
+}
+
+void lcs_trace_side_end()
+{
+   g_side_draws += g_draws - g_side_at;
+}
+
+long long lcs_trace_side_draws()
+{
+   long long total = g_side_draws;
+   g_side_draws = 0;
+   return total;
+}
+
 int lcs_trace_next_key(const char *kind)
 {
    initialise();
    if (!g_active) return -1;
+
+   if (!g_pushed.empty())
+   {
+      int pushed = g_pushed.front();
+      g_pushed.pop_front();
+      g_screen.clear();
+      g_frame++;
+      return pushed;
+   }
 
    std::string text = normalise(g_screen);
    g_screen.clear();
@@ -230,4 +276,45 @@ const int *lcs_trace_survey_figures(int *count, int *approval)
    if (count) *count = survey_count;
    if (approval) *approval = survey_approval;
    return survey_figures;
+}
+
+
+// --- The numbers a trial turned on -----------------------------------------
+
+static int g_trial[4] = {0, 0, 0, 0};
+
+void lcs_trace_trial(int jury, int prosecution, int defensepower, int lenient)
+{
+   g_trial[0] = jury;
+   g_trial[1] = prosecution;
+   g_trial[2] = defensepower;
+   g_trial[3] = lenient;
+}
+
+void lcs_trace_trial_read(int *jury, int *prosecution, int *defensepower,
+                          int *lenient)
+{
+   if (jury) *jury = g_trial[0];
+   if (prosecution) *prosecution = g_trial[1];
+   if (defensepower) *defensepower = g_trial[2];
+   if (lenient) *lenient = g_trial[3];
+   g_trial[0] = g_trial[1] = g_trial[2] = g_trial[3] = -12345;
+}
+
+
+static int g_charges[3] = {0, 0, 0};
+
+void lcs_trace_trial_charges(int scarefactor, int typenum, int confessions)
+{
+   g_charges[0] = scarefactor;
+   g_charges[1] = typenum;
+   g_charges[2] = confessions;
+}
+
+void lcs_trace_trial_charges_read(int *scarefactor, int *typenum,
+                                  int *confessions)
+{
+   if (scarefactor) *scarefactor = g_charges[0];
+   if (typenum) *typenum = g_charges[1];
+   if (confessions) *confessions = g_charges[2];
 }

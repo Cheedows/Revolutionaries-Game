@@ -59,6 +59,29 @@ const int *lcs_trace_survey_figures(int *count, int *approval);
    from main() once content is loaded. */
 void lcs_probe_run_if_requested();
 
+/* Records the numbers a trial turned on, so a probe can compare the case
+   itself and not only the verdict. */
+void lcs_trace_trial(int jury, int prosecution, int defensepower, int lenient);
+void lcs_trace_trial_charges(int scarefactor, int typenum, int confessions);
+void lcs_trace_trial_charges_read(int *scarefactor, int *typenum, int *confessions);
+void lcs_trace_trial_read(int *jury, int *prosecution, int *defensepower,
+                          int *lenient);
+
+/* Brackets a stretch of draws made on a side RNG stream that the port keeps
+   separate. The harness counts every draw whichever stream it came from, so a
+   probe subtracts these to get the main stream's own count. */
+void lcs_trace_side_begin();
+void lcs_trace_side_end();
+long long lcs_trace_side_draws();
+
+/* Queues a keystroke for the next prompt, ahead of the script. A probe that
+   needs a particular answer to a particular question cannot get it out of a
+   looping keystroke file. */
+void lcs_trace_push_key(int key);
+
+/* Drops any queued keystrokes, so one probe sample cannot answer the next. */
+void lcs_trace_clear_keys();
+
 /* Emits one JSONL record for the screen built since the last call and returns
    the next scripted keystroke. Returns -1 when the script is exhausted, which
    the caller turns into a quit. */

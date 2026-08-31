@@ -67,16 +67,24 @@ static func _continue(state: GameState, rng: Rng, catalog: Catalog,
 
 ## The date moves last, and the month with it.
 static func _close_the_day(state: GameState, rng: Rng,
-		events: Array[Event], catalog: Catalog = null) -> Array[Event]:
+		events: Array[Event], catalog: Catalog = null) -> Variant:
 	var aged := DailyAgeing.run(state, rng)
 	var done: Array[Event] = events + (aged["events"] as Array[Event])
 	DispersalCheck.sweep_empty_squads(state)
 
 	state.ledger.reset_daily()
-	if bool(aged["month_rolled"]):
-		done.append(Event.new(Event.MONTH_ADVANCED, {
-			"month": state.calendar.month,
-			"year": state.calendar.year,
-		}))
-		done.append_array(MonthlyTurn.run(state, rng, catalog))
-	return done
+	if not bool(aged["month_rolled"]):
+		return done
+
+	done.append(Event.new(Event.MONTH_ADVANCED, {
+		"month": state.calendar.month,
+		"year": state.calendar.year,
+	}))
+	# The month can stop to ask the player something too: how a defense
+	# should be conducted at a trial.
+	var month: Variant = MonthlyTurn.run(state, rng, catalog)
+	if month is PendingIntent:
+		var asked: PendingIntent = month
+		return PendingIntent.new(asked.intent, asked.resume,
+				done + asked.events)
+	return done + (month as Array[Event])

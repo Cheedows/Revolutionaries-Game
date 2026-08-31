@@ -296,8 +296,38 @@ Port the remaining behavior primarily from `src/monthly/` plus missing political
     and three depths of infiltration, compared on draw counts, what each
     argued for per issue, funds, the pile at the shelter, the CCS exposure
     state, standing, whereabouts and whoever they recruited.
-- [ ] Justice pipeline: charges, attorneys, trials, sentencing and prison consequences.
-- [ ] Attorney side-RNG behavior and any other RNG splice points.
+- [x] The justice pipeline: the "THE SYSTEM!" block of `passmonth()`, `trial()`,
+    `penalize()`, `imprison()`, `prison()`, `reeducation()`, `laborcamp()` and
+    `prisonscene()`. A month in the cells with the police leaning on somebody
+    to name their recruiter, a trial with a jury drawn from the country's mood
+    and a defense the player pays for, sentencing off a table of charges, and
+    a month inside that is therapy, hard labor or plain prison depending on
+    what kind of prisons the country runs — escapes included.
+  - **Subtle original behavior, easy to get wrong.** A sleeper judge is found
+    by `infiltration*100 >= LCSrandom(100)`, computed in C `float`: an
+    infiltration of seven tenths reads as exactly seventy there and a hair
+    under it in a double, which is the difference between a friendly bench and
+    a hostile one. The comparison goes through [SinglePrecision].
+  - **Another.** When the ace attorney's jury tampering fails — one time in
+    ten — his own arch-nemesis turns up to prosecute and the case against the
+    defendant gains a hundred. It is a single line in the middle of the jury
+    selection message and it swings the verdict.
+  - **And another.** `addjuice()` trickles a fifth of every change up the chain
+    of command via `hireid`. The port had been using the separate
+    `recruiter_id`, so nothing ever reached anybody's boss.
+  - The time-served rolls are the last term of an `&&` chain, so somebody with
+    a life sentence or a single month left costs no draw at all.
+- [x] Attorney side-RNG: the ace attorney's name is drawn from `attorneyseed`,
+    spliced in with `copyRNG()` and spliced straight back out — so the main
+    stream is untouched *and* the seed never advances, which is why the same
+    attorney is offered at every trial for the whole game. The harness now
+    brackets those draws (`lcs_trace_side_begin/end`) so a probe can subtract
+    them from the main stream's count.
+  - Verified by the `justice` probe: three scenarios by six records by four
+    severities, the trial run through all five defenses and sentencing driven
+    on its own as well, compared on draw counts, the jury, the prosecution's
+    case, the defense's answer, leniency, funds, and every person's sentence,
+    charges, standing, whereabouts and clothes.
 - [ ] Election timing/integration beyond already-ported election primitives.
 - [ ] Constitutional/extreme-government branches: court purge, term limits and original endgame transitions.
 - [ ] Complete strict/relaxed win/loss/endgame flow around the already-ported checks.

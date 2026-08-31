@@ -82,6 +82,7 @@ void trial(Creature &g)
             }
       }
 
+   lcs_trace_trial_charges(scarefactor,(sleeperjudge?1:0)+(sleeperlawyer?2:0),g.confessions); // trace harness
    //STATE CHARGES
    set_color(COLOR_WHITE,COLOR_BLACK,0);
    move(3,1);
@@ -472,7 +473,9 @@ void trial(Creature &g)
    unsigned long oldseed[RNG_SIZE];
    copyRNG(oldseed,seed);
    copyRNG(seed,attorneyseed);
+   lcs_trace_side_begin(); // trace harness; see lcs_trace.h
    generate_name(attorneyname);
+   lcs_trace_side_end();
    copyRNG(seed,oldseed);
 
    y+=4;
@@ -755,6 +758,10 @@ void trial(Creature &g)
          }
          gamelog.newline();
       }
+
+      // trace harness; recorded here so an acquittal is measured too
+      lcs_trace_trial(jury,prosecution,defensepower,
+                      (defensepower/3>=jury/4||sleeperjudge)?1:0);
 
       // Debug defense power
       #ifdef SHOWMECHANICS

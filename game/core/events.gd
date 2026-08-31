@@ -128,7 +128,16 @@ const MAJOR_EVENT := &"major_event"
 
 const TRIAL_STARTED := &"trial_started"
 const TRIAL_VERDICT := &"trial_verdict"              # {creature, charge, verdict}
-const SENTENCE_PASSED := &"sentence_passed"
+const SENTENCE_PASSED := &"sentence_passed"          # {creature, outcome, sentence, death}
+const JURY_SEATED := &"jury_seated"                  # {jury, manner}
+const TRIAL_ARGUED := &"trial_argued"                # {creature, jury, defense}
+const CONFESSED := &"confessed"                      # {creature, against}
+const DEPORTED := &"deported"                        # {creature, executed}
+const REPOLLUTED := &"repolluted"                    # {creature}
+const PRISON_SCENE := &"prison_scene"                # {creature, kind, effect}
+const PRISON_ESCAPE := &"prison_escape"              # {creature, manner, others}
+const EXECUTED := &"executed"                        # {creature, method}
+const RELEASED := &"released"                        # {creature}
 
 # --- Sites, combat and chases ---------------------------------------------
 

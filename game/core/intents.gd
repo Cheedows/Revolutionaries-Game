@@ -61,6 +61,7 @@ const CONFIRM_FORCE_DOOR := &"confirm_force_door"    # {x, y, z, locked}
 const CHOOSE_DIALOGUE := &"choose_dialogue"
 const CHOOSE_INTERROGATION_TACTIC := &"choose_interrogation_tactic"
 const CONFIRM_RECRUIT := &"confirm_recruit"
+const CHOOSE_DEFENSE := &"choose_defense"            # {creature, charges}
 
 # --- Shops and money ------------------------------------------------------
 

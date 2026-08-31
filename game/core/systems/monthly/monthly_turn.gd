@@ -26,7 +26,7 @@ const CCS_THRESHOLDS := {
 
 
 static func run(state: GameState, rng: Rng,
-		catalog: Catalog = null) -> Array[Event]:
+		catalog: Catalog = null) -> Variant:
 	var events: Array[Event] = []
 
 	# The clinics discharge first: the original runs this before anything else
@@ -60,6 +60,35 @@ static func run(state: GameState, rng: Rng,
 
 	events.append_array(CongressRules.run(state, rng))
 
+	# The justice system runs last, and it is the one part of the month that
+	# stops to ask the player something: how the defense should be conducted.
+	var system: Variant = Custody.run(state, rng, catalog)
+	if system is PendingIntent:
+		var asked: PendingIntent = system
+		return _asked(state, events + asked.events, asked)
+	events.append_array(system as Array[Event])
+
+	if WinCheck.is_won(state):
+		state.endgame_state = &"won"
+		events.append(Event.new(Event.GAME_WON, {"condition": state.win_condition}))
+	return events
+
+
+## Parks the month on a question the justice system asked, and finishes it
+## once the answer comes back.
+static func _asked(state: GameState, events: Array[Event],
+		pending: PendingIntent) -> PendingIntent:
+	return PendingIntent.new(pending.intent,
+			func(answer: Variant) -> Variant:
+				var carried: Variant = pending.resume.call(answer)
+				if carried is PendingIntent:
+					return _asked(state, events, carried)
+				return _finish(state, events + (carried as Array[Event])),
+			events)
+
+
+## The win check, which the original makes once the month is over.
+static func _finish(state: GameState, events: Array[Event]) -> Array[Event]:
 	if WinCheck.is_won(state):
 		state.endgame_state = &"won"
 		events.append(Event.new(Event.GAME_WON, {"condition": state.win_condition}))

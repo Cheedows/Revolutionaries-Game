@@ -27,8 +27,10 @@ static func add(state: GameState, creature: Creature, amount: int, cap: int) -> 
 
 	creature.juice += amount
 
-	if creature.recruiter_id != -1:
-		var recruiter: Creature = state.creatures.get(creature.recruiter_id)
+	# Whoever hired them, not whoever first met them: the original walks the
+	# chain of command, and a recruit's recruiter is not always their boss.
+	if creature.hire_id != -1:
+		var recruiter: Creature = state.creatures.get(creature.hire_id)
 		if recruiter != null:
 			add(state, recruiter, amount / RECRUITER_SHARE, creature.juice)
 

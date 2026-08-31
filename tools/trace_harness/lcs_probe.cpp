@@ -2842,6 +2842,292 @@ static void monthly_drift_block(int *libpower)
    }
 }
 
+// One person's turn through the system, lifted out of the pool loop in
+// passmonth() so a probe can drive a single stage at a time.
+static void justice_stage(Creature &g, char &clearformess)
+{
+   if (!g.alive) return;
+   if (g.flag & CREATUREFLAG_SLEEPER) return;
+   if (g.location == -1) return;
+
+   if (location[g.location]->type == SITE_GOVERNMENT_POLICESTATION)
+   {
+      if (g.flag & CREATUREFLAG_MISSING)
+      {
+         removesquadinfo(g);
+         g.exists = false;
+         return;
+      }
+      else if (g.flag & CREATUREFLAG_ILLEGALALIEN && law[LAW_IMMIGRATION] != 2)
+      {
+         removesquadinfo(g);
+         g.exists = false;
+         return;
+      }
+      else
+      {
+         int copstrength = 100;
+         if (law[LAW_POLICEBEHAVIOR] == -2) copstrength = 200;
+         if (law[LAW_POLICEBEHAVIOR] == -1) copstrength = 150;
+         if (law[LAW_POLICEBEHAVIOR] == 1) copstrength = 75;
+         if (law[LAW_POLICEBEHAVIOR] == 2) copstrength = 50;
+         copstrength = (copstrength * g.heat) / 4;
+         if (copstrength > 200) copstrength = 200;
+
+         if (LCSrandom(copstrength) > g.juice + g.get_attribute(ATTRIBUTE_HEART, true) * 5 -
+                                      g.get_attribute(ATTRIBUTE_WISDOM, true) * 5 +
+                                      g.get_skill(SKILL_PSYCHOLOGY) * 5 &&
+             g.hireid != -1)
+         {
+            int p2 = getpoolcreature(g.hireid);
+            if (p2 != -1 && pool[p2]->alive &&
+                (pool[p2]->location == -1 ||
+                 location[pool[p2]->location]->type != SITE_GOVERNMENT_PRISON))
+            {
+               criminalize(*pool[p2], LAWFLAG_RACKETEERING);
+               pool[p2]->confessions++;
+            }
+            if (g.base >= 0) location[g.base]->heat += 300;
+            removesquadinfo(g);
+            g.exists = false;
+            return;
+         }
+         g.location = find_courthouse(g);
+         Armor prisoner(*armortype[getarmortype("ARMOR_PRISONER")]);
+         g.give_armor(prisoner, NULL);
+      }
+   }
+   else if (location[g.location]->type == SITE_GOVERNMENT_COURTHOUSE)
+      trial(g);
+   else if (location[g.location]->type == SITE_GOVERNMENT_PRISON)
+      prison(g);
+}
+
+// The justice system: a month in the cells, a trial, sentencing, and a month
+// inside. Driven one stage at a time, because the original's own loop over the
+// pool interleaves them and a divergence would name the month rather than the
+// stage.
+void probe_justice(FILE *out)
+{
+   // 0 police station, 1 courthouse, 2 prison.
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 27718493UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      int station = -1, courthouse = -1, jail = -1, shelter = -1;
+      for (int l = 0; l < len(location); l++)
+      {
+         if (station == -1 && location[l]->type == SITE_GOVERNMENT_POLICESTATION)
+            station = l;
+         if (courthouse == -1 && location[l]->type == SITE_GOVERNMENT_COURTHOUSE)
+            courthouse = l;
+         if (jail == -1 && location[l]->type == SITE_GOVERNMENT_PRISON)
+            jail = l;
+         if (shelter == -1 && location[l]->type == SITE_RESIDENTIAL_SHELTER)
+            shelter = l;
+      }
+
+      // Stage 3 runs sentencing on its own: a trial that diverges is far
+      // easier to read once the sentence it hands down is known to be right.
+      for (int stage = 0; stage < 4; stage++)
+      for (int record = 0; record < 6; record++)
+      for (int severity = 0; severity < 4; severity++)
+      for (int defense = 0; defense < 5; defense++)
+      {
+         if (stage != 1 && stage != 3 && defense) continue;  // only these vary
+         if (stage == 3 && defense > 1) continue;   // lenient, or not
+         // The sleeper attorney is only on the menu when one is in the city,
+         // and the prompt loops forever on a key it does not recognise.
+         if (defense == 4 && record % 2 == 0) continue;
+         unsigned long seed_used = 9900017UL * (unsigned long)
+            (stage * 2048 + record * 128 + severity * 8 + defense
+             + scenario * 251 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         ledger.force_funds(20000);
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 17 + scenario * 29 + severity * 11) % 101;
+            public_interest[v] = (v * 3 + scenario * 5) % 40;
+         }
+         for (int l = 0; l < LAWNUM; l++)
+            law[l] = ((l + scenario + severity) % 5) - 2;
+
+         // The defendant, and a boss for them to name.
+         Creature *boss = new Creature;
+         makecreature(*boss, CREATURE_POLITICALACTIVIST);
+         boss->id = 980000;
+         boss->align = ALIGN_LIBERAL;
+         boss->location = 1;
+         boss->base = 1;
+         boss->hireid = -1;
+         boss->juice = 120;
+         pool.push_back(boss);
+
+         Creature *cr = new Creature;
+         makecreature(*cr, CREATURE_POLITICALACTIVIST);
+         cr->id = 980001;
+         cr->align = ALIGN_LIBERAL;
+         cr->location = (stage == 0) ? station
+                      : (stage == 1 || stage == 3) ? courthouse : jail;
+         cr->base = 1;
+         cr->hireid = (record % 3 == 2) ? -1 : 980000;
+         cr->juice = 40 + record * 140;
+         cr->heat = 10 + record * 30;
+         cr->confessions = record % 3;
+         cr->sentence = (stage == 2) ? (1 + record % 5)
+                      : ((record % 4 == 3) ? -1 : 0);
+         cr->deathpenalty = (stage == 2 && record % 5 == 4) ? 1 : 0;
+         if (record % 4 == 1) cr->flag |= CREATUREFLAG_MISSING;
+         if (record % 4 == 2) cr->flag |= CREATUREFLAG_ILLEGALALIEN;
+         cr->set_skill(SKILL_PERSUASION, 3 + severity * 2);
+         cr->set_skill(SKILL_LAW, severity * 3);
+         cr->set_skill(SKILL_COMPUTERS, severity * 3);
+         cr->set_skill(SKILL_DISGUISE, severity * 3);
+         cr->set_skill(SKILL_SECURITY, severity * 3);
+         cr->set_skill(SKILL_STEALTH, severity * 3);
+         cr->set_skill(SKILL_SCIENCE, severity * 3);
+         cr->set_skill(SKILL_HANDTOHAND, severity * 3);
+         cr->set_skill(SKILL_PSYCHOLOGY, severity);
+         // A charge sheet that grows with severity, so sentencing sees every
+         // rule it has.
+         for (int f = 0; f < LAWFLAGNUM; f++)
+            cr->crimes_suspected[f] = ((f + severity) % (4 - severity + 1) == 0)
+                                    ? (1 + (f + severity) % 3) : 0;
+         pool.push_back(cr);
+
+         // A sleeper judge and a sleeper lawyer, sometimes.
+         if (record % 2)
+         {
+            Creature *sj = new Creature;
+            makecreature(*sj, CREATURE_JUDGE_CONSERVATIVE);
+            sj->id = 980002;
+            sj->align = ALIGN_LIBERAL;
+            sj->location = courthouse;
+            sj->base = courthouse;
+            sj->hireid = 980000;
+            sj->flag |= CREATUREFLAG_SLEEPER;
+            sj->infiltration = 0.2f + severity * 0.25f;
+            pool.push_back(sj);
+
+            Creature *sl = new Creature;
+            makecreature(*sl, CREATURE_LAWYER);
+            sl->id = 980003;
+            sl->align = ALIGN_LIBERAL;
+            sl->location = courthouse;
+            sl->base = courthouse;
+            sl->hireid = 980000;
+            sl->flag |= CREATUREFLAG_SLEEPER;
+            sl->set_skill(SKILL_LAW, 5 + severity * 3);
+            sl->set_skill(SKILL_PERSUASION, 4 + severity * 2);
+            pool.push_back(sl);
+         }
+
+         fprintf(out, "{\"kind\":\"justice\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"stage\":%d,\"record\":%d,\"severity\":%d,"
+                      "\"defense\":%d,\"station\":%d,\"courthouse\":%d,"
+                      "\"jail\":%d,\"shelter\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, stage, record, severity, defense,
+                 station, courthouse, jail, shelter, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"sleeper\":%d,\"missing\":%d,\"alien\":%d,"
+                         "\"sentence\":%d,\"death\":%d,\"confessions\":%d,"
+                         "\"heat\":%d,\"infiltration\":%.9g,\"crimes\":[",
+                    p ? "," : "", (pool[p]->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_MISSING) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_ILLEGALALIEN) ? 1 : 0,
+                    (int)pool[p]->sentence, (int)pool[p]->deathpenalty,
+                    (int)pool[p]->confessions, (int)pool[p]->heat,
+                    (double)pool[p]->infiltration);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)pool[p]->crimes_suspected[f]);
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         // The trial asks how the defense is conducted; the script answers.
+         static const char DEFENSE_KEYS[] = { 'a', 'b', 'c', 'd', 'e' };
+         // A trial asks a great many "press any key" questions before it asks
+         // the one that matters, and the prompt that matters is a loop that
+         // ignores anything it does not recognise. Queuing the answer many
+         // times over gets it through both.
+         lcs_trace_clear_keys();
+         if (stage == 1)
+            for (int k = 0; k < 400; k++)
+               lcs_trace_push_key(DEFENSE_KEYS[defense]);
+
+         char clearformess = 0;
+         long long before = lcs_trace_draw_count();
+         if (stage == 3) penalize(*cr, defense ? 1 : 0);
+         else justice_stage(*cr, clearformess);
+
+         // The attorney's name is drawn from a side stream the port keeps
+         // separate, so those draws come off the main count.
+         long long side = lcs_trace_side_draws();
+         int t_jury = 0, t_pros = 0, t_def = 0, t_len = 0;
+         lcs_trace_trial_read(&t_jury, &t_pros, &t_def, &t_len);
+         int t_scare = 0, t_types = 0, t_conf = 0;
+         lcs_trace_trial_charges_read(&t_scare, &t_types, &t_conf);
+         fprintf(out, ",\"scare\":%d,\"charges\":%d,\"testimony\":%d",
+                 t_scare, t_types, t_conf);
+         fprintf(out, ",\"jury\":%d,\"prosecution\":%d,\"defensepower\":%d,"
+                      "\"lenient\":%d", t_jury, t_pros, t_def, t_len);
+         fprintf(out, ",\"draws\":%lld,\"side\":%lld,\"funds\":%d,"
+                      "\"pool_size\":%d",
+                 lcs_trace_draw_count() - before - side, side,
+                 ledger.get_funds(), len(pool));
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"sentence\":%d,\"death\":%d,\"confessions\":%d,"
+                         "\"heat\":%d,\"crimes\":[",
+                    p ? "," : "", (int)pool[p]->sentence,
+                    (int)pool[p]->deathpenalty, (int)pool[p]->confessions,
+                    (int)pool[p]->heat);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)pool[p]->crimes_suspected[f]);
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+      }
+   }
+}
+
+
 // A month for the people the squad has left in place: influencing the room,
 // snooping through filing cabinets, skimming the accounts, taking things home
 // and quietly recruiting the next one.
@@ -4378,6 +4664,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "ageing")) probe_ageing(out);
    else if (!strcmp(which, "drift")) probe_monthly_drift(out);
    else if (!strcmp(which, "sleepers")) probe_sleepers(out);
+   else if (!strcmp(which, "justice")) probe_justice(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);
