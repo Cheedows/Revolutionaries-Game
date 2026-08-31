@@ -20,8 +20,10 @@ var vehicle_id: int = 0
 ## Loot and money the squad is carrying out of a site.
 var haul: Array[Item] = []
 
-## Formation stance, from the original's SquadStances.
-var stance: StringName = &"default"
+## Formation stance, from the original's SquadStances: &"anonymous" to pass
+## unnoticed, &"standard" to be ready for trouble, and &"battlecolors" to be
+## seen. A new squad forms up standard, as in the original.
+var stance: StringName = &"standard"
 
 
 func is_full() -> bool:

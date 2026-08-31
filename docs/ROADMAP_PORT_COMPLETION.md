@@ -818,10 +818,29 @@ Site construction is already strong; now port the gameplay that occurs inside th
       reachable complaint, compared on draw counts, the complaint itself,
       whether the squad was recognised, the alarm, the square, who is standing
       there and all nine squares of door.
-  - [ ] `special_readsign()`, which is presentation, and the two broadcast
-      studios (`special_radio_broadcaststudio()`,
-      `special_news_broadcaststudio()`), which wait on Gate D's
-      `radio_broadcast()`/`news_broadcast()`.
+  - [x] The two broadcast studios (`special_radio_broadcaststudio()`,
+      `special_news_broadcaststudio()`) and the `radio_broadcast()` and
+      `news_broadcast()` they call, in `broadcast.gd`. These turned out not to
+      need any of Gate D: an hour on air is public opinion and a charge sheet,
+      not a headline. The two shows differ in several small ways — radio pays
+      five times what television does on the issue, television is the only one
+      where flying the Squad's colours still counts, and a television show too
+      bad to take seriously brings nobody to investigate — and all of them are
+      kept.
+    - **Port defect found and fixed.** `change_public_opinion()` scales its
+      effect by public interest in C floats, and the port did it in doubles, so
+      a scale of exactly 1.16 truncated a point lower. Everything in the game
+      funnels through that function; both it and the reputation split now round
+      through `SinglePrecision`.
+    - Verified by the `broadcast` probe: both studios against one to four
+      Liberals (the largest squad carrying a corpse), five grades of ability,
+      three rooms including one with a Conservative who stops the show, a
+      hostage of the right kind of fame, the wrong kind or none, the Squad's
+      colours flown or not, and a room already upset or not — 4,320 samples
+      compared on draw counts, whether it aired, how well it went, the alarm,
+      whether the room forgave the squad, who came to investigate, and opinion
+      and interest on every issue.
+  - [ ] `special_readsign()`, which is presentation and lands with the site UI.
 - [ ] Dialogue/talk/persuasion/intimidation/recruit-like site interactions.
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.

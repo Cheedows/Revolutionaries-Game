@@ -70,8 +70,12 @@ static func change(state: GameState, view: StringName, power: int,
 	elif view == &"liberalcrimesquadpos":
 		effective = clampi(effective, APPROVAL_FLOOR, APPROVAL_CEILING)
 
-	# An issue people are already following moves further.
-	effective = int(effective * (1 + float(opinion.interest[index]) / INTEREST_DIVISOR))
+	# An issue people are already following moves further. The original does
+	# this in C floats, and the last digit of the scale decides whether the
+	# truncation lands a point higher, so it is rounded the same way here.
+	var attention := SinglePrecision.of(1.0 + SinglePrecision.of(
+			float(opinion.interest[index]) / INTEREST_DIVISOR))
+	effective = int(SinglePrecision.of(float(effective) * attention))
 
 	if opinion.interest[index] < cap \
 			or (view == &"liberalcrimesquadpos" and opinion.interest[index] < 100):
@@ -95,7 +99,8 @@ static func change(state: GameState, view: StringName, power: int,
 static func _through_reputation(opinion: PublicOpinion, index: int, power: int) -> int:
 	var awareness := opinion.get_attitude(&"liberalcrimesquad")
 	# People who have never heard of the organisation judge the act alone.
-	var raw := int(float(power) * float(100 - awareness) / 100.0)
+	var raw := int(SinglePrecision.of(SinglePrecision.of(
+			float(power) * float(100 - awareness)) / 100.0))
 	var swayed := power - raw
 
 	if swayed > 0:
