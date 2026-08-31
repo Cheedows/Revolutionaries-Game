@@ -60,6 +60,14 @@ static func charge_everyone(state: GameState, crime: StringName,
 	return events
 
 
+## Whether anything at all is on somebody's charge sheet.
+static func is_criminal(creature: Creature) -> bool:
+	for count in creature.crimes_suspected:
+		if count != 0:
+			return true
+	return false
+
+
 ## How hard the police pursue [param crime].
 static func heat_of(crime: StringName) -> int:
 	return Tables.CRIME_HEAT.get(crime, 0)

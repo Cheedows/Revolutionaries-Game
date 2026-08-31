@@ -199,8 +199,24 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     can have built into it, four levels of escalation, three of stores and four
     occupancies, compared on draw counts, the stores, the compound, the siege
     state, the lease, the loot left, public opinion and every defender.
-- [ ] The assault itself (`sally_forth()`, `escape_engage()`, `escapesiege()`)
-    and surrendering (`giveup()`).
+- [x] Surrendering a besieged safehouse (`giveup()`) and what a siege leaves
+    behind when the fighting stops (`escapesiege()`). Who is outside decides
+    everything: the police and the fire brigade charge whoever is holding a
+    hostage or an undocumented worker, confiscate the money — a small purse
+    survives, and a large one very nearly does not — dismantle the compound and
+    take away anybody wanted; everybody else simply kills whoever is inside,
+    and the Conservative Crime Squad keeps a warehouse it takes.
+  - Winning buys a few weeks before the police come back with the army, and
+    pushes the national heat up. Losing rebuilds the site from scratch through
+    `initlocation()` — a fresh generator stream and a new name, both of which
+    cost draws in a fixed order — and scatters the survivors into hiding.
+  - Verified by the `surrender` probe (five attackers, four purses, four
+    occupancies, three safehouse arrangements — 720 samples) and the
+    `siege_outcome` probe (won and lost, three attackers, rented and held, four
+    occupancies, five levels of national heat — 720 samples).
+- [ ] The assault itself (`sally_forth()`, `sally_forth_aux()`,
+    `escape_engage()`): a siege defence is site mode with the compound as the
+    map, so it waits on Gate G's site loop.
 - [ ] News hooks for daily arrests (the story types the original queues).
 - [x] The individual half of the day: `advanceday()`'s "ACTIVITIES FOR
     INDIVIDUALS" loop, which runs before anybody is sorted into a group.

@@ -2903,6 +2903,579 @@ static void justice_stage(Creature &g, char &clearformess)
       prison(g);
 }
 
+// A transcription of giveup() from src/daily/siege.cpp with the end-of-game
+// check taken out: it belongs to the day around the surrender, and it ends
+// the run whenever a sample deliberately wipes out the last Liberal.
+static void giveup_block()
+{
+   int loc=-1;
+   if(selectedsiege!=-1)loc=selectedsiege;
+   if(activesquad!=NULL)loc=activesquad->squad[0]->location;
+   if(loc==-1)return;
+
+   if(location[loc]->renting>1)location[loc]->renting=RENTING_NOCONTROL;
+
+   //IF POLICE, END SIEGE
+   if(location[loc]->siege.siegetype==SIEGE_POLICE ||
+      location[loc]->siege.siegetype==SIEGE_FIREMEN)
+   {
+      music.play(MUSIC_SIEGE);
+      int polsta=find_police_station(loc);
+
+      //END SIEGE
+      erase();
+      set_color(COLOR_WHITE,COLOR_BLACK,1);
+      move(1,1);
+      if(location[loc]->siege.siegetype==SIEGE_POLICE && location[loc]->siege.escalationstate == 0)
+         addstr("The police", gamelog);
+      else if(location[loc]->siege.siegetype==SIEGE_POLICE && location[loc]->siege.escalationstate >= 1)
+         addstr("The soldiers", gamelog);
+      else addstr("The firemen", gamelog);
+      addstr(" confiscate everything, including Squad weapons.", gamelog);
+      gamelog.newline();
+
+      int kcount=0,pcount=0,icount=0,p;
+      char kname[100],pname[100],pcname[100];
+      for(p=len(pool)-1;p>=0;p--)
+      {
+         if(pool[p]->location!=loc||!pool[p]->alive) continue;
+
+         if(pool[p]->flag&CREATUREFLAG_ILLEGALALIEN) icount++;
+
+         if(pool[p]->flag&CREATUREFLAG_MISSING&&pool[p]->align==-1)
+         {
+            kcount++;
+            strcpy(kname,pool[p]->propername);
+            if(pool[p]->type==CREATURE_RADIOPERSONALITY) offended_amradio=1;
+            if(pool[p]->type==CREATURE_NEWSANCHOR) offended_cablenews=1;
+            //clear interrogation data if deleted
+            delete pool[p]->activity.intr();
+         }
+      }
+
+      //CRIMINALIZE POOL IF FOUND WITH KIDNAP VICTIM OR ALIEN
+      if(kcount) criminalizepool(LAWFLAG_KIDNAPPING,-1,loc);
+      if(icount) criminalizepool(LAWFLAG_HIREILLEGAL,-1,loc);
+
+      if(location[loc]->siege.siegetype==SIEGE_FIREMEN&&location[loc]->compound_walls&COMPOUND_PRINTINGPRESS)
+         criminalizepool(LAWFLAG_SPEECH,-1,loc); // Criminalize pool for unacceptable speech
+
+      //LOOK FOR PRISONERS (MUST BE AFTER CRIMINALIZATION ABOVE)
+      for(p=len(pool)-1;p>=0;p--)
+      {
+         if(pool[p]->location!=loc||!pool[p]->alive) continue;
+
+         if(iscriminal(*pool[p])&&!(pool[p]->flag&CREATUREFLAG_MISSING&&pool[p]->align==-1))
+         {
+            pcount++;
+            strcpy(pname,pool[p]->propername);
+            strcpy(pcname,pool[p]->name);
+         }
+      }
+
+      if(kcount==1)
+      {
+         move(3,1);
+         addstr(kname);
+         addstr(" is rehabilitated and freed.", gamelog);
+         gamelog.newline();
+      }
+      if(kcount>1)
+      {
+         move(3,1);
+         addstr("The kidnap victims are rehabilitated and freed.", gamelog);
+         gamelog.newline();
+      }
+      if(pcount==1)
+      {
+         move(5,1);
+         addstr(pname, gamelog);
+         if(strcmp(pname,pcname))
+         {
+            addstr(", aka ", gamelog);
+            addstr(pcname, gamelog);
+            addstr(",", gamelog);
+         }
+         move(6,1);
+         addstr("is taken to the police station.", gamelog);
+         gamelog.newline();
+      }
+      if(pcount>1)
+      {
+         move(5,1);
+         addstr(pcount, gamelog);
+         addstr(" Liberals are taken to the police station.", gamelog);
+         gamelog.newline();
+      }
+      if(ledger.get_funds()>0)
+      {
+         if(ledger.get_funds()<=2000 || location[loc]->siege.siegetype==SIEGE_FIREMEN)
+         {
+            move(8,1);
+            addstr("Fortunately, your funds remain intact.", gamelog);
+            gamelog.newline();
+         }
+         else
+         {
+            move(8,1);
+            int confiscated = LCSrandom(LCSrandom(ledger.get_funds()-2000)+1)+1000;
+            if(ledger.get_funds()-confiscated > 50000)
+               confiscated += ledger.get_funds() - 30000 - LCSrandom(20000) - confiscated;
+            addstr_fl(gamelog,"Law enforcement has confiscated $%d in LCS funds.",confiscated);
+            gamelog.newline();
+            ledger.subtract_funds(confiscated,EXPENSE_CONFISCATED);
+         }
+      }
+      if(location[loc]->siege.siegetype==SIEGE_FIREMEN)
+      {
+         if(location[loc]->compound_walls & COMPOUND_PRINTINGPRESS)
+         {
+            move(10,1);
+            addstr("The printing press is dismantled and burned.", gamelog);
+            gamelog.newline();
+            location[loc]->compound_walls &= ~COMPOUND_PRINTINGPRESS;
+         }
+      }
+      else
+      {
+         if(location[loc]->compound_walls)
+         {
+            move(10,1);
+            addstr("The compound is dismantled.", gamelog);
+            gamelog.newline();
+            location[loc]->compound_walls=0;
+         }
+      }
+      if(location[loc]->front_business!=-1)
+      {
+         move(12,1);
+         addstr("Materials relating to the business front have been taken.", gamelog);
+         gamelog.newline();
+         location[loc]->front_business=-1;
+      }
+
+      getkey();
+
+      if(location[loc]->siege.siegetype==SIEGE_FIREMEN)
+         offended_firemen=0; // Firemen do not hold grudges
+
+      for(p=len(pool)-1;p>=0;p--)
+      {
+         if(pool[p]->location!=loc) continue;
+
+         //ALL KIDNAP VICTIMS FREED REGARDLESS OF CRIMES
+         if((pool[p]->flag & CREATUREFLAG_MISSING)||
+            !pool[p]->alive)
+         {
+            // Clear actions for anybody who was tending to this person
+            for(int i=0;i<len(pool);i++)
+               if(pool[i]->alive&&pool[i]->activity.type==ACTIVITY_HOSTAGETENDING&&pool[i]->activity.arg==pool[p]->id)
+                  pool[i]->activity.type=ACTIVITY_NONE;
+
+            removesquadinfo(*pool[p]);
+            delete_and_remove(pool,p);
+            continue;
+         }
+
+         //TAKE SQUAD EQUIPMENT
+         if(pool[p]->squadid!=-1)
+         {
+            int sq=getsquad(pool[p]->squadid);
+            if(sq!=-1)delete_and_clear(squad[sq]->loot);
+         }
+
+         pool[p]->drop_weapons_and_clips(NULL);
+
+         if(iscriminal(*pool[p]))
+         {
+            removesquadinfo(*pool[p]);
+            pool[p]->location=polsta;
+            pool[p]->activity.type=ACTIVITY_NONE;
+         }
+      }
+
+      location[loc]->siege.siege=0;
+   }
+   else
+   {
+      //OTHERWISE IT IS SUICIDE
+      int killnumber=0;
+      for(int p=len(pool)-1;p>=0;p--)
+      {
+         if(pool[p]->location!=loc) continue;
+
+         if(pool[p]->alive&&pool[p]->align==1) stat_dead++;
+
+         killnumber++;
+         removesquadinfo(*pool[p]);
+         pool[p]->die();
+         pool[p]->location=-1;
+      }
+
+      if(location[loc]->siege.siegetype==SIEGE_CCS&&location[loc]->type==SITE_INDUSTRY_WAREHOUSE)
+         location[loc]->renting=RENTING_CCS; // CCS Captures warehouse
+
+      erase();
+      set_color(COLOR_WHITE,COLOR_BLACK,1);
+      move(1,1);
+      addstr("Everyone in the ", gamelog);
+      addstr(location[loc]->getname(), gamelog);
+      addstr(" is slain.", gamelog);
+      gamelog.newline();
+
+      getkey();
+
+      newsstoryst *ns=new newsstoryst;
+      ns->type=NEWSSTORY_MASSACRE;
+      ns->loc=loc;
+      ns->crime.push_back(location[loc]->siege.siegetype);
+      ns->crime.push_back(killnumber);
+      newsstory.push_back(ns);
+
+      //MUST SET cursite TO SATISFY endcheck() CODE
+
+      location[loc]->siege.siege=0;
+   }
+
+   //CONFISCATE MATERIAL
+   delete_and_clear(location[loc]->loot);
+   for(int v=len(vehicle)-1;v>=0;v--)
+      if(vehicle[v]->get_location()==loc)
+         delete_and_remove(vehicle,v);
+
+   gamelog.newline();
+
+}
+
+
+
+
+
+// How a siege ends once the fighting is over: winning buys a few weeks before
+// the police come back angrier, and losing costs the house and everything in
+// it.
+void probe_siege_outcome(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 74310937UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      int shelter = -1, house = -1;
+      for (int l = 0; l < len(location); l++)
+      {
+         if (shelter == -1 && location[l]->type == SITE_RESIDENTIAL_SHELTER)
+            shelter = l;
+         // A real rentable safehouse: escapesiege() re-seeds and renames the
+         // site it lost, and only a proper site has a name to rebuild.
+         if (house == -1 && location[l]->type == SITE_RESIDENTIAL_TENEMENT)
+            house = l;
+      }
+      if (house == -1) house = 1;
+
+      for (int won = 0; won < 2; won++)
+      for (int attacker = 0; attacker < 3; attacker++)
+      for (int rented = 0; rented < 2; rented++)
+      for (int crowd = 1; crowd <= 4; crowd++)
+      for (int heat = 0; heat < 5; heat++)
+      {
+         unsigned long seed_used = 1400031UL * (unsigned long)
+            (won * 2048 + attacker * 512 + rented * 128 + crowd * 8 + heat
+             + scenario * 359 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         activesquad = NULL;
+         police_heat = heat;
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->siege = siegest();
+            location[l]->siege.lights_off = 0;
+            location[l]->siege.cameras_off = 0;
+            location[l]->siege.kills = 0;
+            location[l]->siege.tanks = 0;
+            location[l]->siege.attacktime = 0;
+            location[l]->compound_walls = 0;
+            location[l]->compound_stores = 0;
+            location[l]->front_business = -1;
+            delete_and_clear(location[l]->loot);
+         }
+         cursite = house;
+         location[house]->renting = rented ? 400 : RENTING_PERMANENT;
+         location[house]->siege.siege = 1;
+         location[house]->siege.siegetype = (attacker == 0) ? SIEGE_POLICE
+                                      : (attacker == 1) ? SIEGE_CCS
+                                                        : SIEGE_CORPORATE;
+         location[house]->siege.escalationstate = attacker;
+         location[house]->compound_walls = COMPOUND_BASIC | COMPOUND_GENERATOR;
+         location[house]->compound_stores = 20;
+         location[house]->front_business = 0;
+         location[house]->loot.push_back(
+            new Loot(*loottype[getloottype("LOOT_COMPUTER")]));
+
+         squad.push_back(new squadst);
+         squad.back()->id = cursquadid++;
+         strcpy(squad.back()->name, "Defense");
+         activesquad = squad.back();
+         activesquad->loot.push_back(
+            new Loot(*loottype[getloottype("LOOT_CELLPHONE")]));
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 920000 + n;
+            cr->align = (n == 2) ? ALIGN_CONSERVATIVE : ALIGN_LIBERAL;
+            if (n == 2) cr->flag |= CREATUREFLAG_MISSING;
+            cr->location = house;
+            cr->base = house;
+            cr->hireid = n ? 920000 : -1;
+            if (n == 3) cr->alive = false;
+            if (n < 6)
+            {
+               activesquad->squad[n] = cr;
+               cr->squadid = activesquad->id;
+            }
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"siege_outcome\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"won\":%d,\"attacker\":%d,\"rented\":%d,\"crowd\":%d,"
+                      "\"heat\":%d,\"shelter\":%d,\"house\":%d,\"renting\":%d,"
+                      "\"world_seed\":%lu",
+                 scenario, seed_used, won, location[house]->siege.siegetype, rented,
+                 crowd, heat, shelter, house, location[house]->renting, run_seed);
+         fputs(",\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"missing\":%d,\"person\":", p ? "," : "",
+                    (pool[p]->flag & CREATUREFLAG_MISSING) ? 1 : 0);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         escapesiege(won ? 1 : 0);
+
+         fprintf(out, ",\"draws\":%lld,\"renting_after\":%d,\"compound\":%d,"
+                      "\"stores\":%d,\"front\":%d,\"siege\":%d,\"located\":%d,"
+                      "\"escalation\":%d,\"police_heat\":%d,\"loot\":%d,"
+                      "\"shelter_loot\":%d",
+                 lcs_trace_draw_count() - before, location[house]->renting,
+                 location[house]->compound_walls, location[house]->compound_stores,
+                 location[house]->front_business,
+                 location[house]->siege.siege ? 1 : 0,
+                 (int)location[house]->siege.timeuntillocated,
+                 (int)location[house]->siege.escalationstate, police_heat,
+                 len(location[house]->loot),
+                 shelter == -1 ? 0 : len(location[shelter]->loot));
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"hiding\":%d,\"person\":", p ? "," : "",
+                    (int)pool[p]->hiding);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         activesquad = NULL;
+         delete_and_clear(location[house]->loot);
+         if (shelter != -1) delete_and_clear(location[shelter]->loot);
+      }
+   }
+}
+
+
+// Giving up a besieged safehouse. Who is outside decides everything: the
+// police and the fire brigade take prisoners and money and leave, and
+// everybody else simply kills whoever is inside.
+void probe_siege_surrender(FILE *out)
+{
+   static const int ATTACKERS[] = {
+      SIEGE_POLICE, SIEGE_FIREMEN, SIEGE_CORPORATE, SIEGE_CCS, SIEGE_HICKS,
+   };
+   const int ATTACKER_COUNT = (int)(sizeof(ATTACKERS) / sizeof(ATTACKERS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 66129041UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      int station = -1, warehouse = -1;
+      for (int l = 0; l < len(location); l++)
+      {
+         if (station == -1 && location[l]->type == SITE_GOVERNMENT_POLICESTATION)
+            station = l;
+         if (warehouse == -1 && location[l]->type == SITE_INDUSTRY_WAREHOUSE)
+            warehouse = l;
+      }
+
+      for (int attacker = 0; attacker < ATTACKER_COUNT; attacker++)
+      for (int money = 0; money < 4; money++)
+      for (int crowd = 1; crowd <= 4; crowd++)
+      for (int walls = 0; walls < 3; walls++)
+      {
+         unsigned long seed_used = 1300021UL * (unsigned long)
+            (attacker * 1024 + money * 128 + crowd * 8 + walls
+             + scenario * 331 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         static const int PURSE[] = {0, 1500, 9000, 120000};
+         ledger.force_funds(PURSE[money]);
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->siege = siegest();
+            location[l]->siege.lights_off = 0;
+            location[l]->siege.cameras_off = 0;
+            location[l]->siege.kills = 0;
+            location[l]->siege.tanks = 0;
+            location[l]->siege.attacktime = 0;
+            location[l]->compound_walls = 0;
+            location[l]->compound_stores = 0;
+            location[l]->front_business = -1;
+            delete_and_clear(location[l]->loot);
+         }
+         // Half the samples give up a warehouse, so the Conservative Crime
+         // Squad's capture of one is covered.
+         int site = (walls == 2 && warehouse != -1) ? warehouse : 1;
+         location[site]->renting = (money % 2) ? 400 : RENTING_PERMANENT;
+         location[site]->siege.siege = 1;
+         location[site]->siege.siegetype = ATTACKERS[attacker];
+         location[site]->siege.escalationstate = walls;
+         location[site]->front_business = walls ? 0 : -1;
+         if (walls) location[site]->compound_walls |= COMPOUND_BASIC;
+         if (walls) location[site]->compound_walls |= COMPOUND_PRINTINGPRESS;
+         location[site]->loot.push_back(
+            new Loot(*loottype[getloottype("LOOT_COMPUTER")]));
+         selectedsiege = site;
+         activesquad = NULL;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 930000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = site;
+            cr->base = site;
+            cr->hireid = n ? 930000 : -1;
+            cr->juice = 20 * n;
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               cr->crimes_suspected[f] = ((f + n) % 6 == 0) ? 1 : 0;
+            if (n == 1) cr->flag |= CREATUREFLAG_ILLEGALALIEN;
+            if (n == 3) cr->alive = false;
+            pool.push_back(cr);
+         }
+         // A hostage taken off the airwaves, so the grudges are covered.
+         if (crowd >= 2)
+         {
+            Creature *hostage = new Creature;
+            makecreature(*hostage, CREATURE_RADIOPERSONALITY);
+            hostage->id = 931000;
+            hostage->align = ALIGN_CONSERVATIVE;
+            hostage->location = site;
+            hostage->base = site;
+            hostage->flag |= CREATUREFLAG_MISSING;
+            pool.push_back(hostage);
+         }
+         offended_amradio = 0;
+         offended_cablenews = 0;
+         offended_firemen = 1;
+
+         fprintf(out, "{\"kind\":\"surrender\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"attacker\":%d,\"money\":%d,\"crowd\":%d,\"walls\":%d,"
+                      "\"site\":%d,\"station\":%d,\"funds\":%d,\"renting\":%d,"
+                      "\"compound\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, ATTACKERS[attacker], money, crowd, walls,
+                 site, station, ledger.get_funds(), location[site]->renting,
+                 location[site]->compound_walls, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"pool\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"missing\":%d,\"alien\":%d,\"crimes\":[",
+                    p ? "," : "",
+                    (pool[p]->flag & CREATUREFLAG_MISSING) ? 1 : 0,
+                    (pool[p]->flag & CREATUREFLAG_ILLEGALALIEN) ? 1 : 0);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)pool[p]->crimes_suspected[f]);
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         giveup_block();
+
+         fprintf(out, ",\"draws\":%lld,\"funds_after\":%d,\"renting_after\":%d,"
+                      "\"compound_after\":%d,\"front_after\":%d,\"siege\":%d,"
+                      "\"loot\":%d,\"amradio\":%d,\"cablenews\":%d,"
+                      "\"firemen\":%d,\"stories\":%d",
+                 lcs_trace_draw_count() - before, ledger.get_funds(),
+                 location[site]->renting, location[site]->compound_walls,
+                 location[site]->front_business,
+                 location[site]->siege.siege ? 1 : 0,
+                 len(location[site]->loot), offended_amradio ? 1 : 0,
+                 offended_cablenews ? 1 : 0, offended_firemen ? 1 : 0,
+                 len(newsstory));
+         fputs(",\"pool_after\":[", out);
+         for (int p = 0; p < len(pool); p++)
+         {
+            fprintf(out, "%s{\"crimes\":[", p ? "," : "");
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)pool[p]->crimes_suspected[f]);
+            fputs("],\"person\":", out);
+            chase_write_creature(out, *pool[p], true);
+            fputs("}", out);
+         }
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+         delete_and_clear(location[site]->loot);
+         selectedsiege = -1;
+      }
+   }
+}
+
+
 // A day of being under siege: eating the stores, starving without them, the
 // power going, snipers, helicopters, and the reporter who occasionally gets in.
 void probe_siege_turn(FILE *out)
@@ -4962,6 +5535,8 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "justice")) probe_justice(out);
    else if (!strcmp(which, "siege_watch")) probe_siege_watch(out);
    else if (!strcmp(which, "siege_turn")) probe_siege_turn(out);
+   else if (!strcmp(which, "surrender")) probe_siege_surrender(out);
+   else if (!strcmp(which, "siege_outcome")) probe_siege_outcome(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

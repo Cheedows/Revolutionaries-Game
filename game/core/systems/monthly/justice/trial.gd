@@ -58,7 +58,7 @@ static func begin(state: GameState, rng: Rng, defendant: Creature,
 
 	var events: Array[Event] = [Event.new(Event.TRIAL_STARTED,
 			{"creature": defendant.id})]
-	if not _is_charged(defendant):
+	if not CrimeRules.is_criminal(defendant):
 		# Nobody stands trial for nothing, so the court finds something.
 		events.append(CrimeRules.charge(state, defendant, &"loitering"))
 
@@ -258,10 +258,3 @@ static func _place(state: GameState, defendant: Creature,
 static func _city_of(state: GameState, creature: Creature) -> int:
 	var here: Location = state.locations.get(creature.location)
 	return here.city if here != null else 0
-
-
-static func _is_charged(defendant: Creature) -> bool:
-	for count in defendant.crimes_suspected:
-		if count != 0:
-			return true
-	return false

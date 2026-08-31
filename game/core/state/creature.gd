@@ -109,6 +109,9 @@ var making: StringName = &""
 ## spare argument in the original.
 var recruiting: StringName = &""
 
+## The hostage somebody is looking after, when that is their assignment.
+var tending_id: int = 0
+
 ## Days spent laying low, in hospital, in court, or dating.
 var hiding: int = 0
 var clinic: int = 0
