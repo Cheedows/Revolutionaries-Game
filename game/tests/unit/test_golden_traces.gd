@@ -4,10 +4,16 @@ extends TestCase
 ##
 ## The second test is the load-bearing one: it replays the exact number of draws
 ## the C++ made up to a decision point and asserts the generator state matches
-## word for word. If that holds across a four-month playthrough, every system
-## ported afterwards can be diffed against these traces meaningfully.
+## word for word. If that holds across a playthrough, every system ported
+## afterwards can be diffed against these traces meaningfully.
+##
+## Four scripts at three seeds: the founding, four months of waiting, a trip
+## into a building, and `year`, which waits a day at a time from January 2009
+## to June 2010 — long enough to reach two general elections, the Supreme
+## Court's slow turnover and twenty-eight amendments, none of which the
+## four-month run gets near.
 
-const EXPECTED_TRACES := 9
+const EXPECTED_TRACES := 12
 
 
 func test_traces_are_readable() -> void:

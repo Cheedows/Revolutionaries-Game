@@ -1576,7 +1576,17 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     decision; 64 are named by the code that ported them and 14 are classified,
     with three of those fourteen being questions the original asks and then
     never reads the answer to. Run in CI.
-- [ ] Record final golden traces/probes for all tractable modes.
+- [x] Record final golden traces/probes for all tractable modes. 71 system
+    probes cover the mechanics one system at a time, and four scripted golden
+    traces at three seeds each cover the modes end to end: `newgame`, `daily`
+    (four months), `site` (a trip into a building) and `year`.
+
+    Chase mode has no scripted trace and is not going to get one: the
+    original's foot chase ignores every key when the person being chased is a
+    lone Liberal on an activity rather than a squad, so a scripted run either
+    stalls in that menu or quits out of it. It is covered instead by four
+    probes that diff it draw for draw — `chase`, `carfight`, `cartheft` and
+    `arrest` — which is stronger evidence than a keystroke script would be.
 - [ ] Add deterministic fixture-based tests where the original interactive harness cannot reliably reach a mode.
 - [ ] Run long deterministic simulations across multiple seeds.
 - [ ] Fix accidental divergences.
