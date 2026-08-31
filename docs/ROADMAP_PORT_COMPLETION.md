@@ -841,7 +841,36 @@ Site construction is already strong; now port the gameplay that occurs inside th
       whether the room forgave the squad, who came to investigate, and opinion
       and interest on every issue.
   - [ ] `special_readsign()`, which is presentation and lands with the site UI.
-- [ ] Dialogue/talk/persuasion/intimidation/recruit-like site interactions.
+- [ ] Dialogue/talk/persuasion/intimidation/recruit-like site interactions
+    (`src/sitemode/talk.cpp`), in `core/systems/site/talk/`.
+  - [x] Talking your way out of a fight (`talkInCombat()`), in
+      `combat_talk.gd`, `combat_hostage.gd`, `combat_bluff.gd` and
+      `combat_surrender.gd`. Four things to say and each a different gamble:
+      shout and hope somebody runs, put a gun to a hostage's head, claim to
+      belong here, or put your hands up. The lines of dialogue are the UI's,
+      but the rolls that choose them move the generator and are made here.
+    - **Original quirk reproduced.** The rout loop walks the roster forwards by
+      index and closes the gap when somebody runs, so whoever was behind them
+      shuffles into the slot the loop has just left and is never spoken to.
+    - **Original quirk reproduced.** A fire crew's own gear worn past their
+      cordon can start the fire they came to put out, on a condition that is a
+      chain of ORs over four flags — so it qualifies on every square that is
+      not already burnt out *and* buried, rather than only untouched ones.
+    - **Original quirk reproduced.** A surrender books every piece of loot in
+      the bag as a separate count of theft against every member of the squad,
+      so a three-Liberal squad with two files collects six charges.
+    - Verified by the `talk_combat` probe: every branch including both
+      standoff answers, against five kinds of enemy, one and three in the room,
+      one and three Liberals, none to two hostages, armed and unarmed, all
+      three training rates, a fire crew's siege or none, and a squad dressed to
+      pass for staff or not — 5,760 samples reaching all ten outcomes, compared
+      on draw counts, the branch taken, the crime sheet and the claim on the
+      site, the square, exactly who is left in the room and in what order, what
+      fell on the floor, and each Liberal's standing, disguise, whereabouts,
+      hostage, ammunition and charges.
+  - [ ] The rest of `talk.cpp`: `talkToGeneric()`, `talkAboutIssues()`, the
+      bank teller, renting and cancelling a room, buying a gun, and the two
+      animals.
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.
 - [ ] Graffiti/vandalism/burning/destruction actions present in the original.

@@ -9072,6 +9072,469 @@ void probe_broadcast(FILE *out)
    }
 }
 
+// Talking your way out of a fight: the four things a Liberal can say to
+// somebody who has already decided to stop them. Transcribed from
+// talkInCombat() in src/sitemode/talk.cpp with the display taken out; the
+// rolls that pick a line of dialogue stay, because they move the generator.
+static void talk_combat_block(int choice, int standoff, int *outcome)
+{
+   Creature &a = *activesquad->squad[0];
+   *outcome = 0;
+
+   int c=0,hostages=0,weaponhostage=0;
+   for(int i=0;i<6;i++)
+   {
+      if(activesquad->squad[i]&&
+         activesquad->squad[i]->prisoner&&
+         activesquad->squad[i]->prisoner->alive&&
+         activesquad->squad[i]->prisoner->enemy())
+      {
+         hostages++;
+         if (activesquad->squad[i]->get_weapon().can_threaten_hostages())
+           weaponhostage++;
+      }
+   }
+   c = 'a' + choice;
+
+   if(c=='a')
+   {
+      if(LCSrandom(4)==0 && !sitestory->claimed) sitestory->claimed=1;
+
+      for(int e=0;e<ENCMAX;e++)
+      {
+         if(encounter[e].exists&&encounter[e].alive&&encounter[e].enemy())
+         {
+            int attack = a.juice / 50 + attitude[VIEW_LIBERALCRIMESQUAD] / 10;
+            int defense = encounter[e].attribute_roll(ATTRIBUTE_WISDOM);
+            if(attack > defense)
+            {
+               if(encounter[e].type==CREATURE_COP||
+                  encounter[e].type==CREATURE_GANGUNIT||
+                  encounter[e].type==CREATURE_SWAT||
+                  encounter[e].type==CREATURE_DEATHSQUAD||
+                  encounter[e].type==CREATURE_SOLDIER||
+                  encounter[e].type==CREATURE_HARDENED_VETERAN||
+                  encounter[e].type==CREATURE_CCS_ARCHCONSERVATIVE||
+                  encounter[e].type==CREATURE_AGENT||
+                  encounter[e].type==CREATURE_SECRET_SERVICE)
+               {
+                  if(LCSrandom(3)) continue;
+               }
+               LCSrandom(6);
+               delenc(e,0);
+               addjuice(a,2,200);
+            }
+         }
+      }
+      *outcome = 1;
+   }
+   else if(c=='b')
+   {
+      if(LCSrandom(6)==1 && !sitestory->claimed) sitestory->claimed=1;
+      sitecrime+=5;
+      criminalizeparty(LAWFLAG_KIDNAPPING);
+      addjuice(a,-2,-10);
+
+      bool noretreat=false;
+      if(weaponhostage)
+      {
+         int e;
+         for(e=0;e<ENCMAX;e++)
+         {
+            if(encounter[e].exists&&encounter[e].alive&&
+               encounter[e].enemy()&&encounter[e].blood>70)
+            {
+               if((encounter[e].type==CREATURE_DEATHSQUAD||
+                  encounter[e].type==CREATURE_SOLDIER||
+                  encounter[e].type==CREATURE_HARDENED_VETERAN||
+                  encounter[e].type==CREATURE_CCS_ARCHCONSERVATIVE||
+                  encounter[e].type==CREATURE_AGENT||
+                  encounter[e].type==CREATURE_MERC||
+                  encounter[e].type==CREATURE_COP||
+                  encounter[e].type==CREATURE_GANGUNIT||
+                  encounter[e].type==CREATURE_SWAT||
+                  encounter[e].type==CREATURE_SECRET_SERVICE)&&
+                  LCSrandom(5))
+               {
+                  LCSrandom(5);
+                  noretreat=true;
+                  break;
+               }
+            }
+         }
+         if(noretreat==false)
+         {
+            for(int i=ENCMAX-1;i>=0;i--)
+               if(encounter[i].exists&&encounter[i].alive&&encounter[i].align<=-1)
+                  delenc(i,0);
+            *outcome = 2;
+         }
+         else
+         {
+            *outcome = 3;
+            c = 'a' + standoff;
+            if(c=='a')
+            {
+               Creature* executer=0;
+               if(a.prisoner) executer=&a;
+               else for(int i=0;i<6;i++)
+               {
+                  if(activesquad->squad[i] &&
+                     activesquad->squad[i]->prisoner &&
+                     activesquad->squad[i]->prisoner->alive &&
+                     activesquad->squad[i]->prisoner->enemy())
+                  {
+                     executer=activesquad->squad[i];
+                     break;
+                  }
+               }
+               if(executer->get_weapon().is_ranged()
+                  && executer->get_weapon().get_ammoamount()>0)
+                  executer->get_weapon().decrease_ammo(1);
+
+               addjuice(*executer,-5,-50);
+               sitecrime+=10;
+               sitestory->crime.push_back(CRIME_KILLEDSOMEBODY);
+               criminalize(*executer,LAWFLAG_MURDER);
+               if(executer->prisoner->type==CREATURE_CORPORATE_CEO||
+                  executer->prisoner->type==CREATURE_RADIOPERSONALITY||
+                  executer->prisoner->type==CREATURE_NEWSANCHOR||
+                  executer->prisoner->type==CREATURE_SCIENTIST_EMINENT||
+                  executer->prisoner->type==CREATURE_JUDGE_CONSERVATIVE)sitecrime+=30;
+               makeloot(*executer->prisoner,groundloot);
+               delete_and_nullify(executer->prisoner);
+               *outcome = 4;
+               if(hostages>1&&LCSrandom(2))
+               {
+                  LCSrandom(5);
+                  for(int i=ENCMAX-1;i>=0;i--)
+                     if(encounter[i].exists && encounter[i].enemy() && encounter[i].alive)
+                        delenc(i,0);
+                  *outcome = 5;
+               }
+            }
+            else
+            {
+               LCSrandom(5);
+               if(((encounter[e].type==CREATURE_DEATHSQUAD||
+                  encounter[e].type==CREATURE_AGENT||
+                  encounter[e].type==CREATURE_MERC||
+                  encounter[e].type==CREATURE_CCS_ARCHCONSERVATIVE||
+                  encounter[e].type==CREATURE_GANGUNIT)&&
+                  LCSrandom(2))&&encounter[e].align==ALIGN_CONSERVATIVE)
+               {
+                  LCSrandom(5);
+                  *outcome = 6;
+               }
+               else
+               {
+                  LCSrandom(4);
+                  for(int i=ENCMAX-1;i>=0;i--)
+                     if(encounter[i].exists&&encounter[i].enemy()&&encounter[i].alive)
+                        delenc(i,0);
+                  juiceparty(15,200);
+                  for(int i=0;i<6;i++)
+                     if(activesquad->squad[i] &&
+                        activesquad->squad[i]->prisoner &&
+                        activesquad->squad[i]->prisoner->enemy())
+                        delete_and_nullify(activesquad->squad[i]->prisoner);
+                  *outcome = 7;
+               }
+            }
+         }
+      }
+      else *outcome = 8;
+   }
+   else if(c=='c')
+   {
+      if(location[cursite]->siege.siege &&
+         location[cursite]->siege.siegetype==SIEGE_FIREMEN)
+      {
+         if((!(levelmap[locx][locy][locz].flag & SITEBLOCK_FIRE_END) ||
+            !(levelmap[locx][locy][locz].flag & SITEBLOCK_FIRE_PEAK) ||
+            !(levelmap[locx][locy][locz].flag & SITEBLOCK_FIRE_START) ||
+            !(levelmap[locx][locy][locz].flag & SITEBLOCK_DEBRIS)) && !LCSrandom(10))
+            levelmap[locx][locy][locz].flag |= SITEBLOCK_FIRE_START;
+      }
+
+      bool fooled=true;
+      int e;
+      for(e=0;e<ENCMAX;e++)
+      {
+         if(encounter[e].exists&&encounter[e].alive&&encounter[e].enemy())
+         {
+            int roll = a.skill_roll(SKILL_DISGUISE);
+            int diff = encounter[e].get_attribute(ATTRIBUTE_WISDOM,true)>10 ? DIFFICULTY_CHALLENGING : DIFFICULTY_AVERAGE;
+            fooled = roll >= diff;
+            if (roll+1 == diff && fieldskillrate == FIELDSKILLRATE_HARD)
+               a.train(SKILL_DISGUISE, 20);
+            if(!fooled) break;
+         }
+      }
+      switch (fieldskillrate)
+      {
+         case FIELDSKILLRATE_FAST: a.train(SKILL_DISGUISE, 50);break;
+         case FIELDSKILLRATE_CLASSIC: a.train(SKILL_DISGUISE, 20);break;
+         case FIELDSKILLRATE_HARD: a.train(SKILL_DISGUISE, 0);break;
+      }
+      if(!fooled) *outcome = 9;
+      else
+      {
+         for(int e2=ENCMAX-1;e2>=0;e2--)
+            if(encounter[e2].exists&&encounter[e2].alive&&encounter[e2].enemy())
+               delenc(e2,0);
+         *outcome = 10;
+      }
+   }
+   else
+   {
+      int stolen=0;
+      for(int l=0;l<len(activesquad->loot);l++)
+         if(activesquad->loot[l]->is_loot()) stolen++;
+      for(int i=0;i<6;i++)
+      {
+         if(activesquad->squad[i])
+         {
+            activesquad->squad[i]->crimes_suspected[LAWFLAG_THEFT]+=stolen;
+            capturecreature(*activesquad->squad[i]);
+         }
+         activesquad->squad[i]=NULL;
+      }
+      location[cursite]->siege.siege=0;
+      *outcome = 11;
+   }
+}
+
+void probe_talk_combat(FILE *out)
+{
+   static const int ENEMIES[] = {
+      CREATURE_COP, CREATURE_MERC, CREATURE_WORKER_SECRETARY,
+      CREATURE_CCS_ARCHCONSERVATIVE, CREATURE_HARDENED_VETERAN,
+   };
+   const int ENEMY_COUNT = (int)(sizeof(ENEMIES) / sizeof(ENEMIES[0]));
+
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 22801763UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+
+      for (int choice = 0; choice < 4; choice++)
+      for (int standoff = 0; standoff < 2; standoff++)
+      for (int foe = 0; foe < ENEMY_COUNT; foe++)
+      // One and three of each, rather than every count: the loops behave the
+      // same for two as for three and the recorded creatures are what makes
+      // this probe large.
+      for (int room = 1; room <= 3; room += 2)
+      for (int crowd = 1; crowd <= 3; crowd += 2)
+      for (int captives = 0; captives < 3; captives++)
+      for (int armed = 0; armed < 2; armed++)
+      for (int rate = 0; rate < 3; rate++)
+      {
+         // A fire crew outside is the only siege that changes anything here,
+         // so it rides along with the scenario rather than doubling the run.
+         int besieged = scenario;
+         unsigned long seed_used = 47055833UL * (unsigned long)
+            ((((((((choice * 2 + standoff) * ENEMY_COUNT + foe) * 2
+              + (room - 1) / 2) * 2 + (crowd - 1) / 2) * 3 + captives) * 2
+              + armed) * 3 + rate) + scenario * 7919 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 23 + scenario * 13) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         delete_and_clear(groundloot);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         cursite = 1;
+         location[cursite]->type = SITE_CORPORATE_HEADQUARTERS;
+         location[cursite]->renting = RENTING_NOCONTROL;
+         location[cursite]->siege.siege = besieged;
+         location[cursite]->siege.siegetype = SIEGE_FIREMEN;
+         sitetype = location[cursite]->type;
+         sitealarm = 1;
+         sitealarmtimer = -1;
+         sitecrime = 0;
+         sitealienate = 0;
+         siteonfire = 0;
+         fieldskillrate = rate == 0 ? FIELDSKILLRATE_FAST
+                        : rate == 1 ? FIELDSKILLRATE_CLASSIC
+                                    : FIELDSKILLRATE_HARD;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+         levelmap[locx][locy][locz].flag = 0;
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         ns->claimed = 0;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 930000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            cr->juice = 40 * (n + 1) + scenario * 60;
+            // High enough that a suit sometimes carries the story.
+            cr->set_skill(SKILL_DISGUISE, 5 + (foe * 3 + n) % 9);
+            // A suit passes for a corporate headquarters and plain clothes do
+            // not, so half the samples can bluff their way out. The axis is
+            // the standoff answer, which nothing but the hostage branch reads.
+            cr->give_armor(*armortype[getarmortype(
+                  standoff ? "ARMOR_EXPENSIVESUIT" : "ARMOR_CLOTHES")], NULL);
+            if (armed)
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_SEMIPISTOL_9MM")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+         // A bag of stolen goods, which only matters on a surrender.
+         for (int l = 0; l < scenario + 1; l++)
+            sq->loot.push_back(new Loot(*loottype[getloottype("LOOT_CORPFILES")]));
+
+         Creature *held[2] = {NULL, NULL};
+         for (int h = 0; h < captives && h < crowd; h++)
+         {
+            held[h] = new Creature;
+            makecreature(*held[h], h == 0 ? CREATURE_CORPORATE_CEO
+                                          : CREATURE_WORKER_SECRETARY);
+            held[h]->id = 930050 + h;
+            held[h]->alive = 1;
+            held[h]->align = ALIGN_CONSERVATIVE;
+            sq->squad[h]->prisoner = held[h];
+         }
+
+         for (int n = 0; n < room; n++)
+         {
+            makecreature(encounter[n], ENEMIES[(foe + n) % ENEMY_COUNT]);
+            encounter[n].exists = 1;
+            encounter[n].alive = 1;
+            encounter[n].align = ALIGN_CONSERVATIVE;
+            encounter[n].blood = (n == 1) ? 50 : 100;
+            encounter[n].id = 930100 + n;
+         }
+
+         fprintf(out, "{\"kind\":\"talk_combat\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"choice\":%d,\"standoff\":%d,\"foe\":%d,"
+                      "\"room_count\":%d,\"crowd\":%d,\"captives\":%d,"
+                      "\"armed\":%d,\"rate\":%d,\"besieged\":%d,"
+                      "\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, choice, standoff, foe, room, crowd,
+                 captives, armed, rate, besieged, run_seed, cursite);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"room\":[", out);
+         for (int n = 0; n < room; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, encounter[n], true);
+         }
+         fputs("],\"held\":[", out);
+         for (int h = 0; h < captives && h < crowd; h++)
+         {
+            if (h) fputs(",", out);
+            chase_write_creature(out, *held[h], true);
+         }
+         // What the hostages have in their pockets, which their corpses drop.
+         fputs("],\"held_money\":[", out);
+         for (int h = 0; h < captives && h < crowd; h++)
+            fprintf(out, "%s%d", h ? "," : "", held[h]->money);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int outcome = 0;
+         long long before = lcs_trace_draw_count();
+         talk_combat_block(choice, standoff, &outcome);
+
+         int encount = 0, ids[ENCMAX];
+         for (int e = 0; e < ENCMAX; e++)
+            if (encounter[e].exists) ids[encount++] = encounter[e].id;
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"crime\":%d,"
+                      "\"claimed\":%d,\"alarm\":%d,\"square\":%d,"
+                      "\"encounters\":%d,\"ground\":%d,\"siege\":%d",
+                 lcs_trace_draw_count() - before, outcome, (int)sitecrime,
+                 (int)ns->claimed, (int)sitealarm,
+                 (int)levelmap[locx][locy][locz].flag, encount,
+                 len(groundloot), (int)location[cursite]->siege.siege);
+         fputs(",\"left\":[", out);
+         for (int e = 0; e < encount; e++)
+            fprintf(out, "%s%d", e ? "," : "", ids[e]);
+         fputs("],\"crimes\":[", out);
+         for (int cc = 0; cc < len(ns->crime); cc++)
+            fprintf(out, "%s%d", cc ? "," : "", ns->crime[cc]);
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = NULL;
+            for (int p = 0; p < len(pool); p++)
+               if (pool[p]->id == 930000 + n) cr = pool[p];
+            if (n) fputs(",", out);
+            if (!cr) { fputs("null", out); continue; }
+            fprintf(out, "{\"juice\":%d,\"disguise\":%d,\"location\":%d,"
+                         "\"prisoner\":%d,\"ammo\":%d,\"suspected\":[",
+                    (int)cr->juice, cr->get_skill(SKILL_DISGUISE),
+                    cr->location, cr->prisoner ? (int)cr->prisoner->id : 0,
+                    cr->is_armed() ? cr->get_weapon().get_ammoamount() : -1);
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)cr->crimes_suspected[f]);
+            fputs("]}", out);
+         }
+         fputs("]}\n", out);
+
+         // The hostages are deliberately leaked: several branches delete them
+         // and there is no way to tell from here which did.
+         for (int i = 0; i < 6; i++)
+            if (sq->squad[i]) sq->squad[i]->prisoner = NULL;
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         delete_and_clear(groundloot);
+         sitestory = NULL;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -10690,6 +11153,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "bank")) probe_bank(out);
    else if (!strcmp(which, "doorstaff")) probe_doorstaff(out);
    else if (!strcmp(which, "broadcast")) probe_broadcast(out);
+   else if (!strcmp(which, "talk_combat")) probe_talk_combat(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

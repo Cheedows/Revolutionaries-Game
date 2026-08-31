@@ -58,6 +58,10 @@ const OVAL_OFFICE := &"oval_office"                  # {president}
 const CCS_BOSS_FOUND := &"ccs_boss_found"            # {ready}
 const DOOR_ASSESSED := &"door_assessed"              # {reason, badge, metal_detector}
 const BROADCAST_AIRED := &"broadcast_aired"          # {television, subject, power}
+const ENEMY_ROUTED := &"enemy_routed"                # {creature, by}
+const HOSTAGE_THREATENED := &"hostage_threatened"    # {creature, outcome}
+const BLUFF_TRIED := &"bluff_tried"                  # {creature, fooled}
+const SQUAD_SURRENDERED := &"squad_surrendered"      # {creature}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------
