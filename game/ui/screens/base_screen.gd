@@ -205,7 +205,7 @@ func _on_step(direction: int) -> void:
 func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
 	for event in Commands.assign_activity(_session, creature, activity):
 		_log.append("%s will %s." % [creature.name,
-				ActivityAssignment.LABELS.get(activity, String(activity)).to_lower()],
+				ActivityText.of(activity).to_lower()],
 				Palette.TEXT_DIM)
 
 

@@ -97,8 +97,7 @@ static func record(creature: Creature, state: GameState,
 			String(creature.alignment)])
 	lines.append("Juice %d.  $%d in hand.  %d%% blood."
 			% [creature.juice, creature.money, creature.body.blood])
-	lines.append("Doing: %s." % ActivityAssignment.LABELS.get(creature.activity,
-			String(creature.activity)).to_lower())
+	lines.append("Doing: %s." % ActivityText.of(creature.activity).to_lower())
 
 	var attributes: Array[String] = []
 	for index in Ids.ATTRIBUTES.size():

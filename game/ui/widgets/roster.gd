@@ -92,7 +92,7 @@ func _row(creature: Creature) -> Control:
 	activities.custom_minimum_size = Vector2(190, 0)
 	for index in ActivityAssignment.AVAILABLE.size():
 		var activity: StringName = ActivityAssignment.AVAILABLE[index]
-		activities.add_item(ActivityAssignment.LABELS.get(activity, String(activity)), index)
+		activities.add_item(ActivityText.of(activity), index)
 		if creature.activity == activity:
 			activities.select(index)
 	activities.item_selected.connect(func(index: int):

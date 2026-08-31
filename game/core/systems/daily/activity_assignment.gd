@@ -19,29 +19,24 @@ const HANDLERS := {
 	&"prostitution": "prostitution",
 }
 
-## Activities a player can choose right now, in the order they are offered.
+## Everything a Liberal can be put on, in the order the original offers them:
+## the money first, then the crimes, then the workshop, then the writing, then
+## the classes taught and the classes taken. Taken from the assignments
+## activate() will actually set.
 const AVAILABLE: Array[StringName] = [
-	&"none", &"donations", &"sell_tshirts", &"sell_art",
-	&"sell_music", &"sell_drugs", &"prostitution", &"graffiti",
+	&"none", &"donations", &"sell_tshirts", &"sell_art", &"sell_music",
+	&"sell_drugs", &"prostitution", &"polls", &"communityservice",
+	&"graffiti", &"trouble", &"stealcars", &"bury",
 	&"ccfraud", &"dos_attacks", &"dos_racket", &"hacking",
+	&"repair_armor", &"make_armor", &"wheelchair", &"hostagetending",
+	&"write_letters", &"write_guardian",
+	&"teach_politics", &"teach_fighting", &"teach_covert",
+	&"study_debating", &"study_martial_arts", &"study_driving",
+	&"study_psychology", &"study_first_aid", &"study_law", &"study_disguise",
+	&"study_science", &"study_business", &"study_gymnastics", &"study_music",
+	&"study_art", &"study_teaching", &"study_writing",
+	&"study_locksmithing", &"study_computers",
 ]
-
-## What each reads as on screen.
-const LABELS := {
-	&"none": "Nothing in particular",
-	&"donations": "Solicit donations",
-	&"sell_tshirts": "Sell shirts",
-	&"sell_art": "Sketch portraits",
-	&"sell_music": "Busk",
-	&"sell_drugs": "Sell brownies",
-	&"prostitution": "Sex work",
-	&"graffiti": "Graffiti",
-	&"ccfraud": "Credit card fraud",
-	&"dos_attacks": "Attack websites",
-	&"dos_racket": "Run a protection racket",
-	&"hacking": "Hack",
-}
-
 
 ## The order the original works through the day's activities, from
 ## funds_and_trouble(). It is by activity, not by Liberal: everybody soliciting

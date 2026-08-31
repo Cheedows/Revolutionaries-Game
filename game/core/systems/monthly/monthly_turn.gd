@@ -28,6 +28,9 @@ const CCS_THRESHOLDS := {
 static func run(state: GameState, rng: Rng,
 		catalog: Catalog = null) -> Variant:
 	var events: Array[Event] = []
+	# What the laws were before this month's Congress got at them, so the
+	# world can be told what it has become afterwards.
+	var laws_were := WorldLaws.snapshot(state)
 
 	# A disbanded squad is forgotten a little more every month, and after
 	# fifty years there is nobody left to come back to.
@@ -68,6 +71,10 @@ static func run(state: GameState, rng: Rng,
 	events.append_array(CongressRules.run(state, rng))
 	# And then whatever the new Congress is minded to do to the constitution.
 	events.append_array(Constitution.check(state, rng))
+
+	# A country that has changed its mind about the police calls its police
+	# stations something else, and nine other buildings work the same way.
+	events.append_array(WorldLaws.run(state, rng, laws_were))
 
 	# The justice system runs last, and it is the one part of the month that
 	# stops to ask the player something: how the defense should be conducted.
