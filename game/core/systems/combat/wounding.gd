@@ -235,7 +235,7 @@ static func _die(state: GameState, rng: Rng, attacker: Creature,
 			and (victim.animal_gloss != &"animal"
 					or state.law.get_value(&"animalresearch") == 2):
 		state.site.crime_level += KILL_CRIME_WEIGHT
-		state.site.crimes.append(&"killedsomebody")
+		NewsQueue.record(state, &"killedsomebody")
 		if attacker.is_member():
 			events.append_array(CrimeRules.charge_squad(state, &"murder"))
 	return events

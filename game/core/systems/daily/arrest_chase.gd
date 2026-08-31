@@ -22,7 +22,10 @@ static func check(state: GameState, rng: Rng, liberal: Creature,
 	if not ArrestRules.check(rng, liberal, doing, events):
 		return null
 	if String(events[events.size() - 1].data.get("charge", "")) == "disturbance":
+		NewsQueue.open(state, &"nudityarrest")
 		CrimeRules.charge(state, liberal, &"disturbance")
+	else:
+		NewsQueue.open(state, &"wantedarrest")
 	return attempt(state, rng, liberal, catalog)
 
 
@@ -33,6 +36,10 @@ static func check(state: GameState, rng: Rng, liberal: Creature,
 ## chased without disturbing the real squads.
 static func attempt(state: GameState, rng: Rng, liberal: Creature,
 		catalog: Catalog) -> Variant:
+	# Whatever brought the police opened a story; if nothing did, the arrest
+	# itself is the story.
+	NewsQueue.open_if_idle(state, &"wantedarrest")
+
 	var here: Location = state.locations.get(liberal.location)
 	Chasers.raise(state, rng, &"", here, SEVERITY, catalog)
 

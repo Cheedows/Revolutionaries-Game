@@ -42,6 +42,7 @@ static func sell_brownies(state: GameState, rng: Rng, creature: Creature,
 				Difficulty.AVERAGE) else 0
 
 	if dodged == 0 and drug_law <= 0:
+		NewsQueue.open(state, &"drugarrest")
 		events.append(CrimeRules.charge(state, creature, &"brownies"))
 		events.append(Event.new(Event.CREATURE_ARRESTED, {
 			"creature": creature.id,

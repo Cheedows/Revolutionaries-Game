@@ -188,7 +188,7 @@ static func _died(state: GameState, victim: Creature,
 
 	if victim.squad_id == 0:
 		state.site.crime_level += CRIME_PER_DEATH
-		state.site.crimes.append(&"killedsomebody")
+		NewsQueue.record(state, &"killedsomebody")
 		# Only a fire is charged as murder: bleeding out may not have been the
 		# squad's doing at all.
 		if by_fire:
@@ -223,7 +223,7 @@ static func _drop_the_body(state: GameState, holder: Creature,
 		body: Creature) -> Array[Event]:
 	Encounters.make_loot(state, body)
 	state.site.crime_level += CRIME_PER_DEATH
-	state.site.crimes.append(&"killedsomebody")
+	NewsQueue.record(state, &"killedsomebody")
 	if Encounters.NOTABLE_DEAD.has(body.type):
 		state.site.crime_level += Encounters.NOTABLE_CRIME
 	body.exists = false

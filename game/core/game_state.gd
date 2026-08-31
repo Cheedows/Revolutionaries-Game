@@ -38,6 +38,11 @@ var vehicles: Dictionary = {}
 ## Stories waiting to run in tomorrow's paper.
 var news: Array[NewsStory] = []
 
+## The one of them being written right now — the raid under way, the chase
+## through the streets — which is what everything newsworthy is recorded onto.
+## Mirrors the `sitestory` global; see core/systems/news/news_queue.gd.
+var current_story: NewsStory = null
+
 ## What the game is doing right now, from [constant Ids.GAME_MODES]. Some
 ## encounter rules read it: an apartment block only fields security guards for
 ## a squad that is actually standing in it.

@@ -62,6 +62,7 @@ static func run(state: GameState, rng: Rng, artist: Creature,
 	if rng.one_in(SPOTTED_ODDS) and not CheckRules.skill_check(rng, artist,
 			&"streetsense", Difficulty.AVERAGE):
 		events.append_array(_spotted(state, artist))
+		NewsQueue.open(state, &"graffitiarrest", -1, -1, 0)
 		# The police do not simply write it down: this is a foot chase. The
 		# night's tail still runs afterwards, whatever became of the artist —
 		# the wall keeps whatever was already on it.

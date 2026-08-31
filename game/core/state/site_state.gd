@@ -29,10 +29,6 @@ var post_alarm_timer: int = 0
 ## Whether the place is burning.
 var on_fire: bool = false
 
-## What the squad has done here, in the order it did it, from
-## [constant Ids.CRIMES]. The news story about the raid is written from this.
-var crimes: Array[StringName] = []
-
 ## How serious the visit has become, which is what a chase is scaled to.
 var crime_level: int = 0
 

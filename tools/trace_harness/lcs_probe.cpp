@@ -5556,6 +5556,12 @@ void probe_activities_day(FILE *out)
          fputs("]", out);
 
          char clearformess = 0;
+         // A clean news queue per sample, so the stories the day files can be
+         // read off the end of it. The original never clears `sitestory`, so
+         // it is cleared here rather than left pointing at a freed story from
+         // the sample before.
+         delete_and_clear(newsstory);
+         sitestory = NULL;
          long long before = lcs_trace_draw_count();
          // Split by group, so a divergence names the activity rather than the
          // day. Mirrors funds_and_trouble()'s own order.
@@ -5669,6 +5675,17 @@ void probe_activities_day(FILE *out)
          for (int i = 0; i < len(location[1]->loot); i++)
             fprintf(out, "%s\"%s\"", i ? "," : "",
                     location[1]->loot[i]->get_itemtypename().c_str());
+         fputs("],\"stories\":[", out);
+         for (int n = 0; n < len(newsstory); n++)
+         {
+            fprintf(out, "%s{\"type\":%d,\"loc\":%d,\"claimed\":%d,"
+                         "\"crimes\":[",
+                    n ? "," : "", newsstory[n]->type, (int)newsstory[n]->loc,
+                    (int)newsstory[n]->claimed);
+            for (int c = 0; c < len(newsstory[n]->crime); c++)
+               fprintf(out, "%s%d", c ? "," : "", newsstory[n]->crime[c]);
+            fputs("]}", out);
+         }
          fputs("]}\n", out);
 
          delete_and_clear(pool);

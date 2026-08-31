@@ -217,7 +217,15 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
 - [ ] The assault itself (`sally_forth()`, `sally_forth_aux()`,
     `escape_engage()`): a siege defence is site mode with the compound as the
     map, so it waits on Gate G's site loop.
-- [ ] News hooks for daily arrests (the story types the original queues).
+- [x] News hooks for daily arrests: `systems/news/news_queue.gd` ports the
+    `sitestory` global — the story currently being written, which every crime
+    the chase and the site loop record goes onto — and the drug, graffiti,
+    burial, nudity and catch-all arrests each open theirs where the original
+    does. Parity exception: the original never closes a story, so `sitestory`
+    keeps pointing at freed memory after the paper runs; here the paper closes
+    it, which is what makes `attemptarrest()`'s "only if nothing is open"
+    guard mean anything on a later day. Verified by the `activities_day` probe,
+    which now records the queue a day files.
 - [x] The individual half of the day: `advanceday()`'s "ACTIVITIES FOR
     INDIVIDUALS" loop, which runs before anybody is sorted into a group.
     Mending clothes (`repairarmor()`), sewing them (`makearmor()`), finding a

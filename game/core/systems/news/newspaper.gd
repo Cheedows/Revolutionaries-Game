@@ -65,6 +65,9 @@ static func run(state: GameState, rng: Rng, catalog: Catalog = null,
 	for story: NewsStory in state.news:
 		events.append_array(impact(state, story))
 	state.news.clear()
+	# Nothing is being written any more; see NewsQueue for why the original
+	# leaves its pointer dangling here instead.
+	state.current_story = null
 	return events
 
 

@@ -76,6 +76,8 @@ func _day_matches(sample: Dictionary) -> bool:
 
 	if not _opinion_matches(where, state, sample):
 		return false
+	if not _stories_match(where, state, sample["stories"]):
+		return false
 	# A buried body leaves the original's pool outright; the port marks it as
 	# no longer existing, which is the same thing said differently.
 	var left: Array[Creature] = []
@@ -83,6 +85,35 @@ func _day_matches(sample: Dictionary) -> bool:
 		if person.exists:
 			left.append(person)
 	return _roster_matches(where, state, left, sample["pool_after"])
+
+
+## The stories the day filed for tomorrow's paper: an arrest is only a story
+## if somebody died resisting it, but the queue is written either way.
+func _stories_match(where: String, state: GameState, expected: Array) -> bool:
+	if state.news.size() != expected.size():
+		return _diverged(where, "stories filed", expected.size(),
+				state.news.size())
+	for index in expected.size():
+		var filed: NewsStory = state.news[index]
+		var want: Dictionary = expected[index]
+		var at := "%s story %d" % [where, index]
+		if filed.type != Ids.NEWS_STORIES[int(want["type"])]:
+			return _diverged(at, "kind", Ids.NEWS_STORIES[int(want["type"])],
+					filed.type)
+		if filed.location != int(want["loc"]):
+			return _diverged(at, "location", want["loc"], filed.location)
+		if filed.claimed != int(want["claimed"]):
+			return _diverged(at, "claim", want["claimed"], filed.claimed)
+		var crimes: Array = want["crimes"]
+		if filed.crimes.size() != crimes.size():
+			return _diverged(at, "crimes recorded", crimes.size(),
+					filed.crimes.size())
+		for spot in crimes.size():
+			if filed.crimes[spot] != int(crimes[spot]):
+				return _diverged(at, "crime %d" % spot,
+						Ids.CRIMES[int(crimes[spot])],
+						Ids.CRIMES[filed.crimes[spot]])
+	return true
 
 
 func _opinion_matches(where: String, state: GameState,

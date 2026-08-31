@@ -110,7 +110,7 @@ static func _pick(state: GameState, squad: Squad, at: Vector3i,
 	if result["opened"]:
 		site.map.clear_flag(at.x, at.y, at.z,
 				Tables.SITE_BLOCKS[&"locked"] | Tables.SITE_BLOCKS[&"alarmed"])
-		site.crimes.append(&"unlockeddoor")
+		NewsQueue.record(state, &"unlockeddoor")
 		_start_the_clock(site, GRACE_PICKED)
 		return events
 
@@ -181,7 +181,7 @@ static func _force(state: GameState, squad: Squad, at: Vector3i,
 		site.alarm = true
 		events.append(Event.new(Event.SITE_ALARM_RAISED,
 				{"x": at.x, "y": at.y, "z": at.z}))
-	site.crimes.append(&"brokedowndoor")
+	NewsQueue.record(state, &"brokedowndoor")
 	site.crime_level += 1
 	return events
 

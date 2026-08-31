@@ -122,7 +122,7 @@ static func _cover_fire(state: GameState, rng: Rng,
 		if AttackRules.was_struck(blow):
 			if mistake:
 				events.append_array(Alienation.check(state, rng, true))
-				state.site.crimes.append(&"attacked_mistake")
+				NewsQueue.record(state, &"attacked_mistake")
 				state.site.crime_level += CRIME_PER_MISTAKE
 			events.append(CrimeRules.charge(state, defender,
 					&"armedassault" if defender.is_armed() else &"assault"))
@@ -200,12 +200,12 @@ static func _charge_for_it(state: GameState, rng: Rng, member: Creature,
 	var events: Array[Event] = []
 	if mistake:
 		events.append_array(Alienation.check(state, rng, true))
-		state.site.crimes.append(&"attacked_mistake")
+		NewsQueue.record(state, &"attacked_mistake")
 		state.site.crime_level += CRIME_PER_MISTAKE
 	else:
 		state.site.crime_level += CRIME_PER_BLOW
 		JuiceRules.add(state, member, HIT_JUICE, HIT_JUICE_CAP)
-	state.site.crimes.append(&"attacked")
+	NewsQueue.record(state, &"attacked")
 
 	# Assault is charged for the first blow of the fight only: either the
 	# alarm was not up before, or this is the first mark on an unhurt person.

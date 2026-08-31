@@ -49,14 +49,14 @@ static func update(state: GameState, rng: Rng, squad: Squad,
 				}))
 		if driver == null:
 			events.append_array(Crashes.friendly(state, rng, squad, car, catalog))
-			state.site.crimes.append(&"carchase")
+			NewsQueue.record(state, &"carchase")
 			return {"events": events, "over": true}
 
 	for index in range(state.chase.enemy_cars.size() - 1, -1, -1):
 		var car := state.chase.enemy_cars[index]
 		if _current_driver(_riders(_chasers(state), car)) == null:
 			events.append_array(Crashes.enemy(state, rng, car))
-			state.site.crimes.append(&"carchase")
+			NewsQueue.record(state, &"carchase")
 
 	# Written out rather than as a conditional expression: the obstacle is only
 	# rolled when one comes up, and a draw made either way is a draw wrong.
@@ -82,7 +82,7 @@ static func dodge(state: GameState, rng: Rng, squad: Squad,
 			continue
 		if not _dodge_check(state, rng, driver, car, catalog):
 			events.append_array(Crashes.friendly(state, rng, squad, car, catalog))
-			state.site.crimes.append(&"carchase")
+			NewsQueue.record(state, &"carchase")
 			return {"events": events, "over": true}
 
 	for index in range(state.chase.enemy_cars.size() - 1, -1, -1):
@@ -92,7 +92,7 @@ static func dodge(state: GameState, rng: Rng, squad: Squad,
 			continue
 		if not _dodge_check(state, rng, driver, car, catalog):
 			events.append_array(Crashes.enemy(state, rng, car))
-			state.site.crimes.append(&"carchase")
+			NewsQueue.record(state, &"carchase")
 	return {"events": events, "over": false}
 
 

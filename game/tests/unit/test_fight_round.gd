@@ -69,14 +69,17 @@ func _round_matches(sample: Dictionary) -> bool:
 		return _diverged(where, "post-alarm timer", sample["postalarm"],
 				state.site.post_alarm_timer)
 
+	# The crimes go onto the story about the raid, which is what the original
+	# writes them onto too.
 	var crimes: Array = sample["crimes"]
-	if state.site.crimes.size() != crimes.size():
+	var recorded := state.current_story.crimes
+	if recorded.size() != crimes.size():
 		return _diverged(where, "crimes recorded", crimes.size(),
-				state.site.crimes.size())
+				recorded.size())
 	for index in crimes.size():
-		if state.site.crimes[index] != Ids.CRIMES[int(crimes[index])]:
+		if recorded[index] != int(crimes[index]):
 			return _diverged(where, "crime %d" % index,
-					Ids.CRIMES[int(crimes[index])], state.site.crimes[index])
+					Ids.CRIMES[int(crimes[index])], Ids.CRIMES[recorded[index]])
 
 	if not _fire_matches(where, state, sample):
 		return false
@@ -141,6 +144,7 @@ func _restore(sample: Dictionary) -> Dictionary:
 	var setup: Dictionary = chase._restore(sample)
 	var state: GameState = setup["state"]
 	state.site.location = 1
+	NewsQueue.open(state, &"squad_site", 1)
 	state.site.map = LevelMap.new()
 	if int(sample["fire"]) != 0:
 		state.site.map.add_flag(LevelMap.WIDTH >> 1, 5, 0,

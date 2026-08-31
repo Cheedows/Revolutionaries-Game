@@ -56,7 +56,7 @@ func test_a_locked_door_is_picked_by_whoever_can() -> void:
 	equal(_types(events), ["door_unlocked"], "a locksmith opens it")
 	check(not (fixture["state"].site.map.get_flag(1, 0, 0)
 			& Tables.SITE_BLOCKS[&"locked"]), "and the lock is off")
-	equal(fixture["state"].site.crimes, [&"unlockeddoor"] as Array[StringName],
+	equal(_recorded(fixture), [&"unlockeddoor"] as Array[StringName],
 			"picking a lock is a crime")
 	equal(fixture["state"].site.alarm_timer, Doors.GRACE_PICKED,
 			"and starts the clock on being noticed")
@@ -80,7 +80,7 @@ func test_a_locked_door_is_kicked_when_nobody_can_pick_it() -> void:
 	equal(fixture["state"].site.alarm_timer, Doors.GRACE_CROWBAR,
 			"a crowbar is quiet enough to buy time")
 	check(not _is_still_a_door(fixture), "leaving a doorway")
-	equal(fixture["state"].site.crimes, [&"brokedowndoor"] as Array[StringName],
+	equal(_recorded(fixture), [&"brokedowndoor"] as Array[StringName],
 			"breaking a door is a crime")
 	equal(fixture["state"].site.crime_level, 1, "and makes the visit worse")
 
@@ -100,6 +100,15 @@ func test_a_botched_pick_wrecks_the_lock() -> void:
 
 
 ## A site two squares wide: the squad on the left, the door on the right.
+## What the story about this raid says the squad has done so far.
+func _recorded(fixture: Dictionary) -> Array[StringName]:
+	var state: GameState = fixture["state"]
+	var done: Array[StringName] = []
+	for index in state.current_story.crimes:
+		done.append(Ids.CRIMES[index])
+	return done
+
+
 func _fixture(door_flags: int) -> Dictionary:
 	var state := GameState.new()
 	var squad := Squad.new()
@@ -117,6 +126,8 @@ func _fixture(door_flags: int) -> Dictionary:
 	map.set_flag(1, 0, 0, door_flags)
 	state.site.map = map
 	state.site.type = &"business_bank"
+	# What a squad does inside is written onto the story about the raid.
+	NewsQueue.open(state, &"squad_site", 1)
 	state.site.x = 0
 	state.site.y = 0
 	state.site.z = 0

@@ -25,10 +25,16 @@ static func enter(state: GameState, squad: Squad, location: Location,
 	site.post_alarm_timer = 0
 	site.on_fire = false
 	site.alienated = 0
-	site.crimes = []
 	site.crime_level = 0
 	site.creatures_seen = PackedInt32Array()
 	site.map = SiteBuilder.build(location, catalog, rng)
+
+	# The visit is written onto the story queued for it, which the caller
+	# pushed before walking anybody in. A squad moving anonymously does not
+	# take credit for what it is about to do.
+	state.current_story = state.news[-1] if not state.news.is_empty() else null
+	if squad.stance == &"anonymous":
+		NewsQueue.claim(state, 0)
 
 	var at := entrance(site.map, location.type)
 	site.x = at.x

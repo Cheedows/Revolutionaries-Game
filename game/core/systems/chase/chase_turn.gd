@@ -194,7 +194,7 @@ static func _resisting_arrest(state: GameState, in_car: bool) -> Array[Event]:
 		return []
 	# A car chase only counts as a crime somewhere; a foot chase always does.
 	if not in_car or state.chase.location != 0:
-		state.site.crimes.append(&"carchase" if in_car else &"footchase")
+		NewsQueue.record(state, &"carchase" if in_car else &"footchase")
 	return CrimeRules.charge_squad(state, &"resist")
 
 

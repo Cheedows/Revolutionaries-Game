@@ -52,6 +52,7 @@ static func _next_body(state: GameState, rng: Rng, diggers: Array[Creature],
 
 		if caught == null:
 			continue
+		NewsQueue.open(state, &"burialarrest")
 		events.append(CrimeRules.charge(state, caught, &"burial"))
 		diggers.erase(caught)
 		var chase: Variant = ArrestChase.attempt(state, rng, caught, catalog)

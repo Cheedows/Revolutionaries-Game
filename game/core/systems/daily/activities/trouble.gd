@@ -174,6 +174,9 @@ static func _consequences(state: GameState, rng: Rng,
 			continue
 
 		if rng.one_in(POLICE_ODDS):
+			# The original has no story for a stunt gone wrong and files it
+			# under the catch-all arrest.
+			NewsQueue.open(state, &"wantedarrest", -1, -1, 0)
 			var chase: Variant = ArrestChase.attempt(state, rng, activist, catalog)
 			return _after_the_police(state, rng, activists, at, catalog,
 					events, chase)

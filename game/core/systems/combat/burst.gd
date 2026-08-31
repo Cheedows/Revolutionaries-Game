@@ -82,7 +82,7 @@ static func _set_alight(state: GameState, attacker: Creature) -> void:
 	state.site.map.add_flag(state.site.x, state.site.y, state.site.z,
 			Tables.SITE_BLOCKS[&"fire_start"])
 	state.site.crime_level += ARSON_CRIME_WEIGHT
-	state.site.crimes.append(&"arson")
+	NewsQueue.record(state, &"arson")
 	JuiceRules.add(state, attacker, ARSON_JUICE, ARSON_JUICE_CAP)
 	CrimeRules.charge_squad(state, &"arson")
 
