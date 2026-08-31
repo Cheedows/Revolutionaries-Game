@@ -1137,12 +1137,23 @@ Do not port the old raw save format; the new serializer is already the canonical
 - [ ] Character/founder creation and all original starting choices worth preserving for parity.
 - [ ] New-game world/session initialization.
 - [ ] Load/save UI-facing commands around the versioned serializer.
-  - **Newly discovered required work.** The serializer writes the calendar,
-    the ledger, the law, the government, public opinion, a handful of world
-    scalars, the creatures and the squads — and nothing else. Locations,
-    vehicles, sieges, dates, recruit meetings and the news queue are all
-    dropped, so a reloaded game has no city. Every one of those has to be
-    written and read back before the lifecycle can be called done.
+  - [x] The serializer now writes the whole state. `core/save/` is split into
+    `serializer.gd` and four codecs beside it — `creature_codec.gd`,
+    `item_codec.gd` (weapons, armour, clips, money and loot, each read back
+    into its own subclass), `world_codec.gd` (locations with their map seed,
+    stores, marks and floor loot; vehicles; sieges) and `queue_codec.gd` (the
+    paper, the story being written, the evenings out and the meetings agreed).
+    Everything a creature carries, is holding and has been told goes with them,
+    the interrogation included, and so do the two people the game keeps a
+    single copy of.
+  - Parity exception: a visit and a chase are not written. The original only
+    offers to save from base mode, so `site` and `chase` hold nothing worth
+    keeping when a save is taken.
+  - `test_save.gd` builds a game with something of everything in it, writes it,
+    reads it back and requires the second document to be identical to the
+    first; a companion test walks the script properties of every state class
+    and fails on any field the format does not mention, so the codecs cannot
+    drift behind the state.
 - [ ] Autosave behavior.
 - [ ] Game-over/victory/restart transitions.
 - [ ] High-score/history behavior if retained.
