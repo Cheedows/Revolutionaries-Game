@@ -26,6 +26,10 @@ var alarm: bool = false
 var alarm_timer: int = -1
 var post_alarm_timer: int = 0
 
+## How many turns the squad has been standing in front of the same people,
+## which is what a suspicious Conservative's patience is measured against.
+var encounter_timer: int = 0
+
 ## Whether the place is burning.
 var on_fire: bool = false
 

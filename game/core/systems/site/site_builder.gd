@@ -5,7 +5,7 @@ extends RefCounted
 ## Ports initsite() from src/sitemode/sitemap.cpp, minus the branches that only
 ## run when art/sitemaps.txt fails to load — the original's pre-scripting map
 ## generator, kept there as a fallback for a broken install. It is dead code in
-## any working copy and is not ported; see docs/port/PHASE2-STATUS.md.
+## any working copy and is not ported.
 ##
 ## The plan comes out the same every visit because the location carries its own
 ## generator state. That is spliced in for the map and swapped back out before

@@ -6,11 +6,13 @@ extends RefCounted
 ## four directions, what stops the squad, and what happens on the square it
 ## arrives at.
 ##
-## Scope: moving, seeing, doors, stairs and the way out. Encounters, stealth,
-## graffiti and the rest of the special tiles are not in yet — see
-## docs/port/PHASE2-STATUS.md. A step never resolves an encounter, so nothing
-## here can interrupt a move except a locked door, which returns a
-## [PendingIntent] the way every other question does.
+## Scope: moving, seeing, doors and stairs. Whether anybody walks in, and what
+## the square the squad arrives on starts, are [SiteLoop]'s — a step never
+## resolves an encounter, so nothing here can interrupt a move except a locked
+## door, which returns a [PendingIntent] the way every other question does.
+##
+## Stepping onto the exit does not end the visit here either: leaving is a
+## chase and its consequences, which [SiteLoop] runs.
 
 const UP := Vector2i(0, -1)
 const DOWN := Vector2i(0, 1)
@@ -80,9 +82,15 @@ static func _arrive(state: GameState, squad: Squad, from: Vector2i,
 	_track_blood(site, from)
 	SiteVision.look_around(site.map, site.x, site.y, site.z)
 
-	if site.map.get_flag(site.x, site.y, site.z) & Tables.SITE_BLOCKS[&"exit"]:
-		events.append_array(SiteEntry.leave(state))
 	return events
+
+
+## Whether the squad is standing in the doorway.
+static func on_the_way_out(state: GameState) -> bool:
+	var site := state.site
+	return site.map != null \
+			and site.map.get_flag(site.x, site.y, site.z) \
+					& int(Tables.SITE_BLOCKS[&"exit"]) != 0
 
 
 ## A squad walking through a pool of blood leaves a trail behind it.

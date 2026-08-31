@@ -707,8 +707,10 @@ far up the building the fire is simulated at all. Both reproduced in
     one-person fictitious squad the original builds. Exercised end to end by
     the `activities_day` probe, where a Liberal busted selling brownies is
     chased and surrenders.
-- [ ] Wire the chase loop into site mode: leaving a site with the police
-    outside.
+- [x] Wire the chase loop into site mode: leaving a site with the police
+    outside. Done with the site loop — `SiteDeparture.leave()` raises the
+    chasers and runs `ChaseLoop` before the building decides what to make of
+    the visit.
 
 **Gate F:** both chase types have repeatable parity tests and clean transitions into/out of combat/site/base state.
 
@@ -1037,8 +1039,35 @@ Site construction is already strong; now port the gameplay that occurs inside th
     level, the tenancy, how long the place shuts and keeps guards, its heat,
     whether the story stays a good one, the marks left on it, and where
     everybody who was being carried ended up.
-- [ ] Connect site combat to the completed combat system rather than embedding combat logic in site code.
-- [ ] Add end-to-end site traces using deterministic constructed fixtures when fixed keystroke traces are too brittle.
+- [x] The site loop itself (`mode_site()`), in `core/systems/site/site_loop.gd`
+    with the exit half in `site_departure.gd` and the squares that trigger on
+    being stood on in `site_step_specials.gd`. The loop asks what the squad
+    does, does it, and then lets the building have its turn: whoever is already
+    in the room reacts, somebody may walk in, and everything that burns burns a
+    little further.
+  - Site combat is not embedded here: the loop calls `EnemyRound.attack()` once
+    the alarm has gone off and `BlendingIn.check()` before that, and walking
+    onto the doorway hands straight over to `Chasers.raise()` and `ChaseLoop`,
+    which is also the Gate F item — the chase is now wired into site mode as
+    well as base mode.
+  - Every question inside an action — a locked door, who does the kidnapping,
+    what to say to a landlord, whether to shoot the hostage — parks through the
+    same `PendingIntent` seam and resumes into the building's turn, so nothing
+    in the loop blocks and no answer is lost.
+  - **Original quirk preserved.** The squad comes in through the doorway
+    square, and the way out is only taken by *walking onto* it — so a squad
+    standing on the threshold has to step off it first.
+  - **Original quirk preserved.** A block of flats rarely answers the door:
+    two times in three, a squad that just walked meets nobody at all.
+- [x] End-to-end site visits, in `game/tests/unit/test_site_visit.gd`. The
+    original has no headless way to drive its site loop, so these are
+    deterministic by construction rather than by golden trace: five seeds, a
+    fixed building, and a fixed script of answers that cycles every action in
+    the menu. Everything under the loop is diffed against the original by its
+    own probe; what these check is that the pieces fit — that a visit can be
+    started, walked, acted in and left without the loop blocking, losing an
+    answer, offering a choice it will not accept, or ending with the squad
+    still inside.
 
 **Gate G:** every original site can be entered, traversed, interacted with and exited in Godot simulation, including stealth → alarm → combat/chase transitions.
 

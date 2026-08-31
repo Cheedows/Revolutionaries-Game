@@ -5,7 +5,7 @@ extends RefCounted
 ## Ports congress() from src/politics/politics.cpp, minus its presentation and
 ## minus the constitutional endgames it can trigger (purging the court, term
 ## limits, and the two ways an extreme Congress ends the game) — those are their
-## own systems and are named in docs/port/PHASE2-STATUS.md.
+## own systems.
 ##
 ## The model: every law is scored by how far the House, the Senate and the
 ## public are from it, weighted 1, 4 and 600 — public opinion dwarfs both

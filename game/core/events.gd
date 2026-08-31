@@ -80,6 +80,7 @@ const SITE_CAPTURED := &"site_captured"              # {location}
 const SITE_CLOSED := &"site_closed"                  # {location, days}
 const SITE_SECURED := &"site_secured"                # {location, level}
 const SITE_REMODELLED := &"site_remodelled"          # {location}
+const WEAPON_RELOADED := &"weapon_reloaded"          # {creature}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

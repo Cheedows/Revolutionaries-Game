@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## Scope: the finances, justice, sleeper and siege passes are not ported, and
 ## neither is the graffiti upkeep — they need the world model. See
-## docs/port/PHASE2-STATUS.md.
+## docs/ROADMAP_PORT_COMPLETION.md.
 
 ## The month elections are held in, and the month the court sits.
 const ELECTION_MONTH := 11

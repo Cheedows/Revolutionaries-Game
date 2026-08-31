@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## Not ported: the replacement justice's name. The original generates one, which
 ## consumes randomness, so a full-game replay will diverge from this point until
-## the name generator is ported. See docs/port/PHASE2-STATUS.md.
+## the name generator is ported.
 
 const SEATS := 9
 const MAJORITY := 5

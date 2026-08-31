@@ -8,7 +8,7 @@ extends RefCounted
 ## office are different every time, its front door is not.
 ##
 ## STAIRS_RANDOM is here too, and carries the original's bug in its own search;
-## see stairs_random() and docs/port/PHASE2-STATUS.md.
+## see stairs_random().
 
 ## The smallest a room can be before the generator stops dividing it.
 const ROOM_DIMENSION := 3
@@ -132,7 +132,7 @@ static func _place(map: LevelMap, x: int, y: int, width: int, height: int,
 ## secure candidates counts the *unsecure* list, so it visits the wrong number
 ## of them. Where that count runs past the end of the secure list the original
 ## reads off the end of a vector, which has no defined behaviour to reproduce;
-## the port skips those indices instead. See docs/port/PHASE2-STATUS.md.
+## the port skips those indices instead.
 static func stairs_random(map: LevelMap, rng: Rng, x: int, y: int, z: int,
 		width: int, height: int, depth: int) -> void:
 	var down: int = Ids.SITE_SPECIALS.find(&"stairs_down")

@@ -55,7 +55,7 @@ static func is_won(state: GameState) -> bool:
 ## relaxed block runs *inside* the loop, as a redundant extra check.
 ##
 ## Reproduced because parity comes first. It is recorded in
-## docs/port/PHASE2-STATUS.md as a bug to decide about, not to keep by default.
+## docs/ROADMAP_FUTURE.md as a bug to decide about, not to keep by default.
 static func _laws_won(state: GameState, elite: bool) -> bool:
 	if not elite:
 		return true  # the original never gets here — see above
