@@ -56,6 +56,7 @@ const JURY_SWAYED := &"jury_swayed"                  # {creature, caught}
 const VAULT_OPENED := &"vault_opened"                # {creature, how}
 const OVAL_OFFICE := &"oval_office"                  # {president}
 const CCS_BOSS_FOUND := &"ccs_boss_found"            # {ready}
+const DOOR_ASSESSED := &"door_assessed"              # {reason, badge, metal_detector}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

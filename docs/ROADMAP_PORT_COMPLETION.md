@@ -797,9 +797,27 @@ Site construction is already strong; now port the gameplay that occurs inside th
       10,800 samples compared on draw counts, both alarm clocks, the vault
       door and its neighbours, who is in the room and what they are, the money
       taken, how many SWAT teams came, and what became of the sleeper.
-  - [ ] The door staff: `special_security()` and its three entry points,
-      `special_bouncer_greet_squad()`, `special_bouncer_assess_squad()`.
-      These are prompts before they are rules, so they land with the site loop.
+  - [x] The door staff: `spawn_security()`, `special_security()` and its three
+      entry points in `security_check.gd`, and
+      `special_bouncer_greet_squad()`/`special_bouncer_assess_squad()` in
+      `bouncer.gd`, sharing the complaint list in `rejection.gd`. The lines of
+      dialogue are the UI's, but the rolls that choose them are here: they move
+      the generator, so the port makes them and throws the result away.
+    - **Two original defects reproduced.** Both bloody-clothes lists have six
+      lines and roll five, so the last is unreachable; the checkpoint's
+      dress-code list has one line and still rolls for it.
+    - **Port defect found and fixed.** `spawn_kits.gd` decided whether a
+      bouncer is a Conservative with cover of his own from a site list of its
+      own invention rather than the original's `disguisesite()`, so bouncers at
+      a gentlemen's club came out moderate and skipped an infiltration roll —
+      shifting every draw after them.
+    - Verified by the `doorstaff` probe: three doors against six kinds of
+      place, one and two Liberals, five outfits from nothing at all to a lab
+      coat, four states of wear, armed and unarmed, four kinds of squad and
+      three ways the place can be held — 34,560 samples reaching every
+      reachable complaint, compared on draw counts, the complaint itself,
+      whether the squad was recognised, the alarm, the square, who is standing
+      there and all nine squares of door.
   - [ ] `special_readsign()`, which is presentation, and the two broadcast
       studios (`special_radio_broadcaststudio()`,
       `special_news_broadcaststudio()`), which wait on Gate D's

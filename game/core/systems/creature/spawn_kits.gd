@@ -46,14 +46,6 @@ const GENETIC_NAMES := [
 	["Writhing Mass", &""], ["Something Bad", &""], ["Pink Elephant", &""],
 ]
 
-## Sites where staff wear something a squad could imitate.
-const DISGUISE_SITES: Array[StringName] = [
-	&"government_policestation", &"government_courthouse", &"government_prison",
-	&"government_intelligencehq", &"government_armybase", &"government_firestation",
-	&"corporate_headquarters", &"laboratory_genetic", &"laboratory_cosmetics",
-	&"industry_nuclear", &"business_bank",
-]
-
 ## Equips [param creature] for its type. [param caps] may be raised or lowered.
 static func equip(state: GameState, rng: Rng, creature: Creature,
 		type: CreatureType, caps: PackedInt32Array, catalog: Catalog) -> void:
@@ -146,11 +138,12 @@ static func _name_experiment(state: GameState, rng: Rng, creature: Creature,
 ##
 ## Outside a site nobody is in disguise, which is what the original amounts to:
 ## it reads a global that only means anything during an infiltration.
+## Whether the site the squad is in expects its people to be in uniform, which
+## is the original's disguisesite() on the global site type.
 static func _allows_disguise(state: GameState) -> bool:
 	if state.site.location == -1:
 		return false
-	var site: Location = state.locations.get(state.site.location)
-	return site != null and site.type in DISGUISE_SITES
+	return Suspicion.uniformed_site(state.site.type)
 
 
 static func _is_high_security(state: GameState, creature: Creature) -> bool:

@@ -8378,6 +8378,412 @@ void probe_bank(FILE *out)
    }
 }
 
+// The rejection reasons and the guard spawner are file-local to
+// src/sitemode/mapspecials.cpp, so the probe restates them. The enum is copied
+// verbatim: its order is what the original's "keep the lowest" chain means.
+enum probe_reject_reason
+{
+   REJECTED_CCS, REJECTED_NUDE, REJECTED_WEAPONS, REJECTED_UNDERAGE,
+   REJECTED_FEMALEISH, REJECTED_FEMALE, REJECTED_BLOODYCLOTHES,
+   REJECTED_DAMAGEDCLOTHES, REJECTED_CROSSDRESSING, REJECTED_GUESTLIST,
+   REJECTED_DRESSCODE, REJECTED_SECONDRATECLOTHES, REJECTED_SMELLFUNNY,
+   NOT_REJECTED
+};
+void spawn_security();
+
+// The guarded door and the man outside the club: the two specials that look
+// the squad over instead of being broken into. Transcribed from
+// src/sitemode/mapspecials.cpp with the display taken out — the lines of
+// dialogue are gone but the rolls that choose them are not, because they move
+// the generator.
+static void door_block(int which, int *rejected_out, int *badge_out)
+{
+   char rejected=NOT_REJECTED;
+   *badge_out = 0;
+   if(which < 2) // special_security(metaldetect)
+   {
+      bool metaldetect = which == 1;
+      char autoadmit=0;
+      for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+      spawn_security();
+      for(int p=0;p<len(pool);p++)
+      {
+         if(pool[p]->base==cursite)
+         {
+            autoadmit=1;
+            if(pool[p]->type == encounter[0].type)
+            {
+               autoadmit=2;
+               strcpy(encounter[0].name,pool[p]->name);
+               encounter[0].align=1;
+               encounter[0].cantbluff=1;
+               break;
+            }
+         }
+      }
+      *badge_out = autoadmit;
+      if(sitealarm)
+      {
+         levelmap[locx][locy][locz].special=SPECIAL_NONE;
+         *rejected_out = NOT_REJECTED;
+         return;
+      }
+      else if(autoadmit)
+      {
+         metaldetect=false;
+         levelmap[locx][locy][locz].special=SPECIAL_SECURITY_SECONDVISIT;
+      }
+      else levelmap[locx][locy][locz].special=SPECIAL_SECURITY_SECONDVISIT;
+
+      for(int s=0;s<6;s++)
+      {
+         if(activesquad->squad[s])
+         {
+            if(activesquad->squad[s]->is_naked() && activesquad->squad[s]->animalgloss!=ANIMALGLOSS_ANIMAL)
+               if(rejected>REJECTED_NUDE)rejected=REJECTED_NUDE;
+            if(autoadmit<1 && !hasdisguise(*activesquad->squad[s]))
+               if(rejected>REJECTED_DRESSCODE)rejected=REJECTED_DRESSCODE;
+            if(autoadmit<2 && activesquad->squad[s]->get_armor().is_bloody())
+               if(rejected>REJECTED_BLOODYCLOTHES)rejected=REJECTED_BLOODYCLOTHES;
+            if(autoadmit<2 && activesquad->squad[s]->get_armor().is_damaged())
+               if(rejected>REJECTED_DAMAGEDCLOTHES)rejected=REJECTED_DAMAGEDCLOTHES;
+            if(autoadmit<2 && activesquad->squad[s]->get_armor().get_quality()!=1)
+               if(rejected>REJECTED_SECONDRATECLOTHES)rejected=REJECTED_SECONDRATECLOTHES;
+            if(autoadmit<2 && weaponcheck(*activesquad->squad[s], metaldetect)>0)
+               if(rejected>REJECTED_WEAPONS)rejected=REJECTED_WEAPONS;
+            if(autoadmit<1 && disguisesite(sitetype) && !(activesquad->squad[s]->skill_check(SKILL_DISGUISE,DIFFICULTY_CHALLENGING)))
+               if(rejected>REJECTED_SMELLFUNNY)rejected=REJECTED_SMELLFUNNY;
+            if(autoadmit<1 && activesquad->squad[s]->age<18)
+               if(rejected>REJECTED_UNDERAGE)rejected=REJECTED_UNDERAGE;
+         }
+      }
+      switch(rejected)
+      {
+      case REJECTED_NUDE: if(!autoadmit) LCSrandom(4); break;
+      case REJECTED_UNDERAGE: LCSrandom(4); break;
+      case REJECTED_DRESSCODE: LCSrandom(1); break;
+      case REJECTED_SMELLFUNNY: LCSrandom(4); break;
+      case REJECTED_BLOODYCLOTHES: LCSrandom(5); break;
+      case REJECTED_DAMAGEDCLOTHES: LCSrandom(2); break;
+      case REJECTED_SECONDRATECLOTHES: LCSrandom(2); break;
+      case REJECTED_WEAPONS:
+         if(metaldetect) sitealarm=1;
+         else LCSrandom(5);
+         break;
+      case NOT_REJECTED: LCSrandom(4); break;
+      }
+   }
+   else // special_bouncer_assess_squad()
+   {
+      if(location[cursite]->renting==RENTING_PERMANENT)
+      {
+         *rejected_out = NOT_REJECTED;
+         return;
+      }
+      bool autoadmit=0;
+      for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+      special_bouncer_greet_squad();
+      for(int p=0;p<len(pool);p++)
+      {
+         if(pool[p]->base==cursite&&pool[p]->type==CREATURE_BOUNCER)
+         {
+            autoadmit=1;
+            strcpy(encounter[0].name,pool[p]->name);
+            encounter[0].align=1;
+            break;
+         }
+      }
+      *badge_out = autoadmit ? 1 : 0;
+      if(autoadmit) levelmap[locx][locy][locz].special=-1;
+      else levelmap[locx][locy][locz].special=SPECIAL_CLUB_BOUNCER_SECONDVISIT;
+
+      if(!autoadmit)
+      {
+         for(int s=0;s<6;s++)
+         {
+            if(activesquad->squad[s])
+            {
+               if(activesquad->squad[s]->is_naked() && activesquad->squad[s]->animalgloss!=ANIMALGLOSS_ANIMAL)
+                  if(rejected>REJECTED_NUDE)rejected=REJECTED_NUDE;
+               if(!hasdisguise(*activesquad->squad[s]))
+                  if(rejected>REJECTED_DRESSCODE)rejected=REJECTED_DRESSCODE;
+               if(activesquad->squad[s]->get_armor().is_bloody())
+                  if(rejected>REJECTED_BLOODYCLOTHES)rejected=REJECTED_BLOODYCLOTHES;
+               if(activesquad->squad[s]->get_armor().is_damaged())
+                  if(rejected>REJECTED_DAMAGEDCLOTHES)rejected=REJECTED_DAMAGEDCLOTHES;
+               if(activesquad->squad[s]->get_armor().get_quality()!=1)
+                  if(rejected>REJECTED_SECONDRATECLOTHES)rejected=REJECTED_SECONDRATECLOTHES;
+               if(weaponcheck(*activesquad->squad[s])>0)
+                  if(rejected>REJECTED_WEAPONS)rejected=REJECTED_WEAPONS;
+               if(disguisesite(sitetype) && !(activesquad->squad[s]->skill_check(SKILL_DISGUISE,DIFFICULTY_CHALLENGING)))
+                  if(rejected>REJECTED_SMELLFUNNY)rejected=REJECTED_SMELLFUNNY;
+               if(activesquad->squad[s]->age<18)
+                  if(rejected>REJECTED_UNDERAGE)rejected=REJECTED_UNDERAGE;
+               if(sitetype==SITE_BUSINESS_CIGARBAR &&
+                  (activesquad->squad[s]->gender_conservative!=GENDER_MALE ||
+                   activesquad->squad[s]->gender_liberal == GENDER_FEMALE) &&
+                   law[LAW_WOMEN]<1)
+               {
+                  if(activesquad->squad[s]->gender_liberal == GENDER_FEMALE)
+                  {
+                     if(rejected>REJECTED_FEMALE)rejected=REJECTED_FEMALE;
+                  }
+                  else if(disguisesite(sitetype) && !(activesquad->squad[s]->skill_check(SKILL_DISGUISE,DIFFICULTY_HARD)) && law[LAW_GAY]!=2)
+                  {
+                     if(rejected>REJECTED_FEMALEISH)rejected=REJECTED_FEMALEISH;
+                  }
+               }
+               if(sitetype==SITE_BUSINESS_CIGARBAR && location[cursite]->highsecurity)
+                  if(rejected>REJECTED_GUESTLIST)rejected=REJECTED_GUESTLIST;
+               if(location[cursite]->renting==RENTING_CCS && location[cursite]->type!=SITE_BUSINESS_BARANDGRILL)
+                  rejected=REJECTED_CCS;
+            }
+         }
+         switch(rejected)
+         {
+         case REJECTED_CCS: LCSrandom(11); break;
+         case REJECTED_NUDE: LCSrandom(4); break;
+         case REJECTED_UNDERAGE: LCSrandom(5); break;
+         case REJECTED_FEMALE: LCSrandom(4); break;
+         case REJECTED_FEMALEISH: LCSrandom(3); break;
+         case REJECTED_DRESSCODE: LCSrandom(3); break;
+         case REJECTED_SMELLFUNNY: LCSrandom(6); break;
+         case REJECTED_BLOODYCLOTHES: LCSrandom(5); break;
+         case REJECTED_DAMAGEDCLOTHES: LCSrandom(2); break;
+         case REJECTED_SECONDRATECLOTHES: LCSrandom(2); break;
+         case REJECTED_WEAPONS: LCSrandom(5); break;
+         case REJECTED_GUESTLIST: break;
+         case NOT_REJECTED: LCSrandom(4); break;
+         }
+      }
+      else encounter[0].exists=0;
+   }
+
+   for(int dx=-1; dx<=1; dx++)
+   for(int dy=-1; dy<=1; dy++)
+   {
+      if(levelmap[locx+dx][locy+dy][locz].flag & SITEBLOCK_DOOR)
+      {
+         if(rejected<NOT_REJECTED)
+         {
+            levelmap[locx+dx][locy+dy][locz].flag |= SITEBLOCK_LOCKED;
+            levelmap[locx+dx][locy+dy][locz].flag |= SITEBLOCK_CLOCK;
+         }
+         else levelmap[locx+dx][locy+dy][locz].flag &= ~SITEBLOCK_DOOR;
+      }
+   }
+   encounter[0].cantbluff=1;
+   *rejected_out = rejected;
+}
+
+void probe_doorstaff(FILE *out)
+{
+   static const int SITES[] = {
+      SITE_CORPORATE_HEADQUARTERS, SITE_GOVERNMENT_PRISON,
+      SITE_GOVERNMENT_WHITE_HOUSE, SITE_BUSINESS_CIGARBAR,
+      SITE_BUSINESS_BARANDGRILL, SITE_GOVERNMENT_INTELLIGENCEHQ,
+   };
+   const int SITE_COUNT = (int)(sizeof(SITES) / sizeof(SITES[0]));
+   static const char *OUTFITS[] = {
+      "", "ARMOR_CLOTHES", "ARMOR_WORKCLOTHES", "ARMOR_CHEAPSUIT",
+      "ARMOR_LABCOAT",
+   };
+   const int OUTFIT_COUNT = (int)(sizeof(OUTFITS) / sizeof(OUTFITS[0]));
+
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 27644437UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int which = 0; which < 3; which++)
+      for (int place = 0; place < SITE_COUNT; place++)
+      for (int crowd = 1; crowd <= 2; crowd++)
+      for (int outfit = 0; outfit < OUTFIT_COUNT; outfit++)
+      for (int wear = 0; wear < 4; wear++)
+      for (int armed = 0; armed < 2; armed++)
+      for (int who = 0; who < 4; who++)
+      for (int renting = 0; renting < 3; renting++)
+      {
+         unsigned long seed_used = 39916801UL * (unsigned long)
+            (((((((which * SITE_COUNT + place) * 2 + (crowd - 1)) * OUTFIT_COUNT
+              + outfit) * 4 + wear) * 2 + armed) * 4 + who) * 3 + renting
+             + scenario * 4001 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         law[LAW_WOMEN] = (scenario == 1) ? 1 : -1;
+         law[LAW_GAY] = (scenario == 1) ? 2 : 0;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 7 + scenario * 9) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         cursite = 1;
+         location[cursite]->type = SITES[place];
+         location[cursite]->highsecurity = (wear & 1) ? 1 : 0;
+         location[cursite]->renting = renting == 1 ? RENTING_CCS
+                                    : renting == 2 ? RENTING_PERMANENT
+                                                   : RENTING_NOCONTROL;
+         location[cursite]->siege.siege = 0;
+         sitetype = SITES[place];
+         sitealarm = (who == 2) ? 1 : 0;
+         sitealarmtimer = -1;
+         sitecrime = 0;
+         sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+         for (int dx = -1; dx <= 1; dx++)
+         for (int dy = -1; dy <= 1; dy++)
+            levelmap[locx+dx][locy+dy][locz].flag = SITEBLOCK_DOOR;
+         levelmap[locx][locy][locz].special = 1;
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 950000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            cr->age = (who == 1 && n == 0) ? 15 : 30;
+            cr->animalgloss = ANIMALGLOSS_NONE;
+            cr->gender_conservative = (who == 3 && n == 0) ? GENDER_FEMALE
+                                                           : GENDER_MALE;
+            // A squad member the world reads as a woman: sometimes one who
+            // agrees, sometimes one who does not, which is a different rule.
+            cr->gender_liberal = (who == 3 && n == 0 && (outfit % 2) == 0)
+                                 ? GENDER_FEMALE : GENDER_MALE;
+            cr->set_skill(SKILL_DISGUISE, (outfit * 3 + n) % 9);
+            cr->set_skill(SKILL_STEALTH, (wear + n) % 8);
+            if (!OUTFITS[outfit][0]) cr->strip(NULL);
+            else
+            {
+               cr->give_armor(*armortype[getarmortype(OUTFITS[outfit])], NULL);
+               if (wear & 1) cr->get_armor().decrease_quality();
+               if (wear & 2) cr->get_armor().set_damaged(true);
+               if (wear == 3) cr->get_armor().set_bloody(true);
+            }
+            if (armed)
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_AUTORIFLE_AK47")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+
+         // A sleeper based at the site: sometimes one who does the guard's own
+         // job, sometimes just somebody who works there.
+         if (who == 0)
+         {
+            Creature *asleep = new Creature;
+            makecreature(*asleep, which == 2 ? CREATURE_BOUNCER
+                                             : CREATURE_MERC);
+            asleep->id = 950050;
+            asleep->align = ALIGN_LIBERAL;
+            asleep->flag |= CREATUREFLAG_SLEEPER;
+            asleep->location = asleep->base = cursite;
+            pool.push_back(asleep);
+         }
+
+         fprintf(out, "{\"kind\":\"doorstaff\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"which\":%d,\"place\":%d,\"crowd\":%d,\"outfit\":%d,"
+                      "\"wear\":%d,\"armed\":%d,\"who\":%d,\"renting\":%d,"
+                      "\"world_seed\":%lu,\"site\":%d,\"site_type\":%d",
+                 scenario, seed_used, which, place, crowd, outfit, wear, armed,
+                 who, renting, run_seed, cursite, SITES[place]);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"sleeper\":", out);
+         if (who == 0) chase_write_creature(out, *pool[len(pool)-1], true);
+         else fputs("null", out);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int rejected = 0, badge = 0;
+         long long before = lcs_trace_draw_count();
+         door_block(which, &rejected, &badge);
+
+         int encount = 0;
+         for (int e = 0; e < ENCMAX; e++) if (encounter[e].exists) encount++;
+
+         fprintf(out, ",\"draws\":%lld,\"rejected\":%d,\"badge\":%d,"
+                      "\"alarm\":%d,\"special\":%d,\"encounters\":%d",
+                 lcs_trace_draw_count() - before, rejected, badge,
+                 (int)sitealarm, (int)levelmap[locx][locy][locz].special,
+                 encount);
+         fputs(",\"encounter_types\":[", out);
+         {
+            int written = 0;
+            for (int e = 0; e < ENCMAX; e++)
+               if (encounter[e].exists)
+                  fprintf(out, "%s%d", written++ ? "," : "",
+                          encounter[e].type);
+         }
+         fputs("],\"squares\":[", out);
+         {
+            int written = 0;
+            for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+               fprintf(out, "%s%d", written++ ? "," : "",
+                       (int)levelmap[locx+dx][locy+dy][locz].flag);
+         }
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"disguise\":%d}",
+                    sq->squad[n]->get_skill(SKILL_DISGUISE));
+         }
+         fputs("]}\n", out);
+
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -9994,6 +10400,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "site_specials")) probe_site_specials(out);
    else if (!strcmp(which, "vaults")) probe_vaults(out);
    else if (!strcmp(which, "bank")) probe_bank(out);
+   else if (!strcmp(which, "doorstaff")) probe_doorstaff(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

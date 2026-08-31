@@ -1825,6 +1825,7 @@ void special_display_case()
    }
 }
 
+void spawn_security();
 void spawn_security()
 {
    // add a bouncer if there isn't one in the first slot

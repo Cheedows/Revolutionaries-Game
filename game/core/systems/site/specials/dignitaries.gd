@@ -54,8 +54,8 @@ static func _clear_the_office(state: GameState) -> void:
 	var corners := PackedInt32Array()
 	for name: StringName in CORNERS:
 		corners.append(Ids.SITE_SPECIALS.find(name))
-	for dx in [-1, 0, 1]:
-		for dy in [-1, 0, 1]:
+	for dx: int in [-1, 0, 1]:
+		for dy: int in [-1, 0, 1]:
 			var here := site.map.get_special(site.x + dx, site.y + dy, site.z)
 			if corners.has(here):
 				site.map.set_special(site.x + dx, site.y + dy, site.z, -1)
