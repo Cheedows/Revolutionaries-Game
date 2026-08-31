@@ -1316,6 +1316,12 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
 - [ ] Creature dossier/equipment/squad management.
 - [ ] Activity assignment/recruitment interfaces.
 - [ ] Site/infiltration map view and interaction controls.
+  - [x] The plan: `ui/widgets/site_map_view.gd` draws the part of the floor
+    plan the squad has seen, around where it is standing — rock, floor, doors,
+    the way out, fire, blood, loot and whatever is worth using — and takes the
+    roster's place while a visit is under way. The controls are the site loop's
+    own options, rendered by the shared dialog.
+  - [ ] Picking a target on the map, and reading a room at a glance.
 - [ ] Combat presentation and target/action controls.
 - [ ] Chase presentation.
 - [ ] Shops/inventory/loot interfaces.

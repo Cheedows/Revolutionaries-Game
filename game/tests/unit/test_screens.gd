@@ -143,6 +143,42 @@ func test_a_saved_game_can_be_opened_from_the_title() -> void:
 	SaveGame.erase(SaveGame.AUTOSAVE)
 
 
+func test_a_site_visit_shows_the_floor_plan() -> void:
+	var opening: Object = (load("res://ui/screens/new_game_screen.gd") as GDScript).new()
+	opening.begin(SEED)
+	var started: Array[Session] = []
+	opening.started.connect(func(session: Session) -> void: started.append(session))
+	var answered := 0
+	while started.is_empty() and answered < PATIENCE:
+		answered += 1
+		opening._on_chosen(_option(opening._dialog, true))
+	opening.free()
+	if started.is_empty():
+		fail("could not start a game")
+		return
+
+	var session: Session = started[0]
+	var screen: Object = (load("res://ui/screens/base_screen.gd") as GDScript).new()
+	screen.setup(session)
+	check(not screen._map.visible, "there is no plan to show at home")
+
+	var squad := session.state.active_squad()
+	for site: Location in session.state.locations.values():
+		if site.type == &"business_juicebar":
+			squad.travel_destination = site.id
+			break
+	screen._advance_one_day()
+	check(session.state.mode == &"site", "the squad went in")
+	check(screen._map.visible, "and the plan is on screen")
+	check(not screen._squad.visible, "with the roster out of the way")
+
+	# The plan draws without a window, which is the only thing that can go
+	# wrong with it headlessly.
+	screen._map.refresh(session.state)
+	screen._map._draw_grid()
+	screen.free()
+
+
 ## The id of an option the dialog is offering that can be taken.
 func _option(dialog: IntentDialog, last: bool) -> Variant:
 	var found: Variant = null

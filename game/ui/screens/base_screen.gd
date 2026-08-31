@@ -19,6 +19,7 @@ var _status: StatusBar
 var _laws: LawList
 var _roster: Roster
 var _squad: SquadPanel
+var _map: SiteMapView
 var _log: LogView
 var _wait_button: Button
 var _run_button: Button
@@ -100,6 +101,10 @@ func _build() -> void:
 	_roster.custom_minimum_size = Vector2(0, 170)
 	_roster.activity_chosen.connect(_on_activity_chosen)
 	right.add_child(_roster)
+
+	_map = SiteMapView.new()
+	_map.visible = false
+	right.add_child(_map)
 
 	_squad = SquadPanel.new()
 	_squad.custom_minimum_size = Vector2(0, 150)
@@ -210,6 +215,14 @@ func _refresh() -> void:
 	_laws.refresh(_session.state)
 	_roster.refresh(_session.state)
 	_squad.refresh(_session.state)
+	# The plan is only worth the room it takes while the squad is inside one.
+	var inside := _session.state.mode == &"site" \
+			and _session.state.site.location != -1
+	_map.visible = inside
+	_squad.visible = not inside
+	_roster.visible = not inside
+	if inside:
+		_map.refresh(_session.state)
 
 
 ## Asks where the squad is going, through the same dialog as everything else.
