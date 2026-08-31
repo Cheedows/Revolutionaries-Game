@@ -11725,6 +11725,271 @@ void probe_convert(FILE *out)
    }
 }
 
+// Fighting your way out of a besieged safehouse: the setup and fight loop of
+// sally_forth_aux() from src/daily/siege.cpp, transcribed with the display
+// taken out and each round's keystroke supplied by the sample.
+static int sally_standing(int loc)
+{
+   int count = 0;
+   for (int p = 0; p < len(pool); p++)
+      if (pool[p]->align == 1 && pool[p]->location == loc
+          && !(pool[p]->flag & CREATUREFLAG_SLEEPER) && pool[p]->alive)
+         count++;
+   return count;
+}
+
+long long sally_roster_draws = 0;
+
+static void sally_block(int loc, int action, int rounds, int *outcome,
+                        int *rounds_out)
+{
+   *outcome = 0;
+   *rounds_out = 0;
+   long long roster_start = lcs_trace_draw_count();
+   reloadparty();
+   siegest siege = location[loc]->siege;
+   cursite = loc;
+   for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+   if (siege.escalationstate == 0)
+      for (int e = 0; e < ENCMAX - 9; e++)
+         makecreature(encounter[e], CREATURE_SWAT);
+   else
+      for (int e = 0; e < ENCMAX - 9; e++)
+         makecreature(encounter[e], CREATURE_SOLDIER);
+   if (siege.escalationstate >= 2
+       && !(location[loc]->compound_walls & COMPOUND_TANKTRAPS))
+      makecreature(encounter[ENCMAX - 9], CREATURE_TANK);
+
+   mode = GAMEMODE_CHASEFOOT;
+   bool ranaway = false;
+   sally_roster_draws = lcs_trace_draw_count() - roster_start;
+
+   for (int round = 0; round < rounds; round++)
+   {
+      if (!sally_standing(loc)) { *outcome = 1; break; }
+      (*rounds_out)++;
+      autopromote(loc);
+
+      if (action == 1)
+      {
+         if (encounter[0].exists && encounter[0].type == CREATURE_COP)
+         {
+            sitestory->crime.push_back(CRIME_FOOTCHASE);
+            criminalizeparty(LAWFLAG_RESIST);
+         }
+         evasiverun();
+         enemyattack();
+         creatureadvance();
+         ranaway = true;
+      }
+      else
+      {
+         youattack();
+         enemyattack();
+         creatureadvance();
+      }
+
+      int baddiecount = 0;
+      for (int e = 0; e < ENCMAX; e++)
+         if (encounter[e].enemy() && encounter[e].alive && encounter[e].exists)
+            baddiecount++;
+      if (sally_standing(loc) && !baddiecount)
+      {
+         for (int p = 0; p < len(pool); p++)
+            for (int w = 0; w < BODYPARTNUM; w++)
+               pool[p]->wound[w] &= ~WOUND_BLEEDING;
+         mode = GAMEMODE_BASE;
+         escapesiege(ranaway ? false : true);
+         *outcome = ranaway ? 2 : 3;
+         return;
+      }
+   }
+   mode = GAMEMODE_BASE;
+   if (!*outcome) *outcome = 4;
+}
+
+void probe_sally(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 715827883UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int action = 0; action < 2; action++)
+      for (int escalation = 0; escalation < 3; escalation++)
+      for (int traps = 0; traps < 2; traps++)
+      for (int crowd = 1; crowd <= 4; crowd++)
+      for (int armed = 0; armed < 3; armed++)
+      for (int rounds = 1; rounds <= 3; rounds++)
+      for (int attacker = 0; attacker < 3; attacker++)
+      {
+         unsigned long seed_used = 2147483647UL * (unsigned long)
+            ((((((action * 3 + escalation) * 2 + traps) * 4 + (crowd - 1)) * 3
+              + armed) * 3 + (rounds - 1)) * 3 + attacker
+             + scenario * 3593 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 53 + scenario * 7) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         for (int l = 0; l < len(location); l++)
+         {
+            location[l]->siege.siege = 0;
+            location[l]->renting = RENTING_NOCONTROL;
+            location[l]->heat = 0;
+            location[l]->closed = 0;
+            location[l]->highsecurity = 0;
+            delete_and_clear(location[l]->loot);
+         }
+
+         int loc = 1;
+         location[loc]->type = SITE_INDUSTRY_WAREHOUSE;
+         location[loc]->renting = RENTING_PERMANENT;
+         location[loc]->siege.siege = 1;
+         location[loc]->siege.siegetype = attacker == 0 ? SIEGE_POLICE
+                                        : attacker == 1 ? SIEGE_CCS
+                                                        : SIEGE_CORPORATE;
+         location[loc]->siege.escalationstate = escalation;
+         location[loc]->siege.underattack = 1;
+         location[loc]->compound_walls = traps ? COMPOUND_TANKTRAPS : 0;
+         sitetype = location[loc]->type;
+         sitealarm = 1;
+         sitecrime = 0;
+         sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[loc]);
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_ESCAPED;
+         ns->positive = 1;
+         ns->loc = loc;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 850000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = loc;
+            cr->base = loc;
+            cr->juice = 40 * (n + 1);
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            if (armed == 1)
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_SEMIPISTOL_9MM")], NULL);
+            else if (armed == 2)
+               cr->give_weapon(*weapontype[getweapontype("WEAPON_AUTORIFLE_AK47")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+         // Somebody asleep in the house, who does not fight.
+         Creature *asleep = new Creature;
+         makecreature(*asleep, CREATURE_WORKER_JANITOR);
+         asleep->id = 850050;
+         asleep->align = ALIGN_LIBERAL;
+         asleep->flag |= CREATUREFLAG_SLEEPER;
+         asleep->location = asleep->base = loc;
+         pool.push_back(asleep);
+
+         fprintf(out, "{\"kind\":\"sally\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"action\":%d,\"escalation\":%d,\"traps\":%d,"
+                      "\"crowd\":%d,\"armed\":%d,\"rounds\":%d,"
+                      "\"attacker\":%d,\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, action, escalation, traps, crowd, armed,
+                 rounds, attacker, run_seed, loc);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"asleep\":", out);
+         chase_write_creature(out, *asleep, true);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int outcome = 0, played = 0;
+         long long before = lcs_trace_draw_count();
+         sally_block(loc, action, rounds, &outcome, &played);
+
+         int encount = 0, alive_enemies = 0;
+         for (int e = 0; e < ENCMAX; e++)
+            if (encounter[e].exists)
+            {
+               encount++;
+               if (encounter[e].alive) alive_enemies++;
+            }
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"played\":%d,"
+                      "\"encounters\":%d,\"enemies_alive\":%d,\"siege\":%d,"
+                      "\"escalation_after\":%d,\"renting\":%d,"
+                      "\"policeheat\":%d,\"standing\":%d,"
+                      "\"roster_draws\":%lld,\"types\":[",
+                 lcs_trace_draw_count() - before, outcome, played, encount,
+                 alive_enemies, (int)location[loc]->siege.siege,
+                 (int)location[loc]->siege.escalationstate,
+                 (int)location[loc]->renting, police_heat,
+                 sally_standing(loc), sally_roster_draws);
+         {
+            int written = 0;
+            for (int e = 0; e < ENCMAX; e++)
+               if (encounter[e].exists)
+                  fprintf(out, "%s%d", written++ ? "," : "",
+                          (int)encounter[e].type);
+         }
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = NULL;
+            for (int p = 0; p < len(pool); p++)
+               if (pool[p]->id == 850000 + n) cr = pool[p];
+            if (n) fputs(",", out);
+            if (!cr) { fputs("null", out); continue; }
+            fprintf(out, "{\"alive\":%d,\"blood\":%d,\"location\":%d,"
+                         "\"resist\":%d}",
+                    cr->alive ? 1 : 0, cr->blood, cr->location,
+                    (int)cr->crimes_suspected[LAWFLAG_RESIST]);
+         }
+         fputs("]}\n", out);
+
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -13352,6 +13617,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "site_hostage")) probe_site_hostage(out);
    else if (!strcmp(which, "site_exit")) probe_site_exit(out);
    else if (!strcmp(which, "convert")) probe_convert(out);
+   else if (!strcmp(which, "sally")) probe_sally(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

@@ -53,7 +53,7 @@ static func damage(state: GameState, rng: Rng, attacker: Creature,
 
 		if attacker.animal_gloss == &"none":
 			result["type"] = Wound.BRUISED
-			return result
+			return _plot_armor(target, result)
 
 		# Animals and tanks bite, burn or shell, and take limbs off.
 		match attacker.special_attack:
@@ -70,7 +70,7 @@ static func damage(state: GameState, rng: Rng, attacker: Creature,
 			_:
 				result["type"] = Wound.TORN
 		result["sever_type"] = Wound.NASTY_OFF
-		return result
+		return _plot_armor(target, result)
 
 	var kind := 0
 	if attack.bruises:
@@ -106,8 +106,13 @@ static func damage(state: GameState, rng: Rng, attacker: Creature,
 	for blow in hits:
 		result["amount"] += rng.below(random) + fixed
 
-	# The founder takes half of everything, because losing the founder ends the
-	# game and the game would rather it did not.
+	return _plot_armor(target, result)
+
+
+## The founder takes half of everything, because losing the founder ends the
+## game and the game would rather it did not. The original halves after every
+## way of working out the damage, bare hands and tank shells included.
+static func _plot_armor(target: Creature, result: Dictionary) -> Dictionary:
 	if _is_founder(target):
 		result["amount"] /= 2
 	return result
@@ -152,13 +157,15 @@ static func apply(state: GameState, rng: Rng, attacker: Creature,
 		# A head or body blown apart sprays everyone standing nearby.
 		if (part == &"head" or part == &"body") \
 				and (victim.body.get_wound(part) & Wound.NASTY_OFF) != 0:
-			Aftermath.blood_blast(state, rng, victim)
+			Aftermath.blood_blast(state, rng, victim,
+					context.get(&"mode", &"site"))
 		events.append_array(_die(state, rng, attacker, target, victim, sneak,
 				context))
 		return events
 
 	if (victim.body.get_wound(part) & Wound.NASTY_OFF) != 0:
-		Aftermath.blood_blast(state, rng, victim)
+		Aftermath.blood_blast(state, rng, victim,
+				context.get(&"mode", &"site"))
 
 	# Organs only come apart on somebody the wound left in one piece.
 	if (victim.body.get_wound(part) & Wound.SEVERED) == 0 \
@@ -230,15 +237,28 @@ static func _die(state: GameState, rng: Rng, attacker: Creature,
 		"manner": Aftermath.manner_of_death(rng, victim),
 	}))
 
+	# Whoever they were carrying is let go. **Original quirk, reproduced:** the
+	# test asks whether the person who took the blow was carrying somebody, but
+	# what is released is whoever the person who was aimed at is carrying — the
+	# two differ only when a squadmate stepped in front of the shot.
+	if victim.prisoner_id != 0:
+		events.append_array(free_hostage_of(state, target, context))
+
 	# A killing that nobody saw is not a crime the squad is charged with.
-	if not victim.is_member() and not sneak \
+	if victim.squad_id == 0 and not sneak \
 			and (victim.animal_gloss != &"animal"
 					or state.law.get_value(&"animalresearch") == 2):
 		state.site.crime_level += KILL_CRIME_WEIGHT
 		NewsQueue.record(state, &"killedsomebody")
-		if attacker.is_member():
+		if attacker.squad_id != 0:
 			events.append_array(CrimeRules.charge_squad(state, &"murder"))
 	return events
+
+
+## Lets go of whoever [param holder] is carrying.
+static func free_hostage_of(state: GameState, holder: Creature,
+		context: Dictionary) -> Array[Event]:
+	return Capture.free_hostage(state, holder, context.get(&"catalog"))
 
 
 ## The founder is the one member who was never hired.
@@ -246,4 +266,4 @@ static func _die(state: GameState, rng: Rng, attacker: Creature,
 ## The game protects them: half damage, and a squadmate who will step in front
 ## of anything worse.
 static func _is_founder(creature: Creature) -> bool:
-	return creature.is_member() and creature.hire_id == -1
+	return creature.squad_id != 0 and creature.hire_id == -1

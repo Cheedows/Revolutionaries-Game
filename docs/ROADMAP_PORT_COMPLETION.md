@@ -263,9 +263,37 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     occupancies, three safehouse arrangements — 720 samples) and the
     `siege_outcome` probe (won and lost, three attackers, rented and held, four
     occupancies, five levels of national heat — 720 samples).
-- [ ] The assault itself (`sally_forth()`, `sally_forth_aux()`,
-    `escape_engage()`): a siege defence is site mode with the compound as the
-    map, so it waits on Gate G's site loop.
+- [x] The assault itself (`sally_forth()`, `sally_forth_aux()`,
+    `escape_engage()`), in `systems/daily/siege_assault.gd`. Walking out is a
+    round-by-round fight in the street: the house forms one squad, a police
+    siege books everybody for resisting, the Conservative Crime Squad takes the
+    warehouse it is attacking until it is beaten off, and the attackers form up
+    — always SWAT, then soldiers, then a tank, whoever is actually outside,
+    because the original's switch has no break before the police case.
+    Answering with the compound instead (`escape_engage()`) hands off to Gate
+    G's site loop with the safehouse as the map.
+  - `autopromote()` came with it, in `systems/combat/auto_promote.gd`: a
+    besieged safehouse holds more Liberals than the six who fight, and as the
+    six fall the rest step up. Site mode's between-rounds call landed too.
+  - Verified by the `sally` probe (fight or run, three escalations, tank traps
+    or not, one to four Liberals, unarmed and two grades of armed, one to three
+    rounds, three attackers, three worlds — 3888 samples), compared on draw
+    counts for the roster and the fight, the outcome, rounds played, who is
+    left on each side and what they are, the siege, the tenancy, national heat
+    and each Liberal's blood, whereabouts and charge sheet.
+  - Eight port defects it turned up, all fixed: `bloodblast()` rolls a coin for
+    everybody present only inside a building and the port rolled them in a
+    chase too; the founder's half damage was skipped for bare hands and tank
+    shells; first aid under fire is DIFFICULTY_FORMIDABLE (13) and the port had
+    11; `enemyattack()` returns outright when nobody is left to shoot at, so
+    the attackers who have not acted do not; a creature that bleeds out between
+    rounds gets a death line rolled for it; a killing blow frees whoever the
+    victim was carrying — reading the victim's hands but freeing the aimed-at
+    creature's, which differ only when a squadmate took the shot; a body that
+    can no longer be carried and a corpse let go both have `die()` called on
+    them again, which settles blood a fatal blow left below zero; and the
+    damage multiplier is worked out in C floats, where the seventh digit
+    decides a point of blood.
 - [x] News hooks for daily arrests: `systems/news/news_queue.gd` ports the
     `sitestory` global — the story currently being written, which every crime
     the chase and the site loop record goes onto — and the drug, graffiti,

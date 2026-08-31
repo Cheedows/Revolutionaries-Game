@@ -112,7 +112,11 @@ static func _scale(damage: int, modifier: int) -> int:
 		return damage >> 2
 	if modifier <= -1:
 		return damage >> 1
-	return int(float(damage) * (1.0 + MULTIPLIER_STEP * modifier))
+	# The original works this out in C floats, and the seventh digit decides
+	# whether a blow takes one more point of blood.
+	var factor := SinglePrecision.of(1.0
+			+ SinglePrecision.of(SinglePrecision.of(MULTIPLIER_STEP) * modifier))
+	return int(SinglePrecision.of(float(damage) * factor))
 
 
 static func _armor_at(target: Creature, body_part: StringName, wound_type: int,

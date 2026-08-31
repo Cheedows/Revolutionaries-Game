@@ -10,8 +10,9 @@ extends RefCounted
 ## creature's health against this.
 const CLOT_ODDS := 500
 
-## Stopping somebody else's bleeding is a hard thing to do under fire.
-const FIRST_AID_DIFFICULTY := 11
+## Stopping somebody else's bleeding is a hard thing to do under fire:
+## DIFFICULTY_FORMIDABLE in the original.
+const FIRST_AID_DIFFICULTY := Difficulty.FORMIDABLE
 
 ## A medic has to be conscious, unhurt enough to work, and not the patient.
 const MEDIC_BLOOD := 40
@@ -38,7 +39,6 @@ static func everyone(state: GameState, rng: Rng, squad: Squad,
 		context: Dictionary) -> Array[Event]:
 	var events: Array[Event] = []
 	var mode: StringName = context.get(&"mode", &"site")
-
 	for member: Creature in state.squad_members(squad):
 		if not member.alive:
 			continue
@@ -57,9 +57,15 @@ static func everyone(state: GameState, rng: Rng, squad: Squad,
 	var siege: Siege = state.sieges.get(state.site.location)
 	if siege != null and siege.active:
 		for defender: Creature in state.creatures.values():
-			if defender.alive and defender.squad_id == 0 \
-					and defender.location == state.site.location:
-				events.append_array(one(state, rng, squad, defender, context))
+			if not defender.alive or defender.squad_id != 0 \
+					or defender.location != state.site.location:
+				continue
+			# The original walks its own pool here, which the people the squad
+			# is facing are not part of.
+			if state.site.encounter_ids.has(defender.id):
+				continue
+			events.append_array(one(state, rng, squad, defender, context))
+		AutoPromote.refill(state, squad, state.site.location)
 
 	for person: Creature in Encounters.living(state):
 		events.append_array(one(state, rng, squad, person, context))
@@ -117,7 +123,7 @@ static func one(state: GameState, rng: Rng, squad: Squad, creature: Creature,
 		events.append(Event.new(Event.CREATURE_BLED,
 				{"creature": creature.id, "amount": bleeding}))
 		if creature.body.blood <= 0:
-			events.append_array(_died(state, creature, false))
+			events.append_array(_died(state, rng, creature, false))
 	return events
 
 
@@ -143,7 +149,7 @@ static func _burn(state: GameState, rng: Rng, creature: Creature,
 		events.append(Event.new(Event.CREATURE_BURNED,
 				{"creature": creature.id, "amount": damage}))
 		return events
-	return _died(state, creature, true)
+	return _died(state, rng, creature, true)
 
 
 ## Firefighter's gear takes most of a burn, less of it if the gear is poor.
@@ -162,7 +168,7 @@ static func _through_bunker_gear(damage: int, creature: Creature,
 
 
 ## Somebody who ran out of blood between rounds.
-static func _died(state: GameState, victim: Creature,
+static func _died(state: GameState, rng: Rng, victim: Creature,
 		by_fire: bool) -> Array[Event]:
 	var events: Array[Event] = []
 	victim.alive = false
@@ -196,6 +202,7 @@ static func _died(state: GameState, victim: Creature,
 
 	events.append(Event.new(Event.CREATURE_DIED, {
 		"creature": victim.id, "cause": &"fire" if by_fire else &"bleeding",
+		"manner": Aftermath.manner_of_death(rng, victim),
 	}))
 	if victim.prisoner_id != 0:
 		events.append_array(Capture.free_hostage(state, victim, null))

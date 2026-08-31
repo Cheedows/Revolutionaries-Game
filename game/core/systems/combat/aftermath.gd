@@ -12,10 +12,14 @@ extends RefCounted
 ## Ports bloodblast() from src/combat/fight.cpp. Everybody present gets a coin
 ## flipped for them, so the draws depend on how many people are in the room —
 ## which is why an empty encounter list is not the same as no encounter list.
-static func blood_blast(state: GameState, rng: Rng, victim: Creature) -> void:
+##
+## Only inside a building: the original bails out before any of it in a chase,
+## so nothing is rolled there. [param mode] is the one from the combat context.
+static func blood_blast(state: GameState, rng: Rng, victim: Creature,
+		mode: StringName = &"site") -> void:
 	if victim.armor != null:
 		victim.armor.bloody = true
-	if state.site.location == -1 or state.site.map == null:
+	if mode != &"site" or state.site.location == -1 or state.site.map == null:
 		return
 	state.site.map.add_flag(state.site.x, state.site.y, state.site.z,
 			Tables.SITE_BLOCKS[&"bloody2"])

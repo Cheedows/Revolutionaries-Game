@@ -68,6 +68,9 @@ static func free_hostage(state: GameState, holder: Creature,
 	if not prisoner.alive:
 		if prisoner.squad_id != 0:
 			prisoner.squad_id = 0
+			# The original kills them again on the way past, which settles the
+			# blood a fatal blow left below zero.
+			prisoner.body.blood = 0
 			prisoner.location = -1
 		return events
 

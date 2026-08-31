@@ -71,8 +71,29 @@ static func attack(state: GameState, rng: Rng, squad: Squad,
 					Encounters.remove(state, person)
 				continue
 
-		events.append_array(_swing(state, rng, squad, person, context))
+		var targets := _targets(state, squad, person)
+		# Nobody left to shoot at ends the round outright: the original returns
+		# from here, so whoever has not acted yet does not get to.
+		if targets.is_empty():
+			return events
+		events.append_array(_swing(state, rng, squad, person, targets, context))
 	return events
+
+
+## Who [param person] is willing to shoot at. An enemy fires on the squad;
+## somebody the squad won round fires on the Conservatives instead.
+static func _targets(state: GameState, squad: Squad,
+		person: Creature) -> Array[Creature]:
+	var targets: Array[Creature] = []
+	if Encounters.is_enemy(person):
+		for member: Creature in state.squad_members(squad):
+			if member.alive:
+				targets.append(member)
+		return targets
+	for other: Creature in Encounters.living(state):
+		if other.alignment == &"conservative":
+			targets.append(other)
+	return targets
 
 
 ## Whether [param person] would rather be somewhere else.
@@ -126,25 +147,12 @@ static func _crawls(person: Creature) -> bool:
 
 ## One person's swing, including the two ways it can go astray.
 static func _swing(state: GameState, rng: Rng, squad: Squad, person: Creature,
-		context: Dictionary) -> Array[Event]:
+		targets: Array[Creature], context: Dictionary) -> Array[Event]:
 	var events: Array[Event] = []
-	var targets: Array[Creature] = []
 	var bystanders: Array[Creature] = []
-
-	if Encounters.is_enemy(person):
-		for member: Creature in state.squad_members(squad):
-			if member.alive:
-				targets.append(member)
-	else:
-		# Somebody the squad brought round fights the Conservatives instead.
-		for other: Creature in Encounters.living(state):
-			if other.alignment == &"conservative":
-				targets.append(other)
 	for other: Creature in Encounters.living(state):
 		if not Encounters.is_enemy(other):
 			bystanders.append(other)
-	if targets.is_empty():
-		return events
 
 	var target: Creature = targets[rng.below(targets.size())]
 

@@ -21,9 +21,15 @@ static func take_the_immobile(state: GameState, squad: Squad, dead: bool,
 		if _can_carry(member) and member.prisoner_id == 0:
 			free_arms += 1
 		elif not _can_carry(member) and member.prisoner_id != 0:
-			# Whoever they were holding is let go, because they have to be.
-			events.append_array(Capture.free_hostage(state, member,
-					context.get(&"catalog")))
+			# **Original quirk, reproduced.** Whoever they were holding ought
+			# to be let go here, but the original hands freehostage() the
+			# prisoner instead of the person holding them — so what is
+			# actually released is whatever the prisoner was carrying, which
+			# is nothing, and the hold never breaks.
+			var held: Creature = state.creatures.get(member.prisoner_id)
+			if held != null:
+				events.append_array(Capture.free_hostage(state, held,
+						context.get(&"catalog")))
 
 	# From the back of the marching order forwards, as the original does.
 	var order := state.squad_members(squad)
@@ -37,6 +43,10 @@ static func take_the_immobile(state: GameState, squad: Squad, dead: bool,
 		if free_arms == 0:
 			if not stranded.alive:
 				Encounters.make_loot(state, stranded)
+				# The original kills them again on the way past, which is not
+				# the no-op it looks like: it settles the blood a fatal blow
+				# left below zero.
+				stranded.body.blood = 0
 				stranded.location = -1
 				events.append(Event.new(Event.MARTYR_ABANDONED,
 						{"creature": stranded.id}))
