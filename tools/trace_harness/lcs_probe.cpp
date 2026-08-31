@@ -1768,6 +1768,162 @@ void probe_chase(FILE *out)
    }
 }
 
+// Somebody who can actually shoot, with something loaded to shoot with.
+static void carfight_arm(Creature &cr, const char *weapon)
+{
+   int w = getweapontype(weapon);
+   cr.set_skill(SKILL_PISTOL, 6);
+   cr.set_skill(SKILL_RIFLE, 6);
+   cr.set_skill(SKILL_SMG, 6);
+   cr.give_weapon(*weapontype[w], NULL);
+   if (weapontype[w]->get_attacks().size() &&
+       weapontype[w]->get_attacks()[0]->uses_ammo)
+   {
+      std::string ct = weapontype[w]->get_attacks()[0]->ammotype;
+      if (getcliptype(ct) != -1)
+      {
+         cr.take_clips(*cliptype[getcliptype(ct)], 4);
+         cr.reload(false);
+      }
+   }
+}
+
+// A fight fought out of moving cars.
+//
+// In a car chase nobody dodges for themselves — the driver swerves for
+// everyone in the car, the shooter's car steadies or spoils their aim, and the
+// target's car is armour the shot has to come through. All of it draws, and
+// none of it happens in a building, so it needs a probe of its own.
+void probe_carfight(FILE *out)
+{
+   static const char *ROUNDS[] = {"you", "enemy", "full"};
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 88243019UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      for (int v = 0; v < VIEWNUM; v++)
+      {
+         attitude[v] = (v * 7 + scenario * 13) % 101;
+         public_interest[v] = (v * 3 + scenario * 5) % 40;
+      }
+      delete_and_clear(location);
+      delete_and_clear(newsstory);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+
+      newsstoryst *ns = new newsstoryst;
+      ns->loc = 1;
+      newsstory.push_back(ns);
+      sitestory = ns;
+
+      // Cars of very different shapes: a saloon, a van, an armoured truck and
+      // a tank all protect their passengers differently.
+      static const char *CARS[] = {"POLICECAR", "VAN", "HMMWV", "BUG"};
+      const int CAR_COUNT = (int)(sizeof(CARS) / sizeof(CARS[0]));
+
+      for (int round = 0; round < 3; round++)
+      for (int ours = 0; ours < CAR_COUNT; ours++)
+      for (int theirs = 0; theirs < CAR_COUNT; theirs++)
+      for (int shape = 0; shape < 3; shape++)
+      {
+         unsigned long seed_used = 4300021UL * (unsigned long)
+            (round * 4096 + ours * 256 + theirs * 16 + shape
+             + scenario * 97 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         mode = GAMEMODE_CHASECAR;
+         cursite = 1;
+         sitetype = location[cursite]->type;
+         sitealarm = 1;
+         sitealienate = 0;
+         sitecrime = 0;
+         sitealarmtimer = -1;
+         postalarmtimer = 0;
+         siteonfire = 0;
+         sitestory->crime.clear();
+         chaseseq.clean();
+         chaseseq.location = 1;
+
+         squadst squad;
+         chase_build_squad(squad, scenario, 3, shape % 2);
+         activesquad = &squad;
+         chase_give_cars(squad, CARS[ours], 1);
+         // Armed, or there is nothing to shoot out of the window with.
+         for (int p = 0; p < 6; p++)
+            if (squad.squad[p])
+            {
+               carfight_arm(*squad.squad[p], p % 2 ? "WEAPON_SEMIPISTOL_9MM"
+                                                   : "WEAPON_SMG_MP5");
+            }
+         // A squad with nobody driving on one shape in three, so the
+         // no-driver branches are reached on both sides.
+         if (shape == 2)
+            for (int p = 0; p < 6; p++)
+               if (squad.squad[p]) squad.squad[p]->is_driver = 0;
+
+         // The other side, in a car of their own.
+         Vehicle *chaser = new Vehicle(
+            *vehicletype[getvehicletype(CARS[theirs])]);
+         vehicle.push_back(chaser);
+         chaseseq.enemycar.push_back(chaser);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         for (int n = 0; n < 2 + shape; n++)
+         {
+            makecreature(encounter[n], CREATURE_COP);
+            conservatise(encounter[n]);
+            encounter[n].carid = chaser->id();
+            encounter[n].is_driver = (n == 0);
+            carfight_arm(encounter[n], "WEAPON_REVOLVER_38");
+         }
+
+         fprintf(out, "{\"kind\":\"carfight\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"round\":\"%s\",\"ours\":\"%s\",\"theirs\":\"%s\","
+                      "\"shape\":%d,\"endgame\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, ROUNDS[round], CARS[ours], CARS[theirs],
+                 shape, endgamestate, run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("]", out);
+         chase_write_state(out, "before", squad);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         char note[80];
+         snprintf(note, sizeof note, "carfight seed=%lu", seed_used);
+         lcs_trace_note(note);
+         long long before = lcs_trace_draw_count();
+         if (!strcmp(ROUNDS[round], "you")) youattack();
+         else if (!strcmp(ROUNDS[round], "enemy")) enemyattack();
+         else { youattack(); enemyattack(); }
+         lcs_trace_note("carfight done");
+
+         fprintf(out, ",\"draws\":%lld,\"crime\":%d",
+                 lcs_trace_draw_count() - before, sitecrime);
+         chase_write_state(out, "after", squad);
+         fputs("}\n", out);
+
+         chase_free_squad(squad);
+         activesquad = NULL;
+      }
+   }
+}
+
+
 // A whole round of combat: the squad swings, the other side swings back, and
 // everybody bleeds.
 //
@@ -14312,6 +14468,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "newsread")) probe_newsread(out);
    else if (!strcmp(which, "filler")) probe_filler(out);
    else if (!strcmp(which, "newsprose")) probe_newsprose(out);
+   else if (!strcmp(which, "carfight")) probe_carfight(out);
    else if (!strcmp(which, "cartheft")) probe_cartheft(out);
    else if (!strcmp(which, "dating")) probe_dating(out);
    else if (!strcmp(which, "interrogation")) probe_interrogation(out);

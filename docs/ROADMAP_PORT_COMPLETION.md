@@ -813,7 +813,35 @@ Port from `src/combat/` and remaining combat helpers.
     handed, and what the grabber learned from it.
   - Choosing who grabs whom, and releasing somebody afterwards, are site-loop
     prompts and land with Gate G.
-- [ ] Combat event vocabulary sufficient for any future visual presentation.
+- [x] Fighting out of moving cars, which is not a fight in a room with the
+    walls moving: `CarCombat` and `ChaseSeat` port the car-chase branches of
+    `attack()` and the armour rules of `VehicleType`. Nobody dodges for
+    themselves — the driver swerves for everyone in the car, and with nobody at
+    the wheel the car does not dodge at all; the car the shooter is in steadies
+    or spoils their aim, and shooting out of one nobody is driving costs ten;
+    the driver's injuries decide the dodge rather than the passenger's; the
+    driver learns from being shot at where a pedestrian learns to dodge; and
+    the car the target is in is armour, rolled fresh each round, with a shot at
+    the head going through the window, one at the legs into the door and one at
+    the middle depending on how high the body comes up.
+  - **Original quirk, reproduced.** Deciding whether to say the shot went
+    "through" the car or "bounces off" it costs a whole creature: the original
+    builds a naked one to try the shot against, and building a creature rolls
+    an age, a gender and a birthday. Those rolls are in the sequence, so they
+    are in the port.
+  - Verified by the `carfight` probe: four shapes of car on each side, three
+    halves of a round and a third of the samples with nobody at the squad's
+    wheel (432 samples), compared on draw counts, site crime and everybody's
+    blood, wounds, alignment and whether they lived.
+- [x] Combat event vocabulary sufficient for any future visual presentation:
+    every event the combat systems emit carries what a picture of the fight
+    would need — who swung at whom with what, whether it was a sneak attack,
+    where it landed, how hard, which wound it left, which organ went, whether a
+    car stopped it and whether it bounced off, who stepped in front of it, who
+    fell, who fled and how they died. `CombatText` renders the whole vocabulary
+    and `test_combat_text` holds it to that: every combat event constant the
+    systems emit has a line, checked by walking the source for them rather than
+    by a list that can drift.
 - [x] Deterministic combat probes covering every weapon family and representative armor/body states.
   - All 38 weapon types, four blows each, against three states of defence under
     three legal climates, compared on blood, every wound flag, every organ,

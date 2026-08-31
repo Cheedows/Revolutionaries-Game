@@ -36,7 +36,7 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 		events.append(Event.new(Event.ATTACK_INCAPABLE, {"attacker": attacker.id}))
 		return events
 
-	if not force_melee and _would_rather_argue(state, rng, attacker, catalog):
+	if not force_melee and AttackManner.would_rather_argue(rng, attacker, catalog):
 		return SpecialAttack.resolve(state, rng, attacker, target, context)
 
 	# Reloading takes the turn.
@@ -54,7 +54,7 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 	# An unarmed attacker rolls for how they threw the punch. The result is
 	# only ever a word, but the draws are real.
 	if not attacker.is_armed() and attacker.animal_gloss == &"none":
-		_describe_unarmed(rng, attacker)
+		AttackManner.describe_unarmed(rng, attacker)
 
 	var sneak := _sneaks_up(state, attacker, target, attack, context)
 	if attacker.is_armed():
@@ -125,10 +125,18 @@ static func _roll(state: GameState, rng: Rng, attacker: Creature,
 	var skill: StringName = _attack_skill(attack)
 	var bonus := 0
 
+	var in_car: bool = context.get(&"mode", &"site") == &"chase_car"
+	var driver: Creature = ChaseSeat.driver(state, target) if in_car else null
+
 	var attack_roll := CheckRules.skill_roll(rng, attacker, skill,
 			{&"catalog": catalog})
-	var defence_roll := CheckRules.skill_roll(rng, target, &"dodge",
-			{&"catalog": catalog}) / 2
+	var defence_roll := 0
+	if not in_car:
+		defence_roll = CheckRules.skill_roll(rng, target, &"dodge",
+				{&"catalog": catalog}) / 2
+	else:
+		defence_roll = CarCombat.dodge(state, rng, target, driver, catalog)
+		bonus += CarCombat.aim(state, attacker, catalog)
 
 	if sneak:
 		defence_roll = CheckRules.attribute_roll(rng, target, &"wisdom") / 2
@@ -136,7 +144,12 @@ static func _roll(state: GameState, rng: Rng, attacker: Creature,
 				{&"catalog": catalog})
 		TrainRules.train(attacker, skill, 10)
 	else:
-		TrainRules.train(target, &"dodge", attack_roll * 2)
+		# The driver learns from being shot at; anybody dodging for themselves
+		# learns twice as much.
+		if driver != null:
+			TrainRules.train(driver, &"driving", attack_roll / 2)
+		else:
+			TrainRules.train(target, &"dodge", attack_roll * 2)
 		TrainRules.train(attacker, skill, defence_roll * 2 + 5)
 
 	# Dragging somebody along spoils the aim of whoever is holding them, and
@@ -147,10 +160,16 @@ static func _roll(state: GameState, rng: Rng, attacker: Creature,
 		attack_roll -= rng.below(10)
 
 	attack_roll = DamageRules.apply_injuries(rng, attack_roll, attacker)
-	defence_roll = DamageRules.apply_injuries(rng, defence_roll, target)
-	if context.get(&"mode", &"site") == &"chase_foot":
-		# Being hurt tells twice as much when both of you are running.
+	if in_car:
+		# The driver's injuries decide the dodge, and a car with nobody driving
+		# it has already rolled a zero.
+		if driver != null:
+			defence_roll = DamageRules.apply_injuries(rng, defence_roll, driver)
+	else:
 		defence_roll = DamageRules.apply_injuries(rng, defence_roll, target)
+		if context.get(&"mode", &"site") == &"chase_foot":
+			# Being hurt tells twice as much when both of you are running.
+			defence_roll = DamageRules.apply_injuries(rng, defence_roll, target)
 
 	if attack_roll < 0:
 		attack_roll = 0
@@ -186,8 +205,24 @@ static func _land(state: GameState, rng: Rng, attacker: Creature,
 	if mod < 0:
 		mod = 0
 
+	# In a car chase the car is armour too, and where the shot hits it depends
+	# on where it was aimed.
+	var shielding := CarCombat.shielding(state, rng, target, part, catalog) \
+			if context.get(&"mode", &"site") == &"chase_car" else {}
+	var extra: int = shielding.get("armor", 0)
+	var car_part: StringName = shielding.get("part", &"")
+
+	var before_armor: int = damage["amount"]
 	var amount := DamageRules.through_armor(rng, target, damage["amount"],
-			damage["type"], part, damage["armor_piercing"], mod, 0, catalog)
+			damage["type"], part, damage["armor_piercing"], mod, extra, catalog)
+	# The original decides here whether the shot went through the car or
+	# bounced off it, and pays a whole creature for the answer; see
+	# [method CarCombat.bounced].
+	var bounced := false
+	if car_part != &"" and extra > 0:
+		if amount == 0:
+			bounced = CarCombat.bounced(rng, before_armor, damage["type"],
+					part, damage["armor_piercing"], mod, extra, catalog)
 	var kind: int = damage["type"]
 	# A bullet the vest caught leaves a bruise, not a hole.
 	if amount < 4 and (kind & Wound.SHOT) != 0:
@@ -197,10 +232,16 @@ static func _land(state: GameState, rng: Rng, attacker: Creature,
 	if amount <= 0:
 		var glanced: Array[Event] = [Event.new(Event.ATTACK_HIT,
 				{"attacker": attacker.id, "target": target.id, "part": part,
-						"damage": 0})]
+						"damage": 0, "stopped_by": car_part,
+						"bounced": bounced})]
 		return glanced
-	return Wounding.apply(state, rng, attacker, target, attack, part, amount,
-			kind, damage, sneak, context)
+	var landed := Wounding.apply(state, rng, attacker, target, attack, part,
+			amount, kind, damage, sneak, context)
+	if car_part != &"" and not landed.is_empty():
+		# The shot went through the car to reach them, which a presentation
+		# wants to be able to say.
+		landed[0].data["through"] = car_part
+	return landed
 
 
 ## The one free swing a badly missed melee attack gives away.
@@ -222,43 +263,6 @@ static func _counterattack(state: GameState, rng: Rng, attacker: Creature,
 	var counter := context.duplicate()
 	counter[&"force_melee"] = true
 	return resolve(state, rng, target, attacker, counter)
-
-
-## Whether this attacker talks instead of fighting.
-##
-## Some people never fight — a judge, a scientist, a politician, a broadcaster,
-## an officer, a peaceable police negotiator — and anybody at all who is
-## holding an instrument. A CEO fights half the time, which costs a draw.
-static func _would_rather_argue(state: GameState, rng: Rng, attacker: Creature,
-		catalog: Catalog) -> bool:
-	var musical := SpecialAttack.is_musical(attacker, catalog)
-	var talker := musical
-	match attacker.type_key():
-		&"cop":
-			talker = talker or (attacker.alignment == &"moderate"
-					and not attacker.is_member())
-		&"scientist_eminent", &"judge_liberal", &"judge_conservative", \
-		&"politician", &"radiopersonality", &"newsanchor", &"militaryofficer":
-			talker = true
-		&"corporate_ceo":
-			# Half of them would rather talk. The coin is flipped either way.
-			talker = talker or rng.below(2) != 0
-	if not talker:
-		return false
-	# Somebody with a real weapon uses it, unless the weapon is an instrument.
-	return musical or not attacker.is_armed() or attacker.alignment != &"liberal"
-
-
-## The word an unarmed attacker reaches for, which costs a draw either way.
-##
-## Each rung is only rolled if the one before it came up short, and the last
-## few ask for a random number below zero — which the generator answers with
-## zero, so a skilled fighter always strikes gracefully.
-static func _describe_unarmed(rng: Rng, attacker: Creature) -> void:
-	var martial := attacker.skills.get_value(&"handtohand")
-	for rung in range(martial + 1, martial - 5, -1):
-		if rng.below(rung) == 0:
-			return
 
 
 ## Whether a backstab is on: a Liberal with the right weapon, on somebody who
