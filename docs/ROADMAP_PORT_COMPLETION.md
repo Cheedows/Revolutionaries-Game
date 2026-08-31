@@ -1469,7 +1469,14 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     same dialog as everything else.
   - [ ] Picking single items out of the safehouse stores, and equipping a squad
     from them.
-- [ ] News/newspaper/broadcast presentation.
+- [x] News/newspaper/broadcast presentation: `ui/widgets/newspaper_panel.gd`
+    lays out the morning the simulation reported — each headline over its
+    story, the story itself, the photograph and its caption where the story is
+    a photograph, the slogan where the squad was heard shouting one, a line of
+    the padding the original prints columns of, and the advertisements that
+    were packed around it — and the television segments with their cast. It
+    keeps the last paper aside so it can be read whenever the player wants it
+    rather than only as it scrolls past in the log.
 - [x] Politics/agenda screens: `ui/widgets/agenda_panel.gd` shows what
     `liberalagenda()` shows across its three pages at once — who holds each of
     the four executive posts and for how long, how each chamber and the court

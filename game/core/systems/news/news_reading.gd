@@ -143,6 +143,7 @@ static func _print(state: GameState, rng: Rng, story: NewsStory,
 		if not printed.is_empty():
 			events.append(Event.new(Event.HEADLINE_RUN, {
 				"story": story.type, "guardian": guardian,
+				"view": story.view, "positive": story.positive != 0,
 				"headline": printed["headline"], "major": printed,
 				"advertisements": advertisements,
 			}))

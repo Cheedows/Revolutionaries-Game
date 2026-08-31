@@ -20,9 +20,8 @@ var _laws: LawList
 var _roster: Roster
 var _squad: SquadPanel
 var _map: SiteMapView
-var _dossier: Dossier
-var _agenda: AgendaPanel
-var _house: SafehousePanel
+var _panels: PanelStack
+var _news: Array[Event] = []
 var _log: LogView
 var _wait_button: Button
 var _run_button: Button
@@ -106,29 +105,12 @@ func _build() -> void:
 	_roster.dossier_wanted.connect(_open_dossier)
 	right.add_child(_roster)
 
-	# One person's whole record, opened over the roster rather than beside it:
-	# it is long, and it is only wanted one person at a time.
-	_dossier = Dossier.new()
-	_dossier.custom_minimum_size = Vector2(0, 320)
-	_dossier.visible = false
-	_dossier.changed.connect(_refresh)
-	_dossier.closed.connect(func() -> void: _open_dossier(null))
-	right.add_child(_dossier)
-
-	# The state of the country, and the house the squad lives in. Both are
-	# read one at a time, over everything else, like the record.
-	_agenda = AgendaPanel.new()
-	_agenda.custom_minimum_size = Vector2(0, 320)
-	_agenda.visible = false
-	_agenda.closed.connect(func() -> void: _open_panel(&"none"))
-	right.add_child(_agenda)
-
-	_house = SafehousePanel.new()
-	_house.custom_minimum_size = Vector2(0, 320)
-	_house.visible = false
-	_house.changed.connect(_refresh)
-	_house.closed.connect(func() -> void: _open_panel(&"none"))
-	right.add_child(_house)
+	# Everything that opens over the roster: a person's record, the state of
+	# the country, the safehouse, and the morning's paper.
+	_panels = PanelStack.new()
+	_panels.visible = false
+	_panels.changed.connect(_refresh)
+	right.add_child(_panels)
 
 	_map = SiteMapView.new()
 	_map.visible = false
@@ -178,18 +160,17 @@ func _controls() -> Control:
 	house.text = "The safehouse"
 	house.pressed.connect(func() -> void: _open_panel(&"house"))
 	row.add_child(house)
+
+	var paper := Button.new()
+	paper.text = "The paper"
+	paper.pressed.connect(func() -> void: _open_panel(&"paper"))
+	row.add_child(paper)
 	return row
 
 
 ## Opens one of the panels that sit over the roster, closing the others.
 func _open_panel(which: StringName) -> void:
-	_agenda.visible = false
-	_house.visible = false
-	_dossier.show_creature(_session, null)
-	if which == &"agenda":
-		_agenda.show_state(_session.state)
-	elif which == &"house":
-		_house.show_house(_session)
+	_panels.open(which, _session, _news if which == PanelStack.PAPER else null)
 	_refresh()
 
 
@@ -205,7 +186,17 @@ func _advance_one_day() -> void:
 ## The simulation never blocks: it hands back a question and waits, so the
 ## screen's whole job here is to show it and hand the answer back.
 func _settle() -> void:
-	for event in _session.drain_events():
+	var drained := _session.drain_events()
+	# The morning's paper is kept aside so it can be read whenever the player
+	# wants it, rather than only as it scrolls past in the log.
+	var morning: Array[Event] = []
+	for event: Event in drained:
+		if event.type == Event.NEWS_PUBLISHED or event.type == Event.HEADLINE_RUN \
+				or event.type == Event.NEWS_SEGMENT:
+			morning.append(event)
+	if not morning.is_empty():
+		_news = morning
+	for event in drained:
 		var line := EventText.describe(event, _session.state)
 		if not line.is_empty():
 			_log.append(line, EventText.colour_of(event))
@@ -255,10 +246,8 @@ func _on_answer(id: Variant) -> void:
 
 ## Opens somebody's record, or closes it when given nobody.
 func _open_dossier(creature: Creature) -> void:
-	if creature != null:
-		_agenda.visible = false
-		_house.visible = false
-	_dossier.show_creature(_session, creature)
+	_panels.open(PanelStack.DOSSIER if creature != null else PanelStack.NONE,
+			_session, creature)
 	_refresh()
 
 
@@ -277,7 +266,7 @@ func _refresh() -> void:
 	# The plan is only worth the room it takes while the squad is inside one.
 	var inside := _session.state.mode == &"site" \
 			and _session.state.site.location != -1
-	var reading := _dossier.visible or _agenda.visible or _house.visible
+	var reading := _panels.is_open()
 	_map.visible = inside and not reading
 	_squad.visible = not inside and not reading
 	_roster.visible = not inside and not reading

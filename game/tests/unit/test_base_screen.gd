@@ -142,7 +142,8 @@ func test_the_dossier_reads_and_equips() -> void:
 	squad.haul.append(Clip.new(&"CLIP_9", 3))
 
 	screen.call("_open_dossier", founder)
-	var dossier: Dossier = screen.get("_dossier")
+	var panels: PanelStack = screen.get("_panels")
+	var dossier: Dossier = panels.get("_dossier")
 	check(dossier.visible, "the record is open")
 
 	dossier.call("_give", squad.haul[0])
@@ -183,17 +184,18 @@ func test_the_agenda_and_the_safehouse_open() -> void:
 	var session := _a_game(90210)
 	screen.call("setup", session)
 
-	screen.call("_open_panel", &"agenda")
-	var agenda: AgendaPanel = screen.get("_agenda")
+	screen.call("_open_panel", PanelStack.AGENDA)
+	var panels: PanelStack = screen.get("_panels")
+	var agenda: AgendaPanel = panels.get("_agenda")
 	check(agenda.visible, "the agenda is up")
 	check(not (screen.get("_roster") as Control).visible,
 			"and the roster is out of the way")
 
-	screen.call("_open_panel", &"house")
-	var house: SafehousePanel = screen.get("_house")
+	screen.call("_open_panel", PanelStack.HOUSE)
+	var house: SafehousePanel = panels.get("_house")
 	check(house.visible and not agenda.visible, "one at a time")
 
-	screen.call("_open_panel", &"none")
+	screen.call("_open_panel", PanelStack.NONE)
 	check(not house.visible and (screen.get("_roster") as Control).visible,
 			"and closing puts the roster back")
 
@@ -239,3 +241,29 @@ func test_the_safehouse_can_be_built_up() -> void:
 	equal(session.state.slogan, "No gods, no masters", "the slogan is trimmed")
 	check(SafehouseText.describe(here).contains("food"),
 			"and the pantry is on the record")
+
+
+func test_the_paper_can_be_read() -> void:
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(60613)
+	screen.call("setup", session)
+
+	# Long enough for something to have been printed.
+	for day in 40:
+		_play_a_day(screen, session)
+
+	var kept: Array = screen.get("_news")
+	check(not kept.is_empty(), "the morning's paper was kept")
+
+	screen.call("_open_panel", PanelStack.PAPER)
+	var panels: PanelStack = screen.get("_panels")
+	var paper: NewspaperPanel = panels.get("_paper")
+	check(paper.visible, "and it opens")
+	var body: VBoxContainer = paper.get("_body")
+	check(body.get_child_count() > 0, "with something in it")
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
