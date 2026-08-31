@@ -80,6 +80,12 @@ func _refresh() -> void:
 	for line in DossierText.record(_creature, state, _session.catalog):
 		_line(line)
 
+	_heading("Contact")
+	var contact: Creature = state.creatures.get(_creature.hire_id)
+	_line("Reports to %s." % (contact.name if contact != null
+			else "nobody but themselves"))
+	_body.add_child(_promote_row())
+
 	_heading("Carrying")
 	for line in DossierText.carrying(_creature, _session.catalog):
 		_line(line)
@@ -110,6 +116,27 @@ func _kit_row(item: Item) -> Control:
 	give.text = "Give"
 	give.pressed.connect(func() -> void: _give(item))
 	row.add_child(give)
+	return row
+
+
+## The one thing that can be done about somebody's place in the chain.
+func _promote_row() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var refused := Promotion.refused(_session.state, _creature)
+	var label := Label.new()
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.text = refused if refused != "" else "They could be moved up."
+	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	row.add_child(label)
+	var promote := Button.new()
+	promote.text = "Promote"
+	promote.disabled = refused != ""
+	promote.pressed.connect(func() -> void:
+		Commands.promote(_session, _creature)
+		changed.emit()
+		_refresh())
+	row.add_child(promote)
 	return row
 
 

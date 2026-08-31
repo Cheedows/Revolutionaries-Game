@@ -140,3 +140,13 @@ static func flag(session: Session, site: Location, burning: bool) -> Array[Event
 ## Sets what the organisation shouts, and paints on walls.
 static func set_slogan(session: Session, slogan: String) -> void:
 	session.state.slogan = slogan.strip_edges()
+
+
+## Moves [param creature] up the chain of command, so they report to their
+## contact's contact. Returns why not, or "".
+static func promote(session: Session, creature: Creature) -> String:
+	var refused := Promotion.refused(session.state, creature)
+	if refused != "":
+		return refused
+	Promotion.promote(session.state, creature)
+	return ""

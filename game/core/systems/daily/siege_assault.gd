@@ -42,12 +42,35 @@ static func sally_forth(state: GameState, rng: Rng, site: Location,
 			Ids.SIEGE_TYPES.find(siege.attacker))
 	if state.current_story != null:
 		state.current_story.positive = 1
-	var fought: Variant = fight(state, rng, squad, site, siege, catalog)
+	var fought: Variant = _lost_check(state, rng, site,
+			fight(state, rng, squad, site, siege, catalog))
 	if fought is Array:
 		events.append_array(fought)
 		return events
 	(fought as PendingIntent).events = events + (fought as PendingIntent).events
 	return fought
+
+
+## What sally_forth() does with the result its inner loop hands back.
+##
+## Ports the tail of sally_forth() from src/daily/siege.cpp: a squad that went
+## out to break the siege and did not come back leaves nobody to hold the
+## house, so every besieged safehouse is given up. Without it the siege would
+## run for ever. The fight itself does not know this happened, which is why it
+## is here and not in the round.
+static func _lost_check(state: GameState, rng: Rng, site: Location,
+		result: Variant) -> Variant:
+	if result is PendingIntent:
+		var asked: PendingIntent = result
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					return _lost_check(state, rng, site,
+							asked.resume.call(answer)),
+				asked.events)
+	if _standing(state, site) > 0:
+		return result
+	return (result as Array[Event]) \
+			+ SiegeSurrender.surrender_everywhere(state, rng)
 
 
 ## The fight in the street itself. Ports the body of sally_forth_aux().

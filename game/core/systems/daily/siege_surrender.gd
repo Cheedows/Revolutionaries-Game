@@ -19,6 +19,24 @@ const ARRESTING: Array[StringName] = [&"police", &"firemen"]
 
 
 ## The squad gives up the safehouse at [param location]. Returns the events.
+## Gives up every safehouse the squad holds that is still under siege.
+##
+## Ports resolvesafehouses() from src/daily/siege.cpp. The original calls it
+## when a sally is lost: the squad that went out to break the siege is gone, so
+## there is nobody left to hold the house, and leaving the siege running would
+## leave it running for ever.
+static func surrender_everywhere(state: GameState, rng: Rng) -> Array[Event]:
+	var events: Array[Event] = []
+	for site: Location in state.locations.values():
+		if site.renting < Renting.PERMANENT:
+			continue
+		var siege: Siege = state.sieges.get(site.id)
+		if siege == null or not siege.active:
+			continue
+		events.append_array(surrender(state, rng, site, siege))
+	return events
+
+
 static func surrender(state: GameState, rng: Rng, site: Location,
 		siege: Siege) -> Array[Event]:
 	# A rented house is lost outright; one held outright stays theirs.
