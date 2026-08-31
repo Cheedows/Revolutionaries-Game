@@ -12180,6 +12180,144 @@ void probe_surgery(FILE *out)
    }
 }
 
+// checkforarrest() from src/daily/activities.cpp, with attemptarrest()
+// inlined as far as the foot chase — which has a probe of its own.
+void probe_arrest(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 715827883UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+
+      for (int naked = 0; naked < 2; naked++)
+      for (int animal = 0; animal < 2; animal++)
+      for (int heat = 0; heat <= 90; heat += 30)
+      for (int sense = 0; sense <= 4; sense += 2)
+      for (int open_story = 0; open_story < 2; open_story++)
+      {
+         unsigned long seed_used = 2147483647UL * (unsigned long)
+            ((((naked * 2 + animal) * 4 + heat / 30) * 3 + sense / 2) * 2
+             + open_story + scenario * 401 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+         delete_and_clear(newsstory);
+         delete_and_clear(chaseseq.enemycar);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         sitestory = NULL;
+         if (open_story)
+         {
+            newsstoryst *ns = new newsstoryst;
+            ns->type = NEWSSTORY_CARTHEFT;
+            ns->loc = -1;
+            newsstory.push_back(ns);
+            sitestory = ns;
+         }
+
+         // The original never sets cursite for a street arrest, so the
+         // police are built wherever the squad was last. Pinned here so the
+         // sample says which place that was.
+         cursite = 3;
+         Creature *cr = new Creature;
+         makecreature(*cr, CREATURE_POLITICALACTIVIST);
+         cr->align = ALIGN_LIBERAL;
+         cr->location = 2;
+         cr->base = 2;
+         cr->heat = heat;
+         cr->set_skill(SKILL_STREETSENSE, sense);
+         cr->animalgloss = animal ? ANIMALGLOSS_ANIMAL : ANIMALGLOSS_NONE;
+         for (int i = 0; i < LAWFLAGNUM; i++) cr->crimes_suspected[i] = 0;
+         if (naked) cr->strip(NULL);
+         else
+         {
+            Armor a(*armortype[getarmortype("ARMOR_CLOTHES")]);
+            cr->give_armor(a, NULL);
+         }
+         pool.push_back(cr);
+
+         fputs("{\"kind\":\"arrest\",\"person\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         bool arrest = false;
+         if (!cr->animalgloss && cr->is_naked() && LCSrandom(2))
+         {
+            criminalize(*cr, LAWFLAG_DISTURBANCE);
+            newsstoryst *ns = new newsstoryst;
+            ns->type = NEWSSTORY_NUDITYARREST;
+            ns->loc = -1;
+            newsstory.push_back(ns);
+            sitestory = ns;
+            arrest = true;
+         }
+         else if (cr->heat > cr->get_skill(SKILL_STREETSENSE) * 10)
+         {
+            if (!LCSrandom(50))
+            {
+               newsstoryst *ns = new newsstoryst;
+               ns->type = NEWSSTORY_WANTEDARREST;
+               ns->loc = -1;
+               newsstory.push_back(ns);
+               sitestory = ns;
+               arrest = true;
+            }
+         }
+         if (arrest)
+         {
+            makechasers(-1, 5);
+            if (!sitestory)
+            {
+               newsstoryst *ns = new newsstoryst;
+               ns->type = NEWSSTORY_WANTEDARREST;
+               ns->loc = -1;
+               newsstory.push_back(ns);
+               sitestory = ns;
+            }
+            chaseseq.clean();
+            chaseseq.location = location[cr->location]->parent;
+         }
+
+         int chasers = 0;
+         for (int e = 0; e < ENCMAX; e++) if (encounter[e].exists) chasers++;
+
+         fprintf(out, ",\"scenario\":%d,\"seed\":%lu,\"naked\":%d,"
+                      "\"animal\":%d,\"heat\":%d,\"sense\":%d,"
+                      "\"open_story\":%d,\"draws\":%lld,\"arrest\":%d,"
+                      "\"story\":%d,\"stories\":%d,\"chasers\":%d,"
+                      "\"cars\":%d,\"district\":%d,\"crimes\":[",
+                 scenario, seed_used, naked, animal, heat, sense, open_story,
+                 lcs_trace_draw_count() - before, arrest ? 1 : 0,
+                 sitestory ? (int)sitestory->type : -1, len(newsstory),
+                 chasers, len(chaseseq.enemycar),
+                 arrest ? chaseseq.location : -1);
+         for (int i = 0; i < LAWFLAGNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", (int)cr->crimes_suspected[i]);
+         fputs("],\"types\":[", out);
+         {
+            int written = 0;
+            for (int e = 0; e < ENCMAX; e++)
+               if (encounter[e].exists)
+                  fprintf(out, "%s%d", written++ ? "," : "",
+                          (int)encounter[e].type);
+         }
+         fputs("],\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("]}\n", out);
+
+         delete_and_clear(pool);
+      }
+   }
+}
+
 void probe_kidnap(FILE *out)
 {
    static const char *WEAPONS[] = {
@@ -13808,6 +13946,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "sally")) probe_sally(out);
    else if (!strcmp(which, "dealership")) probe_dealership(out);
    else if (!strcmp(which, "surgery")) probe_surgery(out);
+   else if (!strcmp(which, "arrest")) probe_arrest(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

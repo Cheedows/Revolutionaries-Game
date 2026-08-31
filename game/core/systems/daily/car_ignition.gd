@@ -190,7 +190,7 @@ static func _drive_away(state: GameState, rng: Rng, thief: Creature,
 	car.heat += CHASE_HEAT
 	NewsQueue.open(state, &"cartheft")
 	var chase: Variant = ArrestChase.attempt(state, rng, thief, catalog,
-			CHASE_SEVERITY, car)
+			CHASE_SEVERITY, car, false)
 	if chase is PendingIntent:
 		var asked: PendingIntent = chase
 		return PendingIntent.new(asked.intent, asked.resume,

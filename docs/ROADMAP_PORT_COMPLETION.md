@@ -111,11 +111,25 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
     draw counts, whether the knife slipped, the blood left, whether the patient
     lived, every wound flag, the attribute, whether it went in, and what the
     surgeon learnt and earned.
-- [ ] Add targeted probes for currently unit-tested-but-unprobed arrest/prostitution branches where practical.
-  - Was blocked on the chase system: in the original an arrest runs straight
-    into `footchase()`, so the branch could not be recorded in isolation. The
-    foot chase now has its own probe, so the arrest branch can be probed once
-    the daily arrest path calls into it (Gate B).
+- [x] Add targeted probes for currently unit-tested-but-unprobed arrest/prostitution branches where practical.
+  - Prostitution needed nothing new: it is one of the twelve activity groups
+    the `activities_day` probe splits a day into, and the arrests inside the
+    other groups are recorded there too — the golden has drug, graffiti and
+    burial arrest stories in it.
+  - The street arrest itself now has the `arrest` probe: `checkforarrest()`
+    with the front half of `attemptarrest()` inlined as far as the foot chase,
+    which has its own probe. Dressed or not, a person or an animal, four heat
+    levels against three grades of street sense, with a story already open or
+    not, across three worlds — compared on draw counts, whether the police
+    came, the charge, the story, who turned up and what they came in.
+  - **Two port defects found and fixed.** `attemptarrest()` calls the police
+    out *before* it writes the story and wipes the chase sequence *after*, so
+    the cars they arrived in are thrown away and a street arrest is always run
+    down on foot; the port wrote the story first and kept the cars. And
+    `makecreature()` builds everybody at `cursite`, which a street arrest never
+    sets — so the police are made wherever the squad was last, and that is what
+    decides where each of them works. The car thief's own two chases wipe the
+    sequence first instead and keep their cars, which is now a parameter.
 
 **Gate A:** all foundational primitives required by later modes are callable headlessly and green.
 

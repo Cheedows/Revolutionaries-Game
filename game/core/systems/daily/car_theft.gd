@@ -208,7 +208,8 @@ static func spotted(state: GameState, rng: Rng, thief: Creature, car: Vehicle,
 	state.remove_vehicle(car.id)
 	events.append(Event.new(Event.CAR_THEFT_SPOTTED, {"creature": thief.id}))
 	NewsQueue.open(state, &"cartheft")
-	return ArrestChase.attempt(state, rng, thief, catalog)
+	return ArrestChase.attempt(state, rng, thief, catalog, ArrestChase.SEVERITY,
+			null, false)
 
 
 ## Walking away, which costs nothing but the evening.

@@ -19,14 +19,25 @@ const SEVERITY := 5
 static func check(state: GameState, rng: Rng, liberal: Creature,
 		doing: StringName, catalog: Catalog,
 		events: Array[Event]) -> Variant:
-	if not ArrestRules.check(rng, liberal, doing, events):
+	if not noticed(state, rng, liberal, doing, events):
 		return null
+	return attempt(state, rng, liberal, catalog)
+
+
+## Whether the police pick [param liberal] out, and the story it opens.
+##
+## Being caught with nothing on is a public disturbance and charged as one;
+## being recognised is not a charge, only a story.
+static func noticed(state: GameState, rng: Rng, liberal: Creature,
+		doing: StringName, events: Array[Event]) -> bool:
+	if not ArrestRules.check(rng, liberal, doing, events):
+		return false
 	if String(events[events.size() - 1].data.get("charge", "")) == "disturbance":
 		NewsQueue.open(state, &"nudityarrest")
 		CrimeRules.charge(state, liberal, &"disturbance")
 	else:
 		NewsQueue.open(state, &"wantedarrest")
-	return attempt(state, rng, liberal, catalog)
+	return true
 
 
 ## The police are here. Raises the response and runs the chase.
@@ -36,13 +47,8 @@ static func check(state: GameState, rng: Rng, liberal: Creature,
 ## chased without disturbing the real squads.
 static func attempt(state: GameState, rng: Rng, liberal: Creature,
 		catalog: Catalog, severity: int = SEVERITY,
-		car: Vehicle = null) -> Variant:
-	# Whatever brought the police opened a story; if nothing did, the arrest
-	# itself is the story.
-	NewsQueue.open_if_idle(state, &"wantedarrest")
-
-	var here: Location = state.locations.get(liberal.location)
-	Chasers.raise(state, rng, &"", here, severity, catalog)
+		car: Vehicle = null, scrub: bool = true) -> Variant:
+	alert(state, rng, liberal, severity, catalog, scrub)
 
 	var squad := Squad.new()
 	state.add_squad(squad)
@@ -53,10 +59,37 @@ static func attempt(state: GameState, rng: Rng, liberal: Creature,
 	liberal.vehicle_id = car.id if car != null else 0
 	liberal.is_driver = car != null
 
+	var here: Location = state.locations.get(liberal.location)
 	var district := here.parent if here != null else -1
 	var result: Variant = ChaseLoop.run(state, rng, squad, district,
 			car != null, catalog)
 	return _dissolve(state, squad, liberal, was, result)
+
+
+## Calls the police out, before anybody starts running.
+##
+## Whatever brought them opened a story; if nothing did, the arrest itself is
+## the story. **Original quirk, reproduced:** the story is written after the
+## response is raised, so a story opened here cannot influence who turns up.
+static func alert(state: GameState, rng: Rng, liberal: Creature,
+		severity: int, catalog: Catalog, scrub: bool = true) -> void:
+	# **Original quirk, reproduced.** makecreature() puts everybody it builds
+	# at `cursite`, and an arrest on the street never sets it — so the police
+	# are made at whatever building the squad was in last, which is what
+	# decides where each of them works.
+	if not scrub:
+		state.chase.enemy_cars.clear()
+		state.chase.friendly_cars.clear()
+	var from: Location = state.locations.get(state.site.location)
+	Chasers.raise(state, rng, &"", from, severity, catalog)
+	NewsQueue.open_if_idle(state, &"wantedarrest")
+	# **Original quirk, reproduced.** attemptarrest() wipes the chase sequence
+	# *after* calling the police out, so the cars they came in are thrown away
+	# and a street arrest is always run down on foot. The car thief's own two
+	# chases wipe it first instead, and keep theirs — hence [param scrub].
+	if scrub:
+		state.chase.enemy_cars.clear()
+		state.chase.friendly_cars.clear()
 
 
 ## Puts the Liberal back where they were and takes the temporary squad away.
