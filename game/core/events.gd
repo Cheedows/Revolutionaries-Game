@@ -53,6 +53,9 @@ const COMPUTER_HACKED := &"computer_hacked"          # {creature, machine}
 const COMPUTER_RESISTED := &"computer_resisted"      # {creature, machine}
 const PRISONERS_FREED := &"prisoners_freed"          # {count, wing}
 const JURY_SWAYED := &"jury_swayed"                  # {creature, caught}
+const VAULT_OPENED := &"vault_opened"                # {creature, how}
+const OVAL_OFFICE := &"oval_office"                  # {president}
+const CCS_BOSS_FOUND := &"ccs_boss_found"            # {ready}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

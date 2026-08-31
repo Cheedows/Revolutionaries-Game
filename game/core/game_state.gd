@@ -62,6 +62,17 @@ var next_vehicle_id: int = 1
 var machinegun_taken: bool = false
 var deagle_taken: bool = false
 
+## The two people the game keeps a single copy of: the chief executive in the
+## corporate house and the President in the Oval Office. Neither lives in
+## [member creatures] until the squad meets them.
+var ceo: Creature = null
+var president: Creature = null
+var ceo_state: int = 0
+var president_state: int = 0
+
+## Who was President before the last one was killed, which the headlines want.
+var old_president_name: String = ""
+
 ## How many constitutional amendments have passed. The two that repeal the
 ## constitution set it to one: everything before them is void.
 var amendments: int = 0

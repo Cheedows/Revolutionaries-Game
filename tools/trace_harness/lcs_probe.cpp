@@ -7936,6 +7936,448 @@ void probe_vaults(FILE *out)
    }
 }
 
+// The bank, the Oval Office and the CCS leader: the specials that are about
+// who is in the room rather than what is in it. Transcribed from
+// src/sitemode/mapspecials.cpp with the prompts answered and the display taken
+// out. The SWAT counter is the original's function-static, hoisted so the
+// probe can reset it between samples.
+static int bank_swat_counter = 0;
+
+static void bank_block(int which, int *opened_out)
+{
+   *opened_out = 0;
+   char actual = 0;
+   switch(which)
+   {
+   case 0: // special_bank_vault()
+   {
+      if(!unlock(UNLOCK_VAULT,actual))
+      {
+         levelmap[locx][locy][locz].special=-1;
+      }
+      else
+      {
+         if(!hack(HACK_VAULT,actual))
+         {
+            levelmap[locx][locy][locz].special=-1;
+         }
+         else
+         {
+            Creature *manager = 0;
+            bool canbreakin = false;
+            for(int s=0;s<6;s++)
+            {
+               Creature *c = activesquad->squad[s];
+               if(c)
+               {
+                  if(c->type == CREATURE_BANK_MANAGER)
+                  {
+                     manager = c;
+                     if(c->joindays < 30 && !(c->flag & CREATUREFLAG_KIDNAPPED))
+                     {
+                        canbreakin = true;
+                        break;
+                     }
+                  }
+                  if(c->prisoner && c->prisoner->type == CREATURE_BANK_MANAGER)
+                  {
+                     canbreakin = true;
+                     break;
+                  }
+               }
+            }
+            if(!canbreakin)
+            {
+               for(int p=0;p<len(pool);p++)
+               {
+                  if(pool[p]->base == cursite && pool[p]->type == CREATURE_BANK_MANAGER)
+                  {
+                     canbreakin = true;
+                     pool[p]->location = pool[p]->base = activesquad->squad[0]->base;
+                     pool[p]->flag &= ~CREATUREFLAG_SLEEPER;
+                     pool[p]->activity.type = ACTIVITY_NONE;
+                     pool[p]->crimes_suspected[LAWFLAG_BANKROBBERY]++;
+                     break;
+                  }
+               }
+            }
+            if(canbreakin)
+            {
+               criminalizeparty(LAWFLAG_BANKROBBERY);
+               sitecrime+=20;
+               sitestory->crime.push_back(CRIME_BANKVAULTROBBERY);
+               levelmap[locx+1][locy][locz].flag &= ~SITEBLOCK_DOOR;
+               levelmap[locx-1][locy][locz].flag &= ~SITEBLOCK_DOOR;
+               levelmap[locx][locy+1][locz].flag &= ~SITEBLOCK_DOOR;
+               levelmap[locx][locy-1][locz].flag &= ~SITEBLOCK_DOOR;
+               levelmap[locx][locy][locz].special=-1;
+               *opened_out = 1;
+            }
+         }
+      }
+      if(actual)
+      {
+         alienationcheck(0);
+         noticecheck(-1);
+      }
+      break;
+   }
+   case 1: // special_bank_teller()
+   {
+      if(sitealarm||sitealienate||location[cursite]->siege.siege)
+      {
+         levelmap[locx][locy][locz].special=-1;
+      }
+      else
+      {
+         levelmap[locx][locy][locz].special=-1;
+         for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+         makecreature(encounter[0],CREATURE_BANK_TELLER);
+      }
+      break;
+   }
+   case 2: // special_bank_money()
+   {
+      levelmap[locx][locy][locz].special=-1;
+      activesquad->loot.push_back(new Money(20000));
+      sitecrime+=20;
+      if(postalarmtimer <= 80) bank_swat_counter = 0;
+      if(!sitealarm && sitealarmtimer!=0) sitealarmtimer=0;
+      else if(!sitealarm && !LCSrandom(2)) sitealarm=1;
+      else if(sitealarm && postalarmtimer <= 60) postalarmtimer += 20;
+      else if(sitealarm && postalarmtimer <= 80 && LCSrandom(2)) postalarmtimer = 81;
+      else if(sitealarm && postalarmtimer > 80 && LCSrandom(2) && bank_swat_counter < 2)
+      {
+         bank_swat_counter++;
+         int swatnum = 9;
+         for(int e=0;e<ENCMAX;e++)
+         {
+            if(!encounter[e].exists)
+            {
+               makecreature(encounter[e],CREATURE_SWAT);
+               swatnum--;
+               if(swatnum<=0) break;
+            }
+         }
+      }
+      break;
+   }
+   case 3: // special_oval_office()
+   {
+      for(int dx=-1; dx<=1; dx++)
+      for(int dy=-1; dy<=1; dy++)
+      {
+         if(levelmap[locx+dx][locy+dy][locz].special == SPECIAL_OVAL_OFFICE_NW ||
+            levelmap[locx+dx][locy+dy][locz].special == SPECIAL_OVAL_OFFICE_NE ||
+            levelmap[locx+dx][locy+dy][locz].special == SPECIAL_OVAL_OFFICE_SW ||
+            levelmap[locx+dx][locy+dy][locz].special == SPECIAL_OVAL_OFFICE_SE)
+            levelmap[locx+dx][locy+dy][locz].special = -1;
+      }
+      if(sitealarm)
+      {
+         for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+         for(int e=0;e<6;e++)makecreature(encounter[e],CREATURE_SECRET_SERVICE);
+      }
+      else
+      {
+         for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+         for(int e=0;e<2;e++)makecreature(encounter[e],CREATURE_SECRET_SERVICE);
+         encounter[2] = uniqueCreatures.President();
+         *opened_out = 1;
+      }
+      break;
+   }
+   default: // special_ccs_boss()
+   {
+      if(sitealarm||sitealienate||location[cursite]->siege.siege)
+      {
+         levelmap[locx][locy][locz].special=-1;
+         for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+         makecreature(encounter[0],CREATURE_CCS_ARCHCONSERVATIVE);
+         makecreature(encounter[1],CREATURE_CCS_VIGILANTE);
+         makecreature(encounter[2],CREATURE_CCS_VIGILANTE);
+         makecreature(encounter[3],CREATURE_CCS_VIGILANTE);
+         makecreature(encounter[4],CREATURE_CCS_VIGILANTE);
+         makecreature(encounter[5],CREATURE_CCS_VIGILANTE);
+      }
+      else
+      {
+         levelmap[locx][locy][locz].special=-1;
+         for(int e=0;e<ENCMAX;e++)encounter[e].exists=0;
+         makecreature(encounter[0],CREATURE_CCS_ARCHCONSERVATIVE);
+      }
+      break;
+   }
+   }
+}
+
+void probe_bank(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 67867979UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int which = 0; which < 5; which++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int grade = 0; grade < 4; grade++)
+      for (int room = 0; room < 3; room++)
+      for (int manager = 0; manager < 5; manager++)
+      for (int standing = 0; standing < 4; standing++)
+      {
+         unsigned long seed_used = 86028157UL * (unsigned long)
+            ((((((which * 3 + (crowd - 1)) * 4 + grade) * 3 + room) * 5
+              + manager) * 4 + standing) + scenario * 1201 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 11 + scenario * 3) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+         for (int e = 0; e < EXECNUM; e++)
+         {
+            exec[e] = ((e + scenario) % 5) - 2;
+            strcpy(execname[e], e == EXEC_PRESIDENT ? "Alex Bannerman"
+                                                    : "Sam Whitlock");
+         }
+         presparty = CONSERVATIVE_PARTY;
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+         bank_swat_counter = 0;
+
+         // The President is remade for each sample so the draws that build
+         // him are inside the measured window only where the sample uses him.
+         uniqueCreatures.initialize();
+
+         cursite = 1;
+         location[cursite]->type = which == 3 ? SITE_GOVERNMENT_WHITE_HOUSE
+                                : which == 4 ? SITE_BUSINESS_BARANDGRILL
+                                             : SITE_BUSINESS_BANK;
+         location[cursite]->highsecurity = 0;
+         // A police siege still criminalises; a CCS siege does not, which is
+         // the one rule the vault's charge sheet turns on.
+         location[cursite]->siege.siege = (standing >= 2) ? 1 : 0;
+         location[cursite]->siege.siegetype = (standing == 3) ? SIEGE_CCS
+                                                              : SIEGE_POLICE;
+         sitealarm = (standing >= 1) ? 1 : 0;
+         sitealienate = (standing >= 2) ? 1 : 0;
+         sitealarmtimer = (standing >= 1) ? 5 : -1;
+         postalarmtimer = (standing >= 2) ? 81 : (standing == 1 ? 61 : 0);
+         sitecrime = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+         levelmap[locx][locy][locz].flag = SITEBLOCK_DOOR;
+         levelmap[locx+1][locy][locz].flag = SITEBLOCK_DOOR;
+         levelmap[locx-1][locy][locz].flag = SITEBLOCK_DOOR;
+         levelmap[locx][locy+1][locz].flag = SITEBLOCK_DOOR;
+         levelmap[locx][locy-1][locz].flag = SITEBLOCK_DOOR;
+         levelmap[locx][locy][locz].special = 1;
+         // The Oval Office is drawn across four squares; two of them are put
+         // beside the squad so the clearing loop has something to do.
+         levelmap[locx+1][locy][locz].special = SPECIAL_OVAL_OFFICE_NE;
+         levelmap[locx][locy+1][locz].special = SPECIAL_OVAL_OFFICE_SW;
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         ns->claimed = 0;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         Creature *hostage = NULL;
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            // One of the squad is a bank manager when the sample says so.
+            makecreature(*cr, (manager == 1 || manager == 2) && n == 0
+                              ? CREATURE_BANK_MANAGER
+                              : CREATURE_POLITICALACTIVIST);
+            cr->id = 960000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            cr->joindays = manager == 2 ? 90 : 3;
+            cr->juice = 20 * (n + grade);
+            cr->set_skill(SKILL_SECURITY, (grade * 3 + n) % 12);
+            cr->set_skill(SKILL_COMPUTERS, (grade * 4 + n) % 14);
+            cr->set_skill(SKILL_STEALTH, (grade + n) % 8);
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+         if (manager == 3)
+         {
+            hostage = new Creature;
+            makecreature(*hostage, CREATURE_BANK_MANAGER);
+            hostage->id = 960050;
+            sq->squad[0]->prisoner = hostage;
+         }
+         if (manager == 4)
+         {
+            Creature *asleep = new Creature;
+            makecreature(*asleep, CREATURE_BANK_MANAGER);
+            asleep->id = 960060;
+            asleep->align = ALIGN_LIBERAL;
+            asleep->flag |= CREATUREFLAG_SLEEPER;
+            asleep->location = asleep->base = cursite;
+            asleep->activity.type = ACTIVITY_SLEEPER_STEAL;
+            pool.push_back(asleep);
+         }
+
+         for (int n = 0; n < room; n++)
+         {
+            makecreature(encounter[n], CREATURE_WORKER_SECRETARY);
+            encounter[n].exists = 1;
+            encounter[n].align = ALIGN_CONSERVATIVE;
+            encounter[n].id = 960100 + n;
+         }
+
+         // Emptying a vault takes as many trips as the squad has hands; the
+         // grade decides how many the sample makes.
+         int trips = which == 2 ? grade + 1 : 1;
+
+         fprintf(out, "{\"kind\":\"bank\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"which\":%d,\"crowd\":%d,\"grade\":%d,"
+                      "\"room_count\":%d,\"manager\":%d,\"standing\":%d,"
+                      "\"trips\":%d,\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, which, crowd, grade, room, manager,
+                 standing, trips, run_seed, cursite);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"room\":[", out);
+         for (int n = 0; n < room; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, encounter[n], true);
+         }
+         fputs("],\"hostage\":", out);
+         if (hostage) chase_write_creature(out, *hostage, true);
+         else fputs("null", out);
+         fputs(",\"sleeper\":", out);
+         if (manager == 4)
+            chase_write_creature(out, *pool[len(pool)-1], true);
+         else fputs("null", out);
+         fputs(",\"president\":", out);
+         chase_write_creature(out, uniqueCreatures.President(), true);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int opened = 0;
+         long long before = lcs_trace_draw_count();
+         for (int t = 0; t < trips; t++) bank_block(which, &opened);
+
+         int encount = 0;
+         for (int e = 0; e < ENCMAX; e++) if (encounter[e].exists) encount++;
+         long cash = 0;
+         for (int i = 0; i < len(activesquad->loot); i++)
+            if (activesquad->loot[i]->is_money())
+               cash += static_cast<Money *>(activesquad->loot[i])->get_amount();
+
+         fprintf(out, ",\"draws\":%lld,\"opened\":%d,\"alarm\":%d,"
+                      "\"alarmtimer\":%d,\"postalarmtimer\":%d,\"crime\":%d,"
+                      "\"alienate\":%d,\"special\":%d,\"encounters\":%d,"
+                      "\"cash\":%ld,\"swat\":%d,\"doors\":[%d,%d,%d,%d,%d],"
+                      "\"neighbour_specials\":[%d,%d]",
+                 lcs_trace_draw_count() - before, opened, (int)sitealarm,
+                 (int)sitealarmtimer, (int)postalarmtimer, (int)sitecrime,
+                 (int)sitealienate, (int)levelmap[locx][locy][locz].special,
+                 encount, cash, bank_swat_counter,
+                 (int)(levelmap[locx][locy][locz].flag & SITEBLOCK_DOOR),
+                 (int)(levelmap[locx+1][locy][locz].flag & SITEBLOCK_DOOR),
+                 (int)(levelmap[locx-1][locy][locz].flag & SITEBLOCK_DOOR),
+                 (int)(levelmap[locx][locy+1][locz].flag & SITEBLOCK_DOOR),
+                 (int)(levelmap[locx][locy-1][locz].flag & SITEBLOCK_DOOR),
+                 (int)levelmap[locx+1][locy][locz].special,
+                 (int)levelmap[locx][locy+1][locz].special);
+         fputs(",\"crimes\":[", out);
+         for (int c = 0; c < len(ns->crime); c++)
+            fprintf(out, "%s%d", c ? "," : "", ns->crime[c]);
+         fputs("],\"encounter_types\":[", out);
+         {
+            int written = 0;
+            for (int e = 0; e < ENCMAX; e++)
+               if (encounter[e].exists)
+                  fprintf(out, "%s%d", written++ ? "," : "",
+                          encounter[e].type);
+         }
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"juice\":%d,\"security\":%d,\"computers\":%d,"
+                         "\"suspected\":[",
+                    (int)sq->squad[n]->juice,
+                    sq->squad[n]->get_skill(SKILL_SECURITY),
+                    sq->squad[n]->get_skill(SKILL_COMPUTERS));
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)sq->squad[n]->crimes_suspected[f]);
+            fputs("]}", out);
+         }
+         fputs("],\"sleeper_after\":", out);
+         if (manager == 4)
+         {
+            Creature *woken = NULL;
+            for (int p = 0; p < len(pool); p++)
+               if (pool[p]->id == 960060) woken = pool[p];
+            if (woken)
+               fprintf(out, "{\"base\":%d,\"location\":%d,\"sleeper\":%d,"
+                            "\"activity\":%d,\"robbery\":%d}",
+                       woken->base, woken->location,
+                       (woken->flag & CREATUREFLAG_SLEEPER) ? 1 : 0,
+                       woken->activity.type,
+                       (int)woken->crimes_suspected[LAWFLAG_BANKROBBERY]);
+            else fputs("null", out);
+         }
+         else fputs("null", out);
+         fputs("}\n", out);
+
+         for (int p = 0; p < 6; p++)
+            if (sq->squad[p]) sq->squad[p]->prisoner = NULL;
+         delete hostage;
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -9551,6 +9993,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "kidnap")) probe_kidnap(out);
    else if (!strcmp(which, "site_specials")) probe_site_specials(out);
    else if (!strcmp(which, "vaults")) probe_vaults(out);
+   else if (!strcmp(which, "bank")) probe_bank(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

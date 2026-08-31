@@ -32,6 +32,11 @@ var on_fire: bool = false
 ## How serious the visit has become, which is what a chase is scaled to.
 var crime_level: int = 0
 
+## How many SWAT teams the bank has sent in already. The original keeps this
+## in a function-static counter that it resets whenever the response clock is
+## still short, which amounts to once per robbery.
+var bank_swat_teams: int = 0
+
 ## How much the squad has upset the people who work here.
 var alienated: int = 0
 

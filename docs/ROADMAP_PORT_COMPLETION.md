@@ -779,9 +779,24 @@ Site construction is already strong; now port the gameplay that occurs inside th
       not — 3,456 samples compared on draw counts, the alarm and its clock, the
       crime sheet, who is left in the room, which unique guns are gone and
       every item carried out.
-  - [ ] The bank (`special_bank_vault()`, `special_bank_teller()`,
-      `special_bank_money()`), the oval office (`special_oval_office()`) and
-      the CCS boss (`special_ccs_boss()`).
+  - [x] The bank (`special_bank_vault()`, `special_bank_teller()`,
+      `special_bank_money()`) in `bank.gd`, and the Oval Office
+      (`special_oval_office()`) and the CCS leader (`special_ccs_boss()`) in
+      `dignitaries.gd`. The two people the game keeps a single copy of — the
+      chief executive and the President — are ported alongside them in
+      `core/systems/creature/uniques.gd`.
+    - **Original quirk preserved.** The vault's biometric lock falls through to
+      a scan of everybody based at the bank, which finds the squad's own
+      long-serving manager as readily as a sleeper still working there, moves
+      them to the squad's safehouse and books them for the robbery by hand —
+      bypassing `criminalize()`, so the charge sticks even where the law is not
+      prosecuting and it carries no heat.
+    - Verified by the `bank` probe: five things to walk into against three
+      squad sizes, four grades of skill, three rooms, five ways of having a
+      manager to hand, and four states of the building including a CCS siege —
+      10,800 samples compared on draw counts, both alarm clocks, the vault
+      door and its neighbours, who is in the room and what they are, the money
+      taken, how many SWAT teams came, and what became of the sleeper.
   - [ ] The door staff: `special_security()` and its three entry points,
       `special_bouncer_greet_squad()`, `special_bouncer_assess_squad()`.
       These are prompts before they are rules, so they land with the site loop.
