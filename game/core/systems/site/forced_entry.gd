@@ -15,7 +15,13 @@ extends RefCounted
 ## is not jammed and nobody is any the wiser.
 static func pick_lock(state: GameState, squad: Squad, at: Vector3i,
 		rng: Rng) -> Dictionary:
-	var difficulty := _lock_difficulty(state.site.type)
+	return pick_at(state, rng, squad, _lock_difficulty(state.site.type), at)
+
+
+## The same attempt against a lock that is not a door: a cage, a cell, an
+## armoury, a safe or a vault, each with a difficulty of its own.
+static func pick_at(state: GameState, rng: Rng, squad: Squad,
+		difficulty: int, at: Vector3i) -> Dictionary:
 	var candidates := _most_skilled(state, squad)
 	if candidates.is_empty():
 		return {"opened": false, "attempted": false, "creature": null,
@@ -115,13 +121,18 @@ static func _lock_difficulty(type: StringName) -> int:
 ##
 ## Nobody qualifies at zero: the original only looks for a picker among people
 ## who have the skill at all.
+## Whoever in the squad knows most about locks — which may be nothing at all.
+##
+## The original starts its best-so-far at -1 and collects everybody who equals
+## it, so a squad in which nobody has ever picked a lock still puts somebody
+## forward to fail. The list is empty only when nobody is left alive.
 static func _most_skilled(state: GameState, squad: Squad) -> Array[Creature]:
 	var best := -1
 	for member: Creature in state.squad_members(squad):
 		if member.alive and member.skills.get_value(&"security") > best:
 			best = member.skills.get_value(&"security")
 	var found: Array[Creature] = []
-	if best <= 0:
+	if best < 0:
 		return found
 	for member: Creature in state.squad_members(squad):
 		if member.alive and member.skills.get_value(&"security") == best:
