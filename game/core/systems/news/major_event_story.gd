@@ -80,7 +80,8 @@ static func write(state: GameState, rng: Rng, story: NewsStory) -> Dictionary:
 	var printed := {"headline": entry[0], "shape": entry[1]}
 	match String(entry[1]):
 		"story":
-			printed["slots"] = _words(state, rng, story)
+			printed["slots"] = words(state, rng, story.view,
+					story.positive != 0)
 		"book":
 			printed["title"] = _book(rng, story.positive != 0)
 		"ceo":
@@ -96,10 +97,12 @@ static func _book(rng: Rng, good: bool) -> String:
 			second[rng.below(second.size())]]
 
 
-## Dispatches to whichever of the written stories this is.
-static func _words(state: GameState, rng: Rng, story: NewsStory) -> Dictionary:
-	if story.positive != 0:
-		match String(story.view):
+## Dispatches to whichever of the written stories this is. A view the original
+## never wrote a story for returns an empty dictionary and draws nothing.
+static func words(state: GameState, rng: Rng, view: StringName,
+		good: bool) -> Dictionary:
+	if good:
+		match String(view):
 			"women": return MajorEventGood.women(rng)
 			"gay": return MajorEventGood.gay(rng)
 			"deathpenalty":
@@ -111,7 +114,7 @@ static func _words(state: GameState, rng: Rng, story: NewsStory) -> Dictionary:
 			"guncontrol": return MajorEventGood.gun_control(state, rng)
 			"prisons": return MajorEventGood.prisons(rng)
 		return {}
-	match String(story.view):
+	match String(view):
 		"deathpenalty": return MajorEventBad.death_penalty(state, rng)
 		"justices": return MajorEventBad.justices(rng)
 		"guncontrol": return MajorEventBad.gun_control(state, rng)

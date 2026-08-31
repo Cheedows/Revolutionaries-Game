@@ -744,7 +744,13 @@ Port from `src/news/` without coupling prose generation to state mutation.
     `MajorEventIndustry` and `MajorEventStory` for the world's own news,
     `SquadStory` for a raid, `NewsAds` and `Personals` for the advertisements
     around it, `StoryFiller` for the padding and `Dateline` for where a story
-    says it happened.
+    says it happened. The words are `MajorEventText` and the four files behind
+    it, `HeadlineText`, `MajorEventPageText`, `BroadcastText` and `AdText`.
+  - Verified word for word by the `newsprose` probe: every issue a major event
+    can be about, both slants and six settings of every law (576 samples),
+    compared on draw counts and then on the whole story as the original printed
+    it — which is the only way to check the clauses that turn on what the
+    country lets a newspaper say, and there are more than a hundred of them.
 - [x] Replace legacy ASCII/cutscene presentation rather than reproducing
     terminal rendering.
   - **Deliberate departure from the original, and the only one in the

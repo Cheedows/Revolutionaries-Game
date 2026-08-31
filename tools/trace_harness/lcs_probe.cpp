@@ -3359,6 +3359,58 @@ void probe_newspaper(FILE *out)
 }
 
 
+// The stories the world writes for itself. constructeventstory() is a thousand
+// lines of prose with a hundred draws threaded through it; the port keeps the
+// draws in core/ and the words in ui/adapters/, so this records both.
+void probe_newsprose(FILE *out)
+{
+   static char story[20000];
+   for (int scenario = 0; scenario < 2; scenario++)
+   {
+      unsigned long run_seed = 61200011UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_BASE;
+
+      for (int view = 0; view < VIEWNUM - 3; view++)
+      for (int positive = 0; positive < 2; positive++)
+      for (int shape = 0; shape < 6; shape++)
+      {
+         unsigned long seed_used = 2100013UL * (unsigned long)
+            (view * 256 + positive * 64 + shape + scenario * 517 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         // Every law at one of the five settings, walked so that each story's
+         // law-dependent clauses are all reached.
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + shape) % 5) - 2;
+         year = 2020 + shape;
+         presparty = (shape % 2) ? CONSERVATIVE_PARTY : LIBERAL_PARTY;
+
+         fprintf(out, "{\"kind\":\"newsprose\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"view\":%d,\"positive\":%d,\"shape\":%d,\"year\":%d,"
+                      "\"presparty\":%d,\"law\":[",
+                 scenario, seed_used, view, positive, shape, year, presparty);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         constructeventstory(story, view, positive);
+         fprintf(out, ",\"draws\":%lld,\"text\":", lcs_trace_draw_count() - before);
+         write_string(out, story);
+         fputs("}\n", out);
+      }
+   }
+}
+
+
 // The filler every printed story is padded with. It is nothing but rows of
 // tildes on the screen, and it is most of what the newspaper takes out of the
 // sequence, so it gets a probe of its own.
@@ -14259,6 +14311,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "newspaper")) probe_newspaper(out);
    else if (!strcmp(which, "newsread")) probe_newsread(out);
    else if (!strcmp(which, "filler")) probe_filler(out);
+   else if (!strcmp(which, "newsprose")) probe_newsprose(out);
    else if (!strcmp(which, "cartheft")) probe_cartheft(out);
    else if (!strcmp(which, "dating")) probe_dating(out);
    else if (!strcmp(which, "interrogation")) probe_interrogation(out);
