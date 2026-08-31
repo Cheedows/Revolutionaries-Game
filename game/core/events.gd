@@ -52,6 +52,7 @@ const SAFEHOUSE_UPGRADED := &"safehouse_upgraded"    # {location, upgrade}
 const COMPUTER_HACKED := &"computer_hacked"          # {creature, machine}
 const COMPUTER_RESISTED := &"computer_resisted"      # {creature, machine}
 const PRISONERS_FREED := &"prisoners_freed"          # {count, wing}
+const JURY_SWAYED := &"jury_swayed"                  # {creature, caught}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

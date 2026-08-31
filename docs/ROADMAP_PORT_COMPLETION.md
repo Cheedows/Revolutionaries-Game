@@ -751,7 +751,44 @@ Site construction is already strong; now port the gameplay that occurs inside th
     at three stages of suspicion. Compared on draw counts, the alarm, the
     suspicion countdown and what each Liberal learned.
 - [x] Restricted areas/doors/locks/security behavior.
-- [ ] Site specials and interaction rules from `mapspecials.cpp`.
+- [ ] Site specials and interaction rules from `mapspecials.cpp`, in
+    `core/systems/site/specials/`. Each is transcribed with its prompt answered
+    and the display taken out, because several of the original's rolls sit in
+    the middle of the printing.
+  - [x] Wrecking the fittings (`special_sweatshop_equipment()`,
+      `special_polluter_equipment()`, `special_display_case()`,
+      `special_graffiti()`), the two cages
+      (`special_lab_cosmetics_cagedanimals()`,
+      `special_lab_genetic_cagedanimals()`) and the reactor
+      (`special_nuclear_onoff()`), in `vandalism.gd`, `cages.gd` and
+      `reactor.gd`. Verified by the `site_specials` probe: seven acts against
+      three squad sizes, four grades of skill, three rooms, nuclear power
+      banned or not and a building with real security or without.
+  - [x] Emptying the cells (`special_policestation_lockup()`,
+      `special_courthouse_lockup()`, `special_prison_control()`) and the
+      intelligence archive (`special_intel_supercomputer()`), in `lockups.gd`,
+      `prison_control.gd` and `supercomputer.gd`, sharing the room-filling loop
+      in `prisoner_rescue.gd`. Verified by the `lockup` and `prison_control`
+      probes.
+  - [x] The jury (`special_courthouse_jury()`), the armoury
+      (`special_armory()`) and both safes (`special_corporate_files()`,
+      `special_house_photos()`), in `jury.gd`, `armory.gd` and `safes.gd`.
+      Verified by the `vaults` probe: four acts against three squad sizes, four
+      grades of skill, three rooms, an army base or a corporate headquarters,
+      the two unique guns already taken or not, and a squad already noticed or
+      not — 3,456 samples compared on draw counts, the alarm and its clock, the
+      crime sheet, who is left in the room, which unique guns are gone and
+      every item carried out.
+  - [ ] The bank (`special_bank_vault()`, `special_bank_teller()`,
+      `special_bank_money()`), the oval office (`special_oval_office()`) and
+      the CCS boss (`special_ccs_boss()`).
+  - [ ] The door staff: `special_security()` and its three entry points,
+      `special_bouncer_greet_squad()`, `special_bouncer_assess_squad()`.
+      These are prompts before they are rules, so they land with the site loop.
+  - [ ] `special_readsign()`, which is presentation, and the two broadcast
+      studios (`special_radio_broadcaststudio()`,
+      `special_news_broadcaststudio()`), which wait on Gate D's
+      `radio_broadcast()`/`news_broadcast()`.
 - [ ] Dialogue/talk/persuasion/intimidation/recruit-like site interactions.
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.

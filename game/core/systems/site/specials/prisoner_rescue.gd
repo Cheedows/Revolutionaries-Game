@@ -116,13 +116,13 @@ static func _ordered(state: GameState) -> Array[Creature]:
 ## prison wing in a country that has all but abolished the death penalty can
 ## therefore empty the entire building.
 static func fill_the_room(state: GameState, rng: Rng, wanted: int,
-		catalog: Catalog) -> int:
+		catalog: Catalog, who: StringName = &"CREATURE_PRISONER") -> int:
 	var left := wanted
 	var made := 0
 	for slot in Encounters.MAX:
 		if state.site.encounter_ids.size() >= Encounters.MAX:
 			break
-		var stranger := CreatureSpawn.spawn(state, rng, &"CREATURE_PRISONER",
+		var stranger := CreatureSpawn.spawn(state, rng, who,
 				state.site.location, catalog)
 		if stranger != null:
 			state.add_creature(stranger)

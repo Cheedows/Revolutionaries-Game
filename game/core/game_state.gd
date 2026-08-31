@@ -57,6 +57,11 @@ var next_creature_id: int = 1
 var next_squad_id: int = 1
 var next_vehicle_id: int = 1
 
+## Whether the one squad machine gun and the one hand cannon in the game have
+## already been taken. The original keeps each in a global of its own.
+var machinegun_taken: bool = false
+var deagle_taken: bool = false
+
 ## How many constitutional amendments have passed. The two that repeal the
 ## constitution set it to one: everything before them is void.
 var amendments: int = 0

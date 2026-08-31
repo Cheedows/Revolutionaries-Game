@@ -7466,6 +7466,476 @@ void probe_site_specials(FILE *out)
    }
 }
 
+// Cash is written by its amount: the original keeps that separate from the
+// stack count, and the port keeps it in the count.
+static void vault_write_loot(FILE *out, vector<Item *> &pile)
+{
+   for (int i = 0; i < len(pile); i++)
+   {
+      fprintf(out, "%s{\"type\":", i ? "," : "");
+      write_string(out, pile[i]->get_itemtypename().c_str());
+      if (pile[i]->is_money())
+         fprintf(out, ",\"money\":1,\"number\":%ld",
+                 static_cast<Money *>(pile[i])->get_amount());
+      else
+         fprintf(out, ",\"money\":0,\"number\":%ld", pile[i]->get_number());
+      if (pile[i]->is_weapon())
+      {
+         Weapon *w = static_cast<Weapon *>(pile[i]);
+         fprintf(out, ",\"ammo\":%d", w->get_ammoamount());
+      }
+      fputs("}", out);
+   }
+}
+
+// Safes, armouries and juries: the specials that hand out equipment or
+// argue with strangers. Each is transcribed from src/sitemode/mapspecials.cpp
+// with the prompt answered yes and the display taken out.
+static void vault_block(int which, int *opened_out)
+{
+   *opened_out = 0;
+   char actual = 0;
+   switch(which)
+   {
+   case 0: // special_courthouse_jury()
+   {
+      if(sitealarm||sitealienate) return;
+      levelmap[locx][locy][locz].special=-1;
+      char succeed=0;
+      int maxattack=0;
+      int maxp=-1;
+      for(int p=0;p<6;p++)
+      {
+         if(activesquad->squad[p]!=NULL&&activesquad->squad[p]->alive)
+         {
+            if(activesquad->squad[p]->get_attribute(ATTRIBUTE_CHARISMA,true)+
+               activesquad->squad[p]->get_attribute(ATTRIBUTE_INTELLIGENCE,true)+
+               activesquad->squad[p]->get_skill(SKILL_PERSUASION)+
+               activesquad->squad[p]->get_skill(SKILL_LAW)>maxattack)
+            {
+               maxattack = activesquad->squad[p]->get_attribute(ATTRIBUTE_CHARISMA,true)+
+                           activesquad->squad[p]->get_attribute(ATTRIBUTE_INTELLIGENCE,true)+
+                           activesquad->squad[p]->get_skill(SKILL_PERSUASION)+
+                           activesquad->squad[p]->get_skill(SKILL_LAW);
+               maxp = p;
+            }
+         }
+      }
+      if(maxp > -1)
+      {
+         int p=maxp;
+         activesquad->squad[p]->train(SKILL_PERSUASION,20);
+         activesquad->squad[p]->train(SKILL_LAW,20);
+         if(activesquad->squad[p]->skill_check(SKILL_PERSUASION,DIFFICULTY_HARD) &&
+            activesquad->squad[p]->skill_check(SKILL_LAW,DIFFICULTY_CHALLENGING))succeed=1;
+         if(succeed)
+         {
+            LCSrandom(16);
+            alienationcheck(0);
+            noticecheck(-1);
+            addjuice(*(activesquad->squad[p]),25,200);
+            *opened_out = 1;
+         }
+         else
+         {
+            int numleft=12;
+            for(int e=0;e<ENCMAX;e++)
+            {
+               if(!encounter[e].exists)
+               {
+                  makecreature(encounter[e],CREATURE_JUROR);
+                  numleft--;
+               }
+               if(numleft==0)break;
+            }
+            sitealarm=1;
+            sitealienate=2;
+            sitecrime+=10;
+            sitestory->crime.push_back(CRIME_JURYTAMPERING);
+            criminalizeparty(LAWFLAG_JURY);
+         }
+      }
+      break;
+   }
+   case 1: // special_armory()
+   {
+      sitealarm=1;
+      bool empty=true;
+      Item *it;
+      if(m249==false && location[cursite]->type == SITE_GOVERNMENT_ARMYBASE)
+      {
+         Weapon* de=new Weapon(*weapontype[getweapontype("WEAPON_M249_MACHINEGUN")]);
+         Clip r(*cliptype[getcliptype("CLIP_DRUM")]);
+         de->reload(r);
+         activesquad->loot.push_back(de);
+         it=new Clip(*cliptype[getcliptype("CLIP_DRUM")],9);
+         activesquad->loot.push_back(it);
+         m249=true;
+         empty=false;
+      }
+      if(LCSrandom(2))
+      {
+         int num = 0;
+         do
+         {
+            Weapon* de=new Weapon(*weapontype[getweapontype("WEAPON_AUTORIFLE_M16")]);
+            Clip r(*cliptype[getcliptype("CLIP_ASSAULT")]);
+            de->reload(r);
+            activesquad->loot.push_back(de);
+            it=new Clip(*cliptype[getcliptype("CLIP_ASSAULT")],5);
+            activesquad->loot.push_back(it);
+            num++;
+         } while(num<2 || (LCSrandom(2) && num<5));
+         empty=false;
+      }
+      if(LCSrandom(2))
+      {
+         int num = 0;
+         do
+         {
+            Weapon* de=new Weapon(*weapontype[getweapontype("WEAPON_CARBINE_M4")]);
+            Clip r(*cliptype[getcliptype("CLIP_ASSAULT")]);
+            de->reload(r);
+            activesquad->loot.push_back(de);
+            it=new Clip(*cliptype[getcliptype("CLIP_ASSAULT")],5);
+            activesquad->loot.push_back(it);
+            num++;
+         } while(num<2 || (LCSrandom(2) && num<5));
+         empty=false;
+      }
+      if(LCSrandom(2))
+      {
+         int num = 0;
+         do
+         {
+            Armor* de;
+            if(location[cursite]->type == SITE_GOVERNMENT_ARMYBASE)
+               de=new Armor(*armortype[getarmortype("ARMOR_ARMYARMOR")]);
+            else
+               de=new Armor(*armortype[getarmortype("ARMOR_CIVILLIANARMOR")]);
+            activesquad->loot.push_back(de);
+            num++;
+         } while(num<2 || (LCSrandom(2) && num<5));
+         empty=false;
+      }
+      if(empty)
+      {
+         criminalizeparty(LAWFLAG_TREASON);
+         int numleft=LCSrandom(8)+2;
+         for(int e=0;e<ENCMAX;e++)
+         {
+            if(!encounter[e].exists)
+            {
+               if(location[cursite]->type == SITE_GOVERNMENT_ARMYBASE)
+                  makecreature(encounter[e],CREATURE_SOLDIER);
+               else
+                  makecreature(encounter[e],CREATURE_MERC);
+               numleft--;
+            }
+            if(numleft==0)break;
+         }
+      }
+      else
+      {
+         juiceparty(50,1000);
+         sitecrime+=40;
+         sitestory->crime.push_back(CRIME_ARMORY);
+         criminalizeparty(LAWFLAG_THEFT);
+         criminalizeparty(LAWFLAG_TREASON);
+         int time=20+LCSrandom(10);
+         if(time<1)time=1;
+         if(sitealarmtimer>time||sitealarmtimer==-1)sitealarmtimer=time;
+         int numleft=LCSrandom(4)+2;
+         for(int e=0;e<ENCMAX;e++)
+         {
+            if(!encounter[e].exists)
+            {
+               if(location[cursite]->type == SITE_GOVERNMENT_ARMYBASE)
+                  makecreature(encounter[e],CREATURE_SOLDIER);
+               else
+                  makecreature(encounter[e],CREATURE_MERC);
+               numleft--;
+            }
+            if(numleft==0)break;
+         }
+         *opened_out = 1;
+      }
+      alienationcheck(0);
+      noticecheck(-1);
+      levelmap[locx][locy][locz].special=-1;
+      break;
+   }
+   case 2: // special_corporate_files()
+   {
+      if(unlock(UNLOCK_SAFE,actual))
+      {
+         Item *it=new Loot(*loottype[getloottype("LOOT_CORPFILES")]);
+         activesquad->loot.push_back(it);
+         it=new Loot(*loottype[getloottype("LOOT_CORPFILES")]);
+         activesquad->loot.push_back(it);
+         juiceparty(50,1000);
+         sitecrime+=40;
+         int time=20+LCSrandom(10);
+         if(time<1)time=1;
+         if(sitealarmtimer>time||sitealarmtimer==-1)sitealarmtimer=time;
+         *opened_out = 1;
+      }
+      if(actual)
+      {
+         alienationcheck(0);
+         noticecheck(-1);
+         levelmap[locx][locy][locz].special=-1;
+         sitecrime+=3;
+         sitestory->crime.push_back(CRIME_CORP_FILES);
+         criminalizeparty(LAWFLAG_THEFT);
+      }
+      break;
+   }
+   default: // special_house_photos()
+   {
+      if(unlock(UNLOCK_SAFE,actual))
+      {
+         bool empty=true;
+         Item *it;
+         if(deagle==false)
+         {
+            Weapon* de=new Weapon(*weapontype[getweapontype("WEAPON_DESERT_EAGLE")]);
+            Clip r(*cliptype[getcliptype("CLIP_50AE")]);
+            de->reload(r);
+            activesquad->loot.push_back(de);
+            it=new Clip(*cliptype[getcliptype("CLIP_50AE")],9);
+            activesquad->loot.push_back(it);
+            deagle=true;
+            empty=false;
+         }
+         if(LCSrandom(2))
+         {
+            it=new Money(1000*(1+LCSrandom(10)));
+            activesquad->loot.push_back(it);
+            empty=false;
+         }
+         if(LCSrandom(2))
+         {
+            it=new Loot(*loottype[getloottype("LOOT_EXPENSIVEJEWELERY")],3);
+            activesquad->loot.push_back(it);
+            empty=false;
+         }
+         if(!LCSrandom(3))
+         {
+            it=new Loot(*loottype[getloottype("LOOT_CEOPHOTOS")]);
+            activesquad->loot.push_back(it);
+            empty=false;
+         }
+         if(!LCSrandom(3)) empty=false;
+         if(!LCSrandom(3))
+         {
+            it=new Loot(*loottype[getloottype("LOOT_CEOLOVELETTERS")]);
+            activesquad->loot.push_back(it);
+            empty=false;
+         }
+         if(!LCSrandom(3))
+         {
+            it=new Loot(*loottype[getloottype("LOOT_CEOTAXPAPERS")]);
+            activesquad->loot.push_back(it);
+            empty=false;
+         }
+         if(!empty)
+         {
+            juiceparty(50,1000);
+            sitecrime+=40;
+            sitestory->crime.push_back(CRIME_HOUSE_PHOTOS);
+            criminalizeparty(LAWFLAG_THEFT);
+            int time=20+LCSrandom(10);
+            if(time<1)time=1;
+            if(sitealarmtimer>time||sitealarmtimer==-1)sitealarmtimer=time;
+            *opened_out = 1;
+         }
+      }
+      if(actual)
+      {
+         alienationcheck(0);
+         noticecheck(-1);
+         levelmap[locx][locy][locz].special=-1;
+      }
+      break;
+   }
+   }
+}
+
+void probe_vaults(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 32452843UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int which = 0; which < 4; which++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int grade = 0; grade < 4; grade++)
+      for (int room = 0; room < 3; room++)
+      for (int army = 0; army < 2; army++)
+      for (int taken = 0; taken < 2; taken++)
+      for (int noticed = 0; noticed < 2; noticed++)
+      {
+         unsigned long seed_used = 15485863UL * (unsigned long)
+            (((((((which * 3 + (crowd - 1)) * 4 + grade) * 3 + room) * 2
+              + army) * 2 + taken) * 2 + noticed) + scenario * 991 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 17 + scenario * 5) % 101;
+            public_interest[v] = (v * 3) % 40;
+            background_liberal_influence[v] = 0;
+         }
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         deagle = taken ? true : false;
+         m249 = taken ? true : false;
+
+         cursite = 1;
+         location[cursite]->type = army ? SITE_GOVERNMENT_ARMYBASE
+                                        : SITE_CORPORATE_HEADQUARTERS;
+         location[cursite]->highsecurity = 0;
+         sitealarm = (which == 0 && noticed) ? 1 : 0;
+         sitealarmtimer = -1;
+         sitecrime = 0;
+         sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+         levelmap[locx][locy][locz].flag = 0;
+         levelmap[locx][locy][locz].special = 1;
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         ns->claimed = 0;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_LAWYER);
+            cr->id = 970000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            cr->juice = 20 * (n + grade);
+            cr->set_skill(SKILL_SECURITY, (grade * 3 + n) % 12);
+            cr->set_skill(SKILL_PERSUASION, (grade * 2 + n) % 10);
+            cr->set_skill(SKILL_LAW, (grade * 5 + n) % 13);
+            cr->set_skill(SKILL_STEALTH, (grade + n) % 8);
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+
+         for (int n = 0; n < room; n++)
+         {
+            makecreature(encounter[n], CREATURE_WORKER_SECRETARY);
+            encounter[n].exists = 1;
+            encounter[n].align = ALIGN_CONSERVATIVE;
+            encounter[n].id = 970100 + n;
+         }
+
+         fprintf(out, "{\"kind\":\"vaults\",\"scenario\":%d,"
+                      "\"seed\":%lu,\"which\":%d,\"crowd\":%d,\"grade\":%d,"
+                      "\"room_count\":%d,\"army\":%d,\"taken\":%d,"
+                      "\"noticed\":%d,\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, which, crowd, grade, room, army, taken,
+                 noticed, run_seed, cursite);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"room\":[", out);
+         for (int n = 0; n < room; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, encounter[n], true);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int opened = 0;
+         long long before = lcs_trace_draw_count();
+         vault_block(which, &opened);
+
+         int encount = 0;
+         for (int e = 0; e < ENCMAX; e++) if (encounter[e].exists) encount++;
+
+         fprintf(out, ",\"draws\":%lld,\"opened\":%d,\"alarm\":%d,"
+                      "\"alarmtimer\":%d,\"crime\":%d,\"alienate\":%d,"
+                      "\"special\":%d,\"encounters\":%d,\"deagle\":%d,"
+                      "\"m249\":%d",
+                 lcs_trace_draw_count() - before, opened, (int)sitealarm,
+                 (int)sitealarmtimer, (int)sitecrime, (int)sitealienate,
+                 (int)levelmap[locx][locy][locz].special, encount,
+                 deagle ? 1 : 0, m249 ? 1 : 0);
+         fputs(",\"crimes\":[", out);
+         for (int c = 0; c < len(ns->crime); c++)
+            fprintf(out, "%s%d", c ? "," : "", ns->crime[c]);
+         fputs("],\"loot\":[", out);
+         vault_write_loot(out, activesquad->loot);
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"juice\":%d,\"security\":%d,\"persuasion\":%d,"
+                         "\"law\":%d,\"suspected\":[",
+                    (int)sq->squad[n]->juice,
+                    sq->squad[n]->get_skill(SKILL_SECURITY),
+                    sq->squad[n]->get_skill(SKILL_PERSUASION),
+                    sq->squad[n]->get_skill(SKILL_LAW));
+            for (int f = 0; f < LAWFLAGNUM; f++)
+               fprintf(out, "%s%d", f ? "," : "",
+                       (int)sq->squad[n]->crimes_suspected[f]);
+            fputs("]}", out);
+         }
+         fputs("]}\n", out);
+
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -9080,6 +9550,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "election_day")) probe_election_day(out);
    else if (!strcmp(which, "kidnap")) probe_kidnap(out);
    else if (!strcmp(which, "site_specials")) probe_site_specials(out);
+   else if (!strcmp(which, "vaults")) probe_vaults(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else
