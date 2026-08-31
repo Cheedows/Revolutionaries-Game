@@ -51,6 +51,7 @@ const SQUAD_DISBANDED := &"squad_disbanded"          # {year}
 const SAFEHOUSE_UPGRADED := &"safehouse_upgraded"    # {location, upgrade}
 const SURGERY_DONE := &"surgery_done"                # {creature, augment, part}
 const SURGERY_BOTCHED := &"surgery_botched"          # {creature, augment, part}
+const SQUAD_ORDERED := &"squad_ordered"              # {squad, location}
 const SQUAD_TURNED_AWAY := &"squad_turned_away"      # {squad, location, reason}
 const SQUAD_MOVED_IN := &"squad_moved_in"            # {squad, location}
 const FLAG_RAISED := &"flag_raised"                  # {location}

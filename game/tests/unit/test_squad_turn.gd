@@ -148,6 +148,52 @@ func test_everybody_without_a_squad_goes_home() -> void:
 	equal(wanderer.location, home.id, "they went back to their base")
 
 
+func test_a_destination_can_be_picked_by_drilling_down() -> void:
+	var session := _a_game()
+	var squad := session.state.active_squad()
+	squad.travel_destination = -1
+
+	var asking: Variant = Destination.choose(session.state, squad)
+	check(asking is PendingIntent, "the picker asked something")
+	var intent := (asking as PendingIntent).intent
+	check(intent.options.size() > 0, "and offered the districts")
+
+	# Walk into the first district that has anything in it, then take the
+	# first place there that can be reached.
+	var district: Location = null
+	for option: Dictionary in intent.options:
+		var site: Location = session.state.locations.get(int(option["id"]))
+		if site != null and Destination.has_children(session.state, site):
+			district = site
+			break
+	if district == null:
+		fail("no district has anything in it")
+		return
+
+	var inside: Variant = (asking as PendingIntent).resume.call(district.id)
+	check(inside is PendingIntent, "the district opened")
+	var places := (inside as PendingIntent).intent.options
+	var picked := -1
+	for option: Dictionary in places:
+		if int(option["id"]) != Destination.UP and bool(option["enabled"]):
+			picked = int(option["id"])
+			break
+	if picked == -1:
+		fail("nowhere in the district can be reached")
+		return
+	(inside as PendingIntent).resume.call(picked)
+	equal(squad.travel_destination, picked, "the order was given")
+
+
+func test_the_picker_will_not_send_anybody_into_a_closed_building() -> void:
+	var session := _a_game()
+	var squad := session.state.active_squad()
+	var site := _find(session.state, &"business_juicebar")
+	site.closed = 5
+	check(not Destination.can_go(session.state, squad, site),
+			"a closed building is not a destination")
+
+
 func _has(events: Array, type: StringName) -> bool:
 	for event: Event in events:
 		if event.type == type:

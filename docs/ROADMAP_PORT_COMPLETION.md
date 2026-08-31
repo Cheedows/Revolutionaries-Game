@@ -1306,12 +1306,25 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     reads the book of names. `ui/screens/main.gd` is the only thing that knows
     what follows what.
 - [ ] Safehouse/base management screens beyond the current first pass.
+  - [x] The squad: `ui/widgets/squad_panel.gd` says who is in it and where it
+    is going, takes people in and drops them, and opens the destination picker
+    — `systems/base/destination.gd`, which ports `giveorders()`'s drill-down
+    through the districts with the places the organisation holds listed first,
+    then the Conservative Crime Squad's, then everywhere else, and will not
+    send anybody into a closed building or across town without a car.
+  - [ ] The compound, the flag, the slogan, the agenda and the funding report.
 - [ ] Creature dossier/equipment/squad management.
 - [ ] Activity assignment/recruitment interfaces.
 - [ ] Site/infiltration map view and interaction controls.
 - [ ] Combat presentation and target/action controls.
 - [ ] Chase presentation.
 - [ ] Shops/inventory/loot interfaces.
+  - [x] The counter itself: `systems/base/shop_visit.gd` walks the departments,
+    buys what is on the shelves and sells what the squad brought home, and the
+    car dealership sells one thing and buys one thing. It renders through the
+    same dialog as everything else.
+  - [ ] Picking single items out of the safehouse stores, and equipping a squad
+    from them.
 - [ ] News/newspaper/broadcast presentation.
 - [ ] Politics/agenda/review screens.
 - [ ] Justice/trial/prison presentation.

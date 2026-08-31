@@ -55,6 +55,14 @@ static func surrender_siege(session: Session, site: Location) -> void:
 	DispersalCheck.sweep_empty_squads(session.state)
 
 
+## Asks where the active squad is going.
+static func choose_destination(session: Session) -> void:
+	var squad := session.state.active_squad()
+	if squad == null or squad.member_ids.is_empty():
+		return
+	session.submit(Destination.choose(session.state, squad))
+
+
 ## Puts [param creature] on [param activity].
 static func assign_activity(session: Session, creature: Creature,
 		activity: StringName) -> Array[Event]:

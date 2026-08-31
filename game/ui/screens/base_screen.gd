@@ -18,6 +18,7 @@ var _session: Session
 var _status: StatusBar
 var _laws: LawList
 var _roster: Roster
+var _squad: SquadPanel
 var _log: LogView
 var _wait_button: Button
 var _run_button: Button
@@ -96,9 +97,15 @@ func _build() -> void:
 	columns.add_child(right)
 
 	_roster = Roster.new()
-	_roster.custom_minimum_size = Vector2(0, 200)
+	_roster.custom_minimum_size = Vector2(0, 170)
 	_roster.activity_chosen.connect(_on_activity_chosen)
 	right.add_child(_roster)
+
+	_squad = SquadPanel.new()
+	_squad.custom_minimum_size = Vector2(0, 150)
+	_squad.changed.connect(_refresh)
+	_squad.destination_wanted.connect(_choose_destination)
+	right.add_child(_squad)
 
 	_log = LogView.new()
 	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -202,3 +209,12 @@ func _refresh() -> void:
 	_status.refresh(_session.state)
 	_laws.refresh(_session.state)
 	_roster.refresh(_session.state)
+	_squad.refresh(_session.state)
+
+
+## Asks where the squad is going, through the same dialog as everything else.
+func _choose_destination() -> void:
+	if _session.is_waiting():
+		return
+	Commands.choose_destination(_session)
+	_settle()
