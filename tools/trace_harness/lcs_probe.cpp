@@ -6640,6 +6640,277 @@ static bool kidnap_block(Creature &a, Creature &t, bool &amateur)
 
 
 
+
+// The prison control panels and the supercomputer.
+static void prison_block(int which, int wing, int *freed_out, int *hacked_out)
+{
+   *freed_out = 0; *hacked_out = 0;
+   if(which == 0)
+   {
+      short prison_control_type = wing == 0 ? SPECIAL_PRISON_CONTROL_LOW
+                                : (wing == 1 ? SPECIAL_PRISON_CONTROL_MEDIUM
+                                             : SPECIAL_PRISON_CONTROL_HIGH);
+      int numleft=LCSrandom(8)+2;
+      if(prison_control_type==SPECIAL_PRISON_CONTROL_LOW)
+      {
+         switch(law[LAW_DEATHPENALTY])
+         {
+            case -1: numleft=LCSrandom(6)+2;break;
+            case -2: numleft=LCSrandom(3)+1;break;
+         }
+      }
+      else if(prison_control_type==SPECIAL_PRISON_CONTROL_MEDIUM)
+      {
+         switch(law[LAW_DEATHPENALTY])
+         {
+            case 2: numleft=LCSrandom(4)+1;
+            case 1: numleft=LCSrandom(6)+1;
+         }
+      }
+      else if(prison_control_type==SPECIAL_PRISON_CONTROL_HIGH)
+      {
+         switch(law[LAW_DEATHPENALTY])
+         {
+            case  2: numleft=0;break;
+            case  1: numleft=LCSrandom(4);break;
+            case -1: numleft+=LCSrandom(4);break;
+            case -2: numleft+=LCSrandom(4)+2;break;
+         }
+      }
+      *freed_out = numleft;
+
+      for(int e=0;e<ENCMAX;e++)
+      {
+         if(!encounter[e].exists)
+         {
+            makecreature(encounter[e],CREATURE_PRISONER);
+            numleft--;
+         }
+         if(numleft==0)break;
+      }
+
+      int time=20+LCSrandom(10);
+      if(time<1)time=1;
+      if(sitealarmtimer>time||sitealarmtimer==-1)sitealarmtimer=time;
+
+      partyrescue(prison_control_type);
+
+      alienationcheck(1);
+      noticecheck(-1);
+      levelmap[locx][locy][locz].special=-1;
+      sitecrime+=30;
+      juiceparty(50,1000);
+      sitestory->crime.push_back(CRIME_PRISON_RELEASE);
+      criminalizeparty(LAWFLAG_HELPESCAPE);
+      return;
+   }
+
+   // special_intel_supercomputer()
+   if(sitealarm||sitealienate) return;
+   char actual = 0;
+   if(hack(HACK_SUPERCOMPUTER,actual))
+   {
+      if(endgamestate>=ENDGAME_CCS_APPEARANCE && endgamestate < ENDGAME_CCS_DEFEATED && ccsexposure<CCSEXPOSURE_LCSGOTDATA)
+      {
+         Item *it=new Loot(*loottype[getloottype("LOOT_CCS_BACKERLIST")]);
+         activesquad->loot.push_back(it);
+         ccsexposure=CCSEXPOSURE_LCSGOTDATA;
+      }
+      juiceparty(50,1000);
+      Item *it=new Loot(*loottype[getloottype("LOOT_INTHQDISK")]);
+      activesquad->loot.push_back(it);
+      *hacked_out = 1;
+   }
+   if(actual)
+   {
+      int time=20+LCSrandom(10);
+      if(time<1)time=1;
+      if(sitealarmtimer>time||sitealarmtimer==-1)sitealarmtimer=time;
+      alienationcheck(1);
+      noticecheck(-1,DIFFICULTY_HARD);
+      levelmap[locx][locy][locz].special=-1;
+      sitecrime+=3;
+      sitestory->crime.push_back(CRIME_HACK_INTEL);
+      criminalizeparty(LAWFLAG_TREASON);
+   }
+}
+
+void probe_prison_control(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 86028121UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_SITE;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int which = 0; which < 2; which++)
+      for (int wing = 0; wing < 3; wing++)
+      for (int death = -2; death <= 2; death++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int grade = 0; grade < 4; grade++)
+      for (int endgame = 0; endgame < 3; endgame++)
+      {
+         if (which == 1 && wing > 0) continue;   // one machine, not three
+         unsigned long seed_used = 10500001UL * (unsigned long)
+            (((((which * 3 + wing) * 5 + (death + 2)) * 3 + (crowd - 1)) * 4
+              + grade) * 3 + endgame + scenario * 151 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         law[LAW_DEATHPENALTY] = death;
+         for (int v = 0; v < VIEWNUM; v++)
+         {
+            attitude[v] = (v * 13 + scenario * 7) % 101;
+            public_interest[v] = (v * 3) % 40;
+         }
+         endgamestate = endgame == 0 ? ENDGAME_NONE
+                      : (endgame == 1 ? ENDGAME_CCS_APPEARANCE
+                                      : ENDGAME_CCS_DEFEATED);
+         ccsexposure = CCSEXPOSURE_NONE;
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         delete_and_clear(newsstory);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         cursite = 1;
+         sitealarm = 0; sitealarmtimer = -1; sitecrime = 0; sitealienate = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+         levelmap[locx][locy][locz].flag = 0;
+         levelmap[locx][locy][locz].special = 1;
+
+         newsstoryst *ns = new newsstoryst;
+         ns->type = NEWSSTORY_SQUAD_SITE;
+         ns->loc = cursite;
+         newsstory.push_back(ns);
+         sitestory = ns;
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 991000 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = 2;
+            cr->juice = 20 * (n + grade);
+            cr->set_skill(SKILL_COMPUTERS, (grade * 5 + n) % 16);
+            cr->set_skill(SKILL_STEALTH, (grade + n) % 8);
+            // A blind hacker in one squad in four, so the handicap is real.
+            if (grade == 3 && n == 0)
+               cr->special[SPECIALWOUND_RIGHTEYE] = cr->special[SPECIALWOUND_LEFTEYE] = 0;
+            cr->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+            cr->squadid = sq->id;
+            sq->squad[n] = cr;
+            pool.push_back(cr);
+         }
+
+         // Two Liberals in the cells, one serving time and one condemned.
+         for (int n = 0; n < 2; n++)
+         {
+            Creature *cr = new Creature;
+            makecreature(*cr, CREATURE_POLITICALACTIVIST);
+            cr->id = 991100 + n;
+            cr->align = ALIGN_LIBERAL;
+            cr->location = cursite;
+            cr->base = cursite;
+            cr->squadid = -1;
+            cr->sentence = n ? -1 : 5;
+            cr->deathpenalty = n;
+            pool.push_back(cr);
+         }
+
+         fprintf(out, "{\"kind\":\"prison_control\",\"scenario\":%d,"
+                      "\"seed\":%lu,\"which\":%d,\"wing\":%d,\"death\":%d,"
+                      "\"crowd\":%d,\"grade\":%d,\"endgame\":%d,"
+                      "\"world_seed\":%lu,\"site\":%d",
+                 scenario, seed_used, which, wing, death, crowd, grade,
+                 endgame, run_seed, cursite);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"attitude\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", attitude[i]);
+         fputs("],\"interest\":[", out);
+         for (int i = 0; i < VIEWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", public_interest[i]);
+         fputs("],\"squad\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            chase_write_creature(out, *sq->squad[n], true);
+         }
+         fputs("],\"prisoners\":[", out);
+         for (int n = 0; n < 2; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"sentence\":%d,\"death\":%d,\"person\":",
+                    (int)pool[crowd + n]->sentence,
+                    (int)pool[crowd + n]->deathpenalty);
+            chase_write_creature(out, *pool[crowd + n], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int freed = 0, hacked = 0;
+         long long before = lcs_trace_draw_count();
+         prison_block(which, wing, &freed, &hacked);
+
+         int encounters = 0;
+         for (int e = 0; e < ENCMAX; e++) if (encounter[e].exists) encounters++;
+         int insquad = 0;
+         for (int p = 0; p < 6; p++) if (sq->squad[p]) insquad++;
+
+         fprintf(out, ",\"draws\":%lld,\"freed\":%d,\"hacked\":%d,"
+                      "\"alarm\":%d,\"alarmtimer\":%d,\"crime\":%d,"
+                      "\"alienate\":%d,\"encounters\":%d,\"insquad\":%d,"
+                      "\"exposure\":%d,\"loot\":%d",
+                 lcs_trace_draw_count() - before, freed, hacked,
+                 (int)sitealarm, (int)sitealarmtimer, (int)sitecrime,
+                 (int)sitealienate, encounters, insquad, ccsexposure,
+                 len(sq->loot));
+         fputs(",\"crimes\":[", out);
+         for (int c = 0; c < len(ns->crime); c++)
+            fprintf(out, "%s%d", c ? "," : "", ns->crime[c]);
+         fputs("],\"squad_after\":[", out);
+         for (int n = 0; n < crowd; n++)
+         {
+            if (n) fputs(",", out);
+            fprintf(out, "{\"juice\":%d,\"computers\":%d}",
+                    (int)sq->squad[n]->juice,
+                    sq->squad[n]->get_skill(SKILL_COMPUTERS));
+         }
+         fputs("]}\n", out);
+
+         for (int p = 0; p < 6; p++)
+            if (sq->squad[p]) sq->squad[p]->prisoner = NULL;
+         delete_and_clear(sq->loot);
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         delete_and_clear(newsstory);
+         sitestory = NULL;
+      }
+   }
+}
+
 // The cells: two to nine strangers, and whoever the squad has lost to this
 // building.
 static void lockup_block(int courthouse, int *opened_out)
@@ -8810,6 +9081,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "kidnap")) probe_kidnap(out);
    else if (!strcmp(which, "site_specials")) probe_site_specials(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
+   else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

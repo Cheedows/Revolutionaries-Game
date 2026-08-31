@@ -30,13 +30,7 @@ static func open(state: GameState, rng: Rng, squad: Squad, courthouse: bool,
 
 	if bool(result["opened"]):
 		var freed := rng.below(FREED_SPREAD) + FREED_BASE
-		for i in freed:
-			var stranger := CreatureSpawn.spawn(state, rng,
-					&"CREATURE_PRISONER", state.site.location, catalog)
-			if stranger == null:
-				continue
-			state.add_creature(stranger)
-			state.site.encounter_ids.append(stranger.id)
+		PrisonerRescue.fill_the_room(state, rng, freed, catalog)
 		SiteSpecials.credit(state, JUICE, JUICE_CAP)
 		state.site.crime_level += CELLS_CRIME
 		SiteSpecials.disturb(state, rng)

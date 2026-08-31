@@ -49,6 +49,9 @@ const CREATURE_CONVERTED := &"creature_converted"
 const CREATURE_LEFT := &"creature_left"
 const SQUAD_DISBANDED := &"squad_disbanded"          # {year}
 const SAFEHOUSE_UPGRADED := &"safehouse_upgraded"    # {location, upgrade}
+const COMPUTER_HACKED := &"computer_hacked"          # {creature, machine}
+const COMPUTER_RESISTED := &"computer_resisted"      # {creature, machine}
+const PRISONERS_FREED := &"prisoners_freed"          # {count, wing}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

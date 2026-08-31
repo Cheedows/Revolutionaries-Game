@@ -7,6 +7,9 @@ extends RefCounted
 ## the Liberal end.
 
 const ARCH_CONSERVATIVE := -2
+const CONSERVATIVE := -1
+const MODERATE := 0
+const LIBERAL := 1
 const ELITE_LIBERAL := 2
 
 var values: PackedInt32Array = PackedInt32Array()

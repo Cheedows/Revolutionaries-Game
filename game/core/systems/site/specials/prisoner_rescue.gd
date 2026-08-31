@@ -106,3 +106,29 @@ static func _ordered(state: GameState) -> Array[Creature]:
 			people.append(creature)
 	people.sort_custom(func(a: Creature, b: Creature) -> bool: return a.id < b.id)
 	return people
+
+
+## Puts [param wanted] strangers into the room, into whatever slots are free.
+##
+## **Original defect, reproduced.** The loop decrements its counter and then
+## tests it for zero, so asking for nobody at all fills every free slot in the
+## room instead: the counter goes negative and never equals zero again. A
+## prison wing in a country that has all but abolished the death penalty can
+## therefore empty the entire building.
+static func fill_the_room(state: GameState, rng: Rng, wanted: int,
+		catalog: Catalog) -> int:
+	var left := wanted
+	var made := 0
+	for slot in Encounters.MAX:
+		if state.site.encounter_ids.size() >= Encounters.MAX:
+			break
+		var stranger := CreatureSpawn.spawn(state, rng, &"CREATURE_PRISONER",
+				state.site.location, catalog)
+		if stranger != null:
+			state.add_creature(stranger)
+			state.site.encounter_ids.append(stranger.id)
+			made += 1
+		left -= 1
+		if left == 0:
+			break
+	return made
