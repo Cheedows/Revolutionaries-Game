@@ -125,3 +125,18 @@ func test_every_advertisement_and_broadcast_has_words() -> void:
 	check(BroadcastText.title_card(segment).begins_with("Tonight on"),
 			"and the cable news segment names its show")
 	equal(BroadcastText.cast(segment).size(), 2, "with two people on screen")
+
+
+func test_the_title_quotations_survived_the_move() -> void:
+	equal(TitleQuotes.QUOTES.size(), 32, "all thirty-two are here")
+	for quote: Array in TitleQuotes.QUOTES:
+		check(quote.size() >= 2, "each has a quotation and a name")
+		var attribution := String(quote[quote.size() - 1])
+		check(attribution.begins_with("—"),
+				"and the name is attributed: %s" % attribution)
+		for line: String in quote:
+			check(not line.contains("─"),
+					"with the box drawing turned into an em dash: %s" % line)
+	var rng := Rng.new(7)
+	check(TitleQuotes.pick(rng).size() >= 2, "and one can be picked")
+	equal(rng.draws, 1, "at the cost of one draw, as the original does")

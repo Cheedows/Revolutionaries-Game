@@ -1,9 +1,12 @@
 extends Control
 ## The first thing the game shows: start one, carry one on, or read the book.
 ##
-## The original's title screen is an ASCII cutscene and a menu of keys. The
-## cutscene is deliberately not ported — see Gate H of the roadmap — and the
-## menu is the same [IntentDialog] every other question uses.
+## The original's title screen is block-letter ASCII, one of thirty-two
+## quotations about disobeying the law, and a menu of keys. The lettering is
+## deliberately not ported — see Gate H of the roadmap — but the writing is:
+## the quotations are the only words in the game that are not about the game,
+## and they are worth keeping. The menu is the same [IntentDialog] every other
+## question uses.
 
 signal new_game_wanted
 signal loaded(session: Session)
@@ -17,6 +20,7 @@ const BACK := &"back"
 
 var _dialog: IntentDialog
 var _heading: Label
+var _epigraph: Label
 var _body: RichTextLabel
 var _listing := false
 
@@ -46,6 +50,7 @@ func _menu() -> void:
 		{"id": QUIT, "label": "Leave"},
 	]
 	_heading.text = "%s" % Branding.GAME_TITLE
+	_epigraph.visible = true
 	_dialog.ask(Intent.new(Intent.CHOOSE_BASE_ACTION, options, {}, false),
 			GameState.new())
 
@@ -59,6 +64,7 @@ func _list_saves() -> void:
 				"note": _when(about)})
 	options.append({"id": BACK, "label": "Back"})
 	_heading.text = "Saved games"
+	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.CHOOSE_BASE_ACTION, options, {}, false),
 			GameState.new())
 
@@ -84,6 +90,7 @@ func _show_scores() -> void:
 				int(lifetime.get("kills", 0)), int(lifetime.get("funds", 0))])
 	_body.text = "\n".join(lines)
 	_heading.text = "The book of names"
+	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.ACKNOWLEDGE_REPORT,
 			[{"id": BACK, "label": "Back"}] as Array[Dictionary], {}, false),
 			GameState.new())
@@ -150,6 +157,15 @@ func _build() -> void:
 	_heading = Label.new()
 	_heading.add_theme_color_override("font_color", Palette.ACCENT)
 	page.add_child(_heading)
+
+	# One of the original's thirty-two quotations, chosen afresh each time the
+	# menu is shown, as the original does.
+	_epigraph = Label.new()
+	_epigraph.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	_epigraph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_epigraph.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_epigraph.text = "\n".join(TitleQuotes.pick(Rng.new(randi())))
+	page.add_child(_epigraph)
 
 	_body = RichTextLabel.new()
 	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
