@@ -193,3 +193,12 @@ static func item_title(item: Item, catalog: Catalog) -> String:
 	if item.count > 1:
 		name += " x%d" % item.count
 	return name
+
+
+## What the player is told before they let somebody go for good.
+##
+## Both halves of the original's warning: a released Liberal with more sense
+## than heart may go to the police, and killing one is not a Liberal act.
+static func discharge_warning() -> String:
+	return "Releasing them is permanent, and if their heart is weak they " \
+			+ "may go to the police. Killing your own is Not a Liberal Act."

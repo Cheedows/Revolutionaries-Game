@@ -16,7 +16,8 @@ const WIDGET_DIR := "res://ui/widgets"
 const EMPTY_UNTIL_ASKED: Array[String] = [
 	"intent_dialog.gd", "panel_stack.gd", "dossier.gd", "agenda_panel.gd",
 	"safehouse_panel.gd", "newspaper_panel.gd", "stores_panel.gd",
-	"settings_panel.gd", "justice_panel.gd",
+	"settings_panel.gd", "justice_panel.gd", "sleeper_panel.gd",
+	"marshalling_panel.gd",
 ]
 
 

@@ -13,6 +13,8 @@ const PANEL_BUTTONS: Array = [
 	[PanelStack.PAPER, "The paper"],
 	[PanelStack.STORES, "The stores"],
 	[PanelStack.JUSTICE, "The courts"],
+	[PanelStack.SQUAD, "The squad"],
+	[PanelStack.SLEEPERS, "The sleepers"],
 	[PanelStack.SETTINGS, "Save & settings"],
 ]
 

@@ -137,7 +137,8 @@ static func flag(session: Session, site: Location, burning: bool) -> Array[Event
 	return FlagPole.buy(session.state, site)
 
 
-## Sets what the organisation shouts, and paints on walls.
+## Sets what the organisation shouts, and paints on walls. Ports getslogan()
+## from src/basemode/baseactions.cpp.
 static func set_slogan(session: Session, slogan: String) -> void:
 	session.state.slogan = slogan.strip_edges()
 
@@ -160,4 +161,47 @@ static func assign_base(session: Session, creature: Creature,
 		return refused
 	if BaseAssignment.assign(session.state, creature, site).is_empty():
 		return "They cannot be moved there."
+	return ""
+
+
+## Swaps two squad members' positions in the marching order.
+static func reorder_squad(session: Session, from: int, to: int) -> bool:
+	return SquadMarshalling.reorder(session.state.active_squad(), from, to)
+
+
+## Puts [param member] in a car, at the wheel or as a passenger.
+static func board(session: Session, member: Creature, vehicle_id: int,
+		driving: bool = false) -> void:
+	SquadMarshalling.board(member, vehicle_id, driving)
+
+
+## Takes [param member] back out of whatever they were riding in.
+static func disembark(session: Session, member: Creature) -> void:
+	SquadMarshalling.disembark(member)
+
+
+## Tells a sleeper what to spend the coming month on. Returns whether it took.
+static func order_sleeper(session: Session, sleeper: Creature,
+		activity: StringName) -> bool:
+	return SleeperOrders.give(session.state, sleeper, activity)
+
+
+## Lets [param creature] go for good. Returns why not, or "".
+static func release(session: Session, creature: Creature) -> String:
+	var refused := Discharge.refused(session.state, creature)
+	if refused != "":
+		return refused
+	session.emit(Discharge.release(session.state, session.rng, creature))
+	return ""
+
+
+## Has [param creature]'s contact kill them. Returns why not, or "".
+static func execute(session: Session, creature: Creature) -> String:
+	var refused := Discharge.refused(session.state, creature)
+	if refused != "":
+		return refused
+	var boss: Creature = session.state.creatures.get(creature.hire_id)
+	if boss.location != creature.location:
+		return "They are not in the same place."
+	session.emit(Discharge.execute(session.state, session.rng, creature))
 	return ""

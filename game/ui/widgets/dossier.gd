@@ -90,6 +90,7 @@ func _refresh() -> void:
 	_line("Reports to %s." % (contact.name if contact != null
 			else "nobody but themselves"))
 	_body.add_child(_promote_row())
+	_body.add_child(_discharge_row())
 
 	_heading("Carrying")
 	for line in DossierText.carrying(_creature, _session.catalog):
@@ -169,6 +170,43 @@ func _promote_row() -> Control:
 		_refresh())
 	row.add_child(promote)
 	return row
+
+
+## Leaving the LCS, either way. Both are irreversible, so both are asked twice.
+func _discharge_row() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var refused := Discharge.refused(_session.state, _creature)
+	var label := Label.new()
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.text = refused if refused != "" else DossierText.discharge_warning()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	row.add_child(label)
+	row.add_child(_confirming("Release", refused, func() -> void:
+		Commands.release(_session, _creature)))
+	row.add_child(_confirming("Have them killed", refused, func() -> void:
+		Commands.execute(_session, _creature)))
+	return row
+
+
+## A button that asks once, then does it.
+func _confirming(text: String, refused: String, act: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.disabled = refused != ""
+	button.toggle_mode = true
+	button.toggled.connect(func(pressed: bool) -> void:
+		if not pressed:
+			button.text = text
+			return
+		if button.text == text:
+			button.text = "%s — sure?" % text
+			return
+		act.call()
+		closed.emit()
+		changed.emit())
+	return button
 
 
 func _buttons() -> Control:

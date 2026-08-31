@@ -78,6 +78,8 @@ static func drop_what_they_cannot_hold(state: GameState, victim: Creature,
 
 ## Which of the original's death descriptions this one gets.
 ##
+## Ports adddeathmessage() from src/combat/fight.cpp.
+##
 ## Only ever a phrase, but the choice is a draw and the fight is not the same
 ## afterwards if it is skipped — so the index is rolled here and handed to
 ## whatever does the describing.

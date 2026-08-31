@@ -51,7 +51,7 @@ static func disband(state: GameState) -> Array[Event]:
 			continue
 		creature.squad_id = 0
 		creature.hiding = INDEFINITELY
-	_clear_empty_squads(state)
+	clear_empty_squads(state)
 	state.disbanded = true
 	state.disband_year = state.calendar.year
 	events.append(Event.new(Event.SQUAD_DISBANDED,
@@ -86,7 +86,7 @@ static func is_forgotten(state: GameState) -> bool:
 
 
 ## Squads nobody is left in.
-static func _clear_empty_squads(state: GameState) -> void:
+static func clear_empty_squads(state: GameState) -> void:
 	for id: int in state.squads.keys():
 		var squad: Squad = state.squads[id]
 		var members := PackedInt32Array()
