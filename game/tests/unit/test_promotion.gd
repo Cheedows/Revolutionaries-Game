@@ -103,3 +103,50 @@ func test_a_house_nobody_holds_is_not_given_up() -> void:
 
 	SiegeSurrender.surrender_everywhere(state, Rng.new(1))
 	check(siege.active, "there is nothing there to surrender")
+
+
+func test_somebody_can_be_moved_to_another_safehouse() -> void:
+	var state := GameState.new()
+	var first := _safehouse(state, 1, "The flat")
+	var second := _safehouse(state, 2, "The shop")
+	var person := _person(state, "Mo", -1)
+	person.base = first.id
+	person.location = first.id
+
+	equal(BaseAssignment.refused(state, person), "", "they are free to move")
+	BaseAssignment.assign(state, person, second)
+	equal(person.base, second.id, "they live at the shop now")
+	equal(person.location, second.id, "and that is where they are")
+
+
+func test_somebody_out_with_the_squad_stays_with_it() -> void:
+	var state := GameState.new()
+	var house := _safehouse(state, 1, "The flat")
+	var squad := Squad.new()
+	state.add_squad(squad)
+	var person := _person(state, "Mo", -1)
+	person.location = house.id
+	person.squad_id = squad.id
+	check(BaseAssignment.refused(state, person).contains("with the squad"),
+			"they are not at home to be moved")
+
+
+func test_a_besieged_house_is_not_offered() -> void:
+	var state := GameState.new()
+	var house := _safehouse(state, 1, "The flat")
+	var siege := Siege.new()
+	siege.active = true
+	siege.attacker = &"police"
+	state.sieges[house.id] = siege
+	check(BaseAssignment.homes(state).is_empty(),
+			"nobody moves into a house with the police outside")
+
+
+func _safehouse(state: GameState, id: int, name: String) -> Location:
+	var site := Location.new()
+	site.id = id
+	site.name = name
+	site.type = &"residential_tenement"
+	site.renting = Renting.PERMANENT
+	state.locations[id] = site
+	return site

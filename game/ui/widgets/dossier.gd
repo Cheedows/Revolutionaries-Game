@@ -80,6 +80,11 @@ func _refresh() -> void:
 	for line in DossierText.record(_creature, state, _session.catalog):
 		_line(line)
 
+	_heading("Home")
+	var home: Location = state.locations.get(_creature.base)
+	_line("Lives at %s." % (home.name if home != null else "nowhere in particular"))
+	_body.add_child(_home_row())
+
 	_heading("Contact")
 	var contact: Creature = state.creatures.get(_creature.hire_id)
 	_line("Reports to %s." % (contact.name if contact != null
@@ -116,6 +121,32 @@ func _kit_row(item: Item) -> Control:
 	give.text = "Give"
 	give.pressed.connect(func() -> void: _give(item))
 	row.add_child(give)
+	return row
+
+
+## Where they live, and the places they could be moved to.
+func _home_row() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var refused := BaseAssignment.refused(_session.state, _creature)
+	if refused != "":
+		var label := Label.new()
+		label.text = refused
+		label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+		row.add_child(label)
+		return row
+
+	var picker := OptionButton.new()
+	var homes := BaseAssignment.homes(_session.state)
+	for index in homes.size():
+		picker.add_item(homes[index].name, index)
+		if homes[index].id == _creature.base:
+			picker.select(index)
+	picker.item_selected.connect(func(index: int) -> void:
+		Commands.assign_base(_session, _creature, homes[index])
+		changed.emit()
+		_refresh())
+	row.add_child(picker)
 	return row
 
 

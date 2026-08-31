@@ -138,6 +138,8 @@ static func _major_line(data: Dictionary) -> String:
 		&"place_renamed":
 			return "%s is called %s now." % [data.get("was", ""),
 					data.get("now", "")]
+		&"moved_house":
+			return ""  # the record says where they live better than a line
 		&"promoted":
 			return "Their contact is %s now." % data.get("now", "nobody")
 		&"squad_subdued":

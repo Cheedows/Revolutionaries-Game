@@ -150,3 +150,14 @@ static func promote(session: Session, creature: Creature) -> String:
 		return refused
 	Promotion.promote(session.state, creature)
 	return ""
+
+
+## Moves [param creature] to live at [param site]. Returns why not, or "".
+static func assign_base(session: Session, creature: Creature,
+		site: Location) -> String:
+	var refused := BaseAssignment.refused(session.state, creature)
+	if refused != "":
+		return refused
+	if BaseAssignment.assign(session.state, creature, site).is_empty():
+		return "They cannot be moved there."
+	return ""
