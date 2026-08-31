@@ -70,6 +70,9 @@ const ROOM_REFUSED := &"room_refused"                # {location}
 const ROOM_GIVEN_UP := &"room_given_up"              # {location, moved_to}
 const TELLER_ROBBED := &"teller_robbed"              # {creature, quiet, held_up, worked}
 const FLIRTED := &"flirted"                          # {creature, by, outcome}
+const ITEM_BOUGHT := &"item_bought"                  # {creature, item, price}
+const LOOT_FENCED := &"loot_fenced"                  # {kind, paid}
+const GUN_SOUGHT := &"gun_sought"                    # {outcome, shop}
 const CREATURE_AUGMENTED := &"creature_augmented"
 
 # --- Dating ----------------------------------------------------------------

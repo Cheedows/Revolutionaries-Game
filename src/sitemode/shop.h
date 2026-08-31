@@ -59,6 +59,16 @@ class Shop : public ShopOption
       //This function is used to start the shop interface.
       void enter(squadst& customers) const;
 
+      // Permanent probe instrumentation. The trace harness compares what a
+      // shop shows and charges against the port; the members it needs to see
+      // are private, so these read them out without widening the class.
+      int probe_option_count() const;
+      bool probe_is_available() const;
+      const Shop* probe_department(int index) const;
+      bool probe_item_display(int index) const;
+      bool probe_item_available(int index) const;
+      int probe_item_price(int index) const;
+
    protected:
       virtual void choose(squadst& customers, int& buyer) const;
       virtual bool is_available() const;
@@ -90,6 +100,9 @@ class Shop : public ShopOption
                      bool increase_price_with_illegality);
 
             virtual bool display() const;
+            // Probe instrumentation; see the Shop::probe_* methods.
+            bool probe_available() const { return is_available(); }
+            int probe_price() const { return adjusted_price(); }
 
          protected:
             virtual void choose(squadst& customers, int& buyer) const;

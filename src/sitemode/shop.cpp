@@ -721,6 +721,33 @@ void Shop::maskselect(Creature &buyer) const
    }
 }
 
+int Shop::probe_option_count() const
+{ return len(options_); }
+
+bool Shop::probe_is_available() const
+{ return is_available(); }
+
+const Shop* Shop::probe_department(int index) const
+{ return dynamic_cast<const Shop*>(options_[index]); }
+
+bool Shop::probe_item_display(int index) const
+{
+   const ShopItem* item = dynamic_cast<const ShopItem*>(options_[index]);
+   return item ? item->display() : false;
+}
+
+bool Shop::probe_item_available(int index) const
+{
+   const ShopItem* item = dynamic_cast<const ShopItem*>(options_[index]);
+   return item ? item->probe_available() : false;
+}
+
+int Shop::probe_item_price(int index) const
+{
+   const ShopItem* item = dynamic_cast<const ShopItem*>(options_[index]);
+   return item ? item->probe_price() : 0;
+}
+
 bool Shop::is_available() const
 {  //Disable shop (department) if it has nothing to sell.
    bool r = false;

@@ -925,12 +925,33 @@ Site construction is already strong; now port the gameplay that occurs inside th
       3,840 samples reaching all four endings, compared on draw counts, the
       ending, who is left in the room, what the Liberal learned, what the
       target now thinks of the squad, and every date arranged.
-  - [ ] The rest of `talk.cpp`: `talkToGeneric()`'s menu, and buying a gun
-      (`heyINeedAGun()`, which needs the arms dealer's shop).
+  - [x] The dispatch and the menu (`talk()`, `talkToGeneric()`) and buying a
+      gun (`heyINeedAGun()`), in `site_talk.gd` — which of the conversations
+      above an approach turns into, what a particular person can do for the
+      squad, and the four places a Liberal can start from.
 - [ ] Loot pickup/drop/carry and site inventory consequences.
 - [ ] Hostages/kidnapping/hauling.
 - [ ] Graffiti/vandalism/burning/destruction actions present in the original.
-- [ ] On-site shops and shop interaction behavior.
+- [x] On-site shops and shop interaction behaviour (`src/sitemode/shop.cpp`),
+    in `core/systems/base/shopping.gd`. The arms dealer, the pawn shop, the
+    department store and the mask stall are all the same code reading different
+    data, and that data was already extracted into `data/shops/`. Nothing here
+    rolls: what a shop shows, what it will sell and what it charges are decided
+    by the law and the ledger alone.
+  - A clip is legal only if some legal weapon takes it, which the original
+    works out by scanning every weapon type rather than storing it — so a clip
+    whose only weapons are banned is banned with them. A shop that charges for
+    illegality doubles a weapon's price for every step the law has moved past
+    that weapon's own legality.
+  - **Original quirk preserved.** A purchase is stored at the *first* Liberal's
+    base rather than the buyer's, which for a mixed squad is somebody else's
+    safehouse.
+  - Verified by the `shop` probe, which compares rules rather than draws: all
+    four shops walked department by department under all five gun-control
+    regimes and four states of the purse, plus a fence's price list for
+    weapons, clothes in four grades of wear and every state of repair, and
+    loot — every line checked for whether it appears, whether it can be bought
+    and what it costs.
 - [ ] Escape, pursuit and post-site consequences.
 - [ ] Connect site combat to the completed combat system rather than embedding combat logic in site code.
 - [ ] Add end-to-end site traces using deterministic constructed fixtures when fixed keystroke traces are too brittle.

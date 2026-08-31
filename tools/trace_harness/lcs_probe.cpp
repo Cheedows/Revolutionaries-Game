@@ -10473,6 +10473,94 @@ void probe_flirt(FILE *out)
    }
 }
 
+// The shops: what each one shows, what it will sell and what it charges, and
+// what a fence pays for what the squad brought home. Nothing in
+// src/sitemode/shop.cpp rolls, so this probe compares rules rather than draws.
+static void shop_walk(FILE *out, const Shop &shop)
+{
+   fprintf(out, "{\"available\":%d,\"options\":[",
+           shop.probe_is_available() ? 1 : 0);
+   for (int i = 0; i < shop.probe_option_count(); i++)
+   {
+      if (i) fputs(",", out);
+      const Shop *sub = shop.probe_department(i);
+      if (sub) { shop_walk(out, *sub); continue; }
+      fprintf(out, "{\"display\":%d,\"available\":%d,\"price\":%d}",
+              shop.probe_item_display(i) ? 1 : 0,
+              shop.probe_item_available(i) ? 1 : 0,
+              shop.probe_item_price(i));
+   }
+   fputs("]}", out);
+}
+
+void probe_shop(FILE *out)
+{
+   static const char *SHOPS[] = {
+      "armsdealer.xml", "pawnshop.xml", "deptstore.xml", "oubliette.xml",
+   };
+   const int SHOP_COUNT = (int)(sizeof(SHOPS) / sizeof(SHOPS[0]));
+
+   lcs_trace_set_seed(99999989UL);
+   initMainRNG();
+   delete_and_clear(location);
+   make_world(false);
+   mode = GAMEMODE_BASE;
+
+   for (int guns = -2; guns <= 2; guns++)
+   for (int funds = 0; funds < 4; funds++)
+   for (int shop = 0; shop < SHOP_COUNT; shop++)
+   {
+      for (int l = 0; l < LAWNUM; l++) law[l] = 0;
+      law[LAW_GUNCONTROL] = guns;
+      long money = funds == 0 ? 0 : funds == 1 ? 300
+                 : funds == 2 ? 2000 : 500000;
+      ledger.force_funds(money);
+
+      CMarkup xml;
+      xml.Load(string(artdir) + SHOPS[shop]);
+      Shop store(xml.GetDoc());
+
+      fputs("{\"kind\":\"shop\",\"shop\":", out);
+      write_string(out, SHOPS[shop]);
+      fprintf(out, ",\"guncontrol\":%d,\"funds\":%ld,\"menu\":", guns, money);
+      shop_walk(out, store);
+      fputs("}\n", out);
+   }
+
+   // What a fence pays for a shelf of things in every state of repair.
+   static const char *WEAPONS[] = {
+      "WEAPON_SEMIPISTOL_9MM", "WEAPON_AUTORIFLE_AK47", "WEAPON_NIGHTSTICK",
+   };
+   static const char *ARMORS[] = {
+      "ARMOR_CLOTHES", "ARMOR_EXPENSIVESUIT", "ARMOR_HEAVYARMOR",
+   };
+   static const char *LOOTS[] = {
+      "LOOT_CORPFILES", "LOOT_EXPENSIVEJEWELERY", "LOOT_CEOPHOTOS",
+   };
+   for (int w = 0; w < 3; w++)
+   for (int quality = 1; quality <= 4; quality++)
+   for (int wear = 0; wear < 4; wear++)
+   {
+      Weapon gun(*weapontype[getweapontype(WEAPONS[w])]);
+      Armor coat(*armortype[getarmortype(ARMORS[w])], quality);
+      if (wear & 1) coat.set_bloody(true);
+      if (wear & 2) coat.set_damaged(true);
+      Loot goods(*loottype[getloottype(LOOTS[w])]);
+      fputs("{\"kind\":\"fence\",\"weapon\":", out);
+      write_string(out, WEAPONS[w]);
+      fputs(",\"armor\":", out);
+      write_string(out, ARMORS[w]);
+      fputs(",\"loot\":", out);
+      write_string(out, LOOTS[w]);
+      fprintf(out, ",\"quality\":%d,\"wear\":%d,\"weapon_value\":%ld,"
+                   "\"armor_value\":%ld,\"armor_saleable\":%d,"
+                   "\"loot_value\":%ld,\"loot_quick\":%d}\n",
+              quality, wear, gun.get_fencevalue(), coat.get_fencevalue(),
+              coat.is_good_for_sale() ? 1 : 0, goods.get_fencevalue(),
+              goods.no_quick_fencing() ? 1 : 0);
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -12095,6 +12183,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "persuade")) probe_persuade(out);
    else if (!strcmp(which, "talk_shop")) probe_talk_shop(out);
    else if (!strcmp(which, "flirt")) probe_flirt(out);
+   else if (!strcmp(which, "shop")) probe_shop(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else
