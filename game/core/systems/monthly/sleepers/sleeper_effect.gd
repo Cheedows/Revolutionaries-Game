@@ -38,7 +38,8 @@ static func run(state: GameState, rng: Rng, sleeper: Creature,
 		&"sleeper_spy":
 			events.append_array(SleeperSpying.run(state, rng, sleeper, catalog))
 		&"sleeper_scandal":
-			# The original has a stub here and says so.
+			# sleeper_scandal() in src/monthly/sleeper_update.cpp is an
+			# empty function with "Add content here!" in it.
 			pass
 
 	if drifts:

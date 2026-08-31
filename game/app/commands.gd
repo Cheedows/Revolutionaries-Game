@@ -205,3 +205,12 @@ static func execute(session: Session, creature: Creature) -> String:
 		return "They are not in the same place."
 	session.emit(Discharge.execute(session.state, session.rng, creature))
 	return ""
+
+
+## Puts [param keeper] on watch over [param hostage]. Returns whether it took.
+##
+## The plain [method assign_activity] cannot do this one: tending needs the
+## prisoner named as well, or the interrogation pass finds no guard.
+static func watch_hostage(session: Session, keeper: Creature,
+		hostage: Creature = null) -> bool:
+	return HostageWatch.watch(session.state, keeper, hostage)

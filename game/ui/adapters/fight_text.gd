@@ -17,6 +17,9 @@ const UNHURT := "unhurt"
 static func line(person: Creature, state: GameState) -> String:
 	var parts: Array[String] = [person.name if person.name != ""
 			else String(person.type_key()).replace("_", " ")]
+	# A stranger's age and gender are a guess, the way the original guesses.
+	if person.name == "":
+		parts[0] += " %s" % StrangerText.age_and_gender(person)
 	parts.append(condition(person))
 	if person.weapon != null:
 		parts.append("with %s" % DossierText.item_title(person.weapon, null))

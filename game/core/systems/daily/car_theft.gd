@@ -50,6 +50,9 @@ const ROUNDS_CAP := 400
 
 
 ## Starts a theft. Returns a [PendingIntent] asking what to look for.
+##
+## The asking is carselect() from src/daily/activities.cpp: every type that
+## can be found unattended at all, with how hard it is to find.
 static func begin(state: GameState, rng: Rng, thief: Creature,
 		catalog: Catalog) -> PendingIntent:
 	var options: Array[Dictionary] = []

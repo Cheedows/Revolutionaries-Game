@@ -16,6 +16,8 @@ jobs:
           python-version: "3.11"
       - name: Check architecture layer rules
         run: python3 tools/check_layers.py
+      - name: Every legacy function is accounted for
+        run: python3 tools/audit_parity.py
 
   tests:
     name: Headless tests

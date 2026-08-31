@@ -2,8 +2,9 @@ class_name SiteSecurity
 extends RefCounted
 ## The guarded door.
 ##
-## Ports spawn_security(), special_security() and its three entry points from
-## src/sitemode/mapspecials.cpp. Somebody stands between the squad and the rest
+## Ports spawn_security(), special_security() and its three entry points —
+## special_security_checkpoint(), special_security_metaldetectors() and
+## special_security_secondvisit() — from src/sitemode/mapspecials.cpp. Somebody stands between the squad and the rest
 ## of the building and looks them over: their clothes, their weapons, their age
 ## and whether they look like they work here. A sleeper of the same profession
 ## already based at the site waves them through.

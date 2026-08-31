@@ -1536,7 +1536,27 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
 
 ### J. Parity closure sweep
 
-- [ ] Sweep every non-vendored legacy source module and map each meaningful function to: **ported**, **presentation-only/replaced**, **unreachable/obsolete**, or **deliberately deferred as a post-parity feature**.
+- [x] Sweep every non-vendored legacy source module and map each meaningful
+    function to: **ported**, **presentation-only/replaced**,
+    **unreachable/obsolete**, or **deliberately deferred as a post-parity
+    feature**. The sweep is `tools/audit_parity.py`, which is run in CI rather
+    than written down here: it reads every function definition in the
+    original's own sources, reads everything the port and its documentation
+    say, and reports what is not accounted for. 311 of the 444 are named
+    directly by the code that ported them; the remaining 133 are classified in
+    the tool with a reason each, so the residue is a fact in the tree rather
+    than a claim in a document.
+
+    The sweep found five decisions the port could not make at all, and they
+    were ported before the gate was ticked: sleeper orders
+    (`activate_sleepers`, whose activities existed in the monthly pass with
+    nothing able to ask for them); releasing and executing a squad member
+    (`review_mode`'s R and K, both of which roll dice); the marching order and
+    car assignments (`orderparty`, `setvehicles`); naming the prisoner a guard
+    is watching (`select_tendhostage`, without which the interrogation pass
+    finds no guard at all); and the guessed age and gender of a stranger
+    (`add_age`). Two functions turned out to be dead in the original as well —
+    `adjustblogpower` and `plate` are defined, declared and never called.
 - [ ] Search for all original state mutations and ensure each has an equivalent or documented exception.
 - [ ] Search the original blocking input sites and ensure every meaningful decision is covered by Command/Intent flow.
 - [ ] Record final golden traces/probes for all tractable modes.

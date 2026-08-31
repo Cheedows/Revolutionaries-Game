@@ -93,6 +93,7 @@ func _build() -> void:
 func _connect() -> void:
 	_roster.activity_chosen.connect(_on_activity_chosen)
 	_roster.dossier_wanted.connect(_open_dossier)
+	_roster.hostage_chosen.connect(_on_hostage_chosen)
 	_panels.changed.connect(_refresh)
 	_panels.reported.connect(func(message: String) -> void:
 		_log.append(message, Palette.TEXT_DIM))
@@ -207,6 +208,19 @@ func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
 		_log.append("%s will %s." % [creature.name,
 				ActivityText.of(activity).to_lower()],
 				Palette.TEXT_DIM)
+	# Tending is the one job that needs somebody named as well. The original
+	# picks for you when there is only one prisoner in the house, and asks
+	# otherwise; the roster's picker is the asking.
+	if activity == &"hostagetending":
+		Commands.watch_hostage(_session, creature)
+		_refresh()
+
+
+func _on_hostage_chosen(keeper: Creature, hostage: Creature) -> void:
+	if Commands.watch_hostage(_session, keeper, hostage):
+		_log.append("%s will watch over %s." % [keeper.name, hostage.name],
+				Palette.TEXT_DIM)
+	_refresh()
 
 
 func _refresh() -> void:

@@ -125,6 +125,7 @@ static func _overnight(state: GameState, rng: Rng,
 			and state.ccs_exposure >= Ids.CCS_EXPOSURE.find(&"exposed") \
 			and rng.one_in(EXPOSURE_ODDS):
 		# The collapse is a two-part story: the backers first, the raid after.
+		# This is advance_ccs_defeat_storyline() from src/news/news.cpp.
 		if state.ccs_exposure == Ids.CCS_EXPOSURE.find(&"exposed"):
 			events.append_array(NewsEvents.backers_exposed(state, rng))
 		elif state.ccs_exposure == Ids.CCS_EXPOSURE.find(&"nobackers"):

@@ -11,6 +11,9 @@ signal activity_chosen(creature: Creature, activity: StringName)
 ## Emitted when the player wants to look at somebody properly.
 signal dossier_wanted(creature: Creature)
 
+## Emitted when a guard has been put on a particular prisoner.
+signal hostage_chosen(keeper: Creature, hostage: Creature)
+
 var _rows: VBoxContainer
 
 ## The garments a tailor could be told to make, worked out from the state and
@@ -71,10 +74,10 @@ func refresh(state: GameState) -> void:
 		return
 
 	for creature in members:
-		_rows.add_child(_row(creature))
+		_rows.add_child(_row(creature, HostageWatch.candidates(state, creature)))
 
 
-func _row(creature: Creature) -> Control:
+func _row(creature: Creature, held: Array[Creature]) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 
@@ -115,6 +118,10 @@ func _row(creature: Creature) -> Control:
 	if AssignmentChoice.needs_more(creature.activity):
 		row.add_child(_garments(creature))
 
+	# Tending needs a prisoner named, or the interrogation pass finds no guard.
+	if creature.activity == &"hostagetending" and not held.is_empty():
+		row.add_child(_hostages(creature, held))
+
 	var look := Button.new()
 	look.text = "Look"
 	look.tooltip_text = "Read %s's record and hand them their gear" % creature.name
@@ -136,6 +143,19 @@ func _garments(creature: Creature) -> Control:
 	picker.item_selected.connect(func(index: int) -> void:
 		AssignmentChoice.choose(creature, creature.activity, choices[index])
 		activity_chosen.emit(creature, creature.activity))
+	return picker
+
+
+## Which prisoner a guard is watching.
+func _hostages(creature: Creature, held: Array[Creature]) -> Control:
+	var picker := OptionButton.new()
+	picker.custom_minimum_size = Vector2(180, 0)
+	for index in held.size():
+		picker.add_item(held[index].name, index)
+		if creature.tending_id == held[index].id:
+			picker.select(index)
+	picker.item_selected.connect(func(index: int) -> void:
+		hostage_chosen.emit(creature, held[index]))
 	return picker
 
 
