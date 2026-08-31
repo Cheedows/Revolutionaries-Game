@@ -294,7 +294,16 @@ func _person(state: GameState, cars: Dictionary, entry: Dictionary) -> Creature:
 		creature.named = int(entry["named"]) != 0
 		creature.name = String(entry["name"])
 		creature.proper_name = String(entry["propername"])
+
 	creature.vehicle_id = cars.get(int(entry["car"]), 0)
+	# Infiltration is a C float and is compared against a d100 after being
+	# scaled, so it is recorded as its exact bit pattern. Probes recorded
+	# before it was written out do without.
+	if entry.has("infiltration_bits"):
+		var bits := PackedByteArray()
+		bits.resize(4)
+		bits.encode_u32(0, int(entry["infiltration_bits"]))
+		creature.infiltration = bits.decode_float(0)
 	var attributes: Array = entry["attributes"]
 	for index in attributes.size():
 		creature.attributes.values[index] = int(attributes[index])

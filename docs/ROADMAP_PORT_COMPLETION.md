@@ -667,8 +667,29 @@ Port from `src/combat/` and remaining combat helpers.
     Compared on draw counts, both sides' wounds and blood, the alarm, the site
     crime list, the alienation level and every fire and debris flag on the
     ground floor.
-- [ ] The rhetorical-attack conversion: a squad member who loses an argument
-    changes sides. Needs the talk system (Gate G).
+- [x] The rhetorical-attack conversion: what happens when a debate lands hard
+    enough to change somebody's mind. Both directions, in the tail of
+    `systems/combat/special_attack.gd`. Standing carries somebody through the
+    first few arguments; after that the argument either teaches them something
+    or takes them. Somebody kept by love rather than conviction cannot be
+    argued away at all, and somebody already broken has nothing left to argue
+    with.
+  - **Original quirk preserved.** A defector leaves a *copy* of themselves
+    standing on the other side of the room and the original is marked dead —
+    but its squad id is never cleared, only the copy's is set, so the corpse
+    still believes it is in the squad.
+  - **Port defect found and fixed.** Replacing a converted chief executive was
+    documented on `Alignment.liberalize()` and not actually done anywhere; it
+    is `UniqueCreatures.converted()`, called alongside.
+  - Verified by the `convert` probe: both directions against three grades of
+    standing, three of heart, three of wisdom, an argument that fails and two
+    that land, six special cases (an animal, a tank, somebody brainwashed,
+    somebody kept by love, and an arguer on the same side), animal research
+    banned or not, and a target holding a hostage or not — 15,552 samples
+    reaching all ten branches, compared on draw counts, the branch, the
+    target's side, standing, heart, wisdom, how long they are reeling, whether
+    they are still standing and still on the roster, their infiltration to the
+    bit, who is holding whom, and the size of the room and the squad.
 
 **Gate E:** arbitrary squads can fight headlessly to a deterministic conclusion with parity-level wounds, deaths, ammo and aftermath.
 

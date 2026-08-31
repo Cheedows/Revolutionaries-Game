@@ -5,8 +5,9 @@ extends RefCounted
 ## Ports specialattack() from src/combat/fight.cpp. Some people do not fight:
 ## a judge argues, a CEO offers you a job, a radio host talks over you, and
 ## anybody with an instrument plays at you. It is still an attack — it stuns,
-## and if it lands hard enough on one of your own it takes them off the squad
-## and hands them to the other side.
+## and if it lands hard enough it changes somebody's mind: one of your own is
+## taken off the squad and handed to the other side, and a Conservative comes
+## over to yours.
 ##
 ## The lines themselves are the UI's business; the choice of line is a draw, so
 ## the index is rolled here and reported.
@@ -22,12 +23,14 @@ const LINES := {
 ## Every four points the argument wins by is a turn spent reeling.
 const STUN_PER_POINT := 4
 
-## Somebody with standing loses it rather than their convictions.
-const JUICE_LOSS := -50
-const JUICE_FLOOR := 100
+## Somebody with standing loses it rather than their convictions. The two
+## sides disagree about how much standing that takes and how much is left, by
+## one point each — the original writes the two branches separately.
+const CONVICTION := 100
+const CONVICTION_COST := 50
 
 ## A wisdom roll this wide decides whether an argument teaches or converts.
-const CONVICTION_ROLL := 15
+const DOUBT := 15
 
 
 ## Resolves [param attacker] arguing with [param target].
@@ -55,10 +58,24 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 		"kind": argument["kind"], "line": argument["line"],
 	}))
 
-	# Nothing gets through to an animal, a tank, or somebody already broken.
+	events.append_array(settle(state, rng, attacker, target, attack, resist,
+			catalog))
+	return events
+
+
+## What an argument that landed does to the person it landed on.
+##
+## Nothing gets through to an animal, a tank, or somebody already broken; an
+## argument between allies is just conversation; and one that does not beat the
+## reply does nothing at all.
+static func settle(state: GameState, rng: Rng, attacker: Creature,
+		target: Creature, attack: int, resist: int,
+		catalog: Catalog) -> Array[Event]:
+	var events: Array[Event] = []
 	if target.animal_gloss == &"tank" \
 			or (target.animal_gloss == &"animal"
-					and state.law.get_value(&"animalresearch") != 2):
+					and state.law.get_value(&"animalresearch") != 2) \
+			or (Encounters.is_enemy(attacker) and target.brainwashed):
 		return events
 	if attacker.alignment == target.alignment or attack <= resist:
 		return events
@@ -66,7 +83,97 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 	target.body.stunned += (attack - resist) / STUN_PER_POINT
 	events.append(Event.new(Event.CREATURE_STUNNED,
 			{"creature": target.id, "turns": target.body.stunned}))
+
+	if Encounters.is_enemy(attacker):
+		events.append_array(_talked_away(state, rng, attacker, target,
+				catalog))
+	else:
+		events.append_array(_won_over(state, rng, target, catalog))
 	return events
+
+
+## One of the squad losing an argument to a Conservative.
+##
+## Standing carries them through the first few; after that the argument either
+## teaches them something or takes them. Somebody kept by love rather than
+## conviction cannot be argued away at all.
+static func _talked_away(state: GameState, rng: Rng, attacker: Creature,
+		target: Creature, catalog: Catalog) -> Array[Event]:
+	var events: Array[Event] = []
+	if target.juice > CONVICTION:
+		JuiceRules.add(state, target, -CONVICTION_COST, CONVICTION)
+		return events
+	var wisdom := AttributeRules.effective(target, &"wisdom", true)
+	if rng.below(DOUBT) > wisdom \
+			or wisdom < AttributeRules.effective(target, &"heart", true):
+		target.attributes.set_value(&"wisdom",
+				target.attributes.get_value(&"wisdom") + 1)
+		return events
+	if target.alignment == &"liberal" and target.love_slave:
+		return events
+
+	target.body.stunned = 0
+	events.append_array(Capture.free_hostage(state, target, catalog))
+
+	# They walk over to the other side of the room. The original copies them
+	# into the encounter roster and kills the pool entry, which is how they
+	# leave the squad for good.
+	var defector: Creature = target.copy()
+	if Encounters.is_enemy(attacker):
+		Alignment.conservatise(defector)
+	defector.cannot_bluff = 2
+	defector.squad_id = 0
+	state.add_creature(defector)
+	state.site.encounter_ids.append(defector.id)
+
+	_leave_the_squad(state, target)
+	events.append(Event.new(Event.CREATURE_CONVERTED,
+			{"creature": target.id, "became": defector.id, "by": attacker.id}))
+	return events
+
+
+## A Conservative losing an argument to the squad. Standing holds them for a
+## while, then their heart grows, and then they come over.
+static func _won_over(state: GameState, rng: Rng, target: Creature,
+		catalog: Catalog) -> Array[Event]:
+	var events: Array[Event] = []
+	if target.juice >= CONVICTION:
+		JuiceRules.add(state, target, -CONVICTION_COST, CONVICTION - 1)
+		return events
+	var moved := CheckRules.attribute_check(rng, target, &"heart",
+			Difficulty.AVERAGE)
+	var heart := AttributeRules.effective(target, &"heart", true)
+	if not moved or heart < AttributeRules.effective(target, &"wisdom", true):
+		target.attributes.set_value(&"heart",
+				target.attributes.get_value(&"heart") + 1)
+		return events
+
+	target.body.stunned = 0
+	Alignment.liberalize(target)
+	UniqueCreatures.converted(state, rng, target, catalog)
+	target.infiltration = SinglePrecision.of(target.infiltration / 2.0)
+	target.converted = true
+	target.cannot_bluff = 0
+	events.append(Event.new(Event.CREATURE_CONVERTED,
+			{"creature": target.id}))
+	return events
+
+
+## The defector is dead as far as the Squad is concerned.
+##
+## They come off the roster and are marked dead, but the original never clears
+## their squad id — only the copy that walked across the room gets one — so
+## neither does this.
+static func _leave_the_squad(state: GameState, target: Creature) -> void:
+	target.alive = false
+	target.body.blood = 0
+	target.location = -1
+	var squad := state.active_squad()
+	if squad == null:
+		return
+	var index := Array(squad.member_ids).find(target.id)
+	if index != -1:
+		squad.member_ids.remove_at(index)
 
 
 ## Which argument is made, what it is worth, and what the target has to say

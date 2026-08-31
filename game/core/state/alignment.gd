@@ -52,8 +52,9 @@ static func conservatise(creature: Creature) -> void:
 			creature.name = "Jaded Liberal Judge"
 
 
-## Turns somebody Liberal. The mirror of [method conservatise], except that a
-## converted CEO is replaced rather than kept: the company finds another.
+## Turns somebody Liberal. The mirror of [method conservatise]. Replacing a
+## converted chief executive — the company finds another — needs the whole
+## game, so it is [method UniqueCreatures.converted]'s, called alongside this.
 static func liberalize(creature: Creature, rename: bool = true) -> void:
 	if creature.alignment == &"conservative" and creature.juice > 0:
 		creature.juice = 0

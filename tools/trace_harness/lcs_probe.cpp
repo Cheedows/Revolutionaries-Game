@@ -1462,6 +1462,15 @@ static void chase_write_creature(FILE *out, Creature &cr, bool first)
    write_string(out, cr.name);
    fputs(",\"propername\":", out);
    write_string(out, cr.propername);
+   // A C float, written as its exact bit pattern: infiltration is compared
+   // against a d100 after being multiplied up, so a hair of rounding in the
+   // round trip is a different answer.
+   {
+      unsigned int bits;
+      float value = cr.infiltration;
+      memcpy(&bits, &value, sizeof(bits));
+      fprintf(out, ",\"infiltration_bits\":%u", bits);
+   }
    fprintf(out, ",\"age\":%d,\"juice\":%d,\"hireid\":%d,\"stunned\":%d,"
                 "\"cantbluff\":%d,\"forceinc\":%d,\"converted\":%d",
            cr.age, cr.juice, (int)cr.hireid, (int)cr.stunned,
@@ -11475,6 +11484,247 @@ void probe_site_exit(FILE *out)
    }
 }
 
+// Losing an argument: the conversion tail of specialattack() in
+// src/combat/fight.cpp, transcribed with the display taken out. Both
+// directions — a Conservative talking one of the squad away, and the squad
+// talking a Conservative round.
+static void convert_block(Creature &a, Creature &t, int attack, int resist,
+                          int *outcome)
+{
+   *outcome = 0;
+   if((t.animalgloss==ANIMALGLOSS_TANK||(t.animalgloss==ANIMALGLOSS_ANIMAL&&law[LAW_ANIMALRESEARCH]!=2))
+    ||(a.enemy() && t.flag & CREATUREFLAG_BRAINWASHED))
+   { *outcome = 1; return; }
+   if(a.align == t.align) { *outcome = 2; return; }
+   if(attack<=resist) { *outcome = 3; return; }
+
+   t.stunned+=(attack-resist)/4;
+   if(a.enemy())
+   {
+      if(t.juice>100) { addjuice(t,-50,100); *outcome = 4; return; }
+      if(LCSrandom(15)>t.get_attribute(ATTRIBUTE_WISDOM,true) ||
+         t.get_attribute(ATTRIBUTE_WISDOM,true) < t.get_attribute(ATTRIBUTE_HEART,true))
+      {
+         t.adjust_attribute(ATTRIBUTE_WISDOM,+1);
+         *outcome = 5;
+         return;
+      }
+      if(t.align==ALIGN_LIBERAL && t.flag & CREATUREFLAG_LOVESLAVE)
+      { *outcome = 6; return; }
+
+      t.stunned=0;
+      if(t.prisoner!=NULL) freehostage(t,0);
+      for(int e=0;e<ENCMAX;e++)
+      {
+         if(encounter[e].exists==0)
+         {
+            encounter[e]=t;
+            encounter[e].exists=1;
+            if(a.align==-1)conservatise(encounter[e]);
+            encounter[e].cantbluff=2;
+            encounter[e].squadid=-1;
+            break;
+         }
+      }
+      bool flipstart=0;
+      for(int p=0;p<6;p++)
+      {
+         if(activesquad->squad[p]==&t)
+         {
+            activesquad->squad[p]->die();
+            activesquad->squad[p]->location=-1;
+            activesquad->squad[p]=NULL;
+            flipstart=1;
+         }
+         if(flipstart&&p<5) activesquad->squad[p]=activesquad->squad[p+1];
+      }
+      if(flipstart) activesquad->squad[5]=NULL;
+      *outcome = 7;
+      return;
+   }
+
+   if(t.juice>=100) { addjuice(t,-50,99); *outcome = 8; return; }
+   if(!t.attribute_check(ATTRIBUTE_HEART,DIFFICULTY_AVERAGE) ||
+      t.get_attribute(ATTRIBUTE_HEART,true) < t.get_attribute(ATTRIBUTE_WISDOM,true))
+   {
+      t.adjust_attribute(ATTRIBUTE_HEART,+1);
+      *outcome = 9;
+      return;
+   }
+   t.stunned=0;
+   liberalize(t);
+   t.infiltration/=2;
+   t.flag|=CREATUREFLAG_CONVERTED;
+   t.cantbluff=0;
+   *outcome = 10;
+}
+
+void probe_convert(FILE *out)
+{
+   for (int scenario = 0; scenario < 4; scenario++)
+   {
+      unsigned long run_seed = 433494437UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      // The two unique creatures exist from the start of a real game; without
+      // this the first conversion makes one lazily and costs its draws.
+      uniqueCreatures.initialize();
+      mode = GAMEMODE_SITE;
+
+      for (int enemy = 0; enemy < 2; enemy++)
+      for (int juice = 0; juice < 3; juice++)
+      for (int heart = 0; heart < 3; heart++)
+      for (int wisdom = 0; wisdom < 3; wisdom++)
+      for (int margin = 0; margin < 3; margin++)
+      // 0 nothing, 1 an animal, 2 a tank, 3 brainwashed, 4 kept by love,
+      // 5 the arguer is on the same side.
+      for (int quirk = 0; quirk < 6; quirk++)
+      for (int freed = 0; freed < 2; freed++)
+      for (int holding = 0; holding < 2; holding++)
+      {
+         unsigned long seed_used = 573259433UL * (unsigned long)
+            (((((((enemy * 3 + juice) * 3 + heart) * 3 + wisdom) * 3 + margin) * 6
+              + quirk) * 2 + freed) * 2 + holding + scenario * 6427 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+         law[LAW_ANIMALRESEARCH] = freed ? 2 : 0;
+
+         delete_and_clear(pool);
+         delete_and_clear(squad);
+         for (int e = 0; e < ENCMAX; e++) encounter[e].exists = 0;
+
+         cursite = 1;
+         sitetype = location[cursite]->type;
+         sitealarm = 0;
+         locx = 3; locy = 3; locz = 0;
+         initsite(*location[cursite]);
+
+         squadst *sq = new squadst;
+         sq->id = 1;
+         for (int i = 0; i < 6; i++) sq->squad[i] = NULL;
+         squad.push_back(sq);
+         activesquad = sq;
+
+         // The target is always in the squad; the arguer is either a
+         // Conservative in the room or the Liberal beside them.
+         Creature *t = new Creature;
+         makecreature(*t, CREATURE_POLITICALACTIVIST);
+         t->id = 860000;
+         t->align = enemy ? ALIGN_LIBERAL : ALIGN_CONSERVATIVE;
+         t->location = cursite;
+         t->base = cursite;
+         t->juice = juice == 0 ? 0 : juice == 1 ? 100 : 400;
+         t->set_attribute(ATTRIBUTE_HEART, 2 + heart * 4);
+         t->set_attribute(ATTRIBUTE_WISDOM, 2 + wisdom * 4);
+         t->animalgloss = quirk == 1 ? ANIMALGLOSS_ANIMAL
+                        : quirk == 2 ? ANIMALGLOSS_TANK : ANIMALGLOSS_NONE;
+         if (quirk == 3) t->flag |= CREATUREFLAG_BRAINWASHED;
+         if (quirk == 4) t->flag |= CREATUREFLAG_LOVESLAVE;
+         t->squadid = sq->id;
+         sq->squad[0] = t;
+         pool.push_back(t);
+
+         Creature *filler = new Creature;
+         makecreature(*filler, CREATURE_POLITICALACTIVIST);
+         filler->id = 860001;
+         filler->align = ALIGN_LIBERAL;
+         filler->location = filler->base = cursite;
+         filler->squadid = sq->id;
+         sq->squad[1] = filler;
+         pool.push_back(filler);
+
+         Creature *held = NULL;
+         if (holding)
+         {
+            held = new Creature;
+            makecreature(*held, CREATURE_WORKER_SECRETARY);
+            held->id = 860050;
+            held->align = ALIGN_CONSERVATIVE;
+            held->alive = 1;
+            held->squadid = -1;
+            t->prisoner = held;
+         }
+
+         Creature *a = new Creature;
+         makecreature(*a, enemy ? CREATURE_CORPORATE_CEO
+                                : CREATURE_POLITICALACTIVIST);
+         a->id = 860100;
+         a->align = quirk == 5 ? t->align
+                  : (enemy ? ALIGN_CONSERVATIVE : ALIGN_LIBERAL);
+         a->location = cursite;
+         if (enemy)
+         {
+            encounter[0] = *a;
+            encounter[0].exists = 1;
+         }
+         else
+         {
+            a->squadid = sq->id;
+            sq->squad[2] = a;
+            pool.push_back(a);
+         }
+
+         int resist = 10;
+         int attack = margin == 0 ? resist - 1 : resist + 4 + margin * 8;
+
+         fprintf(out, "{\"kind\":\"convert\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"enemy\":%d,\"juice\":%d,\"heart\":%d,\"wisdom\":%d,"
+                      "\"margin\":%d,\"quirk\":%d,\"freed\":%d,\"holding\":%d,"
+                      "\"world_seed\":%lu,\"site\":%d,\"attack\":%d,"
+                      "\"resist\":%d",
+                 scenario, seed_used, enemy, juice, heart, wisdom, margin,
+                 quirk, freed, holding, run_seed, cursite, attack, resist);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"target\":", out);
+         chase_write_creature(out, *t, true);
+         fputs(",\"arguer\":", out);
+         chase_write_creature(out, *a, true);
+         fputs(",\"held\":", out);
+         if (held) chase_write_creature(out, *held, true);
+         else fputs("null", out);
+         fputs(",\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         int outcome = 0;
+         long long before = lcs_trace_draw_count();
+         convert_block(enemy ? encounter[0] : *a, *t, attack, resist, &outcome);
+
+         int encount = 0;
+         for (int e = 0; e < ENCMAX; e++) if (encounter[e].exists) encount++;
+
+         fprintf(out, ",\"draws\":%lld,\"outcome\":%d,\"align\":%d,"
+                      "\"juice_after\":%d,\"heart_after\":%d,"
+                      "\"wisdom_after\":%d,\"stunned\":%d,\"alive\":%d,"
+                      "\"location\":%d,\"squadid\":%d,\"converted\":%d,"
+                      "\"cantbluff\":%d,\"prisoner\":%d,\"encounters\":%d,"
+                      "\"squadsize\":%d,\"infiltration\":%lld}\n",
+                 lcs_trace_draw_count() - before, outcome, (int)t->align,
+                 (int)t->juice, t->attribute_raw_probe(ATTRIBUTE_HEART),
+                 t->attribute_raw_probe(ATTRIBUTE_WISDOM), (int)t->stunned,
+                 t->alive ? 1 : 0, t->location, (int)t->squadid,
+                 (t->flag & CREATUREFLAG_CONVERTED) ? 1 : 0,
+                 (int)t->cantbluff, t->prisoner ? 1 : 0, encount,
+                 squadsize(activesquad),
+                 (long long)(t->infiltration * 1000000.0f));
+
+         for (int i = 0; i < 6; i++)
+            if (sq->squad[i]) sq->squad[i]->prisoner = NULL;
+         activesquad = NULL;
+         delete_and_clear(squad);
+         delete_and_clear(pool);
+         if (enemy) delete a;
+      }
+   }
+}
+
 // Grabbing somebody: a hostage-taking weapon makes it certain, and bare
 // hands make it a fight.
 void probe_kidnap(FILE *out)
@@ -13101,6 +13351,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "site_loot")) probe_site_loot(out);
    else if (!strcmp(which, "site_hostage")) probe_site_hostage(out);
    else if (!strcmp(which, "site_exit")) probe_site_exit(out);
+   else if (!strcmp(which, "convert")) probe_convert(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else
