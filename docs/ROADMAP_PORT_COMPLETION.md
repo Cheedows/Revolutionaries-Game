@@ -1420,8 +1420,32 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     then the Conservative Crime Squad's, then everywhere else, and will not
     send anybody into a closed building or across town without a car.
   - [ ] The compound, the flag, the slogan, the agenda and the funding report.
-- [ ] Creature dossier/equipment/squad management.
-- [ ] Activity assignment/recruitment interfaces.
+- [x] Creature dossier/equipment/squad management.
+  - The gear itself was never ported: `systems/items/loot_pile.gd` ports
+    `consolidateloot()` and the merge and sort rules of the Item classes, and
+    `systems/base/equipping.gd` ports `equip()` and `moveloot()` — handing
+    somebody a weapon puts what they were holding back in the pile, dressing
+    them takes off what they had on, a stack of knives goes behind the one in
+    the hand, ammunition needs a gun that takes it and there is room for nine
+    boxes of it, somebody with both arms off or a broken neck can be dressed
+    but not armed, and every move squashes both piles back together.
+    `Commands.equip`, `strip`, `disarm` and `move_kit` are the seam.
+  - **Deliberate departure from the original.** Within a kind, a pile sorts by
+    idname rather than by the type's position in its XML file, because the
+    port's content is one file per type and there is no such position. Nothing
+    reads the order but the player and the search for a clip that fits, and
+    every clip that fits is the same clip.
+  - The record: `ui/widgets/dossier.gd` opens one person over the roster with
+    everything known about them — rank, age, alignment, juice, money, blood,
+    assignment, attributes, skills, wounds part by part, what the authorities
+    want them for and what has been fitted to them — and hands them things out
+    of the squad's kit. `ui/adapters/dossier_text.gd` says it, and ports
+    `gettitle()` for the rank.
+- [x] Activity assignment/recruitment interfaces: `ui/widgets/roster.gd` puts
+    every member on any of the original's assignments from the same row that
+    shows their standing and condition, and `Commands.assign_activity` is the
+    seam. Recruitment is an assignment like the others, and the meetings it
+    books come back through the same [Intent] dialog as everything else.
 - [ ] Site/infiltration map view and interaction controls.
   - [x] The plan: `ui/widgets/site_map_view.gd` draws the part of the floor
     plan the squad has seen, around where it is standing — rock, floor, doors,

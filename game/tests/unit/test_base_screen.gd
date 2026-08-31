@@ -125,3 +125,51 @@ func test_assigning_the_same_activity_twice_says_nothing() -> void:
 			"no event for an order that changes nothing")
 	equal(Commands.assign_activity(session, creature, &"sell_music").size(), 1,
 			"but one for an order that does")
+
+
+func test_the_dossier_reads_and_equips() -> void:
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(31337)
+	screen.call("setup", session)
+
+	var founder: Creature = session.state.members()[0]
+	var squad := session.state.active_squad()
+	check(squad != null, "the founder has a squad")
+	squad.haul.append(Weapon.new(&"WEAPON_SEMIPISTOL_9MM"))
+	squad.haul.append(Clip.new(&"CLIP_9", 3))
+
+	screen.call("_open_dossier", founder)
+	var dossier: Dossier = screen.get("_dossier")
+	check(dossier.visible, "the record is open")
+
+	dossier.call("_give", squad.haul[0])
+	equal(founder.weapon.type, &"WEAPON_SEMIPISTOL_9MM", "the gun went over")
+	dossier.call("_give", squad.haul[0])
+	equal(EquipmentRules.count_clips(founder), 1, "and a box of ammunition")
+
+	screen.call("_open_dossier", null)
+	check(not dossier.visible, "and it closes again")
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
+func test_a_record_says_what_is_known() -> void:
+	var state := GameState.new()
+	var creature := state.add_creature(Creature.new())
+	creature.name = "Vera Mott"
+	creature.alignment = &"liberal"
+	creature.juice = 120
+	equal(DossierText.standing(creature), "Revolutionary",
+			"a hundred and twenty of pull")
+	creature.juice = -60
+	equal(DossierText.standing(creature), "Damn Worthless", "and none at all")
+
+	creature.body.add_wound(&"arm_left", Wound.CLEAN_OFF)
+	check(DossierText.wounds(creature).has("left arm gone"),
+			"the missing arm is on the record")
+	creature.crimes_suspected[Ids.LAW_FLAGS.find(&"arson")] = 1
+	check(DossierText.charges(creature).has("arson"), "and so is the arson")

@@ -8,6 +8,9 @@ extends PanelContainer
 ## Emitted when the player puts someone on a different activity.
 signal activity_chosen(creature: Creature, activity: StringName)
 
+## Emitted when the player wants to look at somebody properly.
+signal dossier_wanted(creature: Creature)
+
 var _rows: VBoxContainer
 
 
@@ -95,6 +98,12 @@ func _row(creature: Creature) -> Control:
 	activities.item_selected.connect(func(index: int):
 		activity_chosen.emit(creature, ActivityAssignment.AVAILABLE[index]))
 	row.add_child(activities)
+
+	var look := Button.new()
+	look.text = "Look"
+	look.tooltip_text = "Read %s's record and hand them their gear" % creature.name
+	look.pressed.connect(func() -> void: dossier_wanted.emit(creature))
+	row.add_child(look)
 	return row
 
 

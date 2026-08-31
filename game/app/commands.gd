@@ -74,3 +74,51 @@ static func assign_activity(session: Session, creature: Creature,
 		"activity": activity,
 		"outcome": &"assigned",
 	})]
+
+
+## Hands [param item] out of the squad's kit to [param member].
+##
+## Returns the reason it could not be done, or "" when it was. The pile is the
+## squad's own: whatever it is carrying between the safehouse and the street.
+static func equip(session: Session, member: Creature, item: Item) -> String:
+	var squad := session.state.active_squad()
+	if squad == null or not squad.member_ids.has(member.id):
+		return "They are not with the squad."
+	return Equipping.give(member, item, squad.haul, session.catalog)
+
+
+## Takes everything off [param member] and puts it back in the squad's kit.
+static func strip(session: Session, member: Creature) -> void:
+	var squad := session.state.active_squad()
+	if squad == null:
+		return
+	Equipping.strip(member, squad.haul, session.catalog)
+
+
+## Drops [param member]'s weapon and ammunition back into the squad's kit.
+static func disarm(session: Session, member: Creature) -> void:
+	var squad := session.state.active_squad()
+	if squad == null:
+		return
+	Equipping.disarm(member, squad.haul, session.catalog)
+
+
+## Moves things between the squad's kit and the safehouse it is standing in.
+##
+## [param wanted] maps an index in the pile being taken from to how many of it
+## to take. [param stashing] says which way round.
+static func move_kit(session: Session, wanted: Dictionary,
+		stashing: bool) -> void:
+	var squad := session.state.active_squad()
+	if squad == null:
+		return
+	var members := session.state.squad_members(squad)
+	if members.is_empty():
+		return
+	var here: Location = session.state.locations.get(members[0].location)
+	if here == null:
+		return
+	if stashing:
+		Equipping.move(squad.haul, here.ground_loot, wanted, session.catalog)
+	else:
+		Equipping.move(here.ground_loot, squad.haul, wanted, session.catalog)

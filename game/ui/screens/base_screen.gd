@@ -20,6 +20,7 @@ var _laws: LawList
 var _roster: Roster
 var _squad: SquadPanel
 var _map: SiteMapView
+var _dossier: Dossier
 var _log: LogView
 var _wait_button: Button
 var _run_button: Button
@@ -100,7 +101,17 @@ func _build() -> void:
 	_roster = Roster.new()
 	_roster.custom_minimum_size = Vector2(0, 170)
 	_roster.activity_chosen.connect(_on_activity_chosen)
+	_roster.dossier_wanted.connect(_open_dossier)
 	right.add_child(_roster)
+
+	# One person's whole record, opened over the roster rather than beside it:
+	# it is long, and it is only wanted one person at a time.
+	_dossier = Dossier.new()
+	_dossier.custom_minimum_size = Vector2(0, 320)
+	_dossier.visible = false
+	_dossier.changed.connect(_refresh)
+	_dossier.closed.connect(func() -> void: _open_dossier(null))
+	right.add_child(_dossier)
 
 	_map = SiteMapView.new()
 	_map.visible = false
@@ -203,6 +214,12 @@ func _on_answer(id: Variant) -> void:
 	_settle()
 
 
+## Opens somebody's record, or closes it when given nobody.
+func _open_dossier(creature: Creature) -> void:
+	_dossier.show_creature(_session, creature)
+	_refresh()
+
+
 func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
 	for event in Commands.assign_activity(_session, creature, activity):
 		_log.append("%s will %s." % [creature.name,
@@ -218,9 +235,10 @@ func _refresh() -> void:
 	# The plan is only worth the room it takes while the squad is inside one.
 	var inside := _session.state.mode == &"site" \
 			and _session.state.site.location != -1
-	_map.visible = inside
-	_squad.visible = not inside
-	_roster.visible = not inside
+	var reading := _dossier.visible
+	_map.visible = inside and not reading
+	_squad.visible = not inside and not reading
+	_roster.visible = not inside and not reading
 	if inside:
 		_map.refresh(_session.state)
 
