@@ -21,7 +21,8 @@ func _initialize() -> void:
 			return
 
 	for day in days:
-		session.submit(DailyTurn.run(session.state, session.rng, session.catalog))
+		# No autosave: a parity run is not a game being played.
+		Commands.advance_day(session, false)
 		if session.is_waiting():
 			printerr("day %d stopped for a decision: %s"
 					% [day, session.pending().intent.type])

@@ -45,6 +45,21 @@ func seed_from(seed_value: int) -> void:
 		_state[i] = _next_lcg()
 
 
+## The generator's whole state, for a save.
+##
+## The original writes its four seed words straight into the save file, which
+## is what makes a reloaded game roll the same numbers a continued one would.
+func export_state() -> Dictionary:
+	return {"state": Array(_state), "lcg": _lcg_seed, "draws": draws}
+
+
+## Puts a saved generator state back.
+func import_state(recorded: Dictionary) -> void:
+	_state = SaveNumbers.longs(recorded["state"])
+	_lcg_seed = int(recorded["lcg"])
+	draws = int(recorded.get("draws", 0))
+
+
 ## Returns the raw generator output: 1..0xffffffff, never zero.
 ##
 ## Mirrors [code]r_num()[/code], including its recovery path for a state that

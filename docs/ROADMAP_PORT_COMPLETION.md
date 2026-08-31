@@ -1158,7 +1158,12 @@ Do not port the old raw save format; the new serializer is already the canonical
     deterministic by construction: every answer to every question, checked
     against what the source says that answer is worth, and each of the five
     careers played through to the world it leaves behind.
-- [ ] Load/save UI-facing commands around the versioned serializer.
+- [x] Load/save UI-facing commands around the versioned serializer:
+    `app/save_game.gd` is the only place in the game that touches the
+    filesystem — write, read, list, describe without loading, and erase — and
+    `Commands.advance_day()`, `save_to()` and `load_from()` are what a UI
+    calls. The generator's own words go into the save with the state, as the
+    original's do, so a reloaded game rolls on rather than starting over.
   - [x] The serializer now writes the whole state. `core/save/` is split into
     `serializer.gd` and four codecs beside it — `creature_codec.gd`,
     `item_codec.gd` (weapons, armour, clips, money and loot, each read back
@@ -1176,9 +1181,29 @@ Do not port the old raw save format; the new serializer is already the canonical
     first; a companion test walks the script properties of every state class
     and fails on any field the format does not mention, so the codecs cannot
     drift behind the state.
-- [ ] Autosave behavior.
-- [ ] Game-over/victory/restart transitions.
-- [ ] High-score/history behavior if retained.
+- [x] Autosave behavior: the game writes itself out at the top of every day,
+    as `advanceday()` does, and — as there — not while the squad is scattered.
+    Parity exception: the original's `autosave` init-file setting is read and
+    never used anywhere else in its source, so there is nothing to port.
+- [x] Game-over/victory/restart transitions. `EndCheck` already decided when
+    it is over and why; `app/score_file.gd`'s `finish()` now does what
+    `endcheck()` does with that — the score goes in the book and the autosave
+    is thrown away, so the next start is a new game.
+- [x] High-score/history behavior, in `systems/world/high_scores.gd` and
+    `app/score_file.gd`. Five games are remembered: a win always beats a loss,
+    an earlier win beats a later one, and between two losses the bigger
+    operation wins. A lifetime tally accumulates across all of them.
+  - **Original quirk, reproduced.** Comparing two wins in the same month adds
+    the expense to itself rather than to the income, so what is actually
+    weighed is twice what the winner spent.
+- [x] **Newly discovered required work, now done.** The flag outside the
+    safehouse, in `systems/base/flag.gd`. The roadmap had `basemode()`'s flag
+    key down as presentation, but only the animation is: buying one costs
+    twenty dollars and cannot be done under siege, and burning one is a crime
+    wherever the law is not Liberal, takes the flag down at both the place
+    being managed and the squad's own base, and — with the police already
+    outside — is worth more publicity the less it is allowed. The two counters
+    the high-score table wants are kept here.
 - [ ] Replace legacy cutscenes/title ASCII with modern presentation hooks rather than porting broken 64-bit `.cmv/.cpc` playback.
 
 **Gate H:** a real player can start, save, load, lose, win and restart a game without test-only setup.

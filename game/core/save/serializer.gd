@@ -36,7 +36,11 @@ const WORLD_NAMED: Array[StringName] = [
 
 
 ## Encodes [param game] as a plain dictionary.
-static func to_dict(game: GameState) -> Dictionary:
+##
+## [param rng] is written with it when given: the original keeps its generator
+## words in the save, which is what makes a reloaded game roll on rather than
+## start over.
+static func to_dict(game: GameState, rng: Rng = null) -> Dictionary:
 	var world := {}
 	for field: StringName in WORLD_PLAIN:
 		world[String(field)] = game.get(field)
@@ -78,6 +82,7 @@ static func to_dict(game: GameState) -> Dictionary:
 			"vehicle": game.next_vehicle_id,
 			"active_squad": game.active_squad_id,
 		},
+		"rng": rng.export_state() if rng != null else null,
 		"creatures": CreatureCodec.to_array(game),
 		"squads": _squads_to_array(game),
 		"locations": WorldCodec.locations_to_array(game),
@@ -96,7 +101,10 @@ static func to_dict(game: GameState) -> Dictionary:
 
 ## Rebuilds a [GameState]. Returns null when the document is not a save or is
 ## from a version that cannot be migrated.
-static func from_dict(document: Dictionary) -> GameState:
+##
+## [param rng] is put back where it left off when both it and the save have a
+## generator state.
+static func from_dict(document: Dictionary, rng: Rng = null) -> GameState:
 	if document.get("magic") != MAGIC:
 		return null
 	var migrated := SaveMigrations.migrate(document)
@@ -170,6 +178,8 @@ static func from_dict(document: Dictionary) -> GameState:
 		game.ceo = CreatureCodec.from_dict(migrated["ceo"])
 	if migrated.get("president") != null:
 		game.president = CreatureCodec.from_dict(migrated["president"])
+	if rng != null and migrated.get("rng") != null:
+		rng.import_state(migrated["rng"])
 	return game
 
 
