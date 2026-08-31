@@ -9,17 +9,24 @@ extends VBoxContainer
 ## Emitted when something in an open panel changed the game.
 signal changed
 
+## Emitted when a panel has something to tell the player.
+signal reported(message: String)
+
 ## Nothing open.
 const NONE := &"none"
 const DOSSIER := &"dossier"
 const AGENDA := &"agenda"
 const HOUSE := &"house"
 const PAPER := &"paper"
+const STORES := &"stores"
+const SETTINGS := &"settings"
 
 var _dossier: Dossier
 var _agenda: AgendaPanel
 var _house: SafehousePanel
 var _paper: NewspaperPanel
+var _stores: StoresPanel
+var _settings: SettingsPanel
 
 
 func _ready() -> void:
@@ -33,6 +40,8 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 	_agenda.visible = false
 	_house.visible = false
 	_paper.visible = false
+	_stores.visible = false
+	_settings.visible = false
 	_dossier.show_creature(session, null)
 	match which:
 		DOSSIER:
@@ -43,6 +52,10 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 			_house.show_house(session)
 		PAPER:
 			_paper.show_paper(session.state, subject as Array[Event])
+		STORES:
+			_stores.show_stores(session)
+		SETTINGS:
+			_settings.show_settings(session)
 	visible = is_open()
 
 
@@ -50,7 +63,7 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 func is_open() -> bool:
 	_build()
 	return _dossier.visible or _agenda.visible or _house.visible \
-			or _paper.visible
+			or _paper.visible or _stores.visible or _settings.visible
 
 
 func _build() -> void:
@@ -61,7 +74,10 @@ func _build() -> void:
 	_agenda = AgendaPanel.new()
 	_house = SafehousePanel.new()
 	_paper = NewspaperPanel.new()
-	for panel: Control in [_dossier, _agenda, _house, _paper]:
+	_stores = StoresPanel.new()
+	_settings = SettingsPanel.new()
+	for panel: Control in [_dossier, _agenda, _house, _paper, _stores,
+			_settings]:
 		panel.custom_minimum_size = Vector2(0, 320)
 		panel.visible = false
 		panel.connect(&"closed", func() -> void:
@@ -70,4 +86,7 @@ func _build() -> void:
 			changed.emit())
 		if panel.has_signal(&"changed"):
 			panel.connect(&"changed", func() -> void: changed.emit())
+		if panel.has_signal(&"saved"):
+			panel.connect(&"saved", func(message: String) -> void:
+				reported.emit(message))
 		add_child(panel)

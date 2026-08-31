@@ -14,6 +14,15 @@ signal finished
 
 const AUTO_ADVANCE_SECONDS := 0.35
 
+## The panels the player can open, and what the button for each says.
+const PANEL_BUTTONS: Array = [
+	[PanelStack.AGENDA, "The agenda"],
+	[PanelStack.HOUSE, "The safehouse"],
+	[PanelStack.PAPER, "The paper"],
+	[PanelStack.STORES, "The stores"],
+	[PanelStack.SETTINGS, "Save & settings"],
+]
+
 var _session: Session
 var _status: StatusBar
 var _laws: LawList
@@ -111,6 +120,8 @@ func _build() -> void:
 	_panels = PanelStack.new()
 	_panels.visible = false
 	_panels.changed.connect(_refresh)
+	_panels.reported.connect(func(message: String) -> void:
+		_log.append(message, Palette.TEXT_DIM))
 	right.add_child(_panels)
 
 	_map = SiteMapView.new()
@@ -157,20 +168,13 @@ func _controls() -> Control:
 		_run_button.text = "Pause" if pressed else "Let it run")
 	row.add_child(_run_button)
 
-	var agenda := Button.new()
-	agenda.text = "The agenda"
-	agenda.pressed.connect(func() -> void: _open_panel(&"agenda"))
-	row.add_child(agenda)
-
-	var house := Button.new()
-	house.text = "The safehouse"
-	house.pressed.connect(func() -> void: _open_panel(&"house"))
-	row.add_child(house)
-
-	var paper := Button.new()
-	paper.text = "The paper"
-	paper.pressed.connect(func() -> void: _open_panel(&"paper"))
-	row.add_child(paper)
+	# One button per panel, in the order the original's keys ran.
+	for entry: Array in PANEL_BUTTONS:
+		var button := Button.new()
+		button.text = String(entry[1])
+		var which: StringName = entry[0]
+		button.pressed.connect(func() -> void: _open_panel(which))
+		row.add_child(button)
 	return row
 
 

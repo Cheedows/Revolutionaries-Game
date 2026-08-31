@@ -1477,8 +1477,11 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     buys what is on the shelves and sells what the squad brought home, and the
     car dealership sells one thing and buys one thing. It renders through the
     same dialog as everything else.
-  - [ ] Picking single items out of the safehouse stores, and equipping a squad
-    from them.
+  - [x] Picking single items out of the safehouse stores, and equipping a squad
+    from them: `ui/widgets/stores_panel.gd` puts what the squad is carrying
+    beside what the safehouse is keeping and moves one or the whole stack
+    either way, through `Commands.move_kit`; the squad is equipped out of its
+    own kit from each person's record.
 - [x] News/newspaper/broadcast presentation: `ui/widgets/newspaper_panel.gd`
     lays out the morning the simulation reported — each headline over its
     story, the story itself, the photograph and its caption where the story is
@@ -1497,8 +1500,13 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
 - [ ] Save/load/settings/game-over flows.
   - [x] Loading, carrying on and the end of a game: the safehouse screen puts
     the score in the book, throws the autosave away and offers the way back to
-    the title. Settings and saving to a named slot from inside a game are
-    still to do.
+    the title.
+  - [x] Settings and saving to a named slot from inside a game:
+    `ui/widgets/settings_panel.gd` shows the switches the game was started with
+    — which cannot be changed once it is running, because half of them decided
+    how the world was built — saves under a name taken from the slogan and the
+    date, lists what is already saved, and throws a save away. The name is
+    scrubbed of everything that could point at another file.
 - [ ] Mouse/keyboard navigation, focus handling and scalable layout.
 - [ ] Headless scene-instantiation smoke tests for every major screen.
 

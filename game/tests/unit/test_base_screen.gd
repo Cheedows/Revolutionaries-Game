@@ -267,3 +267,72 @@ func test_the_paper_can_be_read() -> void:
 
 	tree.root.remove_child(screen)
 	screen.queue_free()
+
+
+func test_things_move_between_the_squad_and_the_stores() -> void:
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(101010)
+	screen.call("setup", session)
+
+	var squad := session.state.active_squad()
+	squad.haul.append(Clip.new(&"CLIP_9", 4))
+	screen.call("_open_panel", PanelStack.STORES)
+	var panels: PanelStack = screen.get("_panels")
+	var stores: StoresPanel = panels.get("_stores")
+	check(stores.visible, "the stores are open")
+
+	stores.call("_move", 0, 1, true)
+	var members := session.state.squad_members(squad)
+	var here: Location = session.state.locations.get(members[0].location)
+	equal(here.ground_loot.size(), 1, "one box was stashed")
+	equal(squad.haul[0].count, 3, "and three are still carried")
+
+	stores.call("_move", 0, 1, false)
+	equal(squad.haul[0].count, 4, "and it can be taken back")
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
+func test_a_game_can_be_saved_under_a_name() -> void:
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(24680)
+	session.state.slogan = "Rent Is Theft"
+	screen.call("setup", session)
+
+	screen.call("_open_panel", PanelStack.SETTINGS)
+	var panels: PanelStack = screen.get("_panels")
+	var settings: SettingsPanel = panels.get("_settings")
+	check(settings.visible, "the settings are open")
+
+	var slot := SettingsText.suggested_slot(session.state)
+	equal(slot, "rent-is-theft-%d-%02d" % [session.state.calendar.year,
+			session.state.calendar.month], "a name is suggested from the slogan")
+	SaveGame.erase(slot)
+	settings.call("_save")
+	check(SaveGame.exists(slot), "and saving under it works")
+	SaveGame.erase(slot)
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
+func test_a_slot_name_is_cleaned_up() -> void:
+	equal(SettingsText.clean_slot("  The  Squad!! "), "the-squad",
+			"punctuation and doubled spaces go")
+	equal(SettingsText.clean_slot("../../etc/passwd"), "etcpasswd",
+			"and so does anything that could point somewhere else")
+	equal(SettingsText.clean_slot("!!!"), "", "and a name of nothing is nothing")
+
+
+func test_the_switches_read() -> void:
+	var session := _a_game(1)
+	var lines := SettingsText.switches(session.state)
+	equal(lines.size(), 4, "four things were decided at the start")
+	check(String(lines[0]).begins_with("Winning:"), "the win condition first")
