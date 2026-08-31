@@ -18,10 +18,11 @@ extends RefCounted
 const INDIVIDUAL := &"individual"
 const GROUPS := &"groups"
 const MEETINGS := &"meetings"
+const DATES := &"dates"
 
 
 ## Returns the day's events, or a [PendingIntent] when something in it needs
-## the player — the evening's recruitment meetings do.
+## the player — the evening's recruitment meetings and dates both do.
 static func run(state: GameState, rng: Rng, catalog: Catalog = null) -> Variant:
 	if catalog == null:
 		# No content loaded, so nobody can do a day's work — but the rest of
@@ -62,6 +63,11 @@ static func _continue(state: GameState, rng: Rng, catalog: Catalog,
 			return _close_the_day(state, rng, done, catalog)
 		return _continue(state, rng, catalog, MEETINGS, done,
 				RecruitQueue.advance(state, rng, catalog))
+	if stage == MEETINGS:
+		# The evening's dates come after the recruitment meetings, as they do
+		# in advanceday().
+		return _continue(state, rng, catalog, DATES, done,
+				DateQueue.advance(state, rng, catalog))
 	return _close_the_day(state, rng, done, catalog)
 
 

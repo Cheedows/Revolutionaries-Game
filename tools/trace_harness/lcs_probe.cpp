@@ -5598,6 +5598,546 @@ static int steal_block(Creature &cr, short cartype, int entry_policy,
 }
 
 
+
+// Transcriptions of dateresult(), completevacation() and completedate() from
+// src/daily/date.cpp with the display taken out and the evening's menu
+// answered from a parameter rather than the keyboard. The two prompts that
+// have no rolls in them — naming a new love slave, and choosing whether they
+// come home or stay where they work — are answered the way the probe's
+// counterpart in the port answers them: come home, keep the name.
+
+enum ProbeDateResults
+{
+   PROBE_DATE_MEETTOMORROW,
+   PROBE_DATE_BREAKUP,
+   PROBE_DATE_JOINED,
+   PROBE_DATE_ARRESTED
+};
+
+static int dateresult_block(int aroll, int troll, datest &d, int e, int p)
+{
+   if(aroll>troll)
+   {
+      if(loveslavesleft(*pool[p]) <= 0)
+      {
+         delete_and_remove(d.date,e);
+         return PROBE_DATE_BREAKUP;
+      }
+
+      if(LCSrandom((aroll-troll)/2)>d.date[e]->get_attribute(ATTRIBUTE_WISDOM,true))
+      {
+         location[d.date[e]->worklocation]->mapped=1;
+         location[d.date[e]->worklocation]->hidden=0;
+
+         d.date[e]->flag|=CREATUREFLAG_LOVESLAVE;
+         d.date[e]->hireid=pool[p]->id;
+
+         // sleeperize_prompt(), answered "come home as a regular member".
+         d.date[e]->location=pool[p]->location;
+         d.date[e]->base=pool[p]->base;
+         liberalize(*d.date[e],false);
+
+         pool.push_back(d.date[e]);
+         stat_recruits++;
+         d.date.erase(d.date.begin() + e);
+
+         return PROBE_DATE_JOINED;
+      }
+      else
+      {
+         if(d.date[e]->align == ALIGN_CONSERVATIVE && d.date[e]->get_attribute(ATTRIBUTE_WISDOM,false)>3)
+         {
+            d.date[e]->adjust_attribute(ATTRIBUTE_WISDOM,-1);
+            d.date[e]->adjust_attribute(ATTRIBUTE_HEART,+1);
+         }
+         else if(d.date[e]->get_attribute(ATTRIBUTE_WISDOM,false)>3)
+         {
+            d.date[e]->adjust_attribute(ATTRIBUTE_WISDOM,-1);
+         }
+         else if(location[d.date[e]->worklocation]->mapped==0 && !LCSrandom(d.date[e]->get_attribute(ATTRIBUTE_WISDOM,false)))
+         {
+            location[d.date[e]->worklocation]->mapped=1;
+            location[d.date[e]->worklocation]->hidden=0;
+         }
+         return PROBE_DATE_MEETTOMORROW;
+      }
+   }
+   else if(aroll==troll)
+   {
+      // The excuse for leaving early, which is rolled for and then read out.
+      switch(LCSrandom(4))
+      {
+      case 4:
+         LCSrandom(3+(law[LAW_ANIMALRESEARCH]==-2));
+         break;
+      }
+      return PROBE_DATE_MEETTOMORROW;
+   }
+   else
+   {
+      //WISDOM POSSIBLE INCREASE
+      if(d.date[e]->align==-1&&aroll<troll/2)
+      {
+         pool[p]->adjust_attribute(ATTRIBUTE_WISDOM,+1);
+
+         if(d.date[e]->get_skill(SKILL_RELIGION)>pool[p]->get_skill(SKILL_RELIGION))
+            pool[p]->train(SKILL_RELIGION,20*(d.date[e]->get_skill(SKILL_RELIGION)-pool[p]->get_skill(SKILL_RELIGION)));
+         if(d.date[e]->get_skill(SKILL_SCIENCE)>pool[p]->get_skill(SKILL_SCIENCE))
+            pool[p]->train(SKILL_SCIENCE,20*(d.date[e]->get_skill(SKILL_SCIENCE)-pool[p]->get_skill(SKILL_SCIENCE)));
+         if(d.date[e]->get_skill(SKILL_BUSINESS)>pool[p]->get_skill(SKILL_BUSINESS))
+            pool[p]->train(SKILL_BUSINESS,20*(d.date[e]->get_skill(SKILL_BUSINESS)-pool[p]->get_skill(SKILL_BUSINESS)));
+      }
+
+      //BREAK UP
+      if((iscriminal(*pool[p])) &&
+         (!LCSrandom(50) ||(LCSrandom(2) && (d.date[e]->kidnap_resistant()))))
+      {
+         if((pool[p]->juice<50 && LCSrandom(2)) || LCSrandom(2))
+         {
+            long ps=find_police_station(*pool[p]);
+            removesquadinfo(*pool[p]);
+            pool[p]->carid=-1;
+            pool[p]->location=ps;
+            pool[p]->drop_weapons_and_clips(NULL);
+            pool[p]->activity.type=ACTIVITY_NONE;
+            delete_and_remove(d.date,e);
+            return PROBE_DATE_ARRESTED;
+         }
+      }
+      else
+      {
+         int ls = loveslaves(*pool[p]);
+         if (ls > 0 && LCSrandom(2)) { /* the scheduling disaster, all prose */ }
+      }
+
+      delete_and_remove(d.date,e);
+      return PROBE_DATE_BREAKUP;
+   }
+}
+
+static char vacation_block(datest &d, int p)
+{
+   int e=0;
+
+   int datealignment=d.date[e]->align;
+   d.date[e]->align=-1;
+
+   short aroll=pool[p]->skill_roll(SKILL_SEDUCTION)*2;
+   short troll=d.date[e]->attribute_roll(ATTRIBUTE_WISDOM);
+
+   d.date[e]->align=datealignment;
+
+   pool[p]->train(SKILL_SEDUCTION,LCSrandom(11)+15);
+
+   int thingsincommon=0;
+   for(int s=0;s<SKILLNUM;s++)
+      if(d.date[e]->get_skill(s)>=1 && pool[p]->get_skill(s)>=1)
+         if (d.date[e]->get_skill(s)<=pool[p]->get_skill(s)*2)
+            thingsincommon++;
+   aroll += thingsincommon*3;
+
+   pool[p]->train(SKILL_SCIENCE,
+      max(d.date[e]->get_skill(SKILL_SCIENCE)-pool[p]->get_skill(SKILL_SCIENCE),0));
+   pool[p]->train(SKILL_RELIGION,
+      max(d.date[e]->get_skill(SKILL_RELIGION)-pool[p]->get_skill(SKILL_RELIGION),0));
+   pool[p]->train(SKILL_BUSINESS,
+      max(d.date[e]->get_skill(SKILL_BUSINESS)-pool[p]->get_skill(SKILL_BUSINESS),0));
+
+   if(d.date[e]->skill_roll(SKILL_BUSINESS))
+   {
+      troll+=d.date[e]->skill_roll(SKILL_BUSINESS);
+      aroll+=pool[p]->skill_roll(SKILL_BUSINESS);
+   }
+   if(d.date[e]->skill_roll(SKILL_RELIGION))
+   {
+      troll+=d.date[e]->skill_roll(SKILL_RELIGION);
+      aroll+=pool[p]->skill_roll(SKILL_RELIGION);
+   }
+   if(d.date[e]->skill_roll(SKILL_SCIENCE))
+   {
+      troll+=d.date[e]->skill_roll(SKILL_SCIENCE);
+      aroll+=pool[p]->skill_roll(SKILL_SCIENCE);
+   }
+
+   switch(dateresult_block(aroll,troll,d,e,p))
+   {
+   default:
+   case PROBE_DATE_MEETTOMORROW:return 0;
+   case PROBE_DATE_BREAKUP:     return 1;
+   case PROBE_DATE_JOINED:      return 1;
+   case PROBE_DATE_ARRESTED:    return 1;
+   }
+}
+
+// choice: 0 spends money, 1 spends nothing, 2 takes a vacation, 3 breaks it
+// off, 4 kidnaps. A choice the evening does not allow falls back to spending
+// nothing, which is what the original's menu does with a key it will not take.
+static char date_block(datest &d, int p, int choice)
+{
+   int e;
+
+   if(len(d.date)>1&&!LCSrandom(len(d.date)>2?4:6))
+   {
+      LCSrandom(3);        // which disaster it was
+      // pickrandom() over the ways it ends. The list looks like eight, but
+      // its first two entries are missing a comma between them and the
+      // compiler joins them into one, so there are seven.
+      LCSrandom(7);
+      addjuice(*pool[p],-5,-50);
+      return 1;
+   }
+
+   for(e=len(d.date)-1;e>=0;e--)
+   {
+      // Others come to dates unarmed and in ordinary clothes, and are given
+      // their things back the moment the screen is drawn.
+      vector<Item*> temp;
+      d.date[e]->drop_weapons_and_clips(&temp);
+      Armor atmp(*armortype[getarmortype("ARMOR_CLOTHES")]);
+      d.date[e]->give_armor(atmp,&temp);
+      while(len(temp))
+      {
+         if(temp.back()->is_weapon())
+            d.date[e]->give_weapon(*(static_cast<Weapon*>(temp.back())),NULL);
+         else if(temp.back()->is_armor())
+            d.date[e]->give_armor(*(static_cast<Armor*>(temp.back())),NULL);
+         else if(temp.back()->is_clip())
+            d.date[e]->take_clips(*(static_cast<Clip*>(temp.back())),temp.back()->get_number());
+         delete_and_remove(temp,len(temp)-1);
+      }
+
+      int thingsincommon = 0;
+      for(int s=0;s<SKILLNUM;s++)
+         if(d.date[e]->get_skill(s)>=1 && pool[p]->get_skill(s)>=1)
+            if (d.date[e]->get_skill(s)<=pool[p]->get_skill(s)*2)
+               thingsincommon++;
+
+      short aroll=pool[p]->skill_roll(SKILL_SEDUCTION);
+      short troll=d.date[e]->attribute_roll(ATTRIBUTE_WISDOM);
+      if(d.date[e]->align==ALIGN_CONSERVATIVE)
+         troll+=troll*(d.date[e]->juice/100);
+      else if(d.date[e]->align==ALIGN_MODERATE)
+         troll+=troll*(d.date[e]->juice/150);
+      else troll+=troll*(d.date[e]->juice/200);
+
+      int c = choice;
+      if(c==0 && (ledger.get_funds()<100 || pool[p]->clinic)) c=1;
+      if(c==2 && (pool[p]->clinic || pool[p]->blood!=100)) c=1;
+      if(c==4 && (d.date[e]->align!=-1 || pool[p]->clinic)) c=1;
+
+      char test=0;
+      aroll += thingsincommon * 3;
+      if(c==0)
+      {
+         ledger.subtract_funds(100,EXPENSE_DATING);
+         aroll+=LCSrandom(10);
+         test=true;
+      }
+      else if(c==1) test=true;
+
+      if(test)
+      {
+         pool[p]->train(SKILL_SEDUCTION,LCSrandom(4)+5);
+         pool[p]->train(SKILL_SCIENCE,
+            max(d.date[e]->get_skill(SKILL_SCIENCE)-pool[p]->get_skill(SKILL_SCIENCE),0));
+         pool[p]->train(SKILL_RELIGION,
+            max(d.date[e]->get_skill(SKILL_RELIGION)-pool[p]->get_skill(SKILL_RELIGION),0));
+         pool[p]->train(SKILL_BUSINESS,
+            max(d.date[e]->get_skill(SKILL_BUSINESS)-pool[p]->get_skill(SKILL_BUSINESS),0));
+
+         if(d.date[e]->get_skill(SKILL_BUSINESS))
+         {
+            troll+=d.date[e]->skill_roll(SKILL_BUSINESS);
+            aroll+=pool[p]->skill_roll(SKILL_BUSINESS);
+         }
+         if(d.date[e]->get_skill(SKILL_RELIGION))
+         {
+            troll+=d.date[e]->skill_roll(SKILL_RELIGION);
+            aroll+=pool[p]->skill_roll(SKILL_RELIGION);
+         }
+         if(d.date[e]->get_skill(SKILL_SCIENCE))
+         {
+            troll+=d.date[e]->skill_roll(SKILL_SCIENCE);
+            aroll+=pool[p]->skill_roll(SKILL_SCIENCE);
+         }
+
+         if(dateresult_block(aroll,troll,d,e,p)==PROBE_DATE_ARRESTED) return 1;
+         continue;
+      }
+
+      if(c==2)
+      {
+         for(int e2=len(d.date)-1;e2>=0;e2--)
+         {
+            if(e2==e) continue;
+            delete_and_remove(d.date,e2);
+            e=0;
+         }
+         d.timeleft=7;
+         pool[p]->train(SKILL_SEDUCTION,LCSrandom(40)+15);
+         pool[p]->train(SKILL_SCIENCE,
+            max((d.date[e]->get_skill(SKILL_SCIENCE)-pool[p]->get_skill(SKILL_SCIENCE))*4,0));
+         pool[p]->train(SKILL_RELIGION,
+            max((d.date[e]->get_skill(SKILL_RELIGION)-pool[p]->get_skill(SKILL_RELIGION))*4,0));
+         pool[p]->train(SKILL_BUSINESS,
+            max((d.date[e]->get_skill(SKILL_BUSINESS)-pool[p]->get_skill(SKILL_BUSINESS))*4,0));
+         return 0;
+      }
+      if(c==3)
+      {
+         delete_and_remove(d.date,e);
+         continue;
+      }
+      if(c==4)
+      {
+         int bonus=0;
+         if(pool[p]->get_weapon().is_ranged()) bonus=5;
+         else if(pool[p]->is_armed())
+         {
+            if(pool[p]->get_weapon().can_take_hostages()) bonus=5;
+            else bonus=-1;
+         }
+         else bonus+=pool[p]->get_skill(SKILL_HANDTOHAND)-1;
+
+         if((!d.date[e]->kidnap_resistant()&&
+             LCSrandom(15))||
+             LCSrandom(2+bonus))
+         {
+            d.date[e]->namecreature();
+            strcpy(d.date[e]->propername,d.date[e]->name);
+
+            d.date[e]->location=pool[p]->location;
+            d.date[e]->base=pool[p]->base;
+            d.date[e]->flag|=CREATUREFLAG_MISSING;
+
+            d.date[e]->drop_weapons_and_clips(NULL);
+            Armor clothes(*armortype[getarmortype("ARMOR_CLOTHES")]);
+            d.date[e]->give_armor(clothes,NULL);
+
+            d.date[e]->activity.intr()=new interrogation;
+
+            pool.push_back(d.date[e]);
+            stat_kidnappings++;
+            d.date.erase(d.date.begin()+e);
+            continue;
+         }
+         else
+         {
+            if(LCSrandom(2))
+            {
+               criminalize(*pool[p],LAWFLAG_KIDNAPPING);
+               delete_and_remove(d.date,e);
+               continue;
+            }
+            else
+            {
+               int ps=find_police_station(*pool[p]);
+               removesquadinfo(*pool[p]);
+               pool[p]->carid=-1;
+               pool[p]->location=ps;
+               pool[p]->drop_weapons_and_clips(NULL);
+               pool[p]->activity.type=ACTIVITY_NONE;
+               criminalize(*pool[p],LAWFLAG_KIDNAPPING);
+               delete_and_remove(d.date,e);
+               return 1;
+            }
+         }
+      }
+   }
+
+   if(len(d.date))
+   {
+      d.timeleft=0;
+      return 0;
+   }
+   else return 1;
+}
+
+
+// An evening out: one date or three, paid for or not, ending in a love slave,
+// a break-up, a police ambush or a kidnapping in the car park.
+void probe_dating(FILE *out)
+{
+   static const int DATES[] = {
+      CREATURE_CORPORATE_MANAGER, CREATURE_COP, CREATURE_WORKER_SECRETARY,
+      CREATURE_SCIENTIST_LABTECH, CREATURE_PRIEST,
+   };
+   const int DATE_COUNT = (int)(sizeof(DATES) / sizeof(DATES[0]));
+
+   static const char *WEAPONS[] = {
+      "WEAPON_NONE", "WEAPON_SEMIPISTOL_9MM", "WEAPON_GAVEL",
+   };
+   const int WEAPON_COUNT = (int)(sizeof(WEAPONS) / sizeof(WEAPONS[0]));
+
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 33871301UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+
+      for (int l = 0; l < LAWNUM; l++) law[l] = ((l + scenario) % 5) - 2;
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+      endgamestate = ENDGAME_NONE;
+      mode = GAMEMODE_BASE;
+      cursite = 1;
+      fieldskillrate = FIELDSKILLRATE_CLASSIC;
+
+      for (int who = 0; who < DATE_COUNT; who++)
+      for (int choice = 0; choice < 5; choice++)
+      for (int crowd = 1; crowd <= 3; crowd++)
+      for (int grade = 0; grade < 3; grade++)
+      for (int hand = 0; hand < WEAPON_COUNT; hand++)
+      for (int wanted = 0; wanted < 2; wanted++)
+      for (int vacation = 0; vacation < 2; vacation++)
+      {
+         if (vacation && crowd > 1) continue;   // a vacation stands up the rest
+         unsigned long seed_used = 4100011UL * (unsigned long)
+            (((((who * 5 + choice) * 3 + (crowd - 1)) * 3 + grade)
+              * WEAPON_COUNT + hand) * 4 + wanted * 2 + vacation
+             + scenario * 211 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+
+         delete_and_clear(pool);
+         ledger.force_funds(grade ? 5000 : 50);
+         stat_recruits = 0;
+         stat_kidnappings = 0;
+
+         Creature *dater = new Creature;
+         makecreature(*dater, CREATURE_POLITICALACTIVIST);
+         dater->id = 800000;
+         dater->align = ALIGN_LIBERAL;
+         dater->location = 1;
+         dater->base = 1;
+         dater->hireid = -1;
+         dater->juice = 30 * grade;
+         dater->blood = grade == 2 ? 80 : 100;
+         dater->clinic = 0;
+         dater->set_skill(SKILL_SEDUCTION, grade * 5);
+         dater->set_skill(SKILL_BUSINESS, grade * 2);
+         dater->set_skill(SKILL_RELIGION, (grade + 1) % 3);
+         dater->set_skill(SKILL_SCIENCE, (grade + 2) % 3);
+         dater->set_skill(SKILL_HANDTOHAND, grade * 3);
+         dater->give_armor(*armortype[getarmortype("ARMOR_CLOTHES")], NULL);
+         if (strcmp(WEAPONS[hand], "WEAPON_NONE"))
+            dater->give_weapon(*weapontype[getweapontype(WEAPONS[hand])], NULL);
+         if (wanted) criminalize(*dater, LAWFLAG_VANDALISM);
+         pool.push_back(dater);
+
+         // Somebody already on the books, so the cap on how many people one
+         // Liberal can juggle is exercised.
+         if (grade == 0)
+         {
+            Creature *held = new Creature;
+            makecreature(*held, CREATURE_WORKER_SECRETARY);
+            held->id = 800100;
+            held->align = ALIGN_LIBERAL;
+            held->hireid = dater->id;
+            held->flag |= CREATUREFLAG_LOVESLAVE;
+            held->location = 1;
+            held->base = 1;
+            pool.push_back(held);
+         }
+
+         // The three workplaces a date can have are put back each sample, so
+         // a map given away in one is not still given away in the next.
+         for (int n = 0; n < 3; n++)
+         {
+            location[20 + n]->mapped = 0;
+            location[20 + n]->hidden = 1;
+         }
+
+         datest d;
+         d.mac_id = dater->id;
+         d.city = 0;
+         d.timeleft = 0;
+         for (int n = 0; n < crowd; n++)
+         {
+            Creature *seen = new Creature;
+            makecreature(*seen, DATES[(who + n) % DATE_COUNT]);
+            seen->id = 800200 + n;
+            seen->align = n % 3 == 1 ? ALIGN_MODERATE : ALIGN_CONSERVATIVE;
+            seen->juice = 40 * n;
+            seen->worklocation = 20 + n;
+            seen->location = seen->worklocation;
+            seen->base = seen->worklocation;
+            d.date.push_back(seen);
+         }
+
+         fprintf(out, "{\"kind\":\"dating\",\"scenario\":%d,\"seed\":%lu,"
+                      "\"who\":%d,\"choice\":%d,\"crowd\":%d,\"grade\":%d,"
+                      "\"hand\":%d,\"wanted\":%d,\"vacation\":%d,"
+                      "\"funds\":%d,\"world_seed\":%lu",
+                 scenario, seed_used, who, choice, crowd, grade, hand, wanted,
+                 vacation, ledger.get_funds(), run_seed);
+         fputs(",\"law\":[", out);
+         for (int i = 0; i < LAWNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", law[i]);
+         fputs("],\"suspected\":[", out);
+         for (int i = 0; i < LAWFLAGNUM; i++)
+            fprintf(out, "%s%d", i ? "," : "", dater->crimes_suspected[i]);
+         fputs("],\"dater\":", out);
+         chase_write_creature(out, *dater, true);
+         fputs(",\"held\":[", out);
+         {
+            int written = 0;
+            for (int i = 1; i < len(pool); i++)
+            {
+               if (written++) fputs(",", out);
+               chase_write_creature(out, *pool[i], true);
+            }
+         }
+         fputs("],\"dates\":[", out);
+         for (int n = 0; n < len(d.date); n++)
+         {
+            fprintf(out, "%s{\"worklocation\":%d,\"gender\":%d,"
+                         "\"named\":%d,\"type\":", n ? "," : "",
+                    (int)d.date[n]->worklocation,
+                    (int)d.date[n]->gender_liberal,
+                    d.date[n]->dontname ? 1 : 0);
+            write_string(out, getcreaturetype(d.date[n]->type)->get_idname().c_str());
+            fputs(",\"person\":", out);
+            chase_write_creature(out, *d.date[n], true);
+            fputs("}", out);
+         }
+         fputs("],\"rng\":[", out);
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         char over = vacation ? vacation_block(d, 0) : date_block(d, 0, choice);
+
+         fprintf(out, ",\"draws\":%lld,\"over\":%d,\"timeleft\":%d,"
+                      "\"funds_after\":%d,\"recruits\":%d,\"kidnaps\":%d",
+                 lcs_trace_draw_count() - before, (int)over, (int)d.timeleft,
+                 ledger.get_funds(), stat_recruits, stat_kidnappings);
+         fputs(",\"pool_after\":[", out);
+         for (int i = 0; i < len(pool); i++)
+         {
+            fprintf(out, "%s{\"id\":%d,\"loveslave\":%d,\"missing\":%d,"
+                         "\"person\":", i ? "," : "", (int)pool[i]->id,
+                    (pool[i]->flag & CREATUREFLAG_LOVESLAVE) ? 1 : 0,
+                    (pool[i]->flag & CREATUREFLAG_MISSING) ? 1 : 0);
+            chase_write_creature(out, *pool[i], true);
+            fputs("}", out);
+         }
+         fputs("],\"still_dating\":[", out);
+         for (int n = 0; n < len(d.date); n++)
+            fprintf(out, "%s%d", n ? "," : "", (int)d.date[n]->id);
+         fputs("],\"mapped\":[", out);
+         for (int n = 0; n < 3; n++)
+            fprintf(out, "%s%d", n ? "," : "", (int)location[20 + n]->mapped);
+         fputs("]}\n", out);
+
+         // The pool owns whoever joined it; the rest go with the date list.
+         delete_and_clear(pool);
+      }
+   }
+}
+
 // Adventures in Liberal Car Theft: finding a car, getting into it, getting it
 // started, and the two ways a passerby can end the evening.
 void probe_cartheft(FILE *out)
@@ -6088,6 +6628,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "siege_outcome")) probe_siege_outcome(out);
    else if (!strcmp(which, "newspaper")) probe_newspaper(out);
    else if (!strcmp(which, "cartheft")) probe_cartheft(out);
+   else if (!strcmp(which, "dating")) probe_dating(out);
    else
    {
       fprintf(stderr, "lcs_probe: unknown probe '%s'\n", which);

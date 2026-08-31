@@ -102,6 +102,9 @@ var recruit_difficulty: Dictionary = Recruiting.FINDABLE.duplicate()
 
 ## Meetings the squad has agreed to, oldest first.
 var recruit_meetings: Array[RecruitState] = []
+
+## The evenings out the squad has arranged.
+var dates: Array[DatePlan] = []
 var endgame_state: StringName = &"none"
 
 ## Lifetime tallies shown on the high-score screen.

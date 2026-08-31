@@ -170,3 +170,24 @@ static func breaks_locks(weapon: Weapon, catalog: Catalog) -> bool:
 		return false
 	var type := catalog.get_entry(&"weapon", weapon.type)
 	return type != null and type.auto_break_locks
+
+
+## Whether the weapon can be fired at somebody across a room.
+static func is_ranged(weapon: Weapon, catalog: Catalog) -> bool:
+	if weapon == null:
+		return false
+	var type := catalog.get_entry(&"weapon", weapon.type)
+	if type == null:
+		return false
+	for attack: WeaponAttack in type.attacks:
+		if attack.ranged:
+			return true
+	return false
+
+
+## Whether the weapon is the sort somebody can be held at.
+static func can_take_hostages(weapon: Weapon, catalog: Catalog) -> bool:
+	if weapon == null:
+		return false
+	var type := catalog.get_entry(&"weapon", weapon.type)
+	return type != null and type.can_take_hostages

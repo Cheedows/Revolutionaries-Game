@@ -65,6 +65,7 @@ const CONFIRM_FORCE_DOOR := &"confirm_force_door"    # {x, y, z, locked}
 
 # --- Interrogation, recruitment and dialogue ------------------------------
 
+const CHOOSE_DATE_APPROACH := &"choose_date_approach"  # {creature, date}
 const CHOOSE_DIALOGUE := &"choose_dialogue"
 const CHOOSE_INTERROGATION_TACTIC := &"choose_interrogation_tactic"
 const CONFIRM_RECRUIT := &"confirm_recruit"

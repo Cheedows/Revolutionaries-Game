@@ -82,16 +82,7 @@ static func stipends(state: GameState) -> void:
 	for creature: Creature in state.creatures.values():
 		if not creature.is_member():
 			continue
-		TrainRules.train(creature, &"seduction", _love_slaves(state, creature) * 5)
+		TrainRules.train(creature, &"seduction",
+				Relationships.love_slaves(state, creature) * 5)
 		if creature.love_slave:
 			TrainRules.train(creature, &"seduction", 5)
-
-
-## How many love slaves [param keeper] has.
-static func _love_slaves(state: GameState, keeper: Creature) -> int:
-	var counted := 0
-	for creature: Creature in state.creatures.values():
-		if creature.love_slave and creature.alive \
-				and creature.hire_id == keeper.id:
-			counted += 1
-	return counted

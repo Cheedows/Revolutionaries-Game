@@ -49,6 +49,20 @@ const CREATURE_CONVERTED := &"creature_converted"
 const CREATURE_LEFT := &"creature_left"
 const CREATURE_AUGMENTED := &"creature_augmented"
 
+# --- Dating ----------------------------------------------------------------
+
+const DATE_CONTINUES := &"date_continues"            # {creature, date}
+const DATE_ENDED := &"date_ended"                    # {creature, date, reason}
+const DATE_JOINED := &"date_joined"                  # {creature, date}
+const DATE_WARMED := &"date_warmed"                  # {creature, date}
+const DATE_TALKED := &"date_talked"                  # {creature, date, location}
+const DATE_CURSED := &"date_cursed"                  # {creature, date}
+const DATE_INFORMED := &"date_informed"              # {creature, date}
+const DATE_DISASTER := &"date_disaster"              # {creature, dates}
+const DATE_HOLIDAY := &"date_holiday"                # {creature, date, days}
+const DATE_KIDNAPPED := &"date_kidnapped"            # {creature, date}
+const DATE_KIDNAP_FAILED := &"date_kidnap_failed"    # {creature, date, caught}
+
 # --- Stealing a car --------------------------------------------------------
 
 const CAR_FOUND := &"car_found"                      # {creature, wanted, found}

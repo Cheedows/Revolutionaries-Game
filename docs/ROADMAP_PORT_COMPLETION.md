@@ -162,7 +162,29 @@ Port the remaining behavior primarily from `src/basemode/`, `src/daily/` and sha
     more draws than it appears to and can end up with a worse number than it
     had. This is the only place in the original where a macro double-evaluates
     a roll; the rest were checked.
-- [ ] Dating/relationship activity behavior used by the original.
+- [x] Dating and relationships: `state/date_plan.gd` mirrors `datest`,
+    `systems/daily/dating/` ports `dateresult()`, `completedate()`,
+    `completevacation()` and the kidnapping branch, and `date_queue.gd` ports
+    the "DO DATES" pass of `advanceday()`. `systems/creature/relationships.gd`
+    ports `loveslaves()`/`loveslavesleft()`, which is the cap on how many
+    people one Liberal can juggle.
+  - **Subtle original behavior, easy to get wrong.** The evening's two rolls
+    are made before the menu is read, so breaking it off costs the same draws
+    as going through with it. A week away judges the other person as a
+    Conservative whatever their politics, and asks each of them for a skill
+    roll before deciding whether to roll it again for real. The list of ways a
+    three-date evening ends badly looks like eight lines but is seven: two of
+    them are missing a comma and the compiler joins them.
+  - Verified by the `dating` probe: five kinds of person, five ways to play
+    the evening, one date or three, three grades of Liberal, three things to
+    be holding, wanted or not, and the week away as well as the night out
+    (5400 samples), compared on draw counts, whether the arrangement survives,
+    the money, who ended up in the pool and on what terms, whose workplace was
+    given away, and both people's skills and attributes.
+  - **Not yet covered:** the re-education a kidnapped Conservative gets is the
+    interrogation system's, and the option to leave a new love slave where
+    they work as a sleeper is the recruitment prompt's — the port brings them
+    home, which is the answer with no rolls in it.
 - [ ] Interrogation.
 - [x] The nightly siege watch (`siegecheck()`): how close the police are to
     each safehouse, and who else has decided to pay a visit. Heat accumulates
