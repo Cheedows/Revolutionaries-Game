@@ -57,7 +57,7 @@ static func to_dict(creature: Creature) -> Dictionary:
 	recorded["clips"] = ItemCodec.pile_to_array(creature.clips)
 	recorded["spare_throwables"] = ItemCodec.pile_to_array(creature.spare_throwables)
 	recorded["carried"] = ItemCodec.pile_to_array(creature.carried)
-	recorded["augmentations"] = _names(creature.augmentations)
+	recorded["augmentations"] = creature.augmentations
 	recorded["interrogation"] = _interrogation_to_dict(creature.interrogation)
 	return recorded
 
@@ -86,7 +86,7 @@ static func from_dict(recorded: Dictionary) -> Creature:
 	creature.spare_throwables = ItemCodec.weapons_from_array(
 			recorded.get("spare_throwables", []))
 	creature.carried = ItemCodec.pile_from_array(recorded.get("carried", []))
-	creature.augmentations = _to_names(recorded.get("augmentations", []))
+	creature.augmentations = recorded.get("augmentations", {})
 	creature.interrogation = _interrogation_from(recorded.get("interrogation"))
 	return creature
 
@@ -121,16 +121,3 @@ static func _interrogation_from(recorded: Variant) -> Interrogation:
 		session.rapport[int(who[index])] = float(much[index])
 	return session
 
-
-static func _names(values: Array[StringName]) -> Array:
-	var encoded := []
-	for value: StringName in values:
-		encoded.append(String(value))
-	return encoded
-
-
-static func _to_names(values: Array) -> Array[StringName]:
-	var names: Array[StringName] = []
-	for value: Variant in values:
-		names.append(StringName(value))
-	return names

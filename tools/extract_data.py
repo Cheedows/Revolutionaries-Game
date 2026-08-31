@@ -408,7 +408,9 @@ def extract_augmentations(report: Report):
             "attribute": StringName(child_text(entry, "attribute")),
             "effect": to_int(child_text(entry, "effect")),
             "cost": to_int(child_text(entry, "cost")),
-            "difficulty": to_int(child_text(entry, "difficulty")),
+            # AugmentType's own constructor defaults, from augmenttype.cpp:
+            # five is a hard operation and nothing in the file says otherwise.
+            "difficulty": to_int(child_text(entry, "difficulty"), 5),
             "min_age": to_int(child_text(entry, "min_age"), 0),
             "max_age": to_int(child_text(entry, "max_age"), 999),
         }))

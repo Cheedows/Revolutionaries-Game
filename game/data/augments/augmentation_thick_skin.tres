@@ -11,6 +11,6 @@ type = &"skin"
 attribute = &"wisdom"
 effect = -3
 cost = 0
-difficulty = 0
+difficulty = 5
 min_age = 0
 max_age = 999

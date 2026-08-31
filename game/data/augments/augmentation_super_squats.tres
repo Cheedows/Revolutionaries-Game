@@ -11,6 +11,6 @@ type = &"legs"
 attribute = &"strength"
 effect = 2
 cost = 3000
-difficulty = 0
+difficulty = 5
 min_age = 0
 max_age = 999

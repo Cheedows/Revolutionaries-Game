@@ -77,7 +77,40 @@ Work top-to-bottom. Dependencies were chosen so later systems can reuse earlier 
 - [x] Wire site-plan LOOT steps only if parity requires behavior; preserve the original no-op if it is genuinely empty.
   - Genuinely empty: `configSiteLoot::build()` has no body. Recorded as a
     parity exception below.
-- [ ] Add any missing state fields discovered by the remaining systems without leaking UI concerns into `core/`.
+- [x] Add any missing state fields discovered by the remaining systems without leaking UI concerns into `core/`. The last of them: `Creature.augmentations`
+    was a list of idnames where the original keeps five slots, one per body
+    part, and is now a dictionary of them; the unused `state/augment.gd` went
+    with it.
+- [x] **Newly discovered required work, now done.** Three things were ported,
+    diffed against the original and then unreachable in play, which a sweep for
+    classes nothing outside their own file mentions turned up:
+  - the site specials (see Gate G), now on the use key;
+  - `advancelocations()`, which reopens a closed building and takes its guards
+    off — the original runs it at the end of every wait, after the day and the
+    month both, and `DailyTurn` now does;
+  - answering a siege, which is `Commands.answer_siege()` and
+    `Commands.surrender_siege()` — the original's base mode sends the squad
+    into the compound when the attackers are already inside it and out into the
+    street when they are not, on one key.
+- [x] **Newly discovered required work, now done.** Surgery in the safehouse
+    (`select_augmentation()`), in `systems/base/augmentation.gd`. One Liberal
+    operates on another with what they know of science and first aid; the
+    operation costs blood whether or not it works, a failure takes the part
+    off and a success leaves a bruise and the augment fitted.
+  - **Original quirks, reproduced.** The cost decides what is on the list and
+    is then never charged. The difficulty roll is out of a hundred difficulties
+    per point of skill and compared against a hundred, so a surgeon who knows
+    nothing divides by zero and always fails — and still spends the draw. The
+    two branches name the arms and legs in opposite orders, and the skin flips
+    a coin only when the operation fails.
+  - **Data defect found and fixed.** `AugmentType`'s constructor defaults
+    difficulty to five and nothing in `augmentations.xml` sets it, so every
+    augment in the port was a difficulty-zero operation that could not fail.
+  - Verified by the `surgery` probe: every augment, three grades of science and
+    first aid, three states of the patient's blood, three worlds — compared on
+    draw counts, whether the knife slipped, the blood left, whether the patient
+    lived, every wound flag, the attribute, whether it went in, and what the
+    surgeon learnt and earned.
 - [ ] Add targeted probes for currently unit-tested-but-unprobed arrest/prostitution branches where practical.
   - Was blocked on the chase system: in the original an arrest runs straight
     into `footchase()`, so the branch could not be recorded in isolation. The

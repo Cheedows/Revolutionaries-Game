@@ -206,7 +206,7 @@ func _a_game_in_progress(catalog: Catalog) -> GameState:
 		member.armor.bloody = true
 		member.spare_throwables.append(Weapon.new(&"WEAPON_COMBATKNIFE", 3))
 		member.carried.append(Loot.new(&"LOOT_SILVERWARE"))
-		member.augmentations.append(&"AUGMENT_EYE")
+		member.augmentations[&"head"] = &"AUGMENTATION_BRAIN_JUICE"
 	var captive := CreatureSpawn.spawn(state, rng, &"CREATURE_CORPORATE_CEO",
 			site.id, catalog)
 	state.add_creature(captive)

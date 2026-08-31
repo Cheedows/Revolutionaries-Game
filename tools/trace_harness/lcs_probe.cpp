@@ -12044,6 +12044,142 @@ void probe_dealership(FILE *out)
    }
 }
 
+// Surgery in the safehouse, from select_augmentation() in
+// src/basemode/activate.cpp: the confirm branch, with the menu taken out.
+void probe_surgery(FILE *out)
+{
+   for (int scenario = 0; scenario < 3; scenario++)
+   {
+      unsigned long run_seed = 715827883UL * (unsigned long)(scenario + 1);
+      lcs_trace_set_seed(run_seed);
+      initMainRNG();
+      delete_and_clear(location);
+      make_world(false);
+      uniqueCreatures.initialize();
+
+      for (int a = 0; a < len(augmenttype); a++)
+      for (int science = 0; science <= 4; science += 2)
+      for (int firstaid = 0; firstaid <= 4; firstaid += 2)
+      for (int blood = 40; blood <= 100; blood += 30)
+      {
+         unsigned long seed_used = 2147483647UL * (unsigned long)
+            ((((a * 3 + science / 2) * 3 + firstaid / 2) * 3 + (blood - 40) / 30)
+             + scenario * 1543 + 1);
+         lcs_trace_set_seed(seed_used);
+         initMainRNG();
+         ledger.force_funds(1000000);
+
+         Creature *cr = new Creature;
+         makecreature(*cr, CREATURE_POLITICALACTIVIST);
+         cr->set_skill(SKILL_SCIENCE, science);
+         cr->set_skill(SKILL_FIRSTAID, firstaid);
+         cr->juice = 0;
+
+         Creature *victim = new Creature;
+         makecreature(*victim, CREATURE_POLITICALACTIVIST);
+         victim->blood = blood;
+         victim->age = 25;
+         for (int w = 0; w < BODYPARTNUM; w++) victim->wound[w] = 0;
+
+         AugmentType *selected_aug = augmenttype[a];
+
+         fputs("{\"kind\":\"surgery\",\"surgeon\":", out);
+         chase_write_creature(out, *cr, true);
+         fputs(",\"patient\":", out);
+         chase_write_creature(out, *victim, true);
+         fprintf(out, ",\"rng\":[");
+         for (int i = 0; i < RNG_SIZE; i++)
+            fprintf(out, "%s%lu", i ? "," : "", ::seed[i]);
+         fputs("]", out);
+
+         long long before = lcs_trace_draw_count();
+         int skills = cr->get_skill(SKILL_SCIENCE)
+                    + 0.5 * cr->get_skill(SKILL_FIRSTAID);
+         int difficulty = selected_aug->get_difficulty();
+         int blood_saved = 10 * cr->get_skill(SKILL_SCIENCE)
+                         + 15 * cr->get_skill(SKILL_FIRSTAID);
+         if (blood_saved > 100) blood_saved = 100;
+         victim->blood -= 100 - blood_saved;
+
+         int botched = 0;
+         if (skills < difficulty
+             && LCSrandom((double)100 * difficulty / skills) < 100)
+         {
+            botched = 1;
+            unsigned char *wound = 0;
+            switch (selected_aug->get_type())
+            {
+            case AUGMENTATION_HEAD:
+               wound = &victim->wound[BODYPART_HEAD]; victim->blood -= 100; break;
+            case AUGMENTATION_BODY:
+               wound = &victim->wound[BODYPART_BODY]; victim->blood -= 100; break;
+            case AUGMENTATION_ARMS:
+               wound = LCSrandom(2) ? &victim->wound[BODYPART_ARM_LEFT]
+                                    : &victim->wound[BODYPART_ARM_RIGHT];
+               victim->blood -= 25; break;
+            case AUGMENTATION_LEGS:
+               wound = LCSrandom(2) ? &victim->wound[BODYPART_LEG_LEFT]
+                                    : &victim->wound[BODYPART_LEG_RIGHT];
+               victim->blood -= 25; break;
+            case AUGMENTATION_SKIN:
+               wound = LCSrandom(2) ? &victim->wound[BODYPART_HEAD]
+                                    : &victim->wound[BODYPART_BODY];
+               victim->blood -= 50; break;
+            }
+            *wound |= WOUND_NASTYOFF;
+         }
+         else
+         {
+            unsigned char *wound = 0;
+            switch (selected_aug->get_type())
+            {
+            case AUGMENTATION_HEAD: wound = &victim->wound[BODYPART_HEAD]; break;
+            case AUGMENTATION_BODY: wound = &victim->wound[BODYPART_BODY]; break;
+            case AUGMENTATION_ARMS:
+               wound = LCSrandom(2) ? &victim->wound[BODYPART_ARM_RIGHT]
+                                    : &victim->wound[BODYPART_ARM_LEFT];
+               break;
+            case AUGMENTATION_LEGS:
+               wound = LCSrandom(2) ? &victim->wound[BODYPART_LEG_RIGHT]
+                                    : &victim->wound[BODYPART_LEG_LEFT];
+               break;
+            case AUGMENTATION_SKIN: wound = &victim->wound[BODYPART_HEAD]; break;
+            }
+            *wound |= WOUND_BLEEDING;
+            *wound |= WOUND_BRUISED;
+            selected_aug->make_augment(
+               victim->get_augmentation(selected_aug->get_type()));
+            victim->adjust_attribute(selected_aug->get_attribute(),
+                                     selected_aug->get_effect());
+            cr->train(SKILL_SCIENCE, 15);
+            addjuice(*cr, 10, 1000);
+         }
+         if (victim->blood <= 0) victim->die();
+
+         fprintf(out, ",\"scenario\":%d,\"seed\":%lu,"
+                      "\"augment\":\"%s\",\"science\":%d,\"firstaid\":%d,"
+                      "\"blood\":%d,\"draws\":%lld,\"botched\":%d,"
+                      "\"skills\":%d,\"difficulty\":%d,\"blood_after\":%d,"
+                      "\"alive\":%d,\"attribute\":%d,\"surgeon_science\":%d,"
+                      "\"surgeon_juice\":%d,\"fitted\":%d,\"wounds\":[",
+                 scenario, seed_used, selected_aug->get_idname().c_str(),
+                 science, firstaid, blood,
+                 lcs_trace_draw_count() - before, botched, skills, difficulty,
+                 victim->blood, victim->alive ? 1 : 0,
+                 victim->get_attribute(selected_aug->get_attribute(), false),
+                 cr->get_skill_ip(SKILL_SCIENCE), cr->juice,
+                 victim->get_augmentation(selected_aug->get_type()).type != -1
+                    ? 1 : 0);
+         for (int w = 0; w < BODYPARTNUM; w++)
+            fprintf(out, "%s%d", w ? "," : "", (int)victim->wound[w]);
+         fputs("]}\n", out);
+
+         delete cr;
+         delete victim;
+      }
+   }
+}
+
 void probe_kidnap(FILE *out)
 {
    static const char *WEAPONS[] = {
@@ -13671,6 +13807,7 @@ void lcs_probe_run_if_requested()
    else if (!strcmp(which, "convert")) probe_convert(out);
    else if (!strcmp(which, "sally")) probe_sally(out);
    else if (!strcmp(which, "dealership")) probe_dealership(out);
+   else if (!strcmp(which, "surgery")) probe_surgery(out);
    else if (!strcmp(which, "lockup")) probe_lockup(out);
    else if (!strcmp(which, "prison_control")) probe_prison_control(out);
    else

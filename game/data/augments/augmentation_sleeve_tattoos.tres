@@ -11,6 +11,6 @@ type = &"arms"
 attribute = &"heart"
 effect = 2
 cost = 20
-difficulty = 0
+difficulty = 5
 min_age = 0
 max_age = 999

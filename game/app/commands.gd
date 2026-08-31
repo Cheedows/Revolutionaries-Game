@@ -27,6 +27,34 @@ static func load_from(session: Session, slot: String) -> bool:
 	return SaveGame.read(session, slot)
 
 
+## Answers a siege at [param site]: walk out and fight, or fall back inside.
+##
+## Which one it is is not the player's choice but the siege's — the original's
+## one key sends the squad into the compound when the attackers are already in
+## it and out into the street when they are not.
+static func answer_siege(session: Session, site: Location) -> void:
+	var siege: Siege = session.state.sieges.get(site.id)
+	if siege == null or not siege.active:
+		return
+	if siege.underway:
+		session.submit(SiegeAssault.engage(session.state, session.rng, site,
+				siege, session.catalog))
+	else:
+		session.submit(SiegeAssault.sally_forth(session.state, session.rng,
+				site, siege, session.catalog))
+	DispersalCheck.sweep_empty_squads(session.state)
+
+
+## Gives up a besieged safehouse.
+static func surrender_siege(session: Session, site: Location) -> void:
+	var siege: Siege = session.state.sieges.get(site.id)
+	if siege == null or not siege.active:
+		return
+	session.submit(SiegeSurrender.surrender(session.state, session.rng, site,
+			siege))
+	DispersalCheck.sweep_empty_squads(session.state)
+
+
 ## Puts [param creature] on [param activity].
 static func assign_activity(session: Session, creature: Creature,
 		activity: StringName) -> Array[Event]:

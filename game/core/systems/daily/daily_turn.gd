@@ -108,7 +108,7 @@ static func _close_the_day(state: GameState, rng: Rng,
 	if state.endgame_state == &"lost":
 		return done
 	if not bool(aged["month_rolled"]):
-		return done
+		return _upkeep(state, rng, done)
 
 	done.append(Event.new(Event.MONTH_ADVANCED, {
 		"month": state.calendar.month,
@@ -119,6 +119,18 @@ static func _close_the_day(state: GameState, rng: Rng,
 	var month: Variant = MonthlyTurn.run(state, rng, catalog)
 	if month is PendingIntent:
 		var asked: PendingIntent = month
-		return PendingIntent.new(asked.intent, asked.resume,
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					var after: Variant = asked.resume.call(answer)
+					if after is PendingIntent:
+						return after
+					return _upkeep(state, rng, done + (after as Array[Event])),
 				done + asked.events)
-	return done + (month as Array[Event])
+	return _upkeep(state, rng, done + (month as Array[Event]))
+
+
+## What the city does to itself overnight, which the original runs after the
+## day and the month both, at the very end of the wait.
+static func _upkeep(state: GameState, rng: Rng,
+		events: Array[Event]) -> Array[Event]:
+	return events + SiteUpkeep.advance(state, rng)

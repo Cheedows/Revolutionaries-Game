@@ -11,6 +11,6 @@ type = &"arms"
 attribute = &"strength"
 effect = 3
 cost = 4000
-difficulty = 0
+difficulty = 5
 min_age = 0
 max_age = 999

@@ -166,8 +166,10 @@ var clips: Array[Clip] = []
 var spare_throwables: Array[Weapon] = []
 var carried: Array[Item] = []
 
-## Installed augmentations, by augment idname.
-var augmentations: Array[StringName] = []
+## What has been fitted where: the augment's idname by body part, from
+## [constant Augmentation.SLOTS]. The original keeps five slots and lets each
+## hold one thing, which is what a dictionary of them is.
+var augmentations: Dictionary = {}
 
 
 func _init() -> void:
