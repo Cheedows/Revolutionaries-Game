@@ -22,6 +22,8 @@ jobs:
         run: python3 tools/audit_state.py
       - name: Every decision the original stops for is answerable
         run: python3 tools/audit_choices.py
+      - name: Every piece of the original's content is in the port
+        run: python3 tools/audit_content.py
 
   tests:
     name: Headless tests

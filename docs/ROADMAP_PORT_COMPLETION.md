@@ -1576,6 +1576,14 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     the tool with a reason each, so the residue is a fact in the tree rather
     than a claim in a document.
 
+    A fourth audit joined them afterwards: `tools/audit_content.py` compares
+    the port's Resources against the original's data files by idname, in both
+    directions. All 302 entries match — 36 weapons, 40 garments, 106 creature
+    types, 50 masks and the rest — which nothing else could have told us, since
+    a missing entry does not crash: the item simply never exists, and no probe
+    can miss what it never draws for. It skips what the original comments out,
+    which is why `CLIP_MOLOTOV` is rightly absent.
+
     The sweep found five decisions the port could not make at all, and they
     were ported before the gate was ticked: sleeper orders
     (`activate_sleepers`, whose activities existed in the monthly pass with
