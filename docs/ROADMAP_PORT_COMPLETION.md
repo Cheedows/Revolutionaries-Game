@@ -15,17 +15,19 @@ This document is the single source of truth for conversion progress. Do not crea
 
 | Area | Complete | Notes |
 |---|---:|---|
-| Port architecture / deterministic harness | 100% | `data -> core -> app -> ui`, RNG parity including the side-stream swaps, 71 probes, 12 golden traces, save format, four checks in CI. |
+| Port architecture / deterministic harness | 100% | `data -> core -> app -> ui`, RNG parity including the side-stream swaps, 71 probes, 12 golden traces, save format, six checks in CI. |
 | Data/state model | 100% | Every global the original mutates is mapped onto the port by `tools/audit_state.py`, which CI runs. |
-| Mechanical parity overall | 100% | Every function in the original's own sources is accounted for by `tools/audit_parity.py`, and every decision it stops for by `tools/audit_choices.py`. Both run in CI. |
+| Mechanical parity overall | 100% | Every function in the original's own sources is accounted for by `tools/audit_parity.py`, and every decision it stops for by `tools/audit_choices.py`; every piece of its content by `tools/audit_content.py`; and everything in the port is reachable by `tools/audit_reach.py`. All run in CI. |
 | Godot UI parity shell | 100% | Every original mode is reachable without a terminal, and every Intent carries options a player can pick — which `test_long_run` proves by playing three years at three seeds with nobody at the keyboard. |
 | **Whole Godot parity port** | **100%** | |
 
-What that claim rests on is in the tree rather than in this paragraph. Four
+What that claim rests on is in the tree rather than in this paragraph. Six
 things fail the build if the port drifts from the original: the layer rules,
-the function audit, the state audit and the decision audit. 279 tests pass,
-of which the probe and trace tests diff the port against an instrumented build
-of the original draw for draw.
+the function audit, the state audit, the decision audit, the content audit and
+the reachability audit — the last of which asks the opposite question, whether
+anything in the port can be reached by nothing. 310 tests pass, of which the
+probe and trace tests diff the port against an instrumented build of the
+original draw for draw.
 
 ## 2. Baseline already established
 
