@@ -64,12 +64,25 @@ func setup(session: Session) -> void:
 	_refresh()
 
 
-## Responsive rather than detected: the layout follows the room it is given, so
-## a desktop window dragged narrow becomes the phone layout and back, and a
-## test can ask for a phone by drawing into a phone-shaped viewport.
+## Resizing, and Android's back button. Responsive rather than detected: the
+## layout follows the room it is given, so a window dragged narrow becomes the
+## phone layout and back, and a test asks for a phone by drawing into one.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and _parts.has("page"):
 		_adapt()
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST and _parts.has("page"):
+		_step_back()
+
+
+## Back means "shut the thing I opened", or "never mind" to a question that
+## allows it. quit_on_go_back is off in the project settings so it can.
+func _step_back() -> void:
+	if BaseLayout.step_back(_parts):
+		_refresh()
+		return
+	if _session != null and _session.is_waiting() \
+			and _session.pending().intent.cancellable:
+		_on_answer(null)
 
 
 func _process(delta: float) -> void:
@@ -182,17 +195,11 @@ func _end(how: StringName) -> void:
 	_ended = true
 	_running = false
 	_run_button.button_pressed = false
-	_wait_button.disabled = true
-	var ending: StringName = &"won" if how == &"won" \
-			else EndCheck.cause(_session.state)
-	var place := ScoreFile.finish(_session, ending)
-	_log.append_heading("It is over. The squad %s."
-			% ("won" if how == &"won" else "is finished"))
-	if place >= 0:
-		_log.append("That is number %d in the book." % (place + 1),
-				Palette.ACCENT)
+	var said := BaseOrders.finish(_session, how == &"won")
+	_log.append_heading(said[0])
+	for line in said.slice(1):
+		_log.append(line, Palette.ACCENT)
 	_wait_button.text = "Back to the title"
-	_wait_button.disabled = false
 	_wait_button.pressed.disconnect(_advance_one_day)
 	_wait_button.pressed.connect(func() -> void: finished.emit())
 

@@ -191,6 +191,13 @@ func _build() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and _dialog != null:
 		_adapt()
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		# The back of the title screen is out of the game, which is the one
+		# place the button still means what Android means by it.
+		if _listing:
+			_menu()
+		else:
+			get_tree().quit()
 
 
 func _adapt() -> void:

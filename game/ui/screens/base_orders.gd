@@ -1,6 +1,6 @@
 class_name BaseOrders
 extends RefCounted
-## Telling somebody in the safehouse what to do.
+## Telling somebody in the safehouse what to do, and closing the book on them.
 ##
 ## The roster is a list of people with a picker beside each; this is what the
 ## picker means. Kept apart from base_screen.gd for the same reason the layout
@@ -9,6 +9,22 @@ extends RefCounted
 ##
 ## Each of these hands back the lines to write in the log rather than writing
 ## them, so nothing here has to know there is a log.
+
+
+## Closes a finished game: the score goes in the book, and the lines to say so
+## come back.
+##
+## [param won] is whether the squad won; when it did not, what finished them is
+## worked out here rather than passed in.
+static func finish(session: Session, won: bool) -> PackedStringArray:
+	var ending: StringName = &"won" if won else EndCheck.cause(session.state)
+	var place := ScoreFile.finish(session, ending)
+	var said := PackedStringArray()
+	said.append("It is over. The squad %s."
+			% ("won" if won else "is finished"))
+	if place >= 0:
+		said.append("That is number %d in the book." % (place + 1))
+	return said
 
 
 ## Puts [param creature] on [param activity].

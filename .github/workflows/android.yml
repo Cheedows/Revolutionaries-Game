@@ -86,6 +86,11 @@ jobs:
           ls "$sdk/build-tools"
           ls "$sdk"/build-tools/*/apksigner
           mkdir -p "$HOME/.config/godot"
+          # Writing this file by hand means Godot gets these four settings and
+          # the built-in default for everything else — including the Java SDK
+          # path, which it would otherwise fill in from JAVA_HOME the first
+          # time an editor starts. It signs the APK with apksigner, which is a
+          # shell script that needs java, so leaving it empty fails the export.
           # Which file Godot reads depends on how it spells its own version,
           # so both spellings are written and whichever it opens is right.
           for name in editor_settings-4.tres editor_settings-4.6.tres; do
@@ -94,6 +99,7 @@ jobs:
 
           [resource]
           export/android/android_sdk_path = "$sdk"
+          export/android/java_sdk_path = "$JAVA_HOME"
           export/android/debug_keystore = "$PWD/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
@@ -105,6 +111,8 @@ jobs:
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey"
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android"
           } >> "$GITHUB_ENV"
+          echo "--- what Godot will read ---"
+          cat "$HOME/.config/godot/editor_settings-4.6.tres"
 
       - name: Import the project
         run: godot --headless --path game --import

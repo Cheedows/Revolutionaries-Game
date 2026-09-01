@@ -10,6 +10,10 @@ config/name="Revolutionaries"
 config/description="A modernized port of Liberal Crime Squad (GPL-2.0-or-later)."
 config/version="0.1.0-port"
 run/main_scene="res://ui/screens/main.tscn"
+; Android's back button closes the game unless the game says otherwise, and a
+; player who has the paper open and presses back means "shut the paper". See
+; BaseLayout.step_back().
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [display]

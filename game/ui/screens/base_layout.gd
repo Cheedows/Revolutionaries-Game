@@ -205,3 +205,22 @@ static func focus(parts: Dictionary, inside: bool, reading: bool,
 	var fight: Control = parts["fight"]
 	fight.visible = fight.visible and not reading and not crowded_out
 	(parts["country"] as Button).visible = narrow
+
+
+## Takes one step back out of whatever is open, and says whether it did.
+##
+## Android's back button is not a key: it arrives as a notification and, left
+## alone, closes the game. A player who opens the paper and presses back means
+## "shut the paper", so this shuts the topmost thing that is open and reports
+## that it handled it. What it does not handle — nothing open at all — is the
+## screen's to answer.
+static func step_back(parts: Dictionary) -> bool:
+	var country: Button = parts["country"]
+	if country.visible and country.button_pressed:
+		country.button_pressed = false
+		return true
+	var panels: PanelStack = parts["panels"]
+	if panels.is_open():
+		panels.open(PanelStack.NONE, null)
+		return true
+	return false
