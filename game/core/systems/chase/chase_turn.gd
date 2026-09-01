@@ -185,8 +185,7 @@ static func wipe_out(state: GameState, squad: Squad) -> Array[Event]:
 		state.remove_vehicle(car)
 	state.chase.friendly_cars = PackedInt32Array()
 	for member: Creature in state.squad_members(squad):
-		member.alive = false
-		member.body.blood = 0
+		Mortality.die(state, member)
 		member.location = -1
 		member.squad_id = 0
 		events.append(Event.new(Event.CREATURE_DIED,

@@ -53,7 +53,7 @@ static func _a_day_older(state: GameState, rng: Rng,
 	# Animals and tanks do not age.
 	if creature.animal_gloss == &"none":
 		if creature.age > OLD_AGE:
-			events.append_array(_decline(rng, creature))
+			events.append_array(_decline(state, rng, creature))
 			if not creature.alive:
 				return events
 		if state.calendar.month == creature.birthday_month \
@@ -82,7 +82,8 @@ static func _a_day_older(state: GameState, rng: Rng,
 
 
 ## Old age, checked once for each decade lived past sixty.
-static func _decline(rng: Rng, creature: Creature) -> Array[Event]:
+static func _decline(state: GameState, rng: Rng,
+		creature: Creature) -> Array[Event]:
 	var events: Array[Event] = []
 	var decrement := 0
 	while creature.age - decrement > OLD_AGE:
@@ -92,8 +93,7 @@ static func _decline(rng: Rng, creature: Creature) -> Array[Event]:
 			# the standing that props it up no longer enough.
 			if AttributeRules.effective(creature, &"health", false) <= 0 \
 					and AttributeRules.effective(creature, &"health", true) <= 1:
-				creature.alive = false
-				creature.body.blood = 0
+				Mortality.die(state, creature)
 				events.append(Event.new(Event.CREATURE_DIED, {
 					"creature": creature.id, "cause": &"old_age",
 					"age": creature.age,

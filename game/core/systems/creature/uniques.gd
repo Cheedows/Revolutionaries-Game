@@ -27,6 +27,8 @@ static func initialize(state: GameState, rng: Rng, catalog: Catalog) -> void:
 static func new_ceo(state: GameState, rng: Rng, catalog: Catalog) -> void:
 	state.ceo = CreatureSpawn.spawn(state, rng, &"CREATURE_CORPORATE_CEO", -1,
 			catalog)
+	if state.ceo != null:
+		state.ceo.id = state.reserve_creature_id()
 	state.ceo_state = ALIVE
 
 
@@ -40,6 +42,7 @@ static func new_president(state: GameState, rng: Rng, catalog: Catalog) -> void:
 			catalog)
 	if president == null:
 		return
+	president.id = state.reserve_creature_id()
 	president.named = true
 	var proper: String = state.government.executive_names[Government.PRESIDENT]
 	var space := proper.find(" ")

@@ -218,8 +218,7 @@ static func _die(state: GameState, rng: Rng, attacker: Creature,
 	var events: Array[Event] = []
 	if not victim.alive:
 		return events
-	victim.alive = false
-	victim.body.blood = 0
+	Mortality.die(state, victim, rng, context.get(&"catalog"))
 
 	# Killing the other side is worth standing; killing your own is not.
 	var opposed := Alignment.value_of(target.alignment) \

@@ -72,7 +72,7 @@ static func forget(state: GameState, rng: Rng) -> Array[Event]:
 		var threshold := mini(rng.below(forgotten), FORGETTING_CEILING)
 		if creature.juice < threshold and creature.hire_id != -1 \
 				and not creature.sleeper:
-			creature.alive = false
+			Mortality.die(state, creature)
 			events.append(Event.new(Event.CREATURE_LEFT,
 					{"creature": creature.id, "reason": &"forgotten"}))
 	return events

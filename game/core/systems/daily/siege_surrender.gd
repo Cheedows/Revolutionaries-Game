@@ -156,8 +156,7 @@ static func _massacred(state: GameState, site: Location,
 			state.stats["dead"] = int(state.stats.get("dead", 0)) + 1
 		killed += 1
 		_leave(state, creature)
-		creature.alive = false
-		creature.body.blood = 0
+		Mortality.die(state, creature)
 		creature.location = -1
 
 	if siege.attacker == &"ccs" and site.type == &"industry_warehouse":

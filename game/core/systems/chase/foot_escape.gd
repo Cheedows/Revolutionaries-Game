@@ -176,8 +176,7 @@ static func _caught(state: GameState, rng: Rng, squad: Squad, member: Creature,
 	events.append(Event.new(Event.CHASE_CAUGHT,
 			{"creature": member.id, "by": kind, "fatal": fatal}))
 	if member.body.blood <= 0:
-		member.alive = false
-		member.body.blood = 0
+		Mortality.die(state, member, rng, catalog)
 	events.append_array(Capture.capture(state, member, catalog))
 	_leave_squad(squad, member)
 

@@ -68,16 +68,14 @@ static func _despair(state: GameState, rng: Rng, hostage: Creature,
 		if line == 4:
 			hostage.body.blood -= rng.below(SELF_HARM_SPREAD) + SELF_HARM_BASE
 		return
-	hostage.alive = false
-	hostage.body.blood = 0
+	Mortality.die(state, hostage)
 
 
 ## The hostage is dead, and whoever led it has to live with that.
 static func _died(state: GameState, rng: Rng, hostage: Creature,
 		lead: Creature, events: Array[Event]) -> Array[Event]:
 	hostage.interrogation = null
-	hostage.alive = false
-	hostage.body.blood = 0
+	Mortality.die(state, hostage)
 	state.kills += 1
 	events.append(Event.new(Event.HOSTAGE_DIED,
 			{"creature": hostage.id, "cause": &"interrogation"}))

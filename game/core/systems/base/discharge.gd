@@ -101,7 +101,7 @@ static func execute(state: GameState, rng: Rng,
 	if boss.location != creature.location:
 		return []
 
-	creature.alive = false
+	Mortality.die(state, creature)
 	Disbanding.clear_empty_squads(state)
 	state.stats[&"kills"] = int(state.stats.get(&"kills", 0)) + 1
 

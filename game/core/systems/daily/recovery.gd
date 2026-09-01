@@ -133,7 +133,7 @@ static func _treat(state: GameState, rng: Rng, patient: Creature,
 	# Checked before the night's bleeding rather than after, which is the
 	# original's order and means nobody dies of tonight's damage until tomorrow.
 	if patient.alive and patient.body.blood < 0:
-		patient.alive = false
+		Mortality.die(state, patient)
 		events.append(Event.new(Event.CREATURE_DIED,
 				{"creature": patient.id, "cause": &"injuries"}))
 

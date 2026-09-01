@@ -47,8 +47,7 @@ static func take_it_badly(state: GameState, rng: Rng, hostage: Creature,
 			hostage.attributes.adjust(&"health", -1)
 		else:
 			hostage.attributes.set_value(&"health", 0)
-			hostage.alive = false
-			hostage.body.blood = 0
+			Mortality.die(state, hostage)
 
 
 ## Beaten past the point of holding anything back.

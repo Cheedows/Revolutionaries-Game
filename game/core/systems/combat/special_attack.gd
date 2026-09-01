@@ -165,8 +165,7 @@ static func _won_over(state: GameState, rng: Rng, target: Creature,
 ## their squad id — only the copy that walked across the room gets one — so
 ## neither does this.
 static func _leave_the_squad(state: GameState, target: Creature) -> void:
-	target.alive = false
-	target.body.blood = 0
+	Mortality.die(state, target)
 	target.location = -1
 	var squad := state.active_squad()
 	if squad == null:

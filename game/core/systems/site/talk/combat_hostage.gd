@@ -165,8 +165,7 @@ static func _execute(state: GameState, rng: Rng, speaker: Creature,
 		if FAMOUS.has(victim.type):
 			state.site.crime_level += FAMOUS_CRIME
 		Encounters.make_loot(state, victim)
-		victim.alive = false
-		victim.body.blood = 0
+		Mortality.die(state, victim, rng, catalog)
 		state.creatures.erase(victim.id)
 	killer.prisoner_id = 0
 

@@ -149,6 +149,19 @@ func active_squad() -> Squad:
 
 
 ## Registers a creature and assigns it the next id.
+## An id from the same counter, for somebody the table does not hold.
+##
+## The chief executive and the President are made once and kept on the state
+## rather than in it, but the original makes them with `new Creature` like
+## anybody else, so they take an id from the same counter and the counter
+## moves. Without this they both sit at zero and collide the moment the squad
+## meets them.
+func reserve_creature_id() -> int:
+	var id := next_creature_id
+	next_creature_id += 1
+	return id
+
+
 func add_creature(creature: Creature) -> Creature:
 	creature.id = next_creature_id
 	next_creature_id += 1

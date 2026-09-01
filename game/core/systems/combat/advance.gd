@@ -123,7 +123,8 @@ static func one(state: GameState, rng: Rng, squad: Squad, creature: Creature,
 		events.append(Event.new(Event.CREATURE_BLED,
 				{"creature": creature.id, "amount": bleeding}))
 		if creature.body.blood <= 0:
-			events.append_array(_died(state, rng, creature, false))
+			events.append_array(_died(state, rng, creature, false,
+					context.get(&"catalog")))
 	return events
 
 
@@ -149,7 +150,7 @@ static func _burn(state: GameState, rng: Rng, creature: Creature,
 		events.append(Event.new(Event.CREATURE_BURNED,
 				{"creature": creature.id, "amount": damage}))
 		return events
-	return _died(state, rng, creature, true)
+	return _died(state, rng, creature, true, context.get(&"catalog"))
 
 
 ## Firefighter's gear takes most of a burn, less of it if the gear is poor.
@@ -169,10 +170,9 @@ static func _through_bunker_gear(damage: int, creature: Creature,
 
 ## Somebody who ran out of blood between rounds.
 static func _died(state: GameState, rng: Rng, victim: Creature,
-		by_fire: bool) -> Array[Event]:
+		by_fire: bool, catalog: Catalog = null) -> Array[Event]:
 	var events: Array[Event] = []
-	victim.alive = false
-	victim.body.blood = 0
+	Mortality.die(state, victim, rng, catalog)
 
 	if victim.squad_id != 0:
 		if victim.alignment == &"liberal":

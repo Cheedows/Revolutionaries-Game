@@ -80,8 +80,7 @@ static func reeducation(state: GameState, rng: Rng,
 		contact.confessions += 1
 		events.append(Event.new(Event.CONFESSED,
 				{"creature": prisoner.id, "against": contact.id}))
-	prisoner.alive = false
-	prisoner.body.blood = 0
+	Mortality.die(state, prisoner)
 	prisoner.location = -1
 	events.append(Event.new(Event.CREATURE_ABANDONED,
 			{"creature": prisoner.id}))
@@ -127,8 +126,7 @@ static func labor_camp(state: GameState, rng: Rng, prisoner: Creature,
 		JuiceRules.add(state, prisoner, CAMP_JUICE, 0)
 		JuiceRules.add(state, prisoner, CAMP_DESPAIR, CAMP_DESPAIR_FLOOR)
 		return events
-	prisoner.alive = false
-	prisoner.body.blood = 0
+	Mortality.die(state, prisoner)
 	prisoner.location = -1
 	events.append(Event.new(Event.CREATURE_DIED,
 			{"creature": prisoner.id, "cause": &"labor_camp"}))

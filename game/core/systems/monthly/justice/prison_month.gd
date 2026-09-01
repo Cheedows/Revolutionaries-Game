@@ -71,7 +71,6 @@ static func _execute(state: GameState, prisoner: Creature) -> Array[Event]:
 	var boss: Creature = state.creatures.get(prisoner.hire_id)
 	if boss != null:
 		JuiceRules.add(state, boss, -50, -50)
-	prisoner.alive = false
-	prisoner.body.blood = 0
+	Mortality.die(state, prisoner)
 	state.stats["dead"] = int(state.stats.get("dead", 0)) + 1
 	return [Event.new(Event.EXECUTED, {"creature": prisoner.id})] as Array[Event]

@@ -93,8 +93,7 @@ static func operate(state: GameState, rng: Rng, surgeon: Creature,
 		events.append_array(_fit(state, rng, surgeon, patient, type))
 
 	if patient.body.blood <= 0:
-		patient.alive = false
-		patient.body.blood = 0
+		Mortality.die(state, patient)
 		events.append(Event.new(Event.CREATURE_DIED,
 				{"creature": patient.id, "cause": &"surgery"}))
 	return events

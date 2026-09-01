@@ -123,8 +123,9 @@ static func _a_day_of_it(state: GameState, rng: Rng, site: Location,
 		if starving:
 			creature.body.blood -= rng.below(STARVING_SPREAD) + STARVING_MIN
 		if creature.body.blood <= 0:
-			creature.alive = false
-			creature.body.blood = 0
+			# No catalog here, and none needed: the two people the game keeps
+			# a single copy of are never starving in a besieged safehouse.
+			Mortality.die(state, creature)
 			events.append(Event.new(Event.CREATURE_DIED,
 					{"creature": creature.id, "cause": &"starvation"}))
 
@@ -184,8 +185,7 @@ static func _shot_at(state: GameState, rng: Rng, site: Location,
 		var at := Array(squad.member_ids).find(target.id)
 		if at != -1:
 			squad.member_ids.remove_at(at)
-	target.alive = false
-	target.body.blood = 0
+	Mortality.die(state, target)
 	return [Event.new(Event.CREATURE_DIED,
 			{"creature": target.id, "cause": manner})] as Array[Event]
 

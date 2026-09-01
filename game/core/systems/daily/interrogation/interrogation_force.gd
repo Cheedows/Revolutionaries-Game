@@ -61,8 +61,7 @@ static func execute(state: GameState, rng: Rng, hostage: Creature,
 		return false
 
 	hostage.interrogation = null
-	hostage.alive = false
-	hostage.body.blood = 0
+	Mortality.die(state, hostage)
 	state.kills += 1
 	rng.below(5)   # how it was done
 	_reckon(state, rng, killer, events)
@@ -117,8 +116,7 @@ static func _overdose(state: GameState, rng: Rng, hostage: Creature,
 	events.append(Event.new(Event.HOSTAGE_DRUGGED,
 			{"creature": hostage.id, "overdose": true}))
 	if AttributeRules.effective(hostage, &"health", false) <= 0 or best == 0:
-		hostage.alive = false
-		hostage.body.blood = 0
+		Mortality.die(state, hostage)
 		return bonus
 
 	if CheckRules.skill_check(rng, doctor, &"firstaid", Difficulty.CHALLENGING):

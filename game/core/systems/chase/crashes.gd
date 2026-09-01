@@ -138,8 +138,7 @@ static func _kill_prisoner(state: GameState, rng: Rng,
 		events.append(Event.new(Event.CHASE_PRISONER_KILLED, {
 			"creature": prisoner.id, "manner": rng.below(FATALITIES),
 		}))
-	prisoner.alive = false
-	prisoner.body.blood = 0
+	Mortality.die(state, prisoner)
 	# A Liberal being carried out is recorded as a loss; a Conservative hostage
 	# is simply gone.
 	if prisoner.squad_id != 0:
@@ -157,7 +156,7 @@ static func _kill_prisoner(state: GameState, rng: Rng,
 static func _kill(state: GameState, rng: Rng, rider: Creature,
 		squad: Squad) -> Array[Event]:
 	var manner := rng.below(DEATHS)
-	rider.alive = false
+	Mortality.die(state, rider)
 	rider.squad_id = 0
 	var index := Array(squad.member_ids).find(rider.id)
 	if index != -1:
