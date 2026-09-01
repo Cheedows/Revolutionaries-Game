@@ -42,7 +42,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.ATTACK_RELOADED:
 			return "%s reloads." % _who(state, data.get("attacker", 0))
 		Event.ATTACK_MISSED:
-			return "The blow goes wide."
+			return DodgeText.of(state, data)
 		Event.ATTACK_HIT:
 			return _hit(state, data)
 		Event.ATTACK_RESOLVED:
@@ -51,9 +51,7 @@ static func describe(event: Event, state: GameState) -> String:
 			return "%s's %s is ruined." % [_who(state, data.get("creature", 0)),
 					String(data.get("organ", &"insides")).replace("_", " ")]
 		Event.CREATURE_SHIELDED:
-			return "%s throws themselves in front of %s!" % [
-					_who(state, data.get("creature", 0)),
-					_who(state, data.get("for", 0))]
+			return _shielded(state, data)
 		Event.CREATURE_STUNNED:
 			return "%s reels." % _who(state, data.get("creature", 0))
 		Event.CREATURE_BLED:
@@ -88,6 +86,15 @@ static func describe(event: Event, state: GameState) -> String:
 
 
 ## Somebody swinging, before it is known whether it landed.
+## Taking a hit for somebody. The original marks the difference between doing
+## it for the living and doing it for a corpse.
+static func _shielded(state: GameState, data: Dictionary) -> String:
+	var alive := bool(data.get("alive", true))
+	return "%s %s shields %s%s!" % [_who(state, data.get("creature", 0)),
+			"heroically" if alive else "misguidedly",
+			_who(state, data.get("for", 0)), "" if alive else "'s corpse"]
+
+
 static func _swing(state: GameState, data: Dictionary) -> String:
 	var weapon := String(data.get("weapon", &""))
 	var with := " with %s" % weapon.replace("_", " ").to_lower() \

@@ -77,8 +77,13 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 	var burst := Burst.count(state, rng, attacker, attack, rolls, sneak, context)
 
 	if rolls["attack"] + rolls["bonus"] <= rolls["defence"]:
+		# The defence roll is carried because the original picks what to say
+		# about a miss from it — nineteen ways of getting out of the way, and
+		# another nineteen for somebody doing it in a car.
 		events.append(Event.new(Event.ATTACK_MISSED,
-				{"attacker": attacker.id, "target": target.id}))
+				{"attacker": attacker.id, "target": target.id,
+				"dodge": rolls["defence"],
+				"driving": mode == &"chase_car"}))
 		events.append_array(_counterattack(state, rng, attacker, target,
 				rolls, attack, context))
 	else:

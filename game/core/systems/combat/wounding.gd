@@ -199,8 +199,13 @@ static func _shield(state: GameState, target: Creature, amount: int,
 		if AttributeRules.effective(member, &"heart", true) > 8 \
 				and AttributeRules.effective(member, &"agility", true) > 4:
 			JuiceRules.add(state, member, SHIELD_JUICE, SHIELD_JUICE_CAP)
+			# Whether the person being shielded is still alive, which is the
+			# difference between doing it heroically and doing it
+			# misguidedly — the original's words for taking a bullet for a
+			# corpse.
 			events.append(Event.new(Event.CREATURE_SHIELDED,
-					{"creature": member.id, "for": target.id}))
+					{"creature": member.id, "for": target.id,
+					"alive": target.alive}))
 			return member
 	return target
 

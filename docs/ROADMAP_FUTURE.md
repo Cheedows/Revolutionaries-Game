@@ -110,9 +110,9 @@ rather than a description of it.
 
 What is still awkward on a phone, and is worth doing next:
 
-- **The voice backlog: 647 lines still to carry.** `tools/audit_voice.py` now
+- **The voice backlog: 578 lines still to carry.** `tools/audit_voice.py` now
   reads every string in `game/ui/` a player can see — 2,006 of them — and asks
-  whether the original had words for it. 1,348 are already the original's own.
+  whether the original had words for it. 1,482 are already the original's own.
   The rest are listed in `tools/voice_backlog.json`, and the tool fails the
   build on anything that is *not* in that list, so nothing new can be added
   while the list comes down. Emptying it is the job; the file is not a place
