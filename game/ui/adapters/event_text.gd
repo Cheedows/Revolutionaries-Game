@@ -32,6 +32,12 @@ static func describe(event: Event, state: GameState) -> String:
 		return ""
 	var data := event.data
 
+	# Winning somebody over is a conversation with a lot of lines in it; they
+	# live together in RecruitText rather than swamping the match below.
+	var recruiting := RecruitText.describe(event, state)
+	if not recruiting.is_empty():
+		return recruiting
+
 	match event.type:
 		Event.DAY_ADVANCED:
 			return ""  # the date is already on screen
@@ -146,6 +152,14 @@ static func _major_line(data: Dictionary) -> String:
 			return "The police subdue and arrest the squad."
 		&"special_edition":
 			return " ".join(SpecialEditionText.lines(data))
+	# A major event with no kind is one of the world's own stories: it has a
+	# view and a side and nothing else, because the paper carries the rest.
+	if data.has("view"):
+		var subject: String = LAW_NAMES.get(data["view"],
+				String(data["view"]).capitalize())
+		return "Something happened about %s, and it went %s way." % [subject,
+				"our" if bool(data.get("positive", false))
+						else "the other"]
 	return ""
 
 
