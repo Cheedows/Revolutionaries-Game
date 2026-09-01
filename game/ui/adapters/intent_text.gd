@@ -40,6 +40,7 @@ const QUESTIONS := {
 	Intent.CHOOSE_LIBERAL_AGENDA: "What matters most?",
 	Intent.ACKNOWLEDGE_REPORT: "",
 	Intent.CONFIRM_NEW_GAME: "Start again?",
+	Intent.CHOOSE_FOUNDER_NAME: "Who are you?",
 	Intent.CHOOSE_FOUNDER_BACKGROUND: "And then?",
 }
 

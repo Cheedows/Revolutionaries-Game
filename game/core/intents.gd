@@ -86,3 +86,4 @@ const CHOOSE_LIBERAL_AGENDA := &"choose_liberal_agenda"
 const ACKNOWLEDGE_REPORT := &"acknowledge_report"    # the original's "press any key"
 const CONFIRM_NEW_GAME := &"confirm_new_game"
 const CHOOSE_FOUNDER_BACKGROUND := &"choose_founder_background"
+const CHOOSE_FOUNDER_NAME := &"choose_founder_name"    # {name, gender}

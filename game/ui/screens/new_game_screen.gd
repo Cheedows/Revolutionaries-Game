@@ -34,6 +34,9 @@ signal started(session: Session)
 
 var _session: Session
 var _dialog: IntentDialog
+
+## Where a player types their own name, shown only while that is being asked.
+var _typed: LineEdit
 var _heading: Label
 var _chosen := {}
 var _choosing: Dictionary
@@ -86,6 +89,48 @@ func _ask_from(list: Array[Dictionary], heading: String) -> void:
 	_show(heading, Intent.new(Intent.CONFIRM_NEW_GAME, options, {}, false))
 
 
+## The founder's name and how the world reads them, which the original asks
+## before the questions and lets you roll again as often as you like.
+##
+## Ports the naming half of makecharacter() from src/title/newgame.cpp: another
+## first name, another surname, step the gender round, or type your own.
+func _ask_name() -> void:
+	var founder: Creature = _choosing["creature"]
+	var options: Array[Dictionary] = [
+		{"id": &"first", "label": "Another first name"},
+		{"id": &"last", "label": "Another surname"},
+		{"id": &"gender", "label": "Read differently"},
+		{"id": &"done", "label": "This will do"},
+	]
+	_typed.visible = true
+	_typed.placeholder_text = "or type a name"
+	_show("%s — %s" % [Founder.chosen_name(_choosing),
+			StrangerText.gender(founder)],
+			Intent.new(Intent.CHOOSE_FOUNDER_NAME, options, {}, false))
+
+
+## What the naming screen does with each answer.
+func _name_chosen(id: Variant) -> void:
+	match id:
+		&"first":
+			Founder.another_first_name(_session.rng, _choosing)
+		&"last":
+			Founder.another_last_name(_session.rng, _choosing)
+		&"gender":
+			Founder.cycle_gender(_choosing)
+		_:
+			var typed := _typed.text.strip_edges()
+			if typed != "":
+				var founder: Creature = _choosing["creature"]
+				founder.name = typed
+				founder.named = true
+			_typed.visible = false
+			_stage = 4
+			_ask_background()
+			return
+	_ask_name()
+
+
 func _ask_background() -> void:
 	var options: Array[Dictionary] = []
 	for index in FounderBackgrounds.OPTIONS:
@@ -118,7 +163,9 @@ func _on_chosen(id: Variant) -> void:
 			_stage = 3
 			NewGame.choose(_session.state, _session.rng, _chosen)
 			_choosing = Founder.begin(_session.rng)
-			_ask_background()
+			_ask_name()
+		3:
+			_name_chosen(id)
 		_:
 			# The original rolls a suggestion for every question whether or not
 			# it uses it, so the roll happens either way.
@@ -159,6 +206,11 @@ func _build() -> void:
 	_heading = Label.new()
 	_heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_heading)
+
+	_typed = LineEdit.new()
+	_typed.visible = false
+	_typed.custom_minimum_size = Vector2(280, 0)
+	page.add_child(_typed)
 
 	_dialog = IntentDialog.new()
 	_dialog.chosen.connect(_on_chosen)
