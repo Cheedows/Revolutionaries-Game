@@ -12,6 +12,9 @@ signal changed
 ## Emitted when the panel should close.
 signal closed
 
+## Emitted when this person should be put to work operating on somebody.
+signal surgery_wanted(surgeon: Creature)
+
 var _session: Session
 var _creature: Creature
 var _body: VBoxContainer
@@ -91,6 +94,8 @@ func _refresh() -> void:
 			else "nobody but themselves"))
 	_body.add_child(_promote_row())
 	_body.add_child(_discharge_row())
+	if not Augmentation.patients(state, _creature).is_empty():
+		_body.add_child(_surgery_row())
 
 	_heading("Carrying")
 	for line in DossierText.carrying(_creature, _session.catalog):
@@ -207,6 +212,24 @@ func _confirming(text: String, refused: String, act: Callable) -> Button:
 		closed.emit()
 		changed.emit())
 	return button
+
+
+## Somebody else in the safehouse could be operated on, and this is who would
+## be doing it.
+func _surgery_row() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var label := Label.new()
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.text = "Their hands are worth %d in surgery." % \
+			Augmentation.skill_of(_creature)
+	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	row.add_child(label)
+	var operate := Button.new()
+	operate.text = "Operate on somebody"
+	operate.pressed.connect(func() -> void: surgery_wanted.emit(_creature))
+	row.add_child(operate)
+	return row
 
 
 func _buttons() -> Control:

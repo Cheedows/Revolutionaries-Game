@@ -12,6 +12,10 @@ signal changed
 ## Emitted when a panel has something to tell the player.
 signal reported(message: String)
 
+## Emitted when a record asks for the surgery panel, which is another panel and
+## so cannot be opened from inside one.
+signal surgery_wanted(surgeon: Creature)
+
 ## Nothing open.
 const NONE := &"none"
 const DOSSIER := &"dossier"
@@ -23,6 +27,7 @@ const SETTINGS := &"settings"
 const JUSTICE := &"justice"
 const SLEEPERS := &"sleepers"
 const SQUAD := &"squad"
+const SURGERY := &"surgery"
 
 var _dossier: Dossier
 var _agenda: AgendaPanel
@@ -33,6 +38,7 @@ var _settings: SettingsPanel
 var _justice: JusticePanel
 var _sleepers: SleeperPanel
 var _squad: MarshallingPanel
+var _surgery: SurgeryPanel
 
 
 func _ready() -> void:
@@ -51,6 +57,7 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 	_justice.visible = false
 	_sleepers.visible = false
 	_squad.visible = false
+	_surgery.show_surgeon(session, null)
 	_dossier.show_creature(session, null)
 	match which:
 		DOSSIER:
@@ -71,6 +78,8 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 			_sleepers.show_sleepers(session)
 		SQUAD:
 			_squad.show_squad(session)
+		SURGERY:
+			_surgery.show_surgeon(session, subject as Creature)
 	visible = is_open()
 
 
@@ -79,7 +88,8 @@ func is_open() -> bool:
 	_build()
 	return _dossier.visible or _agenda.visible or _house.visible \
 			or _paper.visible or _stores.visible or _settings.visible \
-			or _justice.visible or _sleepers.visible or _squad.visible
+			or _justice.visible or _sleepers.visible or _squad.visible \
+			or _surgery.visible
 
 
 func _build() -> void:
@@ -95,14 +105,18 @@ func _build() -> void:
 	_justice = JusticePanel.new()
 	_sleepers = SleeperPanel.new()
 	_squad = MarshallingPanel.new()
+	_surgery = SurgeryPanel.new()
 	for panel: Control in [_dossier, _agenda, _house, _paper, _stores,
-			_settings, _justice, _sleepers, _squad]:
+			_settings, _justice, _sleepers, _squad, _surgery]:
 		panel.custom_minimum_size = Vector2(0, 320)
 		panel.visible = false
 		panel.connect(&"closed", func() -> void:
 			panel.visible = false
 			visible = false
 			changed.emit())
+		if panel.has_signal(&"surgery_wanted"):
+			panel.connect(&"surgery_wanted", func(surgeon: Creature) -> void:
+				surgery_wanted.emit(surgeon))
 		if panel.has_signal(&"changed"):
 			panel.connect(&"changed", func() -> void: changed.emit())
 		if panel.has_signal(&"saved"):

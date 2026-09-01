@@ -248,3 +248,21 @@ static func recruit_for(session: Session, creature: Creature,
 	creature.activity = &"recruiting"
 	creature.recruiting = type
 	return true
+
+
+## Has [param surgeon] fit [param augment] to [param patient]'s [param slot].
+##
+## Ports the tail of select_augmentation() from src/basemode/activate.cpp. The
+## surgery is done in the safehouse by whoever is standing there, and it costs
+## the patient blood whether or not it works.
+static func operate(session: Session, surgeon: Creature, patient: Creature,
+		augment: AugmentType) -> String:
+	if surgeon.id == patient.id:
+		return "Nobody operates on themselves."
+	if surgeon.location != patient.location or surgeon.location == -1:
+		return "They are not in the same place."
+	if augment == null:
+		return "There is nothing to fit."
+	session.emit(Augmentation.operate(session.state, session.rng, surgeon,
+			patient, augment))
+	return ""

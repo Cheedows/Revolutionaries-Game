@@ -95,6 +95,9 @@ func _connect() -> void:
 	_roster.dossier_wanted.connect(_open_dossier)
 	_roster.hostage_chosen.connect(_on_hostage_chosen)
 	_roster.recruit_chosen.connect(_on_recruit_chosen)
+	_panels.surgery_wanted.connect(func(surgeon: Creature) -> void:
+		_panels.open(PanelStack.SURGERY, _session, surgeon)
+		_refresh())
 	_panels.changed.connect(_refresh)
 	_panels.reported.connect(func(message: String) -> void:
 		_log.append(message, Palette.TEXT_DIM))
