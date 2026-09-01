@@ -98,8 +98,11 @@ func test_the_walk_holds_up_in_every_kind_of_building() -> void:
 
 ## Walks one visit to its end. Returns the session, or null once a failure has
 ## been reported.
+## [param armed] gives everybody a pistol and clips, which is what it takes for
+## a fight to be a fight rather than four people swinging at a guard.
 func _visit(seed_value: int, script: Array, check_options: bool = false,
-		building: StringName = &"corporate_headquarters") -> Session:
+		building: StringName = &"corporate_headquarters",
+		armed: bool = false) -> Session:
 	var session := Session.new(seed_value)
 	var state := session.state
 	state.endgame_state = &"none"
@@ -118,6 +121,13 @@ func _visit(seed_value: int, script: Array, check_options: bool = false,
 		member.location = home
 		member.name = "Liberal %d" % index
 		member.armor = Armor.new(&"ARMOR_CLOTHES")
+		if armed:
+			member.weapon = Weapon.new(&"WEAPON_SEMIPISTOL_9MM")
+			var type: WeaponType = session.catalog.get_entry(&"weapon",
+					member.weapon.type)
+			if type != null and not type.attacks.is_empty():
+				member.clips.append(Clip.new(type.attacks[0].ammotype, 4))
+				EquipmentRules.reload_weapon(member, session.catalog)
 		squad.member_ids.append(member.id)
 
 	var site: Location = state.locations.get(_first_of(state, building))

@@ -15,6 +15,10 @@ const SEEDS: Array[int] = [1, 777, 12345]
 const DAYS := 400
 const PATIENCE := 400
 
+## How long the raids are followed for afterwards: long enough for the arrests
+## to reach a courtroom and the heat to bring the police to the door.
+const AFTERMATH := 120
+
 ## What the player always says yes to, so the recruitment events happen.
 const ALWAYS_TAKE: Array = [RecruitMeeting.OFFER_TO_JOIN]
 
@@ -33,6 +37,8 @@ const SILENT := {
 	"major_event:moved_house": "their record says where they live",
 	"major_event:crime_unprosecuted": "nothing was booked, so nothing happened",
 	"squad_moved": "the floor plan shows where they are",
+	"attack_resolved": "a marker the rules read, not a blow: the swing that "
+			+ "caused it has already been described",
 }
 
 
@@ -115,6 +121,50 @@ func test_everything_a_visit_reports_has_words() -> void:
 				return
 			seen += _gather(session, session.drain_events(), silent)
 	check(seen > 40, "the visits produced something to look at, got %d" % seen)
+
+	var unexplained: Array[String] = []
+	for shape: String in silent:
+		if not SILENT.has(shape):
+			unexplained.append(shape)
+	unexplained.sort()
+	check(unexplained.is_empty(),
+			"the log says nothing about: %s" % ", ".join(unexplained))
+
+
+## And the same for what a raid sets off: the shooting, the arrests, the trial
+## that follows, and the siege the heat brings to the door. None of it happens
+## to a squad that stays at home and behaves.
+func test_everything_a_raid_reports_has_words() -> void:
+	var visits: Object = (load("res://tests/unit/test_site_visit.gd") as GDScript).new()
+	var raid: Array[int] = [
+		SiteLoop.MOVE_DOWN, SiteLoop.FIGHT, SiteLoop.FIGHT, SiteLoop.MOVE_DOWN,
+		SiteLoop.FIGHT, SiteLoop.GRAB, SiteLoop.FIGHT, SiteLoop.MOVE_LEFT,
+		SiteLoop.FIGHT, SiteLoop.TAKE,
+	]
+	var silent := {}
+	var seen := 0
+	for building: StringName in [&"government_policestation",
+			&"corporate_headquarters", &"business_bank"]:
+		for seed_value in [1, 7, 99]:
+			var session: Session = visits._visit(seed_value, raid, false,
+					building, true)
+			if session == null:
+				fail("a raid on a %s could not be walked" % building)
+				return
+			seen += _gather(session, session.drain_events(), silent)
+			# The months afterwards, which is where the consequences are.
+			for day in AFTERMATH:
+				Commands.advance_day(session, false)
+				var asked := 0
+				while session.is_waiting() and asked < PATIENCE:
+					asked += 1
+					session.answer(_pick(session.pending().intent))
+				if session.is_waiting():
+					fail("%s seed %d day %d would not stop asking"
+							% [building, seed_value, day])
+					return
+				seen += _gather(session, session.drain_events(), silent)
+	check(seen > 200, "the raids produced something to look at, got %d" % seen)
 
 	var unexplained: Array[String] = []
 	for shape: String in silent:
