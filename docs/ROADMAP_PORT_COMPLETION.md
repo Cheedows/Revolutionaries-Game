@@ -1538,6 +1538,29 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     lets a test drive one; the two widgets that only built on `_ready` were
     fixed while proving it.
 
+- [x] Everything the simulation reports reaches the player, and everything it
+    asks can be answered. This was the half of the gate that closing it missed:
+    every screen existed and every mode was reachable, but `core/` emits
+    structured Events and says nothing in words, and an event type with no
+    branch in the adapters falls through to "" — the simulation reports
+    something and the player is simply never told, which is not a crash and
+    nothing else catches. 147 of the 231 event types were in that state.
+
+    `test_every_event_speaks` reads `core/events.gd` for every type there is,
+    builds one of each from the field list written beside it, and fails on any
+    that comes out silent; fourteen are deliberately silent and say why. It
+    does the same for `core/intents.gd` against the questions the dialog asks.
+    `test_event_text` is the other half — four gameplay sweeps (a year at the
+    safehouse, visits to eight kinds of building, armed raids and their
+    aftermath, and fixtures for the basement, the diary and the cells) which
+    check what a run actually produces and assert a floor on how much of the
+    simulation each reached.
+
+    `test_playthrough` closes it from the other end: it plays a year through
+    `main.tscn` — the title, the questionnaire, the safehouse — taking every
+    answer off the buttons the dialog actually built, so a question the
+    interface cannot present is one it cannot answer.
+
 **Gate I:** all parity mechanics are accessible without a terminal/curses fallback.
 
 ### J. Parity closure sweep

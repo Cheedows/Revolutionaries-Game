@@ -84,6 +84,32 @@ func test_every_event_has_words() -> void:
 			"nothing is said about: %s" % ", ".join(mute))
 
 
+## And every question the simulation can ask has words too.
+##
+## An Intent with no question falls back on its own id with the underscores
+## taken out, which is a debugging string rather than something to read.
+func test_every_intent_has_a_question() -> void:
+	var mute: Array[String] = []
+	var counted := 0
+	var text := FileAccess.get_file_as_string(
+			"res://ui/adapters/intent_text.gd")
+	var pattern := RegEx.new()
+	pattern.compile('^const ([A-Z_0-9]+) := &"[a-z_0-9]+"')
+	for line in FileAccess.get_file_as_string(
+			"res://core/intents.gd").split("\n"):
+		var found := pattern.search(line)
+		if found == null:
+			continue
+		counted += 1
+		if not text.contains("Intent.%s" % found.get_string(1)):
+			mute.append(found.get_string(1))
+
+	check(counted > 25, "every intent was tried, got %d" % counted)
+	mute.sort()
+	check(mute.is_empty(),
+			"nothing is asked for: %s" % ", ".join(mute))
+
+
 ## The name, id and documented fields of one declaration, or {}.
 func _declaration(line: String) -> Dictionary:
 	var pattern := RegEx.new()
