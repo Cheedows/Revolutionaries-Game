@@ -25,6 +25,10 @@ const SELL := &"sell:"
 const BUY := &"buy:"
 const DEPARTMENT := &"in:"
 
+## Picking through the stores one thing at a time, rather than selling a whole
+## kind at once.
+const PICK := &"pick"
+
 
 ## Opens the shop at [param site]. Returns a [PendingIntent], or the events of
 ## a shop with nothing to offer.
@@ -63,6 +67,8 @@ static func _counter(state: GameState, rng: Rng, squad: Squad, site: Location,
 				Shopping.SELL_CLOTHES, Shopping.SELL_LOOT]:
 			options.append({"id": "%s%s" % [SELL, kind],
 					"label": "Sell the %s" % String(kind), "enabled": true})
+		options.append({"id": PICK, "label": "Go through the stores",
+				"enabled": not _stores(state, squad).is_empty()})
 	options.append({"id": LEAVE, "label": "Leave", "enabled": true})
 
 	return PendingIntent.new(
@@ -91,6 +97,8 @@ static func _chose(state: GameState, rng: Rng, squad: Squad, site: Location,
 		if not members.is_empty():
 			events.append_array(Shopping.buy(state, shop, shop.items[index],
 					members[0], catalog))
+	elif answer == String(PICK):
+		return _pick_through(state, rng, squad, site, shop, catalog)
 	elif answer.begins_with(String(SELL)):
 		var kind := StringName(answer.substr(String(SELL).length()))
 		var sold := Shopping.sell_all(state, kind, catalog)
@@ -99,6 +107,58 @@ static func _chose(state: GameState, rng: Rng, squad: Squad, site: Location,
 	var again: Variant = _counter(state, rng, squad, site, shop, catalog)
 	var asked: PendingIntent = again
 	return PendingIntent.new(asked.intent, asked.resume, events + asked.events)
+
+
+## The safehouse's stores, one thing at a time.
+##
+## Ports the fence's own screen: selling a whole kind at once is quick, but the
+## one incriminating thing usually has to go on its own, and the original lets
+## you say which.
+static func _pick_through(state: GameState, rng: Rng, squad: Squad,
+		site: Location, shop: ShopDef, catalog: Catalog) -> Variant:
+	var pile := _stores(state, squad)
+	var options: Array[Dictionary] = []
+	for index in pile.size():
+		var item: Item = pile[index]
+		if not Shopping.saleable(item, catalog):
+			continue
+		options.append({
+			"id": index,
+			# What is in the stores is an Item, which carries an idname and no
+			# description; the shop's own stock is a ShopItem, which carries
+			# both. The interface makes both readable.
+			"label": String(item.type),
+			"price": Shopping.fence_value(item, catalog) * item.count,
+			"enabled": true,
+		})
+	if options.is_empty():
+		return _counter(state, rng, squad, site, shop, catalog)
+
+	return PendingIntent.new(
+			Intent.new(Intent.CHOOSE_ITEMS_TO_FENCE, options,
+					{"location": site.id, "shop": String(shop.name)}, true),
+			func(answer: Variant) -> Variant:
+				var events: Array[Event] = []
+				if answer != null:
+					var sold := Shopping.sell_chosen(state,
+							PackedInt32Array([int(answer)]), catalog)
+					events.append_array(sold["events"] as Array[Event])
+				var again: Variant = _pick_through(state, rng, squad, site,
+						shop, catalog)
+				if again is PendingIntent:
+					var asked: PendingIntent = again
+					return PendingIntent.new(asked.intent, asked.resume,
+							events + asked.events)
+				return events + (again as Array[Event]),
+			[] as Array[Event])
+
+
+## What the squad has at home to sell.
+static func _stores(state: GameState, squad: Squad) -> Array[Item]:
+	var members := state.squad_members(squad) if squad != null else []
+	var home: Location = state.locations.get(members[0].base) \
+			if not members.is_empty() else null
+	return home.ground_loot if home != null else [] as Array[Item]
 
 
 ## The car dealership, which sells one thing and buys one thing.

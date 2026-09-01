@@ -135,7 +135,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.GAME_WON:
 			return "The %s agenda is the law of the land." % Branding.ORG_NAME
 		Event.GAME_LOST:
-			return "It is over."
+			return _lost(state, data)
 	# Anything from a fight or a chase reads better said the way a fight is
 	# said, so those go to the adapter that knows how.
 	return CombatText.describe(event, state)
@@ -214,6 +214,30 @@ static func _major_line(data: Dictionary) -> String:
 	# alternative is the simulation reporting into silence.
 	return "Something happened: %s." % str(data.get("kind", "")) \
 			.replace("_", " ")
+
+
+## How the country was lost, and where the squad was while it happened.
+##
+## The original picks the ending by `cantseereason`: whether the last of them
+## were on holiday, laying low, or inside. Ports the switch in
+## src/monthly/endgame.cpp.
+static func _lost(state: GameState, data: Dictionary) -> String:
+	var how := "It is over."
+	match data.get("cause", &""):
+		&"reaganified":
+			how = "The Conservatives have made the world in their image."
+		&"stalinized":
+			how = "The Comrades have made the world in their image."
+	match Awareness.reason(state):
+		Awareness.DATING:
+			return "You went on holiday while the country came apart. %s" % how
+		Awareness.HIDING:
+			return "You went into hiding while the country came apart. %s" % how
+		Awareness.DISBANDING:
+			return "There was nobody left to notice. %s" % how
+	if not Awareness.can_see(state):
+		return "While you were on the inside, the country degenerated. %s" % how
+	return how
 
 
 static func _place(state: GameState, data: Dictionary) -> String:
