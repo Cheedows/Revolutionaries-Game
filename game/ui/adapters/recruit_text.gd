@@ -8,6 +8,15 @@ extends RefCounted
 ## and from talkAboutIssues() in src/sitemode/talk.cpp.
 
 
+## The original names the kind of person being looked for, so the sentence is
+## built from its two halves.
+const UNABLE_TO_TRACK_DOWN := "%s was unable to track down a %s."
+const EXPLAINS := "%s explains %s views on %s."
+
+## The kind of person a recruiter went looking for, when the search found
+## nobody. The original names it; the port's event carries the type.
+
+
 ## The line for [param event], or "" for one the log has no use for.
 static func describe(event: Event, state: GameState) -> String:
 	var data := event.data
@@ -15,7 +24,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.RECRUIT_FOUND:
 			return _found(state, data)
 		Event.RECRUIT_INTERESTED:
-			return "%s got %s talking, and they want to meet again." % [
+			return "%s managed to set up a meeting with %s." % [
 				_who(state, data.get("by", 0)),
 				_who(state, data.get("creature", 0))]
 		Event.RECRUIT_REFUSED:
@@ -26,7 +35,7 @@ static func describe(event: Event, state: GameState) -> String:
 			return "%s meets %s." % [_who(state, data.get("creature", 0)),
 					_who(state, data.get("recruit", 0))]
 		Event.RECRUIT_MISSED:
-			return "%s double-booked and missed the meeting with %s." % [
+			return "%s accidentally missed the meeting with %s due to multiple booking of recruitment sessions." % [
 				_who(state, data.get("creature", 0)),
 				_who(state, data.get("recruit", 0))]
 		Event.RECRUIT_DISCUSSED:
@@ -46,11 +55,11 @@ static func _found(state: GameState, data: Dictionary) -> String:
 	var candidates: PackedInt32Array = data.get("candidates",
 			PackedInt32Array())
 	if candidates.is_empty():
-		return "%s asked around all day and found nobody." % who
+		return UNABLE_TO_TRACK_DOWN % [who, _kind(data)]
 	if candidates.size() == 1:
 		return "%s set up a meeting with %s." % [who,
 				_who(state, candidates[0])]
-	return "%s got information on %d people." % [who, candidates.size()]
+	return "%s was able to get information on multiple people." % who
 
 
 ## An afternoon of politics.
@@ -59,20 +68,19 @@ static func _discussed(state: GameState, data: Dictionary) -> String:
 	var subject := String(EventText.LAW_NAMES.get(view,
 			String(view).capitalize())).to_lower()
 	if bool(data.get("with_props", false)):
-		return "%s shares the literature on %s with %s." % [
+		return "%s shares %s with %s." % [
 			_who(state, data.get("creature", 0)), subject,
 			_who(state, data.get("recruit", 0))]
-	return "%s explains their views on %s to %s." % [
-		_who(state, data.get("creature", 0)), subject,
-		_who(state, data.get("recruit", 0))]
+	return EXPLAINS % [_who(state, data.get("creature", 0)), "their",
+			subject] + " (%s)" % _who(state, data.get("recruit", 0))
 
 
 ## How the meeting went, and whether there will be another.
 static func _persuaded(state: GameState, data: Dictionary) -> String:
 	var who := _who(state, data.get("recruit", 0))
 	if bool(data.get("warmly", false)):
-		return "%s found that insightful. They will definitely meet again tomorrow." % who
-	return "%s is sceptical about some of it. They will meet again tomorrow." % who
+		return "%s found %s's views to be insightful. They'll definitely meet again tomorrow." % who
+	return "%s is skeptical about some of %s's arguments. They'll meet again tomorrow." % who
 
 
 ## The end of it, one way or another.
@@ -81,9 +89,9 @@ static func _lost(state: GameState, data: Dictionary) -> String:
 	if bool(data.get("stood_up", false)):
 		return "%s was stood up, and is not coming back." % who
 	if bool(data.get("politely", false)):
-		return "%s is not convinced %s understands the problem. Maybe they need more experience." % [
+		return "%s isn't convinced %s really understands the problem." % [
 			who, _who(state, data.get("creature", 0))]
-	return "%s came off as slightly insane. There will not be another meeting." % \
+	return "%s comes off as slightly insane. This whole thing was a mistake. There won't be another meeting." % \
 			_who(state, data.get("creature", 0))
 
 
@@ -98,3 +106,10 @@ static func _joined(state: GameState, data: Dictionary) -> String:
 static func _who(state: GameState, id: int) -> String:
 	var creature: Creature = state.creatures.get(id)
 	return creature.name if creature != null else "Someone"
+
+
+## The kind of person a recruiter went looking for, said as the original says
+## it: the profession, in lower case.
+static func _kind(data: Dictionary) -> String:
+	return String(data.get("looking_for", &"recruit")) \
+			.trim_prefix("CREATURE_").replace("_", " ").to_lower()

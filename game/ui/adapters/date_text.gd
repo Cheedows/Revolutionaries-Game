@@ -6,22 +6,29 @@ extends RefCounted
 ## from date_activity() in src/daily/date.cpp.
 
 
+## The original writes this across three calls, because whether it is another
+## relationship or yet another depends on how many there already are.
+const NOT_SEDUCTIVE_ENOUGH := "%s isn't seductive enough to juggle "
+const RELATIONSHIP := " relationship."
+const ANOTHER_RELATIONSHIP := "another" + RELATIONSHIP
+
+
 ## The line for [param event], or "" for one this does not cover.
 static func describe(event: Event, state: GameState) -> String:
 	var data := event.data
 	match event.type:
 		Event.DATE_CONTINUES:
-			return "%s and %s will meet again tomorrow." % [
+			return "They'll meet again tomorrow." % [
 				_who(state, data.get("creature", 0)),
 				_who(state, data.get("date", 0))]
 		Event.DATE_JOINED:
-			return "%s is %s's, entirely and unconditionally." % [
+			return "In fact, %s is %s's totally unconditional love-slave!" % [
 				_who(state, data.get("date", 0)),
 				_who(state, data.get("creature", 0))]
 		Event.DATE_ENDED:
 			return _ended(state, data)
 		Event.DATE_WARMED:
-			return "%s is quite taken with %s's philosophy." % [
+			return "%s is quite taken with %s's unique life philosophy..." % [
 				_who(state, data.get("date", 0)),
 				_who(state, data.get("creature", 0))]
 		Event.DATE_TALKED:
@@ -29,15 +36,15 @@ static func describe(event: Event, state: GameState) -> String:
 				_who(state, data.get("date", 0)),
 				_who(state, data.get("creature", 0))]
 		Event.DATE_CURSED:
-			return "Talking with %s curses %s's mind with wisdom." % [
+			return "%s is slowly warming %s's frozen Conservative heart." % [
 				_who(state, data.get("creature", 0)),
 				_who(state, data.get("date", 0))]
 		Event.DATE_INFORMED:
 			return "%s was leaking to the police the whole time." % _who(state,
 					data.get("date", 0))
 		Event.DATE_DISASTER:
-			return "%s cannot juggle that many relationships." % _who(state,
-					data.get("creature", 0))
+			return NOT_SEDUCTIVE_ENOUGH % _who(state,
+					data.get("creature", 0)) + ANOTHER_RELATIONSHIP
 		Event.DATE_HOLIDAY:
 			return "%s goes away with %s for %d days." % [
 				_who(state, data.get("creature", 0)),
