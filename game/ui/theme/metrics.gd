@@ -133,3 +133,46 @@ static func _pressable(control: Control) -> Array[Control]:
 		if inner != null:
 			found.append_array(_pressable(inner))
 	return found
+
+
+## Stops everything inside [param root] from scrolling on its own.
+##
+## Fifteen widgets own a scroller, which is right on a desk: each pane holds
+## its own place, and the wheel goes to whichever one the pointer is over. A
+## phone has no pointer. Stacked in one column those become fifteen little
+## scroll boxes competing for the same drag, and which one moves depends on
+## where the thumb happened to land — which is the whole of why scrolling on a
+## phone felt broken.
+##
+## So on a phone they stop scrolling and grow to fit instead, and the screen
+## puts one scroller around the lot. Disabled is what makes a [ScrollContainer]
+## report its content's height as its own, so the column simply gets longer.
+##
+## Never touches a scroller already marked as the page's own — see
+## [method page_scroller].
+static func unscroll(root: Control, on: bool) -> void:
+	for scroll in _scrollers(root):
+		if scroll.has_meta(&"page_scroller"):
+			continue
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if on \
+				else ScrollContainer.SCROLL_MODE_AUTO
+
+
+## Marks [param scroll] as the one scroller a screen keeps, and takes its bars
+## away: a scrollbar is a thing to grab, and there is nothing to grab it with.
+## It still scrolls — dragging the page is how a phone has always done it.
+static func page_scroller(scroll: ScrollContainer) -> void:
+	scroll.set_meta(&"page_scroller", true)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+
+
+static func _scrollers(control: Control) -> Array[ScrollContainer]:
+	var found: Array[ScrollContainer] = []
+	if control is ScrollContainer:
+		found.append(control)
+	for child in control.get_children():
+		var inner := child as Control
+		if inner != null:
+			found.append_array(_scrollers(inner))
+	return found

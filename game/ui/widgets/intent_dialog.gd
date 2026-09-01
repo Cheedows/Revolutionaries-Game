@@ -25,6 +25,13 @@ const TOUCH_SCROLL_AFTER := 6
 ## its own. Past nine there is no key for it and the list is walked instead.
 const SHORTCUTS := 9
 
+## A note longer than this is a sentence rather than a price, and goes on a
+## line of its own under the option instead of in the column to the right.
+##
+## The original writes both kinds — "$60 a day" and "Liberalism is forgotten.
+## Is it too late to fight back?" — and only the first fits in a column.
+const NOTE_IS_PROSE := 16
+
 var _title: Label
 var _detail: Label
 var _options: VBoxContainer
@@ -127,7 +134,11 @@ func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
 	var button := Button.new()
 	# The number that picks it, so the shortcut is visible rather than folklore.
 	var place := _ids.size() + 1
-	button.text = "%d. %s" % [place, label] if place <= SHORTCUTS else label
+	var said: String = "%d. %s" % [place, label] if place <= SHORTCUTS else label
+	var aside := note.length() > NOTE_IS_PROSE
+	if aside:
+		said += "\n" + note
+	button.text = said
 	button.disabled = not enabled
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -140,7 +151,7 @@ func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
 	_ids[button] = id
 	row.add_child(button)
 
-	if not note.is_empty():
+	if not note.is_empty() and not aside:
 		var cost := Label.new()
 		cost.text = note
 		cost.add_theme_color_override("font_color", Palette.TEXT_DIM)

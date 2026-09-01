@@ -41,14 +41,23 @@ rather than a description of it.
   this is. There is no mobile build and no mobile screen: `base_screen.gd`
   re-reads the room on every resize, so a desktop window dragged narrow becomes
   the phone layout and back again.
-- **Responsive layout.** `BaseLayout.reflow()` sets the sizes and
-  `BaseLayout.focus()` decides what is on screen at once. On a phone the rule
-  is that a question gets the room: the roster, the squad and the log stand
-  aside until it is answered, and the law column — always up on a desk —
-  becomes another thing to open. The row of panel buttons wraps rather than
-  running off the edge, and rows of variable length (the marching order, the
-  cars, what somebody is carrying) fold onto a second line rather than being
-  cut off.
+- **One column, one scroller.** `BaseLayout.reflow()` sets the sizes and
+  `BaseLayout.focus()` decides what is on screen at once. A phone reads the
+  whole safehouse as a single column top to bottom, with whatever the game is
+  asking at the head of it. The law column — always up on a desk — becomes
+  another thing to open. The row of panel buttons wraps rather than running
+  off the edge, and rows of variable length (the marching order, the cars,
+  what somebody is carrying) fold onto a second line rather than being cut
+  off.
+- **Nothing scrolls inside anything else.** Fifteen widgets own a scroller,
+  which is right on a desk — each pane holds its place and the wheel goes to
+  whichever one the pointer is over. Stacked in one column on a phone they
+  became fifteen little scroll boxes fighting over the same drag, and which
+  one moved depended on where the thumb landed. `Metrics.unscroll()` switches
+  every one of them off there and lets it grow to fit, and the screen puts one
+  bar-less scroller around the lot; the log keeps thirty lines instead of four
+  hundred so the page has an end. A test counts the scrollers that can move
+  and fails at anything but one.
 - **Touch targets.** `Metrics.enlarge()` puts a floor under the height of
   everything that can be pressed, because the theme alone is not enough for a
   control built a moment ago. The floor plan draws its squares at more than
@@ -58,6 +67,16 @@ rather than a description of it.
   it always was, which is what made this cheap — and the number-key shortcuts
   are a convenience rather than a route. Text is typed into `LineEdit`s, which
   Android answers with its own keyboard. Nothing is reachable only by hovering.
+- **The original's words, where it had words.** The menus had been reworded
+  into something flatter — "We Didn't Start The Fire" as "a strong
+  Conservative Crime Squad", "Grinding is Conservative!" as "Learn quickly in
+  the field", "Procuring a Wheelchair" as "Look after the wheelchairs", which
+  is not even the same job. Presentation is the port's to write where the
+  original printed nothing; where it printed words, those words are content.
+  `tools/audit_voice.py` is the sixth check in CI and holds each carried label
+  against the original's, failing on a paraphrase and on a row that misquotes
+  `src/` — and the labels the port does write itself are named in it with the
+  reason.
 - **The back button means back.** Android's back button closes the game unless
   the game says otherwise, which is not what a player who has just opened the
   paper means by it. `quit_on_go_back` is off and `BaseLayout.step_back()`
@@ -88,8 +107,9 @@ rather than a description of it.
 
 What is still awkward on a phone, and is worth doing next:
 
-- The log, the roster and an open panel still compete for one column. A phone
-  wants tabs or a drawer, not a stack of things taking turns being hidden.
+- The voice pass covered the menus, which is where the rewording was worst. The
+  event, news and combat prose is mostly carried already but has not been
+  audited line by line; `audit_voice.py` is the place to extend when it is.
 - Landscape on a phone gets the desktop layout at finger size, which fits but
   is dense. It is the two-column layout that should give way at a height
   threshold, not only a width one.

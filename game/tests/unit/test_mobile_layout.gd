@@ -240,6 +240,64 @@ func _fits_and_can_be_hit(screen: Control, where: String) -> bool:
 	return true
 
 
+func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
+	for scene in ["title_screen", "new_game_screen"]:
+		var opening := _screen_in(PHONE, scene)
+		var one := _scrollers(opening["screen"], true)
+		if one.size() != 1:
+			fail("%s has %d scrollers: %s" % [scene, one.size(), _names(one)])
+		_drop(opening)
+
+	var held := _screen_in(PHONE)
+	var screen: Control = held["screen"]
+	var moving := _scrollers(screen, true)
+	equal(moving.size(), 1, "one scroller on a phone, found %d: %s"
+			% [moving.size(), _names(moving)])
+	if moving.size() == 1:
+		check(moving[0].vertical_scroll_mode
+				== ScrollContainer.SCROLL_MODE_SHOW_NEVER,
+				"and it has no bar to grab")
+
+	# Opening a panel must not bring a second one back with it.
+	for entry: Array in BaseLayout.PANEL_BUTTONS:
+		(_named(screen, str(entry[1])) as Button).pressed.emit()
+		var still := _scrollers(screen, true)
+		if still.size() != 1:
+			fail("%s brought back %d scrollers: %s"
+					% [entry[0], still.size(), _names(still)])
+			break
+	_drop(held)
+
+	# A desk is the other way round: each pane keeps its own, and the page
+	# does not move under them.
+	var desk := _screen_in(DESK)
+	check(_scrollers(desk["screen"], true).size() > 1,
+			"a desk keeps a scroller per pane")
+	_drop(desk)
+
+
+## Every scroller under [param control], or only the ones that actually move.
+func _scrollers(control: Control, moving: bool = false) -> Array[Control]:
+	var found: Array[Control] = []
+	var scroll := control as ScrollContainer
+	if scroll != null and (not moving
+			or scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED):
+		found.append(scroll)
+	for child in control.get_children():
+		var inner := child as Control
+		if inner != null:
+			found.append_array(_scrollers(inner, moving))
+	return found
+
+
+func _names(controls: Array[Control]) -> String:
+	var said := PackedStringArray()
+	for control in controls:
+		said.append(_describe(control.get_parent() as Control)
+				if control.get_parent() is Control else "?")
+	return ", ".join(said)
+
+
 func test_the_country_is_reachable_on_a_phone() -> void:
 	var held := _screen_in(PHONE)
 	var screen: Control = held["screen"]

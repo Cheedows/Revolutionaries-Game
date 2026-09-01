@@ -19,6 +19,7 @@ const QUIT := &"quit"
 const BACK := &"back"
 
 var _dialog: IntentDialog
+var _scroll: ScrollContainer
 var _heading: Label
 var _epigraph: Label
 var _body: RichTextLabel
@@ -152,14 +153,21 @@ func _build() -> void:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
+	# The whole screen scrolls as one thing on a phone, rather than the list
+	# of options scrolling inside it. See Metrics.unscroll().
+	_scroll = ScrollContainer.new()
+	_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_scroll.offset_left = 24
+	_scroll.offset_top = 24
+	_scroll.offset_right = -24
+	_scroll.offset_bottom = -24
+	add_child(_scroll)
+
 	var page := VBoxContainer.new()
-	page.set_anchors_preset(Control.PRESET_FULL_RECT)
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page.add_theme_constant_override("separation", 12)
-	page.offset_left = 24
-	page.offset_top = 24
-	page.offset_right = -24
-	page.offset_bottom = -24
-	add_child(page)
+	_scroll.add_child(page)
 
 	_heading = Label.new()
 	_heading.add_theme_color_override("font_color", Palette.ACCENT)
@@ -202,6 +210,17 @@ func _notification(what: int) -> void:
 
 func _adapt() -> void:
 	theme = UiTheme.build(Metrics.touch(self))
+	var narrow := Metrics.narrow(self)
+	if _scroll != null:
+		if narrow:
+			Metrics.page_scroller(_scroll)
+		else:
+			if _scroll.has_meta(&"page_scroller"):
+				_scroll.remove_meta(&"page_scroller")
+			_scroll.horizontal_scroll_mode = \
+					ScrollContainer.SCROLL_MODE_DISABLED
+			_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		Metrics.unscroll(_scroll, narrow)
 	if _dialog != null:
 		_dialog.compact(Metrics.narrow(self))
 	Metrics.enlarge(self, Metrics.touch(self))

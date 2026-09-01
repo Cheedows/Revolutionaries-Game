@@ -7,10 +7,16 @@ extends PanelContainer
 ## scrolls.
 
 ## Lines kept before the oldest are dropped.
+##
+## Far fewer on a phone: the log no longer scrolls on its own there — the whole
+## page does — so every line kept is page to scroll past, and four hundred of
+## them would bury everything else.
 const HISTORY := 400
+const NARROW_HISTORY := 30
 
 var _lines: VBoxContainer
 var _scroll: ScrollContainer
+var _kept := HISTORY
 
 
 func _ready() -> void:
@@ -54,7 +60,7 @@ func append(text: String, colour: Color = Palette.TEXT) -> void:
 	label.add_theme_color_override("font_color", colour)
 	_lines.add_child(label)
 
-	while _lines.get_child_count() > HISTORY:
+	while _lines.get_child_count() > _kept:
 		var oldest := _lines.get_child(0)
 		_lines.remove_child(oldest)
 		oldest.queue_free()
@@ -65,6 +71,16 @@ func append(text: String, colour: Color = Palette.TEXT) -> void:
 		return
 	await get_tree().process_frame
 	_scroll.scroll_vertical = int(_scroll.get_v_scroll_bar().max_value)
+
+
+## Keeps a shorter history, for a page that scrolls as one.
+func compact(on: bool) -> void:
+	_build()
+	_kept = NARROW_HISTORY if on else HISTORY
+	while _lines.get_child_count() > _kept:
+		var oldest := _lines.get_child(0)
+		_lines.remove_child(oldest)
+		oldest.queue_free()
 
 
 ## Adds a heading, for the start of a day or a report.

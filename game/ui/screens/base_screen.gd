@@ -279,11 +279,14 @@ func _refresh() -> void:
 	if inside:
 		_map.refresh(_session.state)
 	_fight.refresh(_session.state)
-	BaseLayout.focus(_parts, inside, _panels.is_open(), _session.is_waiting(),
-			_narrow, _country)
+	BaseLayout.focus(_parts, inside, _panels.is_open(), _narrow, _country)
 	# Whatever was just rebuilt — a roster row, an open panel, a question —
-	# has to be big enough to hit before the player sees it.
+	# has to be big enough to hit, and must not have brought its own scroller
+	# back with it, before the player sees it. Both are cheap and idempotent,
+	# and here rather than in reflow() because a panel builds itself the first
+	# time it is opened, long after the screen was laid out.
 	Metrics.enlarge(self, Metrics.touch(self))
+	Metrics.unscroll(_parts["columns"], _narrow)
 
 
 ## Asks where the squad is going, through the same dialog as everything else.

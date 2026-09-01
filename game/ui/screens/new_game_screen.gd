@@ -6,34 +6,54 @@ extends Control
 ## [IntentDialog] every other decision in the game goes through, so there is
 ## one place that knows how to ask something.
 
-## What the first screen offers, in the original's order.
+## What the first screen offers, in the original's order and its words.
+##
+## The names are the original's jokes and they are the point: a switch called
+## "We Didn't Start The Fire" tells you something about the game you are about
+## to play that "a strong Conservative Crime Squad" does not. Carried from
+## src/title/newgame.cpp rather than described afresh.
 const SWITCHES: Array[Dictionary] = [
-	{&"id": &"classic", &"label": "Classic mode",
-			&"note": "No Conservative Crime Squad"},
-	{&"id": &"strong_ccs", &"label": "A strong Conservative Crime Squad",
-			&"note": "They come for you"},
-	{&"id": &"nightmare_laws", &"label": "Nightmare laws",
-			&"note": "The country has already lost"},
-	{&"id": &"multiple_cities", &"label": "More than one city"},
-	{&"id": &"no_court_purge", &"label": "No court purge, no term limits"},
-	{&"id": &"stalin", &"label": "Stalin mode"},
+	{&"id": &"classic", &"label": "Classic Mode",
+			&"note": "No Conservative Crime Squad."},
+	{&"id": &"strong_ccs", &"label": "We Didn't Start The Fire",
+			&"note": "The CCS starts active and extremely strong."},
+	{&"id": &"nightmare_laws", &"label": "Nightmare Mode",
+			&"note": "Liberalism is forgotten. Is it too late to fight back?"},
+	{&"id": &"multiple_cities", &"label": "National LCS",
+			&"note": "Advanced play across multiple cities."},
+	{&"id": &"no_court_purge", &"label": "Marathon Mode",
+			&"note": "Prevent Liberals from amending the Constitution."},
+	{&"id": &"stalin", &"label": "Stalinist Mode",
+			&"note": "Enable Stalinist Comrade Squad (not fully implemented)."},
 ]
 
 const WIN_CONDITIONS: Array[Dictionary] = [
-	{&"id": &"elite_liberal", &"label": "Win by making the country Liberal"},
-	{&"id": &"easy", &"label": "Win by passing the Liberal agenda"},
+	{&"id": &"elite_liberal", &"label": "No Compromise Classic",
+			&"note": "I will make all our laws Elite Liberal!"},
+	{&"id": &"easy", &"label": "Democrat Mode",
+			&"note": "Most laws must be Elite Liberal, some can be Liberal."},
 ]
 
+## The original heads this screen "Field Learning" and says underneath it what
+## field learning covers, which is worth keeping: the switch is meaningless
+## without it.
+const FIELD_LEARNING := \
+		"Field Learning (affects Security, Stealth, Disguise, & Driving)"
+
 const SKILL_RATES: Array[Dictionary] = [
-	{&"id": &"fast", &"label": "Learn quickly in the field"},
-	{&"id": &"classic", &"label": "Learn as the original does"},
-	{&"id": &"hard", &"label": "Learn slowly"},
+	{&"id": &"fast", &"label": "Fast skills",
+			&"note": "Grinding is Conservative!"},
+	{&"id": &"classic", &"label": "Classic",
+			&"note": "Excellence requires practice."},
+	{&"id": &"hard", &"label": "Hard Mode",
+			&"note": "Learn from the best, or face arrest!"},
 ]
 
 signal started(session: Session)
 
 var _session: Session
 var _dialog: IntentDialog
+var _scroll: ScrollContainer
 
 ## Where a player types their own name, shown only while that is being asked.
 var _typed: LineEdit
@@ -77,15 +97,16 @@ func _ask_switches() -> void:
 			"label": "%s  %s" % ["[x]" if on else "[ ]", switch[&"label"]],
 			"note": switch.get(&"note", ""),
 		})
-	options.append({"id": &"done", "label": "Begin"})
-	_show("How hard should it be?", Intent.new(Intent.CONFIRM_NEW_GAME,
+	options.append({"id": &"done", "label": "Continue"})
+	_show("Advanced Gameplay Options", Intent.new(Intent.CONFIRM_NEW_GAME,
 			options, {}, false))
 
 
 func _ask_from(list: Array[Dictionary], heading: String) -> void:
 	var options: Array[Dictionary] = []
 	for entry: Dictionary in list:
-		options.append({"id": entry[&"id"], "label": entry[&"label"]})
+		options.append({"id": entry[&"id"], "label": entry[&"label"],
+				"note": entry.get(&"note", "")})
 	_show(heading, Intent.new(Intent.CONFIRM_NEW_GAME, options, {}, false))
 
 
@@ -150,14 +171,14 @@ func _on_chosen(id: Variant) -> void:
 		0:
 			if id == &"done":
 				_stage = 1
-				_ask_from(WIN_CONDITIONS, "What counts as winning?")
+				_ask_from(WIN_CONDITIONS, "Your Agenda")
 				return
 			_chosen[id] = not bool(_chosen.get(id, false))
 			_ask_switches()
 		1:
 			_chosen[&"win_condition"] = id
 			_stage = 2
-			_ask_from(SKILL_RATES, "How fast does anybody learn?")
+			_ask_from(SKILL_RATES, FIELD_LEARNING)
 		2:
 			_chosen[&"field_skill_rate"] = id
 			_stage = 3
@@ -189,14 +210,21 @@ func _build() -> void:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
+	# The whole screen scrolls as one thing on a phone, rather than the list
+	# of options scrolling inside it. See Metrics.unscroll().
+	_scroll = ScrollContainer.new()
+	_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_scroll.offset_left = 24
+	_scroll.offset_top = 24
+	_scroll.offset_right = -24
+	_scroll.offset_bottom = -24
+	add_child(_scroll)
+
 	var page := VBoxContainer.new()
-	page.set_anchors_preset(Control.PRESET_FULL_RECT)
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page.add_theme_constant_override("separation", 12)
-	page.offset_left = 24
-	page.offset_top = 24
-	page.offset_right = -24
-	page.offset_bottom = -24
-	add_child(page)
+	_scroll.add_child(page)
 
 	var title := Label.new()
 	title.text = Branding.GAME_TITLE
@@ -228,6 +256,17 @@ func _notification(what: int) -> void:
 
 func _adapt() -> void:
 	theme = UiTheme.build(Metrics.touch(self))
+	var narrow := Metrics.narrow(self)
+	if _scroll != null:
+		if narrow:
+			Metrics.page_scroller(_scroll)
+		else:
+			if _scroll.has_meta(&"page_scroller"):
+				_scroll.remove_meta(&"page_scroller")
+			_scroll.horizontal_scroll_mode = \
+					ScrollContainer.SCROLL_MODE_DISABLED
+			_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		Metrics.unscroll(_scroll, narrow)
 	if _dialog != null:
 		_dialog.compact(Metrics.narrow(self))
 	Metrics.enlarge(self, Metrics.touch(self))

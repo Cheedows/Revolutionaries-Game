@@ -55,10 +55,19 @@ static func build(screen: Control) -> Dictionary:
 	parts["status"] = StatusBar.new()
 	page.add_child(parts["status"])
 
+	# The one scroller a phone gets. On a desk it is switched off and each
+	# pane keeps its own, which is what a pointer expects; on a phone it is
+	# the only thing that moves. See Metrics.unscroll().
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.add_child(scroll)
+	parts["scroll"] = scroll
+
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 12)
-	page.add_child(columns)
+	scroll.add_child(columns)
 	parts["columns"] = columns
 
 	parts["laws"] = LawList.new()
@@ -133,9 +142,30 @@ static func reflow(parts: Dictionary, narrow: bool) -> void:
 	page.offset_bottom = -gap
 
 	for part: Variant in [parts["roster"], parts["map"], parts["laws"],
-			parts["dialog"], parts["status"]]:
+			parts["dialog"], parts["status"], parts["log"]]:
 		if (part as Object).has_method(&"compact"):
 			(part as Object).call(&"compact", narrow)
+
+	# One scroller, or fifteen. See Metrics.unscroll() for why a phone gets one.
+	var scroll: ScrollContainer = parts["scroll"]
+	var columns: Control = parts["columns"]
+	if narrow:
+		Metrics.page_scroller(scroll)
+		columns.size_flags_vertical = Control.SIZE_FILL
+	else:
+		if scroll.has_meta(&"page_scroller"):
+			scroll.remove_meta(&"page_scroller")
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	Metrics.unscroll(columns, narrow)
+
+	# A phone reads the column top to bottom, so whatever the game is asking
+	# goes first and everything else is below it. On a desk the question sits
+	# where it always has, under the log it is about.
+	var right: Control = parts["right"]
+	var dialog: Control = parts["dialog"]
+	right.move_child(dialog, 0 if narrow else right.get_child_count() - 1)
 
 
 ## The row along the bottom: waiting, running, and one button per panel.
@@ -179,31 +209,29 @@ static func _controls(parts: Dictionary) -> Control:
 
 ## Decides what is on screen at once.
 ##
-## On a wide screen the answer is "nearly everything", which is the whole point
-## of not being a terminal any more. A phone cannot pay for that, so the rule
-## there is that whatever the player has been asked gets the room: a question
-## on a phone is the screen, and the roster, the squad and the log stand aside
-## until it has been answered.
+## Nearly everything, which is the whole point of not being a terminal any
+## more — and on a phone too, now that the column scrolls: things used to take
+## turns being hidden because the column was a fixed height and there was no
+## room, and taking turns is worse than reading downwards. What is hidden here
+## is only what would be wrong to show: the floor plan outside a building, the
+## roster inside one.
 ##
 ## [param country] is whether the player has asked for the law column on a
 ## screen too narrow to keep it up all the time.
 static func focus(parts: Dictionary, inside: bool, reading: bool,
-		asking: bool, narrow: bool, country: bool) -> void:
+		narrow: bool, country: bool) -> void:
 	var laws_up := true if not narrow else country
 	(parts["laws"] as Control).visible = laws_up
 	# On a phone the law column is the whole width when it is up at all, so
 	# everything it would have sat beside stands down while it is.
-	var crowded_out := narrow and (laws_up or (asking and not reading))
 	(parts["right"] as Control).visible = not (narrow and laws_up)
 
 	(parts["map"] as Control).visible = inside and not reading
-	(parts["roster"] as Control).visible = \
-			not inside and not reading and not crowded_out
-	(parts["squad"] as Control).visible = \
-			not inside and not reading and not crowded_out
-	(parts["log"] as Control).visible = not crowded_out
+	(parts["roster"] as Control).visible = not inside and not reading
+	(parts["squad"] as Control).visible = not inside and not reading
+	(parts["log"] as Control).visible = true
 	var fight: Control = parts["fight"]
-	fight.visible = fight.visible and not reading and not crowded_out
+	fight.visible = fight.visible and not reading
 	(parts["country"] as Button).visible = narrow
 
 

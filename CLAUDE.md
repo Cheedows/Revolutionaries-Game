@@ -21,9 +21,10 @@ build the golden traces come from. Nothing under `game/` may depend on it.
 
 **Parity is still enforced, not merely achieved.** `tools/audit_parity.py`,
 `tools/audit_state.py`, `tools/audit_choices.py` and `tools/audit_content.py`
-fail the build when the port stops accounting for something the original does,
-and `tools/audit_reach.py` fails it when something in the port can be reached
-by nothing; 71 probes and 12 golden
+fail the build when the port stops accounting for something the original does;
+`tools/audit_voice.py` fails it when the port paraphrases a label the original
+had words for, and `tools/audit_reach.py` when something in the port can be
+reached by nothing; 71 probes and 12 golden
 traces diff it against the original draw for draw. A deliberate departure means
 updating those and saying so. An accidental one means a red build.
 
