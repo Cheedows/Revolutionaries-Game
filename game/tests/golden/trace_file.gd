@@ -7,7 +7,10 @@ extends RefCounted
 ## and its whole simulation state.
 
 const TRACE_DIR := "res://tests/golden/traces"
-const MAX_SIZE := 64 * 1024 * 1024
+## The largest probe decompresses to a little over 64MB — the door probe, which
+## is every kind of door against every kind of disguise — so the ceiling is set
+## well clear of it rather than at it.
+const MAX_SIZE := 192 * 1024 * 1024
 
 
 ## Every recorded (script, seed) pair, as {name, seed, path}.

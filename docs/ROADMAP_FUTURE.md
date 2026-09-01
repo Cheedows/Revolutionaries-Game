@@ -20,6 +20,30 @@ Once deterministic parity gives us a stable baseline, decide deliberately whethe
 - Remove any equivalent of the `alarmwait()` race rather than emulating it.
 - Audit other quirks discovered during the final parity sweep and classify each as **keep**, **fix**, or **replace**.
 
+The sweep is done, and the quirks it kept are not listed again here: every one
+is written up at the code that reproduces it, marked `**Original quirk,
+reproduced.**`, with what the original does and why it is worth a draw.
+`grep -rn "Original quirk" game/core` is the list, and it is the list that
+cannot go stale. Two are marked *not* reproduced, and both are deliberate: the
+headline bonus written to index -1, which in C lands on whatever is in front of
+the array, and the question asked of a Guardian writer whose answer the essay
+then never reads.
+
+Three things the port fixed rather than reproduced, because the original is
+broken rather than quirky, and they are worth revisiting only if evidence turns
+up that anything depended on them:
+
+- The newspaper's *rendering* draws. Justification depends on the eighty-column
+  layout, the ad boxes and the literal English, so the paper is written from a
+  presentation stream seeded from the date. The mechanical pass is still diffed
+  draw for draw with the drawing removed from both sides.
+- Creatures the game has finished with. The original deletes them; the port
+  marked them and kept them, which was a leak rather than a behaviour, and
+  `Tombstones` now clears them.
+- Membership. The original's pool is a list; the port read `join_days > 0`,
+  which is zero on the day somebody joins, so a new recruit was not a member
+  until the following morning. `Creature.enlisted` says it outright.
+
 ## 2. Full UI / UX modernization
 
 After every original mode is functionally accessible in Godot:
