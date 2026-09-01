@@ -1,7 +1,8 @@
 # Revolutionaries — Port Completion Roadmap
 
-**Status:** canonical active roadmap  
-**Goal:** complete the remaining Liberal Crime Squad → Godot 4.6 conversion to mechanical parity in one sustained implementation push, without introducing new mechanics until parity is closed.  
+**Status:** the conversion is complete. Gates A through J are green and
+section 8 — what to do with the scaffolding now that it is — is what remains.  
+**Goal:** complete the Liberal Crime Squad → Godot 4.6 conversion to mechanical parity, without introducing new mechanics until parity is closed. Done.  
 **Mainline:** the repository's default/canonical branch is currently `master` (there is no `main` branch).  
 **Architecture:** `docs/port/ARCHITECTURE.md` is binding.
 
@@ -9,17 +10,22 @@ This document is the single source of truth for conversion progress. Do not crea
 
 ## 1. How much is left?
 
-These are effort-weighted estimates, not line-count claims. The old C++ interleaves UI, input, simulation and data, so literal LOC percentages would be misleading.
+**Nothing.** Gates A through J are all green: the conversion is complete, and
+`game/` is the whole playable implementation.
 
-| Area | Approx. complete | Approx. remaining | Notes |
-|---|---:|---:|---|
-| Port architecture / deterministic harness | 90–95% | 5–10% | Core/app/data/UI boundaries, RNG parity, trace harness, save framework and CI rules exist. |
-| Data/state model | 80–90% | 10–20% | Major resources and state holders exist; long-tail state discovered by remaining systems may still be needed. |
-| Mechanical parity overall | 40–45% | 55–60% | Creature/items/politics/world/site construction are strongest; several entire gameplay modes remain. |
-| Godot UI parity shell | 10–15% | 85–90% | Safehouse/base screen proves the seam; most screens and Intent presentation do not exist. |
-| **Whole Godot parity port** | **35–40%** | **60–65%** | Best current estimate including simulation and the UI needed to play all original modes. |
+| Area | Complete | Notes |
+|---|---:|---|
+| Port architecture / deterministic harness | 100% | `data -> core -> app -> ui`, RNG parity including the side-stream swaps, 71 probes, 12 golden traces, save format, four checks in CI. |
+| Data/state model | 100% | Every global the original mutates is mapped onto the port by `tools/audit_state.py`, which CI runs. |
+| Mechanical parity overall | 100% | Every function in the original's own sources is accounted for by `tools/audit_parity.py`, and every decision it stops for by `tools/audit_choices.py`. Both run in CI. |
+| Godot UI parity shell | 100% | Every original mode is reachable without a terminal, and every Intent carries options a player can pick — which `test_long_run` proves by playing three years at three seeds with nobody at the keyboard. |
+| **Whole Godot parity port** | **100%** | |
 
-The work already completed is disproportionately valuable: the architecture, deterministic RNG, extracted content, trace/probe machinery, state model, save format and headless session remove much of the risk from finishing the remaining systems.
+What that claim rests on is in the tree rather than in this paragraph. Four
+things fail the build if the port drifts from the original: the layer rules,
+the function audit, the state audit and the decision audit. 279 tests pass,
+of which the probe and trace tests diff the port against an instrumented build
+of the original draw for draw.
 
 ## 2. Baseline already established
 
@@ -1628,7 +1634,8 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     is the list and it cannot go stale; `ROADMAP_FUTURE.md` says so, names the
     two deliberately not reproduced, and names the three things the port fixed
     rather than reproduced because the original is broken rather than quirky.
-- [ ] Update the completion estimate in this file to 100% only when all gates are green.
+- [x] Update the completion estimate in this file to 100% only when all gates
+    are green. They are; see section 1.
 
 **Gate J / PORT DONE:** Godot is the complete playable implementation and the legacy C++ is no longer required at runtime or as an implementation dependency.
 
