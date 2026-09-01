@@ -23,6 +23,70 @@ of the original; and long/full-game tests exercise the Godot version without a
 terminal. A deliberate departure from the original means updating those tests
 and audits; an accidental one means a red build.
 
+## 0. Playtesting on Android — done
+
+Numbered zero because it came before the rest and is finished; everything
+below it is still a decision rather than a plan.
+
+The point was not a phone port. It was to make the game reachable: a build
+that can be downloaded and installed from the phone it is going to be played
+on, without a PC in the loop, so that the thing being argued about is the game
+rather than a description of it.
+
+- **One interface, two sizes.** `ui/theme/metrics.gd` answers two questions the
+  rest of the interface asks: how much room there is, and whether what is
+  hitting the screen is a fingertip or a pointer. They are deliberately
+  separate — a tablet is wide and still touched, a desktop window dragged thin
+  is narrow and still moused — and neither is answered by asking what platform
+  this is. There is no mobile build and no mobile screen: `base_screen.gd`
+  re-reads the room on every resize, so a desktop window dragged narrow becomes
+  the phone layout and back again.
+- **Responsive layout.** `BaseLayout.reflow()` sets the sizes and
+  `BaseLayout.focus()` decides what is on screen at once. On a phone the rule
+  is that a question gets the room: the roster, the squad and the log stand
+  aside until it is answered, and the law column — always up on a desk —
+  becomes another thing to open. The row of panel buttons wraps rather than
+  running off the edge, and rows of variable length (the marching order, the
+  cars, what somebody is carrying) fold onto a second line rather than being
+  cut off.
+- **Touch targets.** `Metrics.enlarge()` puts a floor under the height of
+  everything that can be pressed, because the theme alone is not enough for a
+  control built a moment ago. The floor plan draws its squares at more than
+  twice the size and shows less of the building, so a square next to the squad
+  can be hit with a thumb.
+- **No keyboard and no hover anywhere.** Every question is a list of buttons —
+  it always was, which is what made this cheap — and the number-key shortcuts
+  are a convenience rather than a route. Text is typed into `LineEdit`s, which
+  Android answers with its own keyboard. Nothing is reachable only by hovering.
+- **Builds you can install from a phone.** `.github/workflows/android.yml`
+  exports a debug APK on every push and attaches it to the run; a push to
+  `master` also rolls the `mobile-latest` prerelease over to it, so the
+  Releases page keeps one permanent link to the newest build. No secrets are
+  involved: the build makes a throwaway debug keystore on the spot, which is
+  enough to install and deliberately not enough to publish.
+- **Tested rather than configured.** `tests/unit/test_mobile_layout.gd` draws
+  each screen into a 400x800 viewport — a small phone, upright — and measures
+  what comes out: whether anything runs off the side, whether everything
+  pressable is 48 pixels tall, whether every panel and somebody's record fit,
+  whether a year can be played and a building walked with nothing but taps.
+  It found the overflows it was written to find. The workflow builds the APK
+  rather than only declaring how one would be built.
+
+What is still awkward on a phone, and is worth doing next:
+
+- The log, the roster and an open panel still compete for one column. A phone
+  wants tabs or a drawer, not a stack of things taking turns being hidden.
+- Landscape on a phone gets the desktop layout at finger size, which fits but
+  is dense. It is the two-column layout that should give way at a height
+  threshold, not only a width one.
+- Nothing is gesture-driven: no swipe between panels, no pinch on the floor
+  plan, no long-press for what is now a tooltip. Tooltips in particular have
+  no touch equivalent at all yet.
+- The APK is unsigned in any meaningful sense and arm64 only. A release build
+  wants a real key, both architectures and a launcher icon.
+- There is no way to save to or restore from anywhere but the device, which
+  makes moving a game between a phone and a desk impossible.
+
 ## 1. Post-parity bug-fix pass
 
 Use the deterministic baseline to decide deliberately which inherited LCS

@@ -28,6 +28,9 @@ var _garment_choices: Array[StringName] = []
 ## one is. Set the same way, and for the same reason.
 var _recruit_choices: Array[Dictionary] = []
 
+## Whether a row has to fold onto more than one line to fit.
+var _compact := false
+
 
 func _ready() -> void:
 	_build()
@@ -70,6 +73,17 @@ func offer_recruits(choices: Array[Dictionary]) -> void:
 	_recruit_choices = choices
 
 
+## Folds each row onto as many lines as it needs, or back onto one.
+##
+## A row is a name, a condition, what the person is doing and a way in to their
+## record, lined up in columns — which is what makes twenty of them readable at
+## a glance, and which does not fit across a phone. Compact keeps every part of
+## the row and lets it wrap instead of dropping any of it: a member of the
+## squad the player cannot reassign is worse than one who takes two lines.
+func compact(on: bool) -> void:
+	_compact = on
+
+
 ## Redraws from [param state].
 func refresh(state: GameState) -> void:
 	_build()
@@ -90,32 +104,35 @@ func refresh(state: GameState) -> void:
 
 
 func _row(creature: Creature, held: Array[Creature]) -> Control:
-	var row := HBoxContainer.new()
+	var row: Container = HFlowContainer.new() if _compact else HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("h_separation", 8)
+	row.add_theme_constant_override("v_separation", 4)
 
 	var name_label := Label.new()
 	name_label.text = creature.name
-	name_label.custom_minimum_size = Vector2(180, 0)
+	name_label.custom_minimum_size = Vector2(_wide(180), 0)
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.add_theme_color_override("font_color",
 			Palette.for_alignment(Alignment.value_of(creature.alignment)))
 	row.add_child(name_label)
 
 	var juice := Label.new()
 	juice.text = "%d juice" % creature.juice
-	juice.custom_minimum_size = Vector2(90, 0)
+	juice.custom_minimum_size = Vector2(_wide(90), 0)
 	juice.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(juice)
 
 	var condition := Label.new()
 	condition.text = _condition(creature)
-	condition.custom_minimum_size = Vector2(130, 0)
+	condition.custom_minimum_size = Vector2(_wide(130), 0)
 	condition.add_theme_color_override("font_color",
 			Palette.TEXT_DIM if creature.body.blood > 50 else Palette.CONSERVATIVE)
 	row.add_child(condition)
 
 	# What they are doing is a choice, so it is a control rather than a label.
 	var activities := OptionButton.new()
-	activities.custom_minimum_size = Vector2(190, 0)
+	activities.custom_minimum_size = Vector2(_wide(190), 0)
 	for index in ActivityAssignment.AVAILABLE.size():
 		var activity: StringName = ActivityAssignment.AVAILABLE[index]
 		activities.add_item(ActivityText.of(activity), index)
@@ -149,7 +166,7 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 ## Which garment a tailor is working on.
 func _garments(creature: Creature) -> Control:
 	var picker := OptionButton.new()
-	picker.custom_minimum_size = Vector2(180, 0)
+	picker.custom_minimum_size = Vector2(_wide(180), 0)
 	var choices := _garment_choices
 	for index in choices.size():
 		picker.add_item(String(choices[index]).trim_prefix("ARMOR_")
@@ -165,7 +182,7 @@ func _garments(creature: Creature) -> Control:
 ## Who a recruiter is out looking for.
 func _recruits(creature: Creature) -> Control:
 	var picker := OptionButton.new()
-	picker.custom_minimum_size = Vector2(230, 0)
+	picker.custom_minimum_size = Vector2(_wide(230), 0)
 	var choices := _recruit_choices
 	for index in choices.size():
 		var type: StringName = choices[index]["type"]
@@ -181,7 +198,7 @@ func _recruits(creature: Creature) -> Control:
 ## Which prisoner a guard is watching.
 func _hostages(creature: Creature, held: Array[Creature]) -> Control:
 	var picker := OptionButton.new()
-	picker.custom_minimum_size = Vector2(180, 0)
+	picker.custom_minimum_size = Vector2(_wide(180), 0)
 	for index in held.size():
 		picker.add_item(held[index].name, index)
 		if creature.tending_id == held[index].id:
@@ -189,6 +206,11 @@ func _hostages(creature: Creature, held: Array[Creature]) -> Control:
 	picker.item_selected.connect(func(index: int) -> void:
 		hostage_chosen.emit(creature, held[index]))
 	return picker
+
+
+## A column width, shrunk to what the screen can afford.
+func _wide(pixels: int) -> int:
+	return Metrics.column(self, pixels) if _compact else pixels
 
 
 ## What is currently true of this person, in a word or two.

@@ -1,0 +1,135 @@
+name: Android
+
+# A playtest build you can install from a phone.
+#
+# Every push builds a debug APK and attaches it to the run, so it can be
+# downloaded from the Actions tab on the phone it is going to be installed on.
+# A push to master also rolls the "mobile-latest" prerelease over to it, which
+# is a shorter path to the same file: the Releases page keeps one permanent
+# link to the newest build.
+#
+# Nothing here needs a secret. Android requires an APK to be signed before it
+# can be installed at all, so the build makes a throwaway debug keystore on the
+# spot with the well-known debug credentials and signs with that. It is enough
+# to install and play; it is not enough to publish, and deliberately so.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.6-stable
+
+jobs:
+  apk:
+    name: Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          base=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}
+          curl -sSL -o godot.zip "$base/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          chmod +x "Godot_v${GODOT_VERSION}_linux.x86_64"
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          godot --version
+
+      - name: Install the export templates
+        run: |
+          base=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}
+          curl -sSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q templates.tpz
+          # The archive unpacks to templates/; Godot looks for them under the
+          # version they belong to.
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
+          mkdir -p "$dest"
+          mv templates/* "$dest/"
+          ls "$dest" | head
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Make a throwaway debug keystore
+        run: |
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey \
+            -keypass android -keystore "$PWD/debug.keystore" \
+            -storepass android -dname "CN=Android Debug,O=Android,C=US" \
+            -validity 9999 -deststoretype pkcs12
+
+      - name: Point Godot at the Android SDK and that keystore
+        run: |
+          sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "Android SDK at $sdk"
+          ls "$sdk/build-tools" || true
+          mkdir -p "$HOME/.config/godot"
+          # Which file Godot reads depends on how it spells its own version,
+          # so both spellings are written and whichever it opens is right.
+          for name in editor_settings-4.tres editor_settings-4.6.tres; do
+            cat > "$HOME/.config/godot/$name" <<TRES
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$sdk"
+          export/android/debug_keystore = "$PWD/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          TRES
+          done
+          # Newer Godot takes the keystore from the environment instead.
+          {
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$PWD/debug.keystore"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android"
+          } >> "$GITHUB_ENV"
+
+      - name: Import the project
+        run: godot --headless --path game --import
+
+      - name: Export the APK
+        run: |
+          mkdir -p build
+          godot --headless --path game --export-debug Android \
+            "$PWD/build/revolutionaries-debug.apk"
+
+      - name: Check that it is really an APK
+        run: |
+          test -s build/revolutionaries-debug.apk
+          unzip -l build/revolutionaries-debug.apk | grep -q AndroidManifest.xml
+          unzip -l build/revolutionaries-debug.apk | grep -q "META-INF/.*\.RSA\|META-INF/.*\.SF" \
+            || echo "note: v1 signature block not present; v2/v3 signing is in the APK block"
+          ls -l build/revolutionaries-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: revolutionaries-android-debug
+          path: build/revolutionaries-debug.apk
+          if-no-files-found: error
+
+      - name: Roll the mobile-latest prerelease over to this build
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete mobile-latest --yes --cleanup-tag || true
+          gh release create mobile-latest build/revolutionaries-debug.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Playtest build (mobile-latest)" \
+            --notes "Debug APK built from ${GITHUB_SHA:0:7} on $(date -u +%Y-%m-%d).
+
+          Install it on a phone: download the .apk below, open it, and allow
+          installing from this app when Android asks. It is signed with a
+          throwaway debug key, so Android will treat it as an app from an
+          unknown developer — that is expected for a playtest build.
+
+          This release is rolled over on every push to master, so the link
+          above always points at the newest build."

@@ -8,12 +8,17 @@ extends PanelContainer
 ## it the squad has seen — and lets a square next to the squad be clicked to
 ## walk that way, which is the same four choices the site loop offers.
 
-## How big one square is drawn.
+## How big one square is drawn, pointed at and poked at. A finger cannot hit a
+## twelve-pixel square, so on a touchscreen the squares grow and fewer of them
+## are shown — the plan is read closer in rather than smaller.
 const TILE := 12
+const TOUCH_TILE := 26
 
-## How much of the plan is shown around the squad.
+## How much of the plan is shown around the squad, at each of those sizes.
 const ACROSS := 41
 const DOWN := 17
+const TOUCH_ACROSS := 13
+const TOUCH_DOWN := 9
 
 ## What a square that has not been seen looks like, and one that has.
 const ROCK := Color("22262e")
@@ -27,6 +32,12 @@ signal step_wanted(direction: int)
 var _grid: Control
 var _state: GameState
 var _here: Label
+
+## The size the plan is currently drawn at. Held rather than looked up so the
+## drawing and the hit-testing cannot disagree about it.
+var _tile := TILE
+var _across := ACROSS
+var _down := DOWN
 
 
 func _ready() -> void:
@@ -44,6 +55,17 @@ func refresh(state: GameState) -> void:
 		_grid.queue_redraw()
 
 
+## Draws the plan at fingertip size, or back at pointer size.
+func compact(on: bool) -> void:
+	_build()
+	_tile = TOUCH_TILE if on else TILE
+	_across = TOUCH_ACROSS if on else ACROSS
+	_down = TOUCH_DOWN if on else DOWN
+	_grid.custom_minimum_size = Vector2(_across * _tile, _down * _tile)
+	if _grid.is_visible_in_tree():
+		_grid.queue_redraw()
+
+
 func _build() -> void:
 	if _grid != null:
 		return
@@ -57,7 +79,7 @@ func _build() -> void:
 	column.add_child(heading)
 
 	_grid = Control.new()
-	_grid.custom_minimum_size = Vector2(ACROSS * TILE, DOWN * TILE)
+	_grid.custom_minimum_size = Vector2(_across * _tile, _down * _tile)
 	_grid.draw.connect(_draw_grid)
 	_grid.gui_input.connect(_on_grid_input)
 	column.add_child(_grid)
@@ -77,23 +99,24 @@ func _draw_grid() -> void:
 	var map := _state.site.map
 	var here := Vector2i(_state.site.x, _state.site.y)
 	var z := _state.site.z
-	var left := here.x - ACROSS / 2
-	var top := here.y - DOWN / 2
+	var left := here.x - _across / 2
+	var top := here.y - _down / 2
 
-	for row in DOWN:
-		for column in ACROSS:
+	for row in _down:
+		for column in _across:
 			var x := left + column
 			var y := top + row
 			if x < 0 or y < 0 or x >= LevelMap.WIDTH or y >= LevelMap.HEIGHT:
 				continue
-			var at := Rect2(column * TILE, row * TILE, TILE - 1, TILE - 1)
+			var at := Rect2(column * _tile, row * _tile, _tile - 1, _tile - 1)
 			_grid.draw_rect(at, _colour_of(map, x, y, z))
 
 	# The squad, and whoever is in the room with them.
-	var middle := Rect2((ACROSS / 2) * TILE, (DOWN / 2) * TILE, TILE - 1, TILE - 1)
+	var middle := Rect2((_across / 2) * _tile, (_down / 2) * _tile,
+			_tile - 1, _tile - 1)
 	_grid.draw_rect(middle, Palette.LIBERAL)
 	if not _state.site.encounter_ids.is_empty():
-		_grid.draw_rect(middle.grow(-3), Palette.CONSERVATIVE)
+		_grid.draw_rect(middle.grow(-_tile / 4.0), Palette.CONSERVATIVE)
 
 
 ## A click on a square next to the squad walks that way.
@@ -105,8 +128,8 @@ func _on_grid_input(event: InputEvent) -> void:
 	if click == null or not click.pressed \
 			or click.button_index != MOUSE_BUTTON_LEFT:
 		return
-	var column := int(click.position.x) / TILE - ACROSS / 2
-	var row := int(click.position.y) / TILE - DOWN / 2
+	var column := int(click.position.x) / _tile - _across / 2
+	var row := int(click.position.y) / _tile - _down / 2
 	if absi(column) + absi(row) != 1:
 		return
 	if row == -1:

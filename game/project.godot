@@ -22,6 +22,18 @@ window/size/viewport_height=800
 window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+; "expand" is what makes one interface fit both: the base viewport is
+; 1280x800, and a taller screen keeps the 800 and gets fewer pixels across
+; rather than letter-boxing. A phone held upright therefore hands the layout
+; about 360 of them, which is what ui/theme/metrics.gd calls narrow.
+window/handheld/orientation="sensor"
+
+[input_devices]
+
+; The floor plan is walked by tapping a square next to the squad, which
+; arrives as a click. Stated rather than left to the default, because the site
+; map depends on it.
+pointing/emulate_mouse_from_touch=true
 
 [autoload]
 
@@ -36,3 +48,6 @@ gdscript/warnings/unsafe_method_access=1
 [rendering]
 
 renderer/rendering_method="forward_plus"
+; The game draws nothing but Controls, so on a phone it asks for the renderer
+; every phone has rather than the one the newest ones have.
+renderer/rendering_method.mobile="gl_compatibility"

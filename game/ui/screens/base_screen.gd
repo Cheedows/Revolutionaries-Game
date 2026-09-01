@@ -30,6 +30,9 @@ var _wait_button: Button
 var _run_button: Button
 var _dialog: IntentDialog
 var _buttons: Dictionary = {}
+var _parts: Dictionary = {}
+var _country := false
+var _narrow := false
 var _running := false
 var _ended := false
 var _elapsed := 0.0
@@ -54,11 +57,19 @@ func _ready() -> void:
 ## Builds the screen around a game that has already been started.
 func setup(session: Session) -> void:
 	_session = session
-	theme = UiTheme.build()
 	_build()
+	_adapt()
 	_log.append_heading("%s. The %s begins." % [
 			_session.state.calendar.to_display(), Branding.ORG_NAME])
 	_refresh()
+
+
+## Responsive rather than detected: the layout follows the room it is given, so
+## a desktop window dragged narrow becomes the phone layout and back, and a
+## test can ask for a phone by drawing into a phone-shaped viewport.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and _parts.has("page"):
+		_adapt()
 
 
 func _process(delta: float) -> void:
@@ -71,8 +82,14 @@ func _process(delta: float) -> void:
 	_advance_one_day()
 
 
+## Builds the screen once. A screen opened on its own builds itself in
+## _ready(); one handed a game builds in setup(). Whichever happens first wins,
+## and the second is a no-op rather than a second screen underneath the first.
 func _build() -> void:
+	if not _parts.is_empty():
+		return
 	var parts := BaseLayout.build(self)
+	_parts = parts
 	_status = parts["status"]
 	_laws = parts["laws"]
 	_roster = parts["roster"]
@@ -107,6 +124,9 @@ func _connect() -> void:
 	_dialog.chosen.connect(_on_answer)
 	_dialog.declined.connect(func() -> void: _on_answer(null))
 	_wait_button.pressed.connect(_advance_one_day)
+	(_parts["country"] as Button).toggled.connect(func(on: bool) -> void:
+		_country = on
+		_refresh())
 	_run_button.toggled.connect(func(pressed: bool) -> void:
 		_running = pressed
 		_run_button.text = "Pause" if pressed else "Let it run")
@@ -177,6 +197,18 @@ func _end(how: StringName) -> void:
 	_wait_button.pressed.connect(func() -> void: finished.emit())
 
 
+## Re-reads how much room there is and lays the screen out for it.
+##
+## Cheap enough to run on every resize: it sets sizes and flags on widgets that
+## already exist, and never rebuilds anything.
+func _adapt() -> void:
+	_narrow = Metrics.narrow(self)
+	theme = UiTheme.build(Metrics.touch(self))
+	BaseLayout.reflow(_parts, _narrow)
+	if _session != null:
+		_refresh()
+
+
 func _on_answer(id: Variant) -> void:
 	if not _session.is_waiting():
 		return
@@ -208,38 +240,21 @@ func _on_step(direction: int) -> void:
 
 
 func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
-	for event in Commands.assign_activity(_session, creature, activity):
-		_log.append("%s will %s." % [creature.name,
-				ActivityText.of(activity).to_lower()],
-				Palette.TEXT_DIM)
-	# Tending is the one job that needs somebody named as well. The original
-	# picks for you when there is only one prisoner in the house, and asks
-	# otherwise; the roster's picker is the asking.
-	if activity == &"hostagetending":
-		Commands.watch_hostage(_session, creature)
-		_refresh()
-	# So is recruiting: the first name on the list is the one the original
-	# leaves the cursor on.
-	elif activity == &"recruiting" and creature.recruiting == &"":
-		var offered := Recruiting.recruitable(_session.state)
-		if not offered.is_empty():
-			Commands.recruit_for(_session, creature,
-					StringName(offered[0]["type"]))
-		_refresh()
+	_say(BaseOrders.assign(_session, creature, activity))
 
 
 func _on_recruit_chosen(recruiter: Creature, type: StringName) -> void:
-	if Commands.recruit_for(_session, recruiter, type):
-		_log.append("%s will look for %s." % [recruiter.name,
-				String(type).trim_prefix("CREATURE_").to_lower()],
-				Palette.TEXT_DIM)
-	_refresh()
+	_say(BaseOrders.recruit(_session, recruiter, type))
 
 
 func _on_hostage_chosen(keeper: Creature, hostage: Creature) -> void:
-	if Commands.watch_hostage(_session, keeper, hostage):
-		_log.append("%s will watch over %s." % [keeper.name, hostage.name],
-				Palette.TEXT_DIM)
+	_say(BaseOrders.watch(_session, keeper, hostage))
+
+
+## Writes what an order came to in the log, and redraws.
+func _say(lines: PackedStringArray) -> void:
+	for line in lines:
+		_log.append(line, Palette.TEXT_DIM)
 	_refresh()
 
 
@@ -254,14 +269,14 @@ func _refresh() -> void:
 	# The plan is only worth the room it takes while the squad is inside one.
 	var inside := _session.state.mode == &"site" \
 			and _session.state.site.location != -1
-	var reading := _panels.is_open()
-	_map.visible = inside and not reading
-	_squad.visible = not inside and not reading
-	_roster.visible = not inside and not reading
 	if inside:
 		_map.refresh(_session.state)
 	_fight.refresh(_session.state)
-	_fight.visible = _fight.visible and not reading
+	BaseLayout.focus(_parts, inside, _panels.is_open(), _session.is_waiting(),
+			_narrow, _country)
+	# Whatever was just rebuilt — a roster row, an open panel, a question —
+	# has to be big enough to hit before the player sees it.
+	Metrics.enlarge(self, Metrics.touch(self))
 
 
 ## Asks where the squad is going, through the same dialog as everything else.

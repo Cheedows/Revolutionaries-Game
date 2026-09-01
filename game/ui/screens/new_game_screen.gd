@@ -58,8 +58,8 @@ func build() -> void:
 ## Builds the screen and asks the first question.
 func begin(seed_value: int) -> void:
 	_session = Session.new(seed_value)
-	theme = UiTheme.build()
 	_build()
+	_adapt()
 	_ask_switches()
 
 
@@ -215,3 +215,19 @@ func _build() -> void:
 	_dialog = IntentDialog.new()
 	_dialog.chosen.connect(_on_chosen)
 	page.add_child(_dialog)
+
+
+## Lays the screen out for the room it has been given.
+##
+## The interface is one interface at two sizes; [Metrics] decides which, from
+## how wide the surface being drawn on actually is. See ui/theme/metrics.gd.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and _dialog != null:
+		_adapt()
+
+
+func _adapt() -> void:
+	theme = UiTheme.build(Metrics.touch(self))
+	if _dialog != null:
+		_dialog.compact(Metrics.narrow(self))
+	Metrics.enlarge(self, Metrics.touch(self))

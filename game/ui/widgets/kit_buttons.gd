@@ -1,6 +1,10 @@
 class_name KitButtons
-extends HBoxContainer
+extends HFlowContainer
 ## The four things that can be done to what somebody is carrying.
+##
+## A flow rather than a row: four buttons with real sentences on them do not
+## fit across a phone, and wrapping onto a second line is the only answer that
+## keeps all four reachable.
 ##
 ## Taking a weapon back, taking the clothes back, handing over ammunition that
 ## fits, and handing one clip back — the equip screen's own keys, from

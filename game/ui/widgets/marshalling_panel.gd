@@ -6,6 +6,9 @@ extends PanelContainer
 ## original reaches these from two separate keys and draws the party across the
 ## top of each; here they share one panel, because they are the same decision.
 
+## How wide a name lines up in before the buttons start.
+const NAME_WIDTH := 160
+
 ## Emitted when the arrangement changed.
 signal changed
 
@@ -52,12 +55,24 @@ func _refresh() -> void:
 		_body.add_child(_seat_row(squad, member))
 
 
+## A row that folds onto another line rather than running off the side.
+##
+## A safehouse can hold any number of cars and each of them is two more
+## buttons, so the width of one of these rows is not something the interface
+## gets to decide.
+func _row() -> HFlowContainer:
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 4)
+	return row
+
+
 ## One Liberal, with the buttons that move them up and down the line.
 func _order_row(squad: Squad, members: Array[Creature], index: int) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	var row := _row()
 	var label := Label.new()
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size = Vector2(NAME_WIDTH, 0)
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.text = "%d. %s" % [index + 1, members[index].name]
 	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
@@ -79,10 +94,10 @@ func _move(squad: Squad, from: int, to: int, text: String) -> Button:
 
 ## One Liberal, and every car they could be put in.
 func _seat_row(squad: Squad, member: Creature) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	var row := _row()
 	var label := Label.new()
-	label.custom_minimum_size = Vector2(260, 0)
+	label.custom_minimum_size = Vector2(NAME_WIDTH, 0)
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.text = "%s — %s" % [member.name, MarshallingText.seat(
 			member, _session.state, _session.catalog)]
 	label.add_theme_color_override("font_color", Palette.TEXT_DIM)

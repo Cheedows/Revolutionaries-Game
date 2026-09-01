@@ -17,6 +17,10 @@ signal declined
 const SCROLL_AFTER := 8
 const ROW_HEIGHT := 34
 
+## The same, for a screen being poked with a finger: fewer of them, each big
+## enough to hit. The list is the same list; it is read a thumb at a time.
+const TOUCH_SCROLL_AFTER := 6
+
 ## The number keys pick the first nine options, as the original's letters pick
 ## its own. Past nine there is no key for it and the list is walked instead.
 const SHORTCUTS := 9
@@ -30,6 +34,9 @@ var _refuse: Button
 ## The option each button stands for, so the buttons stay the only thing that
 ## knows about layout and the ids stay data.
 var _ids: Dictionary = {}
+
+## Whether the options are being sized for a fingertip.
+var _touch := false
 
 
 func _init() -> void:
@@ -70,6 +77,15 @@ func _button_at(index: int) -> Button:
 	return null
 
 
+## Sizes the options for a finger, or back for a pointer.
+##
+## Takes effect on the next question rather than immediately: the options are
+## rebuilt every time one is asked, and a question already on screen should not
+## reshuffle itself under the thumb about to answer it.
+func compact(on: bool) -> void:
+	_touch = on
+
+
 ## Shows [param intent]. The dialog stays up until an option is taken.
 func ask(intent: Intent, state: GameState) -> void:
 	_title.text = IntentText.question(intent, state)
@@ -90,7 +106,9 @@ func ask(intent: Intent, state: GameState) -> void:
 		_add(IntentText.option(entry, state), IntentText.note(entry),
 				IntentText.enabled(entry), entry.get("id"))
 
-	_scroll.custom_minimum_size.y = mini(entries.size(), SCROLL_AFTER) * ROW_HEIGHT
+	var rows := TOUCH_SCROLL_AFTER if _touch else SCROLL_AFTER
+	var each := Metrics.TOUCH_TARGET if _touch else ROW_HEIGHT
+	_scroll.custom_minimum_size.y = mini(maxi(entries.size(), 1), rows) * each
 	_refuse.visible = intent.cancellable
 	_refuse.text = IntentText.refusal(intent)
 	visible = true
@@ -113,6 +131,11 @@ func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
 	button.disabled = not enabled
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	# A phone is narrow enough that some of these do not fit on one line, and
+	# an option that has run off the edge cannot be chosen.
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if _touch:
+		button.custom_minimum_size.y = Metrics.TOUCH_TARGET
 	button.pressed.connect(func() -> void: chosen.emit(id))
 	_ids[button] = id
 	row.add_child(button)
@@ -163,5 +186,6 @@ func _build() -> void:
 	_scroll.add_child(_options)
 
 	_refuse = Button.new()
+	_refuse.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_refuse.pressed.connect(func() -> void: declined.emit())
 	box.add_child(_refuse)
