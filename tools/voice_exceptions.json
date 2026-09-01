@@ -1,0 +1,13 @@
+{
+  "The jury has been got at%s.": "the original prints jury tampering as a charge on the indictment rather than as its own line; the port reports it when it happens, which the terminal had no room for",
+  ", and somebody was caught doing it": "the same: whether the tampering was noticed is state the original only shows later, as a charge",
+  "%s is deported%s.": "deportation is a law consequence the original applies without announcing; the port says so because its log is a record rather than a screen",
+  ", and does not survive it": "the same",
+  "The attorney": "who stacked the jury; the original names the ace attorney it hired, which the port's event does not carry",
+  "The jury has returned from deliberations. (%s)": "a fallback for a verdict this adapter does not recognise, which cannot happen in play",
+  " You will be returned to prison to resume it.": "the second half of the original's sentence, which it prints as two calls",
+  "%s is sentenced.": "a fallback for a sentence this adapter does not recognise, which cannot happen in play",
+  "%s confessed, but had nobody to name.": "the original prints nothing when a confession names nobody; the port says so because a silent event reads as a bug",
+  " gets over the wall.": "a fallback for an escape route this adapter does not recognise, which cannot happen in play",
+  " %d other%s go with them.": "the original counts the prisoners who get out in a riot without a sentence for it; the port's log has no other way to say it"
+}

@@ -104,21 +104,23 @@ static func approach(state: GameState, rng: Rng, squad: Squad,
 			Ids.SITE_SPECIALS.find(&"security_secondvisit"))
 
 	var rejected := _size_up(state, rng, squad, badge, metal_detector, catalog)
+	# Which of the several ways of saying it the guard used; see bouncer.gd.
+	var line := 0
 	if rejected == Rejection.WEAPONS and metal_detector:
 		# A metal detector does not argue; it just goes off.
 		state.site.alarm = true
 	elif rejected != Rejection.NUDE or badge == 0:
 		# A guard who knows the squad has only one thing to say about somebody
 		# turning up with no clothes on, and does not roll for it.
-		rng.below(int(LINES.get(rejected, 1)))
+		line = rng.below(int(LINES.get(rejected, 1)))
 
 	_set_the_door(state, rejected == Rejection.ADMITTED)
 	_harden(state)
 	return {"rejected": rejected,
 			"admitted": rejected == Rejection.ADMITTED,
 			"events": [Event.new(Event.DOOR_ASSESSED, {
-				"reason": Rejection.NAMES[rejected], "badge": badge,
-				"metal_detector": metal_detector,
+				"reason": Rejection.NAMES[rejected], "line": line,
+				"badge": badge, "metal_detector": metal_detector,
 			})] as Array[Event]}
 
 

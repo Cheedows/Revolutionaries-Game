@@ -69,6 +69,10 @@ static func assess(state: GameState, rng: Rng, squad: Squad,
 
 	var known := _sleeper_on_the_door(state)
 	var rejected := Rejection.ADMITTED
+	# Which of the several ways of saying it the door staff used. The roll
+	# happens either way — it moves the generator — and is carried so the log
+	# can say the line the original said rather than a summary of it.
+	var line := 0
 	if known:
 		# A sleeper on the door does not look at anybody, and the square is
 		# done with: the squad walks straight past next time too. Only the
@@ -82,7 +86,7 @@ static func assess(state: GameState, rng: Rng, squad: Squad,
 				Ids.SITE_SPECIALS.find(&"club_bouncer_secondvisit"))
 		rejected = _size_up(state, rng, squad, site, catalog)
 		if not NO_LINE.has(rejected):
-			rng.below(int(LINES.get(rejected, 1)))
+			line = rng.below(int(LINES.get(rejected, 1)))
 
 	_set_the_door(state, rejected == Rejection.ADMITTED)
 	if not state.site.encounter_ids.is_empty():
@@ -92,7 +96,7 @@ static func assess(state: GameState, rng: Rng, squad: Squad,
 	return {"rejected": rejected,
 			"admitted": rejected == Rejection.ADMITTED,
 			"events": [Event.new(Event.DOOR_ASSESSED,
-					{"reason": Rejection.NAMES[rejected],
+					{"reason": Rejection.NAMES[rejected], "line": line,
 					"badge": 1 if known else 0})] as Array[Event]}
 
 

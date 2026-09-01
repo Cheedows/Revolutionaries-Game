@@ -16,26 +16,6 @@ const FUMBLES: Array[String] = [
 	"%s laughs nervously.",
 ]
 
-## What the door staff object to. The original rolls between several ways of
-## saying each; this says the one thing each of them means.
-const REJECTIONS := {
-	&"ccs": "\"We know who you are.\"",
-	&"nude": "\"No shirt, no underpants, no service.\"",
-	&"weapons": "\"You are not bringing that in here.\"",
-	&"underage": "\"You don't look 18 to me.\"",
-	&"femaleish": "\"Ladies' night is Thursday.\"",
-	&"female": "\"Members only. Gentlemen.\"",
-	&"bloody_clothes": "\"Your clothes — that's blood!\"",
-	&"damaged_clothes": "\"Good God, what is wrong with your clothes?\"",
-	&"crossdressing": "\"Not dressed like that.\"",
-	&"guest_list": "\"You're not on the list.\"",
-	&"dress_code": "\"There is a dress code.\"",
-	&"second_rate_clothes": "\"That looks like you sewed it yourself.\"",
-	&"smell_funny": "\"You smell funny.\"",
-	&"admitted": "They wave the squad through.",
-}
-
-
 ## The line for [param event], or "" for one this does not cover.
 static func describe(event: Event, state: GameState) -> String:
 	var data := event.data
@@ -74,7 +54,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.DOOR_UNLOCKED:
 			return "%s gets the lock open." % _who(state, data)
 		Event.DOOR_ASSESSED:
-			return _door(data)
+			return DoorText.said(data)
 		Event.BLUFF_TRIED:
 			return "They %s the story." % (
 					"buy" if bool(data.get("fooled", false)) else "do not buy")
@@ -123,15 +103,6 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.SITE_REMODELLED:
 			return "%s has been rebuilt." % _place(state, data)
 	return ""
-
-
-## What the door staff said, and what they were looking at.
-static func _door(data: Dictionary) -> String:
-	var said := String(REJECTIONS.get(data.get("reason", &""),
-			"They look the squad over."))
-	if bool(data.get("metal_detector", false)):
-		return "-BEEEP- -BEEEP- -BEEEP- %s" % said
-	return said
 
 
 ## The teller, and how much of a scene it was.

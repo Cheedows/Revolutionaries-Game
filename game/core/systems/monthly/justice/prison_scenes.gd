@@ -56,7 +56,7 @@ static func reeducation(state: GameState, rng: Rng,
 	var flavour := rng.below(THERAPY_STORIES)
 	var events: Array[Event] = [Event.new(Event.PRISON_SCENE,
 			{"creature": prisoner.id, "kind": &"reeducation",
-			"flavour": flavour})]
+			"flavour": flavour, "escaped": false})]
 	if CheckRules.attribute_check(rng, prisoner, &"heart", Difficulty.FORMIDABLE):
 		return events
 
@@ -116,7 +116,7 @@ static func labor_camp(state: GameState, rng: Rng, prisoner: Creature,
 		flavour = rng.below(CAMP_STORIES)
 	var events: Array[Event] = [Event.new(Event.PRISON_SCENE,
 			{"creature": prisoner.id, "kind": &"labor_camp",
-			"flavour": flavour})]
+			"flavour": flavour, "escaped": escaped != 0})]
 
 	if escaped != 0:
 		return events + _break_out(state, rng, prisoner, escaped, manner)
@@ -186,7 +186,7 @@ static func ordinary(state: GameState, rng: Rng, prisoner: Creature,
 
 	var events: Array[Event] = [Event.new(Event.PRISON_SCENE, {
 		"creature": prisoner.id, "kind": &"prison", "effect": effect,
-		"flavour": flavour,
+		"flavour": flavour, "escaped": escaped != 0,
 	})]
 	if escaped != 0:
 		return events + _break_out(state, rng, prisoner, escaped, manner)

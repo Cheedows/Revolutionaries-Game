@@ -73,10 +73,13 @@ rather than a description of it.
   the field", "Procuring a Wheelchair" as "Look after the wheelchairs", which
   is not even the same job. Presentation is the port's to write where the
   original printed nothing; where it printed words, those words are content.
-  `tools/audit_voice.py` is the sixth check in CI and holds each carried label
-  against the original's, failing on a paraphrase and on a row that misquotes
-  `src/` — and the labels the port does write itself are named in it with the
-  reason.
+  `tools/audit_voice.py` is the sixth check in CI. It reads every string a
+  player can see and looks for it in `src/`; what is not there must be either
+  explained in `tools/voice_exceptions.json` or on the backlog. The doors and
+  the courts are done: the club and the checkpoint say all sixty-odd of the
+  original's complaints rather than one summary each, a jury reads five ways
+  with four flavours at each end, both sides' performances are graded as the
+  original grades them, and a month inside tells one of its thirty stories.
 - **The back button means back.** Android's back button closes the game unless
   the game says otherwise, which is not what a player who has just opened the
   paper means by it. `quit_on_go_back` is off and `BaseLayout.step_back()`
@@ -107,9 +110,13 @@ rather than a description of it.
 
 What is still awkward on a phone, and is worth doing next:
 
-- The voice pass covered the menus, which is where the rewording was worst. The
-  event, news and combat prose is mostly carried already but has not been
-  audited line by line; `audit_voice.py` is the place to extend when it is.
+- **The voice backlog: 647 lines still to carry.** `tools/audit_voice.py` now
+  reads every string in `game/ui/` a player can see — 2,006 of them — and asks
+  whether the original had words for it. 1,348 are already the original's own.
+  The rest are listed in `tools/voice_backlog.json`, and the tool fails the
+  build on anything that is *not* in that list, so nothing new can be added
+  while the list comes down. Emptying it is the job; the file is not a place
+  to put new lines.
 - Landscape on a phone gets the desktop layout at finger size, which fits but
   is dense. It is the two-column layout that should give way at a height
   threshold, not only a width one.

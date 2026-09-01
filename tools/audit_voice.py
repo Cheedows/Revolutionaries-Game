@@ -1,176 +1,189 @@
 #!/usr/bin/env python3
-"""Every label the original has words for uses the original's words.
+"""Every word a player reads is the original's, or is explained here.
 
 The other five audits ask whether the port still *does* what the original
 does. This one asks whether it still *sounds* like it, which nothing else
 could catch: a menu option renamed from "We Didn't Start The Fire" to "a
-strong Conservative Crime Squad" passes every test in the tree and loses the
-game's voice, and once a few of them have gone the rest read as normal.
+strong Conservative Crime Squad" passes every test in the tree and quietly
+loses the game, and once a few have gone the rest read as normal.
 
-Presentation is the port's to write where the original had no words — an event
-the terminal never printed, a panel that did not exist. Where it did have
-words, they are content, and paraphrasing them is a departure like any other.
+The line the port draws is that presentation is ours. That is right where the
+terminal printed nothing — an event it never had, a panel that did not exist —
+and wrong where it printed words. Where the original printed words, those
+words are content, and rewording them is a departure like any other.
 
-So this holds a table of the port's user-visible labels against the string the
-original prints for the same thing, and fails when they disagree. Adding a
-label means adding a row; if the original genuinely has no wording for it,
-that is what NO_ORIGINAL is for, with the reason written down.
+So: every string in game/ui/ that a player reads is either carried from the
+original, or listed in OURS below with the reason it is not. Anything else
+fails the build.
+
+"Carried" is checked by looking for the port's words in the original's own
+source. A string with a format hole in it is split at the hole and each piece
+looked for, because the original builds its sentences by printing them in
+pieces too.
 """
 
+import json
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# (port file, port key, original file, the original's exact string)
+# Words of the port's own, and why the original has none to carry.
 #
-# The original's string is written out here rather than scraped, because
-# scraping it would only prove the port agrees with whatever this tool
-# scraped. It is checked against src/ below, so a row that misquotes the
-# original fails too.
-CARRIED = [
-    # The assignment names, from getactivity() in src/common/getnames.cpp.
-    ("game/ui/adapters/activity_text.gd", "none", "Laying Low"),
-    ("game/ui/adapters/activity_text.gd", "donations", "Soliciting Donations"),
-    ("game/ui/adapters/activity_text.gd", "sell_tshirts", "Selling T-Shirts"),
-    ("game/ui/adapters/activity_text.gd", "sell_art", "Selling Art"),
-    ("game/ui/adapters/activity_text.gd", "sell_music", "Selling Music"),
-    ("game/ui/adapters/activity_text.gd", "sell_drugs", "Selling Brownies"),
-    ("game/ui/adapters/activity_text.gd", "prostitution", "Prostituting"),
-    ("game/ui/adapters/activity_text.gd", "polls", "Gathering Opinion Info"),
-    ("game/ui/adapters/activity_text.gd", "communityservice", "Volunteering"),
-    ("game/ui/adapters/activity_text.gd", "graffiti", "Making Graffiti"),
-    ("game/ui/adapters/activity_text.gd", "trouble", "Causing Trouble"),
-    ("game/ui/adapters/activity_text.gd", "stealcars", "Stealing a Car"),
-    ("game/ui/adapters/activity_text.gd", "bury", "Disposing of Bodies"),
-    ("game/ui/adapters/activity_text.gd", "ccfraud", "Credit Card Fraud"),
-    ("game/ui/adapters/activity_text.gd", "dos_attacks", "Attacking Websites"),
-    ("game/ui/adapters/activity_text.gd", "dos_racket", "Extorting Websites"),
-    ("game/ui/adapters/activity_text.gd", "hacking", "Hacking Networks"),
-    ("game/ui/adapters/activity_text.gd", "repair_armor", "Repairing Clothing"),
-    ("game/ui/adapters/activity_text.gd", "wheelchair", "Procuring a Wheelchair"),
-    ("game/ui/adapters/activity_text.gd", "heal", "Tending to Injuries"),
-    ("game/ui/adapters/activity_text.gd", "clinic", "Going to Free CLINIC"),
-    ("game/ui/adapters/activity_text.gd", "augment", "Augmenting Liberal"),
-    ("game/ui/adapters/activity_text.gd", "write_letters", "Writing letters"),
-    ("game/ui/adapters/activity_text.gd", "write_guardian", "Writing news"),
-    ("game/ui/adapters/activity_text.gd", "teach_politics", "Teaching Politics"),
-    ("game/ui/adapters/activity_text.gd", "teach_fighting", "Teaching Fighting"),
-    ("game/ui/adapters/activity_text.gd", "teach_covert", "Teaching Covert Ops"),
-    ("game/ui/adapters/activity_text.gd", "recruiting", "Recruiting"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_liberal", "Promoting Liberalism"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_conservative", "Spouting Conservatism"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_spy", "Snooping Around"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_recruit", "Recruiting Sleepers"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_joinlcs", "Quitting Job"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_scandal", "Creating a Scandal"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_embezzle", "Embezzling Funds"),
-    ("game/ui/adapters/activity_text.gd", "sleeper_steal", "Stealing Equipment"),
-    # The classes, named for the class rather than the skill, from the study
-    # menu in src/basemode/activate.cpp.
-    ("game/ui/adapters/activity_text.gd", "study_debating", "Public Policy"),
-    ("game/ui/adapters/activity_text.gd", "study_business", "Economics"),
-    ("game/ui/adapters/activity_text.gd", "study_psychology", "Psychology"),
-    ("game/ui/adapters/activity_text.gd", "study_law", "Criminal Law"),
-    ("game/ui/adapters/activity_text.gd", "study_science", "Physics"),
-    ("game/ui/adapters/activity_text.gd", "study_driving", "Drivers Ed"),
-    ("game/ui/adapters/activity_text.gd", "study_first_aid", "First Aid"),
-    ("game/ui/adapters/activity_text.gd", "study_art", "Painting"),
-    ("game/ui/adapters/activity_text.gd", "study_disguise", "Theatre"),
-    ("game/ui/adapters/activity_text.gd", "study_martial_arts", "Kung Fu"),
-    ("game/ui/adapters/activity_text.gd", "study_gymnastics", "Gymnastics"),
-    ("game/ui/adapters/activity_text.gd", "study_writing", "Writing"),
-    ("game/ui/adapters/activity_text.gd", "study_teaching", "Education"),
-    ("game/ui/adapters/activity_text.gd", "study_music", "Music"),
-    ("game/ui/adapters/activity_text.gd", "study_locksmithing", "Locksmithing"),
-    ("game/ui/adapters/activity_text.gd", "study_computers", "Computers"),
-]
+# A reason has to say what the original does instead. "It reads better" is not
+# a reason; the original's phrasing is the game's voice, and tidier is worse.
+OURS = {}
 
-# The new-game switches, whose labels and notes are split across two fields.
-# From src/title/newgame.cpp, where each reads "Name: sentence."
-SWITCHES = [
-    ("classic", "Classic Mode", "No Conservative Crime Squad."),
-    ("strong_ccs", "We Didn't Start The Fire",
-     "The CCS starts active and extremely strong."),
-    ("nightmare_laws", "Nightmare Mode",
-     "Liberalism is forgotten. Is it too late to fight back?"),
-    ("multiple_cities", "National LCS", "Advanced play across multiple cities."),
-    ("no_court_purge", "Marathon Mode",
-     "Prevent Liberals from amending the Constitution."),
-    ("stalin", "Stalinist Mode",
-     "Enable Stalinist Comrade Squad (not fully implemented)."),
-    ("elite_liberal", "No Compromise Classic",
-     "I will make all our laws Elite Liberal!"),
-    ("easy", "Democrat Mode",
-     "Most laws must be Elite Liberal, some can be Liberal."),
-    ("fast", "Fast skills", "Grinding is Conservative!"),
-    ("classic_rate", "Classic", "Excellence requires practice."),
-    ("hard", "Hard Mode", "Learn from the best, or face arrest!"),
-]
+EXCEPTIONS_FILE = ROOT / "tools" / "voice_exceptions.json"
 
-# Labels the port writes itself, and why the original has no words to carry.
-NO_ORIGINAL = {
-    "make_armor": "the original names the garment being sewn, so the label is"
-                  " a format string rather than a fixed name",
-    "hostagetending": "the original names the hostage; the port's picker names"
-                      " them separately, so the label cannot be theirs",
-}
+# What has not been carried across yet.
+#
+# The rewording went in over a long time and there is a lot of it, so this is a
+# ratchet rather than a wall: every line still in the backlog is one the port
+# invented and the original had words for, and the build fails on anything that
+# is *not* in it. Nothing new can be added; the list only comes down.
+#
+# Emptying it is the job. Do not add to it to make a build pass.
+BACKLOG_FILE = ROOT / "tools" / "voice_backlog.json"
 
 
-def original_text():
-    said = []
-    for path in (ROOT / "src").rglob("*"):
-        if path.suffix in (".cpp", ".h"):
-            said.append(path.read_text(errors="ignore"))
-    return "\n".join(said)
+def original_strings():
+    """Every string literal in src/, with adjacent literals joined as C joins."""
+    out = []
+    for path in sorted((ROOT / "src").rglob("*")):
+        if path.suffix not in (".cpp", ".h"):
+            continue
+        out.extend(_c_strings(path.read_text(errors="ignore")))
+    return out
 
 
-def port_labels(relative):
-    """Every `&"key": "value"` pair in a port file."""
-    text = (ROOT / relative).read_text()
-    return dict(re.findall(r'&"([a-z_]+)":\s*"((?:[^"\\]|\\.)*)"', text))
+def _c_strings(text):
+    out, parts, i, n = [], [], 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "/" and text[i + 1:i + 2] == "/":
+            i = text.find("\n", i)
+            i = n if i < 0 else i
+        elif ch == "/" and text[i + 1:i + 2] == "*":
+            j = text.find("*/", i)
+            i = n if j < 0 else j + 2
+        elif ch == '"':
+            j, buf = i + 1, []
+            while j < n and text[j] != '"':
+                if text[j] == "\\":
+                    buf.append(text[j:j + 2])
+                    j += 2
+                else:
+                    buf.append(text[j])
+                    j += 1
+            parts.append("".join(buf))
+            i = j + 1
+            k = i
+            while k < n and text[k] in " \t\r\n":
+                k += 1
+            if k < n and text[k] == '"':
+                i = k
+                continue
+            out.append("".join(parts))
+            parts = []
+        else:
+            i += 1
+    return out
+
+
+def port_strings():
+    """Every string in game/ui/ that a player reads, by file."""
+    found = []
+    for path in sorted((ROOT / "game" / "ui").rglob("*.gd")):
+        text = path.read_text()
+        text = re.sub(r"^\s*##.*$", "", text, flags=re.M)
+        text = re.sub(r'(?<!["\w])#.*$', "", text, flags=re.M)
+        text = text.replace("\\\n", "")
+        for match in re.finditer(r'(&?)"((?:[^"\\]|\\.)*)"', text):
+            if match.group(1) == "&":
+                continue  # &"idname" is data, not words
+            said = match.group(2)
+            if _read_by_a_player(said):
+                found.append((str(path.relative_to(ROOT)), said))
+    return found
+
+
+def _read_by_a_player(said):
+    said = said.strip()
+    if len(said) < 4 or said.startswith(("res://", "user://")):
+        return False
+    if re.fullmatch(r"[a-z0-9_]+", said):
+        return False  # an idname
+    if re.fullmatch(r"[A-Z][A-Za-z0-9]*", said):
+        return False  # a class or theme-item name
+    if not re.search(r"[A-Za-z]{3}", said):
+        return False
+    return True
+
+
+def _plain(said):
+    """One string with its escapes undone and its spacing evened out.
+
+    The original escapes quotes inside its own dialogue and sometimes escapes
+    apostrophes it did not need to, so both sides are flattened before they
+    are compared; the words are what is being checked, not the C.
+    """
+    said = said.replace('\\"', '"').replace("\\'", "'").replace("\\n", " ")
+    return re.sub(r"\s+", " ", said).strip()
+
+
+def _pieces(said):
+    """The literal words, with the format holes taken out."""
+    split = re.split(r"%[-\d.]*[sdxfv%]|\{[^}]*\}", _plain(said))
+    return [piece for piece in (re.sub(r"\s+", " ", p).strip() for p in split)
+            if len(piece) >= 4 and re.search(r"[A-Za-z]{3}", piece)]
 
 
 def main():
-    src = original_text()
-    problems = []
-    checked = 0
+    haystack = "\n".join(_plain(s) for s in original_strings())
+    ours = dict(OURS)
+    if EXCEPTIONS_FILE.exists():
+        ours.update(json.loads(EXCEPTIONS_FILE.read_text()))
 
-    tables = {}
-    for path, key, wanted in CARRIED:
-        tables.setdefault(path, port_labels(path))
-        got = tables[path].get(key)
-        checked += 1
-        if wanted not in src:
-            problems.append(f"{path}: this tool misquotes the original for"
-                            f" {key!r}: {wanted!r} is not in src/")
-        elif got is None:
-            problems.append(f"{path}: no label for {key!r}")
-        elif got != wanted:
-            problems.append(f"{path}: {key!r} says {got!r},"
-                            f" the original says {wanted!r}")
+    backlog = set(json.loads(BACKLOG_FILE.read_text())) \
+        if BACKLOG_FILE.exists() else set()
 
-    screen = (ROOT / "game/ui/screens/new_game_screen.gd").read_text()
-    for key, label, note in SWITCHES:
-        checked += 2
-        for words in (label, note):
-            if words not in src:
-                problems.append(f"new_game_screen.gd: this tool misquotes the"
-                                f" original for {key!r}: {words!r}")
-            elif f'"{words}"' not in screen:
-                problems.append(f"new_game_screen.gd: {key!r} does not say"
-                                f" {words!r}, which is what the original says")
+    carried, explained, waiting, unaccounted = 0, 0, [], []
+    for where, said in port_strings():
+        pieces = _pieces(said)
+        if pieces and all(piece in haystack for piece in pieces):
+            carried += 1
+        elif said in ours:
+            explained += 1
+        elif said in backlog:
+            waiting.append(said)
+        else:
+            unaccounted.append((where, said))
 
-    print(f"{checked} labels the original has words for.")
-    print(f"  {checked - len(problems)} use them.")
-    print(f"  {len(NO_ORIGINAL)} are the port's own, explained in this tool.")
-    print(f"  {len(problems)} disagree with the original.")
-    if problems:
-        print("\nThe port is paraphrasing where the original had words:\n")
-        for problem in problems:
-            print(f"  {problem}")
-        print("\nSee docs/port/ARCHITECTURE.md on the presentation seam.")
+    total = carried + explained + len(waiting) + len(unaccounted)
+    print(f"{total} strings in game/ui/ that a player reads.")
+    print(f"  {carried} are the original's own words.")
+    print(f"  {explained} are the port's, explained in this tool.")
+    print(f"  {len(waiting)} have not been carried across yet.")
+    print(f"  {len(unaccounted)} are unaccounted for.")
+
+    stale = sorted(backlog - set(waiting))
+    if stale:
+        print(f"\n{len(stale)} lines in the backlog are no longer in the tree."
+              " Take them out of tools/voice_backlog.json:\n")
+        for said in stale[:20]:
+            print(f"  {said[:70]!r}")
+        return 1
+    if unaccounted:
+        print("\nThe port is using its own words where nothing says it may:\n")
+        for where, said in unaccounted[:60]:
+            print(f"  {where.replace('game/ui/', '')}: {said[:70]!r}")
+        if len(unaccounted) > 60:
+            print(f"  ... and {len(unaccounted) - 60} more")
+        print("\nCarry the original's wording, or say in tools/"
+              "voice_exceptions.json what the original does instead. The"
+              " backlog is not for new lines.")
         return 1
     return 0
 

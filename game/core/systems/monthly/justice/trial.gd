@@ -145,6 +145,10 @@ static func _conduct(state: GameState, rng: Rng, court: Dictionary,
 	events.append(Event.new(Event.TRIAL_ARGUED, {
 		"creature": defendant.id, "jury": jury, "defense": power,
 		"prosecution": prosecution, "lenient": 1 if lenient else 0,
+		# Which defense was mounted: the original describes an attorney's
+		# performance and a Liberal's own in quite different words, so the log
+		# needs to know which of the two scales it is reading.
+		"conducted_by": defense,
 	}))
 
 	var keep_charges := false

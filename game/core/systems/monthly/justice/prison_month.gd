@@ -48,7 +48,7 @@ static func run(state: GameState, rng: Rng, prisoner: Creature,
 		return events
 
 	if prisoner.death_penalty != 0:
-		return events + _execute(state, prisoner)
+		return events + _execute(state, rng, prisoner)
 	return events + _release(state, prisoner)
 
 
@@ -63,14 +63,31 @@ static func _release(state: GameState, prisoner: Creature) -> Array[Event]:
 	return [Event.new(Event.RELEASED, {"creature": prisoner.id})] as Array[Event]
 
 
+## How many ways there are of doing it, by what the law allows. A country that
+## permits cruel and unusual punishment has twenty-four; an ordinary one has
+## four; a Liberal one that still executes people has the one it calls
+## painless. There is no entry for an Elite Liberal country: it has abolished
+## the death penalty, and the sentence is commuted above before it gets here.
+const METHODS := {-2: 24, -1: 4, 0: 4, 1: 1}
+
+
 ## The needle, or worse.
 ##
-## The method is chosen from a list that depends on the law, and the boss loses
-## fifty points of standing for having got them killed.
-static func _execute(state: GameState, prisoner: Creature) -> Array[Event]:
+## The method is picked from a list that depends on the law, and picking it
+## costs a draw — pickrandom() in src/monthly/justice.cpp is LCSrandom() —
+## which the port was not making. Rare enough that no trace had ever reached
+## it, and wrong: every draw after an execution would have been the wrong one.
+##
+## The boss loses fifty points of standing for having got them killed.
+static func _execute(state: GameState, rng: Rng,
+		prisoner: Creature) -> Array[Event]:
+	var ways := int(METHODS.get(state.law.get_value(&"deathpenalty"), 4))
+	var method := rng.below(ways)
 	var boss: Creature = state.creatures.get(prisoner.hire_id)
 	if boss != null:
 		JuiceRules.add(state, boss, -50, -50)
 	Mortality.die(state, prisoner)
 	state.stats["dead"] = int(state.stats.get("dead", 0)) + 1
-	return [Event.new(Event.EXECUTED, {"creature": prisoner.id})] as Array[Event]
+	return [Event.new(Event.EXECUTED,
+			{"creature": prisoner.id, "method": method,
+			"cruel": ways > 4})] as Array[Event]
