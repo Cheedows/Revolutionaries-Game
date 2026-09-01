@@ -12,18 +12,69 @@ const QUIET: Array[StringName] = [&"game_started"]
 
 ## Readable names for the laws. The ids are single words because the original's
 ## enum is; a player should not have to read "deathpenalty".
+## What each law is called, from getlaw() in src/common/getnames.cpp.
+##
+## Carried rather than tidied. The original's names are the names the game
+## argues about — "Police Regulation" rather than "Police Behaviour",
+## "Corporate Law" rather than "Corporate Regulation" — and a newspaper that
+## calls them something else is reporting on a different country.
 const LAW_NAMES := {
-	&"abortion": "Abortion", &"animalresearch": "Animal Research",
-	&"policebehavior": "Police Behaviour", &"privacy": "Privacy",
-	&"deathpenalty": "the Death Penalty", &"nuclearpower": "Nuclear Power",
-	&"pollution": "Pollution", &"labor": "Labour", &"gay": "Gay Rights",
-	&"corporate": "Corporate Regulation", &"freespeech": "Free Speech",
-	&"flagburning": "Flag Burning", &"guncontrol": "Gun Control",
-	&"tax": "Taxes", &"women": "Women's Rights", &"civilrights": "Civil Rights",
-	&"drugs": "Drugs", &"immigration": "Immigration",
-	&"elections": "Elections", &"military": "the Military",
-	&"prisons": "Prisons", &"torture": "Torture",
+	&"abortion": "Abortion Rights",
+	&"animalresearch": "Animal Rights",
+	&"policebehavior": "Police Regulation",
+	&"privacy": "Privacy Rights",
+	&"deathpenalty": "Death Penalty",
+	&"nuclearpower": "Nuclear Power",
+	&"pollution": "Pollution",
+	&"labor": "Labor Laws",
+	&"gay": "Gay Rights",
+	&"corporate": "Corporate Law",
+	&"freespeech": "Free Speech",
+	&"flagburning": "Flag Burning",
+	&"guncontrol": "Gun Control",
+	&"tax": "Tax Structure",
+	&"women": "Women's Rights",
+	&"civilrights": "Civil Rights",
+	&"drugs": "Drug Laws",
+	&"immigration": "Immigration",
+	&"elections": "Election Reform",
+	&"military": "Military Spending",
+	&"prisons": "Prison Regulation",
+	&"torture": "Human Rights",
 }
+
+
+
+## The two days the country notices itself, from src/politics/politics.cpp.
+const ELECTION_DAY := "The Elections are being held today!"
+const NEW_JUSTICE := "After much debate and televised testimony, a new justice,"
+const APPOINTED := ", is appointed to the bench."
+
+## See _door_opened(): the original prints nothing here.
+const PUSHED_OPEN := "The door opens."
+
+
+## Getting a door open by force, from unlock() in src/sitemode/miscactions.cpp.
+## Which line depends on what was in the squad's hands.
+const FORCED := {
+	&"crowbar": "uses a crowbar on the door",
+	&"bash": "smashes in the door",
+	&"wheelchair": "rams open the door",
+	&"kick": "kicks in the door",
+}
+
+
+## A door coming open, forced or simply pushed.
+##
+## The original says nothing when a door is simply pushed open — the squad
+## moves and that is the report — but an event that renders to nothing is the
+## failure this port keeps having, so the log says the plain thing instead.
+static func _door_opened(state: GameState, data: Dictionary) -> String:
+	if not bool(data.get("forced", false)):
+		return PUSHED_OPEN
+	var how := &"crowbar" if bool(data.get("crowbar", false)) else &"kick"
+	return "%s %s!" % [_who(state, data.get("creature", 0)),
+			String(FORCED[how])]
 
 
 ## A line of text for [param event], or "" when it should not be shown.
@@ -76,16 +127,15 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.SITE_LEFT:
 			return "The squad is back on the street."
 		Event.DOOR_LOCKED:
-			return "The door is locked." if bool(data.get("pickable", false)) \
-					else "The door is locked from the other side."
+			return "You try the door, but it is locked." \
+					if bool(data.get("pickable", false)) \
+					else "It's locked from the other side."
 		Event.DOOR_OPENED:
-			return "The door gives way." if bool(data.get("forced", false)) \
-					else "The door opens."
+			return _door_opened(state, data)
 		Event.DOOR_JAMMED:
-			return "%s jams the lock for good." % _who(state,
-					data.get("creature", 0))
+			return "%s jams the lock." % _who(state, data.get("creature", 0))
 		Event.DOOR_IMPENETRABLE:
-			return "That door is impenetrable."
+			return "The vault door is impenetrable."
 		Event.SQUAD_SUSPECTED:
 			var patience := int(data.get("patience", 0))
 			if patience <= 0:
@@ -118,8 +168,8 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.LAW_CHANGED:
 			return _law_line(data)
 		Event.ELECTION_HELD:
-			return "Elections held. %d %s seats changed hands." % [
-				int(data.get("seats_changed", 0)),
+			return "%s %d %s seats changed hands." % [
+				ELECTION_DAY, int(data.get("seats_changed", 0)),
 				String(data.get("body", &"")).capitalize(),
 			]
 		Event.OPINION_SHIFTED:
@@ -185,8 +235,9 @@ static func _major_line(data: Dictionary) -> String:
 		&"evicted":
 			return "Evicted. Everyone is back at the shelter."
 		&"justice_replaced":
-			return "A new justice takes the bench: %s." % String(
-					data.get("alignment", &"")).replace("_", " ")
+			return "%s %s%s" % [NEW_JUSTICE,
+					String(data.get("alignment", &"")).replace("_", " "),
+					APPOINTED]
 		&"opposition_escalated":
 			return "The opposition is growing bolder."
 		&"crime_suspected":
