@@ -36,6 +36,9 @@ const MILESTONES: Array[int] = [5, 10, 15]
 ## How many things a thief can mutter, and how many a bad thief can manage
 ## while failing to hotwire.
 const MUTTERINGS := 5
+
+## Three ways of noticing that this is taking too long.
+const NERVE_LINES := 3
 const CLUMSY_MUTTERINGS := 3
 const CLUMSY_SECURITY := 4
 
@@ -131,12 +134,14 @@ static func _hotwire(state: GameState, rng: Rng, thief: Creature,
 		events.append(Event.new(Event.CAR_STARTED,
 				{"creature": thief.id, "vehicle": car.id, "how": &"hotwire"}))
 		return true
-	# The failure has a line to it, and the line is rolled for even though
-	# nothing but the player reads it — a clumsy thief has fewer to pick from.
-	if thief.skills.get_value(&"security") < CLUMSY_SECURITY:
-		rng.below(CLUMSY_MUTTERINGS)
-	else:
-		rng.below(MUTTERINGS)
+	# The failure has a line to it, and the line is rolled for — a clumsy
+	# thief has fewer to pick from. Which one came up is carried so the log
+	# can say what they did to the car.
+	var fumble := rng.below(CLUMSY_MUTTERINGS) \
+			if thief.skills.get_value(&"security") < CLUMSY_SECURITY \
+			else rng.below(MUTTERINGS)
+	events.append(Event.new(Event.CAR_HOTWIRE_FAILED,
+			{"creature": thief.id, "vehicle": car.id, "fumble": fumble}))
 	return false
 
 
@@ -154,12 +159,15 @@ static func _search(state: GameState, rng: Rng, thief: Creature, car: Vehicle,
 		return true
 
 	attempt["searches"] = int(attempt["searches"]) + 1
-	events.append(Event.new(Event.CAR_SEARCHED,
-			{"creature": thief.id, "tries": attempt["searches"]}))
 	# Three of the searches get a fixed line of despair; every other one is
-	# rolled from a list.
+	# rolled from one of two lists, and which line came up is carried so the
+	# log can say it rather than summarise it.
+	var muttering := -1
 	if not MILESTONES.has(int(attempt["searches"])):
-		rng.below(MUTTERINGS)
+		muttering = rng.below(MUTTERINGS)
+	events.append(Event.new(Event.CAR_SEARCHED,
+			{"creature": thief.id, "tries": attempt["searches"],
+			"muttering": muttering}))
 	return false
 
 

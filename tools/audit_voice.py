@@ -48,11 +48,19 @@ EXCEPTIONS_FILE = ROOT / "tools" / "voice_exceptions.json"
 BACKLOG_FILE = ROOT / "tools" / "voice_backlog.json"
 
 
+# Third-party code that happens to live in src/. It is not the game and its
+# strings are not the game's voice: matching against an XML parser's error
+# messages would let any sentence with the right words in it pass.
+VENDORED = ("cmarkup", "sdl", "pdcurses", "sandbox")
+
+
 def original_strings():
     """Every string literal in src/, with adjacent literals joined as C joins."""
     out = []
     for path in sorted((ROOT / "src").rglob("*")):
         if path.suffix not in (".cpp", ".h"):
+            continue
+        if any(part in VENDORED for part in path.parts):
             continue
         # latin-1 rather than UTF-8: the original is a code-page terminal and
         # its dashes and box characters are single high bytes, which reading

@@ -95,6 +95,10 @@ static func repair(state: GameState, rng: Rng, tailor: Creature,
 
 	return [Event.new(Event.ARMOR_REPAIRED, {
 		"creature": tailor.id, "armor": armor.type, "outcome": outcome,
+		# Whose garment it was and whether it survived: the original says "a
+		# jacket" for something off the pile and "their jacket" for what they
+		# were wearing, and calls it ruined when it did not survive.
+		"from_a_pile": pile != null, "ruined": ruined,
 	})] as Array[Event]
 
 
