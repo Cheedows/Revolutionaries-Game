@@ -82,7 +82,7 @@ static func describe(event: Event, state: GameState) -> String:
 
 ## What kind of jury was seated.
 static func _jury(data: Dictionary) -> String:
-	var manner := String(data.get("manner", &""))
+	var manner := str(data.get("manner", ""))
 	if manner.begins_with("flaming"):
 		return FLAMING
 	if manner.begins_with("hostile"):

@@ -53,6 +53,18 @@ static func describe(event: Event, state: GameState) -> String:
 	var held := SiegeText.describe(event, state)
 	if not held.is_empty():
 		return held
+	# And being inside a building.
+	var inside := SiteReportText.describe(event, state)
+	if not inside.is_empty():
+		return inside
+	# And the rest of the day's work, and what happens to a car or a coat.
+	var work := WorkText.describe(event, state)
+	if not work.is_empty():
+		return work
+	# And the organisation: who reports to whom, and where it lives.
+	var organisation := OrganisationText.describe(event, state)
+	if not organisation.is_empty():
+		return organisation
 
 	match event.type:
 		Event.DAY_ADVANCED:
@@ -163,7 +175,7 @@ static func _law_line(data: Dictionary) -> String:
 				return "A bill on %s was vetoed." % law
 			&"court_declined":
 				return "The court declined to rule on %s." % law
-		return ""
+		return "Congress looked at %s and left it alone." % law
 	var direction := "toward" if to > from else "away from"
 	return "The law on %s moved %s %s." % [law, direction, Branding.ORG_MEMBER.to_lower()]
 
@@ -194,11 +206,14 @@ static func _major_line(data: Dictionary) -> String:
 	# view and a side and nothing else, because the paper carries the rest.
 	if data.has("view"):
 		var subject: String = LAW_NAMES.get(data["view"],
-				String(data["view"]).capitalize())
+				str(data["view"]).capitalize())
 		return "Something happened about %s, and it went %s way." % [subject,
 				"our" if bool(data.get("positive", false))
 						else "the other"]
-	return ""
+	# An event of a kind nothing here has words for still gets a line: the
+	# alternative is the simulation reporting into silence.
+	return "Something happened: %s." % str(data.get("kind", "")) \
+			.replace("_", " ")
 
 
 static func _place(state: GameState, data: Dictionary) -> String:
