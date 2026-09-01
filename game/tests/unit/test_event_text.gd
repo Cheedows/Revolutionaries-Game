@@ -32,6 +32,7 @@ const SILENT := {
 	"major_event:crime_suspected": "the heat readout says this better",
 	"major_event:moved_house": "their record says where they live",
 	"major_event:crime_unprosecuted": "nothing was booked, so nothing happened",
+	"squad_moved": "the floor plan shows where they are",
 }
 
 
@@ -95,6 +96,33 @@ func _shape(event: Event) -> String:
 						event.data.get("outcome", &"held"))
 			return "law_changed"
 	return String(event.type)
+
+
+## The same sweep for what happens inside a building, which a year at the
+## safehouse never reaches: the encounters, the fighting, the specials and the
+## way out.
+func test_everything_a_visit_reports_has_words() -> void:
+	var visits: Object = (load("res://tests/unit/test_site_visit.gd") as GDScript).new()
+	var script: Array[int] = visits.WANDER
+	var silent := {}
+	var seen := 0
+	for building: StringName in visits.BUILDINGS:
+		for seed_value: int in visits.SEEDS:
+			var session: Session = visits._visit(seed_value, script, false,
+					building)
+			if session == null:
+				fail("a visit to a %s could not be walked" % building)
+				return
+			seen += _gather(session, session.drain_events(), silent)
+	check(seen > 40, "the visits produced something to look at, got %d" % seen)
+
+	var unexplained: Array[String] = []
+	for shape: String in silent:
+		if not SILENT.has(shape):
+			unexplained.append(shape)
+	unexplained.sort()
+	check(unexplained.is_empty(),
+			"the log says nothing about: %s" % ", ".join(unexplained))
 
 
 func _pick(intent: Intent) -> Variant:

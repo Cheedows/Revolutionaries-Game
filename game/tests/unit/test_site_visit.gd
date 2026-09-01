@@ -13,6 +13,15 @@ extends TestCase
 ## How many turns a visit is given before the test gives up on it.
 const PATIENCE := 400
 
+## The walk taken through a building: down and across, since the squad comes in
+## at the top and stepping up off the doorway is stepping back out.
+const WANDER: Array[int] = [
+	SiteLoop.MOVE_DOWN, SiteLoop.USE, SiteLoop.MOVE_LEFT, SiteLoop.TALK,
+	SiteLoop.MOVE_DOWN, SiteLoop.TAKE, SiteLoop.FIGHT, SiteLoop.GRAB,
+	SiteLoop.WAIT, SiteLoop.RELEASE, SiteLoop.MOVE_RIGHT, SiteLoop.FREE,
+	SiteLoop.RELOAD, SiteLoop.MOVE_DOWN,
+]
+
 ## The seeds each visit is run under.
 const SEEDS: Array[int] = [1, 7, 99, 12345, 8675309]
 
@@ -47,12 +56,10 @@ func test_a_squad_can_walk_in_and_out_again() -> void:
 func test_a_squad_can_wander_a_building_and_use_what_it_finds() -> void:
 	# Every action in the menu, cycled, so the loop is driven through each of
 	# its branches and each of the questions they can ask.
-	var script: Array[int] = [
-		SiteLoop.MOVE_UP, SiteLoop.USE, SiteLoop.MOVE_LEFT, SiteLoop.TALK,
-		SiteLoop.MOVE_RIGHT, SiteLoop.TAKE, SiteLoop.MOVE_UP, SiteLoop.GRAB,
-		SiteLoop.WAIT, SiteLoop.RELEASE, SiteLoop.MOVE_RIGHT, SiteLoop.FREE,
-		SiteLoop.RELOAD, SiteLoop.MOVE_UP, SiteLoop.FIGHT,
-	]
+	# Downwards, because the squad enters at the top: the doorway is at y=1
+	# and stepping up off it is stepping back into the street, which used to
+	# end this walk on its first move.
+	var script: Array[int] = WANDER
 	for seed_value in SEEDS:
 		var session := _visit(seed_value, script)
 		if session == null:
@@ -82,12 +89,7 @@ func test_the_visit_never_asks_a_question_with_no_answer() -> void:
 func test_the_walk_holds_up_in_every_kind_of_building() -> void:
 	# The same walk as above, in each kind of place, so the specials, the
 	# guards and the loot of each are all driven at least once.
-	var script: Array[int] = [
-		SiteLoop.MOVE_UP, SiteLoop.USE, SiteLoop.MOVE_LEFT, SiteLoop.TALK,
-		SiteLoop.MOVE_RIGHT, SiteLoop.TAKE, SiteLoop.FIGHT, SiteLoop.GRAB,
-		SiteLoop.WAIT, SiteLoop.RELEASE, SiteLoop.MOVE_RIGHT, SiteLoop.FREE,
-		SiteLoop.RELOAD, SiteLoop.MOVE_UP,
-	]
+	var script: Array[int] = WANDER
 	for building in BUILDINGS:
 		for seed_value in SEEDS:
 			if _visit(seed_value, script, true, building) == null:

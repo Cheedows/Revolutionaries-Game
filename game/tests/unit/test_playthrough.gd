@@ -29,7 +29,7 @@ const SLOT := "playthrough"
 ## the floor plan rather than the dialog, which is the other way the interface
 ## takes an answer and so worth driving too.
 const WALK: Array[int] = [
-	SiteLoop.MOVE_UP, SiteLoop.MOVE_LEFT, SiteLoop.USE, SiteLoop.MOVE_RIGHT,
+	SiteLoop.MOVE_DOWN, SiteLoop.MOVE_LEFT, SiteLoop.USE, SiteLoop.MOVE_RIGHT,
 	SiteLoop.TALK, SiteLoop.MOVE_DOWN, SiteLoop.TAKE, SiteLoop.MOVE_DOWN,
 ]
 

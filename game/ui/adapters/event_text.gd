@@ -43,6 +43,28 @@ static func describe(event: Event, state: GameState) -> String:
 			return ""  # the date is already on screen
 		Event.MONTH_ADVANCED:
 			return "A new month begins."
+		Event.SITE_ENTERED:
+			return "The squad is inside %s." % _place(state, data)
+		Event.SITE_LEFT:
+			return "The squad is back on the street."
+		Event.DOOR_LOCKED:
+			return "The door is locked." if bool(data.get("pickable", false)) \
+					else "The door is locked from the other side."
+		Event.DOOR_OPENED:
+			return "The door gives way." if bool(data.get("forced", false)) \
+					else "The door opens."
+		Event.DOOR_JAMMED:
+			return "%s jams the lock for good." % _who(state,
+					data.get("creature", 0))
+		Event.DOOR_IMPENETRABLE:
+			return "That door is impenetrable."
+		Event.SQUAD_SUSPECTED:
+			var patience := int(data.get("patience", 0))
+			if patience <= 0:
+				return "%s looks the squad over and thinks nothing of it." \
+						% _who(state, data.get("creature", 0))
+			return "%s is watching the squad." % _who(state,
+					data.get("creature", 0))
 		Event.CREATURE_SKILL_UP:
 			return "%s is getting better at %s." % [
 				_who(state, data.get("creature", 0)),
@@ -161,6 +183,11 @@ static func _major_line(data: Dictionary) -> String:
 				"our" if bool(data.get("positive", false))
 						else "the other"]
 	return ""
+
+
+static func _place(state: GameState, data: Dictionary) -> String:
+	var site: Location = state.locations.get(data.get("location", -1))
+	return site.name if site != null else "somewhere"
 
 
 static func _who(state: GameState, id: int) -> String:
