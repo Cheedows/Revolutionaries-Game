@@ -160,10 +160,13 @@ static func _caught(state: GameState, rng: Rng, squad: Squad, member: Creature,
 	var kind: StringName = lead.type if lead != null else &""
 	var fatal := false
 
+	# Whether the police reached for the tazer, which decides what the log
+	# says they did. A Liberal force cuffs; anything less tases first.
+	var tazed := false
 	match kind:
 		&"CREATURE_COP":
-			# A Liberal police force arrests; anything less tases first.
 			if state.law.get_value(&"policebehavior") < Alignment.LIBERAL:
+				tazed = true
 				fatal = member.body.blood <= TAZER_FATAL
 				member.body.blood -= TAZER_BLOOD
 		&"CREATURE_DEATHSQUAD", &"CREATURE_TANK":
@@ -174,7 +177,8 @@ static func _caught(state: GameState, rng: Rng, squad: Squad, member: Creature,
 			member.body.blood -= BEATING_BLOOD
 
 	events.append(Event.new(Event.CHASE_CAUGHT,
-			{"creature": member.id, "by": kind, "fatal": fatal}))
+			{"creature": member.id, "by": kind, "fatal": fatal,
+			"tazed": tazed}))
 	if member.body.blood <= 0:
 		Mortality.die(state, member, rng, catalog)
 	events.append_array(Capture.capture(state, member, catalog))

@@ -72,25 +72,47 @@ func test_a_blow_reads_the_way_it_landed() -> void:
 
 func test_a_chase_reads() -> void:
 	var state := _room()
+	# Every line here is src/combat/chase.cpp's. The simulation rolls which
+	# one and carries the index; the adapter says it rather than summarising
+	# what it meant.
 	equal(ChaseText.describe(Event.new(Event.CHASE_CAR_CRASHED,
 			{"friendly": true, "manner": 0}), state),
-			"One of your cars crashes — it slams into a building.",
-			"the squad's own crash names nobody; the events after it do")
+			"Your car slams into a building!",
+			"the squad's own crash is the original's exclamation")
 	equal(ChaseText.describe(Event.new(Event.CHASE_CAR_CRASHED,
 			{"friendly": false, "manner": 2, "victims": 2}), state),
-			"One of theirs crashes — it hits a parked car and flips. 2 people were in it.",
-			"and theirs is a count, because the original never names them")
+			"The car hits a parked car and flips over.",
+			"and theirs is the same crash said flatter")
+	equal(ChaseText.describe(Event.new(Event.CHASE_CAR_CRASHED,
+			{"friendly": false, "manner": 1, "victims": 2}), state),
+			"The car spins out and crashes."
+			+ " Everyone inside is peeled off against the pavement.",
+			"and only a spin-out says what became of the people in it")
 	equal(ChaseText.describe(Event.new(Event.CHASE_PRISONER_KILLED,
 			{"creature": 2, "manner": 1}), state),
-			"Bo does not survive the crash — thrown through the windscreen.",
+			"Bo's lifeless body smashes through the windshield.",
 			"and how somebody in it died is its own table")
 	equal(ChaseText.describe(Event.new(Event.CHASE_CAUGHT,
 			{"creature": 2, "by": &"CREATURE_DEATHSQUAD", "fatal": true}),
 			state),
-			"Bo is caught by deathsquad and does not get up.",
-			"who caught them is a kind of person, not one in particular")
+			"Bo is seized, thrown to the ground, and shot in the head!",
+			"a death squad does not arrest anybody")
+	equal(ChaseText.describe(Event.new(Event.CHASE_CAUGHT,
+			{"creature": 2, "by": &"CREATURE_COP", "fatal": false,
+			"tazed": false}), state),
+			"Bo is seized, pushed to the ground, and handcuffed!",
+			"and a Liberal police force only arrests them")
+	equal(ChaseText.describe(Event.new(Event.CHASE_DODGED,
+			{"manner": 3, "bold": false}), state),
+			"You make obscene gestures at the pursuers!",
+			"a squad only just holding on jeers instead of weaving")
+	equal(ChaseText.describe(Event.new(Event.CHASE_DODGED,
+			{"manner": 3, "bold": true}), state),
+			"You boldly weave through oncoming traffic!",
+			"and one that is winning weaves")
 	equal(ChaseText.describe(Event.new(Event.CHASE_ENDED, {"escaped": true}),
-			state), "You have lost them.", "and a chase ends either way")
+			state), "It looks like you've lost them!",
+			"and a chase ends either way")
 
 
 ## Two people with names, so the lines read as lines.

@@ -54,7 +54,10 @@ def original_strings():
     for path in sorted((ROOT / "src").rglob("*")):
         if path.suffix not in (".cpp", ".h"):
             continue
-        out.extend(_c_strings(path.read_text(errors="ignore")))
+        # latin-1 rather than UTF-8: the original is a code-page terminal and
+        # its dashes and box characters are single high bytes, which reading
+        # as UTF-8 would drop on the floor along with the words around them.
+        out.extend(_c_strings(path.read_text(encoding="latin-1")))
     return out
 
 
@@ -130,6 +133,13 @@ def _plain(said):
     are compared; the words are what is being checked, not the C.
     """
     said = said.replace('\\"', '"').replace("\\'", "'").replace("\\n", " ")
+    # The original is a code-page-437 terminal and draws a dash with two box
+    # characters, \xc4\xc4, which read as mojibake in a UTF-8 world. The port
+    # sets an em-dash instead. Same dash, so both are flattened to one before
+    # the words are compared; everything else in the sentence still has to
+    # match exactly.
+    said = re.sub("[\u00c4\ufffd]{1,2}", "\u2014", said)
+    said = said.replace("\u2014", " \u2014 ")
     return re.sub(r"\s+", " ", said).strip()
 
 
