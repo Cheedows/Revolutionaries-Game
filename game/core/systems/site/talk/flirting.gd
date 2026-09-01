@@ -53,8 +53,9 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 		listener: Creature) -> Dictionary:
 	var events: Array[Event] = []
 	var censored := state.law.get_value(&"freespeech") == -2
-	# Which line, chosen before anybody knows whether it will work.
-	rng.below(CENSORED_LINES if censored else LINES)
+	# Which line, chosen before anybody knows whether it will work. Carried,
+	# because only the UI ever prints it and until now it was thrown away.
+	var line := rng.below(CENSORED_LINES if censored else LINES)
 
 	var difficulty := EXECUTIVE_CHARM \
 			if listener.type == &"CREATURE_CORPORATE_CEO" else CHARM
@@ -73,7 +74,8 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 		_rebuffed_by_animal(rng, listener)
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
-				"outcome": &"wrong_species"}))
+				"outcome": &"wrong_species", "line": line,
+				"censored": censored}))
 		return {"agreed": false, "events": events}
 
 	TrainRules.train(speaker, &"seduction",
@@ -89,14 +91,16 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 		listener.cannot_bluff = 1
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
-				"outcome": &"wrong_uniform"}))
+				"outcome": &"wrong_uniform", "line": line,
+				"censored": censored}))
 		return {"agreed": false, "events": events}
 
 	if not charmed:
 		listener.cannot_bluff = 1
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
-				"outcome": &"refused"}))
+				"outcome": &"refused", "line": line,
+				"censored": censored}))
 		return {"agreed": false, "events": events}
 
 	if listener.name == PRISONER:
@@ -106,7 +110,8 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 	Encounters.remove(state, listener)
 	events.append(Event.new(Event.FLIRTED,
 			{"creature": listener.id, "by": speaker.id,
-			"outcome": &"agreed"}))
+			"outcome": &"agreed", "line": line,
+			"censored": censored}))
 	return {"agreed": true, "events": events}
 
 

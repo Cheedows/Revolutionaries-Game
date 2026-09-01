@@ -167,6 +167,29 @@ def _pieces(said):
             if len(piece) >= 4 and re.search(r"[A-Za-z]{3}", piece)]
 
 
+# The shortest half a split sentence may have. Below this, matching two
+# fragments proves nothing: almost any sentence contains "the" somewhere.
+SPLIT_FLOOR = 10
+
+
+def _found(piece, haystack):
+    """Whether the original says this, in one print or in two.
+
+    The original builds a sentence out of consecutive addstr() calls as often
+    as it writes one whole, so a line it prints in two halves is still its
+    line. Both halves have to be long enough that finding them means
+    something.
+    """
+    if piece in haystack:
+        return True
+    for cut in range(SPLIT_FLOOR, len(piece) - SPLIT_FLOOR):
+        if piece[cut] != " ":
+            continue
+        if piece[:cut] in haystack and piece[cut + 1:] in haystack:
+            return True
+    return False
+
+
 def main():
     haystack = "\n".join(_plain(s) for s in original_strings())
     ours = dict(OURS)
@@ -179,7 +202,7 @@ def main():
     carried, explained, waiting, unaccounted = 0, 0, [], []
     for where, said in port_strings():
         pieces = _pieces(said)
-        if pieces and all(piece in haystack for piece in pieces):
+        if pieces and all(_found(piece, haystack) for piece in pieces):
             carried += 1
         elif said in ours:
             explained += 1

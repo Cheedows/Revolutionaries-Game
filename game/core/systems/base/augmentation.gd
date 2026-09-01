@@ -88,7 +88,7 @@ static func operate(state: GameState, rng: Rng, surgeon: Creature,
 	var skill := skill_of(surgeon)
 	var botched := skill < type.difficulty and _fails(rng, skill, type.difficulty)
 	if botched:
-		events.append_array(_botch(state, rng, patient, type))
+		events.append_array(_botch(state, rng, patient, type, surgeon))
 	else:
 		events.append_array(_fit(state, rng, surgeon, patient, type))
 
@@ -115,13 +115,15 @@ static func _fails(rng: Rng, skill: int, difficulty: int) -> bool:
 
 ## The part comes off.
 static func _botch(state: GameState, rng: Rng, patient: Creature,
-		type: AugmentType) -> Array[Event]:
+		type: AugmentType, surgeon: Creature = null) -> Array[Event]:
 	var part := _hurt(rng, type.type, true)
 	patient.body.blood -= int(BOTCHED_BLOOD[type.type])
 	patient.body.add_wound(part, Wound.NASTY_OFF)
+	# Who did it, because the original names them: a botched augmentation is
+	# reported as a murder, with the surgeon's name on it.
 	return [Event.new(Event.SURGERY_BOTCHED,
-			{"creature": patient.id, "augment": type.idname, "part": part})] \
-			as Array[Event]
+			{"creature": patient.id, "augment": type.idname, "part": part,
+			"surgeon": surgeon.id if surgeon != null else -1})] as Array[Event]
 
 
 ## It works, at the cost of a bruise.
