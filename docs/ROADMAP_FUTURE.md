@@ -68,8 +68,12 @@ rather than a description of it.
   exports a debug APK on every push and attaches it to the run; a push to
   `master` also rolls the `mobile-latest` prerelease over to it, so the
   Releases page keeps one permanent link to the newest build. No secrets are
-  involved: the build makes a throwaway debug keystore on the spot, which is
-  enough to install and deliberately not enough to publish.
+  involved: it signs with the debug key checked in at
+  `tools/android/debug.keystore`, which is enough to install and deliberately
+  not enough to publish. The key is checked in rather than generated because
+  Android refuses to install a new version signed by a different key, and the
+  uninstall that would otherwise be needed takes the player's saves with it;
+  CI fails the build if the signer's fingerprint ever changes.
 - **Tested rather than configured.** `tests/unit/test_mobile_layout.gd` draws
   each screen into a 400x800 viewport — a small phone, upright — and measures
   what comes out: whether anything runs off the side, whether everything
@@ -92,8 +96,10 @@ What is still awkward on a phone, and is worth doing next:
 - Nothing is gesture-driven: no swipe between panels, no pinch on the floor
   plan, no long-press for what is now a tooltip. Tooltips in particular have
   no touch equivalent at all yet.
-- The APK is unsigned in any meaningful sense and arm64 only. A release build
-  wants a real key, both architectures and a launcher icon.
+- The APK is signed with a key published in this repository and is arm64 only.
+  That is right for a playtest and wrong for anything else: a release build
+  wants a real key kept out of the tree, both architectures and a launcher
+  icon. Until it has one there is no icon in the app drawer, only Godot's.
 - There is no way to save to or restore from anywhere but the device, which
   makes moving a game between a phone and a desk impossible.
 
