@@ -56,8 +56,11 @@ func _headline(state: GameState, event: Event) -> void:
 		return
 	if String(major.get("shape", &"")) == "story":
 		var view: StringName = event.data.get("view", &"")
+		# Which side the story went to is the event's, not the page's: reading
+		# it off the page defaulted every story to the Liberal version, and a
+		# Conservative one then came out with the wrong slots entirely.
 		_line(MajorEventText.describe(state, view,
-				bool(major.get("positive", true)),
+				bool(event.data.get("positive", true)),
 				major.get("slots", {})).replace("&r", "\n"), Palette.TEXT)
 		return
 	var caption := MajorEventPageText.caption(state,
