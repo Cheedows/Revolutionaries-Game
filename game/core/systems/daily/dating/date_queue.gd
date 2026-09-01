@@ -85,8 +85,42 @@ static func _hold_more(state: GameState, rng: Rng, catalog: Catalog,
 	return _after(state, rng, catalog, index, plan, dater, events)
 
 
+## Whether anybody came over tonight and could report from work instead.
+##
+## The original asks with sleeperize_prompt() the moment they agree; the port
+## asks once the evening is over, because that is where the dating chain has
+## somewhere to put a question. They have already been taken on and brought
+## home by then, so the answer only moves them.
+static func _in_what_capacity(state: GameState, rng: Rng, catalog: Catalog,
+		index: int, plan: DatePlan, dater: Creature,
+		events: Array[Event]) -> Variant:
+	for event in events:
+		if event.type != Event.DATE_JOINED:
+			continue
+		var date: Creature = state.creatures.get(event.data["date"])
+		if date == null or date.sleeper or not Enlistment.can_stay(state, date):
+			continue
+		return PendingIntent.new(
+				Intent.new(Intent.CHOOSE_ENLISTMENT,
+						Enlistment.choices(state, date, dater),
+						{"creature": date.id, "by": dater.id}),
+				func(capacity: Variant) -> Variant:
+					if capacity != null:
+						events.append_array(Enlistment.enrol(state, date,
+								dater, StringName(capacity)))
+					return _settle(state, rng, catalog, index, plan, dater,
+							events),
+				events)
+	return _settle(state, rng, catalog, index, plan, dater, events)
+
+
 ## What the evening left behind.
 static func _after(state: GameState, rng: Rng, catalog: Catalog, index: int,
+		plan: DatePlan, dater: Creature, events: Array[Event]) -> Variant:
+	return _in_what_capacity(state, rng, catalog, index, plan, dater, events)
+
+
+static func _settle(state: GameState, rng: Rng, catalog: Catalog, index: int,
 		plan: DatePlan, dater: Creature, events: Array[Event]) -> Variant:
 	if plan.over:
 		if index < state.dates.size() and state.dates[index] == plan:

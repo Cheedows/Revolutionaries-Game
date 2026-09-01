@@ -203,7 +203,7 @@ static func _open(state: GameState, rng: Rng, hostage: Creature,
 ## Puts the chosen plan into effect.
 static func _carry_out(state: GameState, rng: Rng, hostage: Creature,
 		session: Dictionary, answer: Variant, catalog: Catalog,
-		events: Array[Event]) -> Array[Event]:
+		events: Array[Event]) -> Variant:
 	var plan := hostage.interrogation
 	var chosen: Array = answer if answer is Array else plan.techniques
 	for index in plan.techniques.size():
@@ -230,7 +230,34 @@ static func _carry_out(state: GameState, rng: Rng, hostage: Creature,
 	InterrogationForce.drug(state, rng, hostage, session, catalog, events)
 	InterrogationForce.beat(state, rng, hostage, session, events)
 	InterrogationTalk.run(state, rng, hostage, session, events)
-	return InterrogationOutcome.close(state, rng, hostage, session, events)
+	var closed := InterrogationOutcome.close(state, rng, hostage, session,
+			events)
+	return _in_what_capacity(state, hostage, session, closed)
+
+
+## A hostage who came over can go back to their job as a sleeper instead of
+## staying at the safehouse.
+##
+## Ports the sleeperize_prompt() call at the end of the interrogation. They
+## have already been taken on and brought home by [InterrogationOutcome], so
+## the answer only moves them; with nowhere to go back to there is nothing to
+## ask.
+static func _in_what_capacity(state: GameState, hostage: Creature,
+		session: Dictionary, events: Array[Event]) -> Variant:
+	if not hostage.is_member() or hostage.sleeper \
+			or not Enlistment.can_stay(state, hostage):
+		return events
+	var lead: Creature = session["lead"]
+	return PendingIntent.new(
+			Intent.new(Intent.CHOOSE_ENLISTMENT,
+					Enlistment.choices(state, hostage, lead),
+					{"creature": hostage.id, "by": lead.id}),
+			func(capacity: Variant) -> Array[Event]:
+				if capacity != null:
+					events.append_array(Enlistment.enrol(state, hostage, lead,
+							StringName(capacity)))
+				return events,
+			events)
 
 
 static func _ordered(state: GameState) -> Array[Creature]:

@@ -32,13 +32,21 @@ static func _next(state: GameState, rng: Rng, catalog: Catalog,
 static func _hold(state: GameState, rng: Rng, catalog: Catalog,
 		held: Array[Creature], index: int, hostage: Creature,
 		events: Array[Event]) -> Variant:
-	var result: Variant = InterrogationDay.run(state, rng, hostage, catalog)
+	return _carry(state, rng, catalog, held, index, events,
+			InterrogationDay.run(state, rng, hostage, catalog))
+
+
+## The day can ask more than once — the plan, and then where a convert lives —
+## so each answer is followed up rather than assumed to be the last.
+static func _carry(state: GameState, rng: Rng, catalog: Catalog,
+		held: Array[Creature], index: int, events: Array[Event],
+		result: Variant) -> Variant:
 	if result is PendingIntent:
 		var asked: PendingIntent = result
 		return PendingIntent.new(asked.intent,
 				func(answer: Variant) -> Variant:
-					events.append_array(asked.resume.call(answer) as Array[Event])
-					return _next(state, rng, catalog, held, index - 1, events),
+					return _carry(state, rng, catalog, held, index, events,
+							asked.resume.call(answer)),
 				asked.events)
 	events.append_array(result as Array[Event])
 	return _next(state, rng, catalog, held, index - 1, events)

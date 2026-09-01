@@ -30,6 +30,8 @@ const QUESTIONS := {
 	Intent.CHOOSE_DIALOGUE: "What do you say?",
 	Intent.CHOOSE_INTERROGATION_TACTIC: "How do you ask?",
 	Intent.CONFIRM_RECRUIT: "Bring them in?",
+	Intent.CHOOSE_CANDIDATE: "Who do they go and see?",
+	Intent.CHOOSE_ENLISTMENT: "In what capacity will they serve?",
 	Intent.CHOOSE_DEFENSE: "How is the case run?",
 	Intent.CHOOSE_SHOP_DEPARTMENT: "Which counter?",
 	Intent.CHOOSE_PURCHASE: "Buy what?",
@@ -49,6 +51,7 @@ const REFUSALS := {
 	Intent.CHOOSE_SPECIAL_EDITION: "Run nothing this month",
 	Intent.CONFIRM_RETREAT: "Stay",
 	Intent.CONFIRM_RECRUIT: "Leave them",
+	Intent.CHOOSE_CANDIDATE: "Call it a day",
 	Intent.CHOOSE_ATTACK_TARGET: "Hold fire",
 }
 
