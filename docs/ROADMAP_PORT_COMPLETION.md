@@ -1584,6 +1584,12 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     can miss what it never draws for. It skips what the original comments out,
     which is why `CLIP_MOLOTOV` is rightly absent.
 
+    The fields inside each entry are held by `tools/extract_data.py`, which
+    generates all 306 Resources from the XML and already fails if the original
+    reads an element it does not. CI runs it and then fails on any diff under
+    `game/data`, so the content in the tree is exactly what the original's data
+    files say and cannot be hand-edited into agreement.
+
     The sweep found five decisions the port could not make at all, and they
     were ported before the gate was ticked: sleeper orders
     (`activate_sleepers`, whose activities existed in the monthly pass with
