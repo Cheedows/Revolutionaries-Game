@@ -95,11 +95,20 @@ func _refresh() -> void:
 		_line(line)
 
 
+## How much room a wrapping label asks for before it starts wrapping.
+const LABEL_WIDTH := 180
+
+
 func _upgrade_row(here: Location, upgrade: StringName) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The original names these by what buying them does — "Install a perfectly
+	# legal Anti-Aircraft gun on the roof" — which is a sentence, not a noun,
+	# and has to be allowed to wrap on a narrow screen.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size.x = LABEL_WIDTH
 	label.text = SafehouseText.upgrade_line(_session.state, here, upgrade)
 	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)

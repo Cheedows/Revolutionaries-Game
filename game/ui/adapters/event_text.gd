@@ -50,31 +50,6 @@ const ELECTION_DAY := "The Elections are being held today!"
 const NEW_JUSTICE := "After much debate and televised testimony, a new justice,"
 const APPOINTED := ", is appointed to the bench."
 
-## See _door_opened(): the original prints nothing here.
-const PUSHED_OPEN := "The door opens."
-
-
-## Getting a door open by force, from unlock() in src/sitemode/miscactions.cpp.
-## Which line depends on what was in the squad's hands.
-const FORCED := {
-	&"crowbar": "uses a crowbar on the door",
-	&"bash": "smashes in the door",
-	&"wheelchair": "rams open the door",
-	&"kick": "kicks in the door",
-}
-
-
-## A door coming open, forced or simply pushed.
-##
-## The original says nothing when a door is simply pushed open — the squad
-## moves and that is the report — but an event that renders to nothing is the
-## failure this port keeps having, so the log says the plain thing instead.
-static func _door_opened(state: GameState, data: Dictionary) -> String:
-	if not bool(data.get("forced", false)):
-		return PUSHED_OPEN
-	var how := &"crowbar" if bool(data.get("crowbar", false)) else &"kick"
-	return "%s %s!" % [_who(state, data.get("creature", 0)),
-			String(FORCED[how])]
 
 
 ## A line of text for [param event], or "" when it should not be shown.
@@ -131,7 +106,7 @@ static func describe(event: Event, state: GameState) -> String:
 					if bool(data.get("pickable", false)) \
 					else "It's locked from the other side."
 		Event.DOOR_OPENED:
-			return _door_opened(state, data)
+			return DoorText.opened(state, data)
 		Event.DOOR_JAMMED:
 			return "%s jams the lock." % _who(state, data.get("creature", 0))
 		Event.DOOR_IMPENETRABLE:

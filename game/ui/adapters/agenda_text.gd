@@ -6,6 +6,9 @@ extends RefCounted
 ## holds each branch, how each chamber leans, and where the country stands on
 ## every issue.
 
+## The original prints the head of state and the term as two calls.
+const PRESIDENT := "President"
+
 ## What the president is called once the country has stopped pretending.
 const KING := "King"
 const GENERAL_SECRETARY := "General Secretary"
@@ -54,7 +57,7 @@ static func government(state: GameState) -> Array[String]:
 			elif state.endgame_state == &"ccs_victory":
 				title = GENERAL_SECRETARY
 			else:
-				title = "President (%s term)" \
+				title = PRESIDENT + " (%s Term):" \
 						% ("first" if branch.executive_term == 1 else "second")
 		var name := branch.executive_names[post] \
 				if post < branch.executive_names.size() else ""
@@ -62,9 +65,9 @@ static func government(state: GameState) -> Array[String]:
 				name if name != "" else "nobody",
 				String(Alignment.name_of(branch.executive[post]))])
 
-	lines.append("The House: %s." % _chamber(branch.house))
-	lines.append("The Senate: %s." % _chamber(branch.senate))
-	lines.append("The Supreme Court: %s." % _chamber(branch.court))
+	lines.append("House: %s" % _chamber(branch.house))
+	lines.append("Senate: %s" % _chamber(branch.senate))
+	lines.append("Supreme Court: %s" % _chamber(branch.court))
 	for seat in branch.court.size():
 		var name := branch.court_names[seat] if seat < branch.court_names.size() \
 				else ""

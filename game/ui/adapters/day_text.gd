@@ -11,8 +11,8 @@ extends RefCounted
 ## An afternoon with nothing to mend, in the original's order: only the last
 ## of the four teaches anything.
 const IDLE_AFTERNOONS: Array[String] = [
-	" tidies up the safehouse.", " reorganises the armour closet.",
-	" cleans the kitchen.", " reads some sewing magazines.",
+	" tidies up the safehouse.", " reorganizes the armor closet.",
+	" cleans the kitchen.", " peruses some sewing magazines.",
 ]
 
 
@@ -22,9 +22,9 @@ static func describe(event: Event, state: GameState) -> String:
 	match event.type:
 
 		Event.WHEELCHAIR_SOUGHT:
-			return "%s found a wheelchair." % _who(state, data.get("creature", 0)) \
+			return "%s has procured a wheelchair." % _who(state, data.get("creature", 0)) \
 					if bool(data.get("found", false)) \
-					else "%s could not find a wheelchair." % _who(state,
+					else "%s was unable to get a wheelchair.  Maybe tomorrow..." % _who(state,
 							data.get("creature", 0))
 		Event.ARMOR_TIDIED:
 			return "%s%s" % [_who(state, data.get("creature", 0)),
@@ -47,10 +47,10 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.CAR_FOUND:
 			return _car_found(state, data)
 		Event.CAR_OPENED:
-			return "%s gets the door open." % _who(state,
+			return "%s jimmies the car door open." % _who(state,
 					data.get("creature", 0))
 		Event.CAR_STARTED:
-			return "%s gets it started." % _who(state, data.get("creature", 0))
+			return "%s hotwires the car!" % _who(state, data.get("creature", 0))
 		Event.CAR_STOLEN:
 			return "%s drives away in it." % _who(state,
 					data.get("creature", 0))

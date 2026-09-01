@@ -11,17 +11,21 @@ const UPGRADES: Array[StringName] = [
 	&"printingpress", &"businessfront", &"rations",
 ]
 
-## What each is called, and what it is for.
+## What each is called, from the compound menu in
+## src/basemode/baseactions.cpp. The original names them by what buying them
+## does — "Ring the Compound with Tank Traps", "Install a perfectly legal
+## Anti-Aircraft gun on the roof" — and the joke in "perfectly legal" is worth
+## more than the tidier noun the port had.
 const NAMES := {
-	&"basic": "Fortified walls",
-	&"cameras": "Security cameras",
-	&"traps": "Booby traps",
-	&"tanktraps": "Tank traps",
-	&"generator": "A generator",
-	&"aagun": "An anti-aircraft gun",
-	&"printingpress": "A printing press",
-	&"businessfront": "A legitimate business out front",
-	&"rations": "Twenty days of tinned food",
+	&"basic": "Fortify the Compound for a Siege",
+	&"cameras": "Place Security Cameras around the Compound",
+	&"traps": "Place Booby Traps throughout the Compound",
+	&"tanktraps": "Ring the Compound with Tank Traps",
+	&"generator": "Buy a Generator for emergency electricity",
+	&"aagun": "Install a perfectly legal Anti-Aircraft gun on the roof",
+	&"printingpress": "Buy a Printing Press to start your own newspaper",
+	&"businessfront": "Setup a Business Front to ward off suspicion",
+	&"rations": "Stockpile 20 daily rations of food",
 }
 
 ## The bits of the compound that are a bit set on the place. A business out

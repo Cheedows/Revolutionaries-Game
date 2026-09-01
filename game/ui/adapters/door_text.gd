@@ -167,3 +167,36 @@ static func said(data: Dictionary) -> String:
 	if lines.is_empty():
 		return "They look the squad over."
 	return String(lines[int(data.get("line", 0)) % lines.size()])
+
+
+## See opened(): the original prints nothing when a door is simply pushed.
+const PUSHED_OPEN := "The door opens."
+
+
+## Getting a door open by force, from unlock() in src/sitemode/miscactions.cpp.
+## Which line depends on what was in the squad's hands.
+const FORCED := {
+	&"crowbar": "uses a crowbar on the door",
+	&"bash": "smashes in the door",
+	&"wheelchair": "rams open the door",
+	&"kick": "kicks in the door",
+}
+
+
+## A door coming open, forced or simply pushed.
+##
+## The original says nothing when a door is simply pushed open — the squad
+## moves and that is the report — but an event that renders to nothing is the
+## failure this port keeps having, so the log says the plain thing instead.
+static func opened(state: GameState, data: Dictionary) -> String:
+	if not bool(data.get("forced", false)):
+		return PUSHED_OPEN
+	var how := &"crowbar" if bool(data.get("crowbar", false)) else &"kick"
+	return "%s %s!" % [_name(state, int(data.get("creature", 0))),
+			String(FORCED[how])]
+
+
+static func _name(state: GameState, id: int) -> String:
+	var creature: Creature = state.creatures.get(id)
+	return creature.name if creature != null and creature.name != "" \
+			else "Someone"
