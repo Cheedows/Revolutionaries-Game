@@ -55,3 +55,9 @@ renderer/rendering_method="forward_plus"
 ; The game draws nothing but Controls, so on a phone it asks for the renderer
 ; every phone has rather than the one the newest ones have.
 renderer/rendering_method.mobile="gl_compatibility"
+
+; Android will not export a project that does not import textures in a format
+; Android can read, and refuses without saying so — this is the empty list of
+; configuration errors the export prints when it is off. The game has no
+; textures at all, so it costs nothing and changes nothing on the desktop.
+textures/vram_compression/import_etc2_astc=true
