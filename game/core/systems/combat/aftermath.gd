@@ -82,10 +82,14 @@ static func drop_what_they_cannot_hold(state: GameState, victim: Creature,
 ##
 ## Only ever a phrase, but the choice is a draw and the fight is not the same
 ## afterwards if it is skipped — so the index is rolled here and handed to
-## whatever does the describing.
+## whatever does the describing. The three counts are the sizes of the
+## original's three tables, and [DeathText] carries the words for them.
+const HEADLESS_WAYS := 4
+const IN_PIECES_WAYS := 2
+const QUIET_WAYS := 11
 static func manner_of_death(rng: Rng, victim: Creature) -> int:
 	if victim.body.is_severed(&"head"):
-		return rng.below(4)
+		return rng.below(HEADLESS_WAYS)
 	if victim.body.is_severed(&"body"):
-		return rng.below(2)
-	return rng.below(11)
+		return rng.below(IN_PIECES_WAYS)
+	return rng.below(QUIET_WAYS)
