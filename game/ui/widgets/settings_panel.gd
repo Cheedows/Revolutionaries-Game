@@ -38,14 +38,14 @@ func _refresh() -> void:
 		child.queue_free()
 	_title.text = "Settings"
 
-	_heading("How this game was set up")
+	_heading("In what world will you pursue your Liberal Agenda?")
 	for line in SettingsText.switches(_session.state):
 		_line(line)
 
-	_heading("Save this game")
+	_heading("Choose a Save File")
 	_name = LineEdit.new()
 	_name.text = SettingsText.suggested_slot(_session.state)
-	_name.placeholder_text = "A name to find it by"
+	_name.placeholder_text = "Enter a name for the save file."
 	_body.add_child(_name)
 
 	var row := HBoxContainer.new()
@@ -56,10 +56,10 @@ func _refresh() -> void:
 	row.add_child(save)
 	_body.add_child(row)
 
-	_heading("Saved games")
+	_heading("Title")
 	var slots := SaveGame.slots()
 	if slots.is_empty():
-		_line("None yet.")
+		_line("No save files yet.")
 	for slot: String in slots:
 		_body.add_child(_slot_row(slot))
 
@@ -73,7 +73,7 @@ func _slot_row(slot: String) -> Control:
 	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
 	var erase := Button.new()
-	erase.text = "Throw away"
+	erase.text = "Delete a Save File"
 	erase.pressed.connect(func() -> void:
 		SaveGame.erase(slot)
 		_refresh())
@@ -84,12 +84,12 @@ func _slot_row(slot: String) -> Control:
 func _save() -> void:
 	var slot := SettingsText.clean_slot(_name.text)
 	if slot == "":
-		saved.emit("That is not a name a game can be saved under.")
+		saved.emit("That is not a name a save file can have.")
 		return
 	if Commands.save_to(_session, slot):
-		saved.emit("Saved as %s." % slot)
+		saved.emit("Saved: %s" % slot)
 	else:
-		saved.emit("That could not be written.")
+		saved.emit("Failed to save %s!" % slot)
 	_refresh()
 
 
@@ -126,6 +126,8 @@ func _build() -> void:
 func _heading(text: String) -> void:
 	var label := Label.new()
 	label.text = text
+	# The original's headings are whole questions and are wider than a phone.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
 	_body.add_child(label)
 

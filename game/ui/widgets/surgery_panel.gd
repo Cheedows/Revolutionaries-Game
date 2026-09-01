@@ -40,8 +40,8 @@ func _refresh() -> void:
 		child.queue_free()
 	_notice.visible = false
 
-	_title.text = "%s operating — hands worth %d" % [_surgeon.name,
-			Augmentation.skill_of(_surgeon)]
+	_title.text = "%s will augment another Liberal to make them physically " \
+			% _surgeon.name + "superior."
 	var patients := Augmentation.patients(_session.state, _surgeon)
 	if patients.is_empty():
 		_line("Nobody else is here to be operated on.")

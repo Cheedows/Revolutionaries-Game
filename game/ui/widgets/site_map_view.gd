@@ -74,7 +74,7 @@ func _build() -> void:
 	add_child(column)
 
 	var heading := Label.new()
-	heading.text = "Where you are"
+	heading.text = "Current Location"
 	heading.add_theme_color_override("font_color", Palette.ACCENT)
 	column.add_child(heading)
 

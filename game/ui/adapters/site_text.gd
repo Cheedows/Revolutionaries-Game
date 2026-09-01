@@ -43,6 +43,23 @@ static func underfoot(state: GameState) -> String:
 				"" if site.ground_loot.size() == 1 else "s"])
 	if not site.encounter_ids.is_empty():
 		parts.append("%d in the room." % site.encounter_ids.size())
-	if site.alarm:
-		parts.append("The building knows you are here.")
+	var mood := alarm_status(site)
+	if mood != "":
+		parts.append(mood)
 	return " ".join(parts)
+
+
+## How the building feels about the visit, in the words the original prints
+## along the top of the site screen (src/sitemode/sitemode.cpp).
+static func alarm_status(site: SiteState) -> String:
+	if site.post_alarm_timer > 60:
+		return "CONSERVATIVE REINFORCEMENTS INCOMING"
+	if site.alienated == 1:
+		return "ALIENATED MASSES"
+	if site.alienated == 2:
+		return "ALIENATED EVERYONE"
+	if site.alarm:
+		return "CONSERVATIVES ALARMED"
+	if site.alarm_timer == 0:
+		return "CONSERVATIVES SUSPICIOUS"
+	return ""

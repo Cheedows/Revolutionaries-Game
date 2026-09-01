@@ -49,12 +49,12 @@ func _menu() -> void:
 	_body.text = ""
 	var carry := SaveGame.describe(SaveGame.AUTOSAVE)
 	var options: Array[Dictionary] = [
-		{"id": NEW, "label": "Start a new organisation"},
+		{"id": NEW, "label": "NEW GAME"},
 		{"id": CONTINUE, "label": "Carry on", "enabled": not carry.is_empty(),
 				"note": _when(carry)},
-		{"id": LOAD, "label": "Open a saved game",
+		{"id": LOAD, "label": "Choose a Save File",
 				"enabled": not SaveGame.slots().is_empty()},
-		{"id": SCORES, "label": "The book of names"},
+		{"id": SCORES, "label": "Liberal High Score"},
 		{"id": QUIT, "label": "Leave"},
 	]
 	_heading.text = "%s" % Branding.GAME_TITLE
@@ -71,7 +71,7 @@ func _list_saves() -> void:
 		options.append({"id": slot, "label": _title_of(slot, about),
 				"note": _when(about)})
 	options.append({"id": BACK, "label": "Back"})
-	_heading.text = "Saved games"
+	_heading.text = "Choose a Save File"
 	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.CHOOSE_BASE_ACTION, options, {}, false),
 			GameState.new())
@@ -82,22 +82,23 @@ func _show_scores() -> void:
 	var table: Array = kept["table"]
 	var lines := PackedStringArray()
 	if table.is_empty():
-		lines.append("Nobody has finished yet.")
+		lines.append("No valid scores, press any button to return.")
 	for place in table.size():
 		var entry: Dictionary = table[place]
-		lines.append("%d. %s — %s, %d/%d, %d killed, %d lost" % [place + 1,
+		lines.append("%s  %d. %s  Martyrs: %d  Kills: %d" % [
 				String(entry.get("slogan", "")).strip_edges(),
+				int(entry.get("year", 0)),
 				String(entry.get("ending", "")).capitalize(),
-				int(entry.get("month", 0)), int(entry.get("year", 0)),
-				int(entry.get("kills", 0)), int(entry.get("dead", 0))])
+				int(entry.get("dead", 0)), int(entry.get("kills", 0))])
 	var lifetime: Dictionary = kept["lifetime"]
 	if not lifetime.is_empty():
 		lines.append("")
-		lines.append("In all: %d recruited, %d lost, %d killed, $%d raised."
+		lines.append("Universal Liberal Statistics:")
+		lines.append("Recruits: %d  Martyrs: %d  Kills: %d  $ Taxed: %d"
 				% [int(lifetime.get("recruits", 0)), int(lifetime.get("dead", 0)),
 				int(lifetime.get("kills", 0)), int(lifetime.get("funds", 0))])
 	_body.text = "\n".join(lines)
-	_heading.text = "The book of names"
+	_heading.text = "The Liberal ELITE"
 	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.ACKNOWLEDGE_REPORT,
 			[{"id": BACK, "label": "Back"}] as Array[Dictionary], {}, false),
@@ -126,7 +127,7 @@ func _on_chosen(id: Variant) -> void:
 func _open(slot: String) -> void:
 	var session := Session.new(0)
 	if not SaveGame.read(session, slot):
-		_body.text = "That save could not be read."
+		_body.text = "Failed to load %s!" % slot
 		return
 	_dialog.dismiss()
 	loaded.emit(session)

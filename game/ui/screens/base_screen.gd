@@ -142,7 +142,7 @@ func _connect() -> void:
 		_refresh())
 	_run_button.toggled.connect(func(pressed: bool) -> void:
 		_running = pressed
-		_run_button.text = "Pause" if pressed else "Let it run")
+		_run_button.text = "Stop waiting" if pressed else "Wait a day")
 	for which: StringName in _buttons:
 		var button: Button = _buttons[which]
 		button.pressed.connect(func() -> void: _open_panel(which))
@@ -199,7 +199,7 @@ func _end(how: StringName) -> void:
 	_log.append_heading(said[0])
 	for line in said.slice(1):
 		_log.append(line, Palette.ACCENT)
-	_wait_button.text = "Back to the title"
+	_wait_button.text = "Live to fight EVIL another day"
 	_wait_button.pressed.disconnect(_advance_one_day)
 	_wait_button.pressed.connect(func() -> void: finished.emit())
 

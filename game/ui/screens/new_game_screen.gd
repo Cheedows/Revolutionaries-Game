@@ -118,13 +118,13 @@ func _ask_from(list: Array[Dictionary], heading: String) -> void:
 func _ask_name() -> void:
 	var founder: Creature = _choosing["creature"]
 	var options: Array[Dictionary] = [
-		{"id": &"first", "label": "Another first name"},
-		{"id": &"last", "label": "Another surname"},
-		{"id": &"gender", "label": "Read differently"},
-		{"id": &"done", "label": "This will do"},
+		{"id": &"first", "label": "Have your parents reconsider"},
+		{"id": &"last", "label": "Be born to a different family"},
+		{"id": &"gender", "label": "Change your sex at birth"},
+		{"id": &"done", "label": "Ready to begin"},
 	]
 	_typed.visible = true
-	_typed.placeholder_text = "or type a name"
+	_typed.placeholder_text = "FIRST NAME:"
 	_show("%s — %s" % [Founder.chosen_name(_choosing),
 			StrangerText.gender(founder)],
 			Intent.new(Intent.CHOOSE_FOUNDER_NAME, options, {}, false))

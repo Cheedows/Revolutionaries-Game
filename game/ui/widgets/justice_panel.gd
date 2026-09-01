@@ -27,10 +27,9 @@ func show_state(state: GameState) -> void:
 		child.queue_free()
 
 	var held := JusticeText.in_custody(state)
-	_title.text = "In the hands of the state" if not held.is_empty() \
-			else "Nobody is being held"
+	_title.text = "Liberals and the Justice System"
 	if held.is_empty():
-		_line("Everyone is where they should be.", Palette.TEXT_FAINT)
+		_line("Nobody is in the hands of the state.", Palette.TEXT_FAINT)
 		return
 	for entry: Dictionary in held:
 		_line(String(entry["line"]), entry["colour"])

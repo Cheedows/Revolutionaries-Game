@@ -8,13 +8,13 @@ extends RefCounted
 
 ## What each kind of building means for somebody standing in it.
 const HELD_AT := {
-	&"government_policestation": "in a cell at the police station",
-	&"government_courthouse": "waiting on a verdict at the courthouse",
-	&"government_prison": "in prison",
+	&"government_policestation": "Police Station",
+	&"government_courthouse": "Courthouse",
+	&"government_prison": "Prison",
 }
 
-## A sentence of this many days or more is the rest of their life.
-const LIFE := 3650
+## The original counts a sentence in months and writes a life sentence as a
+## negative one, so -3 is three consecutive life sentences.
 
 
 ## Everyone the state is holding, one entry each.
@@ -39,23 +39,30 @@ static func in_custody(state: GameState) -> Array[Dictionary]:
 ## Where they are being held.
 static func _where(where: Location) -> String:
 	if where == null:
-		return "somewhere in the system"
-	return String(HELD_AT.get(where.type, "in custody"))
+		return "Away"
+	return String(HELD_AT.get(where.type, "IN CAPTIVITY"))
 
 
 ## What is known about their case.
 static func _details(member: Creature) -> Array[String]:
 	var lines: Array[String] = []
 	var charges := DossierText.charges(member)
-	lines.append("Charged with: %s." % (", ".join(charges)
-			if not charges.is_empty() else "nothing anybody will say"))
-	if member.confessions > 0:
-		lines.append("Has given up %d %s." % [member.confessions,
-				"name" if member.confessions == 1 else "names"])
-	if member.death_penalty > 0:
-		lines.append("Sentenced to death.")
-	elif member.sentence >= LIFE:
-		lines.append("Sentenced to the rest of their life.")
-	elif member.sentence > 0:
-		lines.append("%d days left to serve." % member.sentence)
+	lines.append("The defendant is charged with %s" % (", ".join(charges)
+			if not charges.is_empty() else "None"))
+	if member.confessions > 1:
+		lines.append("%d former LCS members will testify against %s."
+				% [member.confessions, member.name])
+	elif member.confessions == 1:
+		lines.append("A former LCS member will testify against %s."
+				% member.name)
+	if member.death_penalty > 0 and member.sentence != 0:
+		lines.append("DEATH ROW: %d %s" % [member.sentence,
+				"Month" if member.sentence == 1 else "Months"])
+	elif member.sentence < -1:
+		lines.append("%d Life Sentences" % -member.sentence)
+	elif member.sentence == -1:
+		lines.append("Life Sentence")
+	elif member.sentence != 0:
+		lines.append("%d %s" % [member.sentence,
+				"Month" if member.sentence == 1 else "Months"])
 	return lines

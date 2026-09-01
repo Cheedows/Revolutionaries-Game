@@ -36,7 +36,7 @@ func _refresh() -> void:
 		child.queue_free()
 
 	var sleepers := SleeperOrders.available(_session.state)
-	_title.text = "Taking Undercover Action — %d reachable" % sleepers.size()
+	_title.text = "Taking Undercover Action:   %d" % sleepers.size()
 	if sleepers.is_empty():
 		_line("Nobody undercover can be reached this month.")
 		return

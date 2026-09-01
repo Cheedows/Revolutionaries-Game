@@ -25,15 +25,15 @@ func show_member(session: Session, member: Creature) -> void:
 		child.queue_free()
 	add_theme_constant_override("separation", 8)
 
-	_add("Take their weapon", member.weapon == null,
+	_add("Drop that Squad member's Conservative weapon", member.weapon == null,
 			func() -> String:
 				KitCommands.disarm(session, member)
 				return "")
-	_add("Give them ammunition", member.weapon == null,
+	_add("Receive a clip", member.weapon == null,
 			func() -> String: return KitCommands.give_ammo(session, member))
-	_add("Hand back a clip", member.clips.is_empty(),
+	_add("Drop a clip", member.clips.is_empty(),
 			func() -> String: return KitCommands.drop_a_clip(session, member))
-	_add("Take their clothes", member.armor == null,
+	_add("Liberally Strip a Squad member", member.armor == null,
 			func() -> String:
 				KitCommands.strip(session, member)
 				return "")

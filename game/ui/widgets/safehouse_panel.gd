@@ -68,9 +68,11 @@ func _refresh() -> void:
 
 	var state := _session.state
 	var here := _house()
-	_title.text = "The safehouse — $%d in the tin" % state.ledger.funds
+	# The money is in the status bar above; the panel's own title is what the
+	# original calls the money spent here.
+	_title.text = "Safehouse Investments"
 	if here == null:
-		_line("The squad is not anywhere it can build.")
+		_line("I - Invest in this location")
 		return
 
 	_line(SafehouseText.describe(here))
@@ -81,16 +83,16 @@ func _refresh() -> void:
 	_heading("The flag")
 	_body.add_child(_flag_row(here))
 
-	_heading("What the squad shouts")
+	_heading("FREE SPEECH: the Liberal Slogan")
 	_slogan = LineEdit.new()
 	_slogan.text = state.slogan
-	_slogan.placeholder_text = "A slogan for the walls"
+	_slogan.placeholder_text = "What is your new slogan?"
 	_slogan.text_submitted.connect(func(text: String) -> void:
 		Commands.set_slogan(_session, text)
 		changed.emit())
 	_body.add_child(_slogan)
 
-	_heading("Where the money went")
+	_heading("Liberal Crime Squad: Funding Report")
 	for line in SafehouseText.accounts(state):
 		_line(line)
 
@@ -127,17 +129,14 @@ func _upgrade_row(here: Location, upgrade: StringName) -> Control:
 
 
 func _flag_row(here: Location) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var label := Label.new()
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = "There is a flag outside." if here.has_flag \
-			else "There is no flag outside."
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
-	row.add_child(label)
-
+	# Both options carry the original's whole prompt, which is longer than a
+	# phone is wide, so they stack rather than sit side by side.
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	# The original offers only whichever of the two applies, so the port shows
+	# both and lets the one that does not go grey.
 	var raise := Button.new()
-	raise.text = "Put one up ($%d)" % FlagPole.PRICE
+	raise.text = "PATRIOTISM: fly a flag here ($%d)" % FlagPole.PRICE
 	raise.disabled = not FlagPole.can_buy(_session.state, here)
 	raise.pressed.connect(func() -> void:
 		Commands.flag(_session, here, false)
@@ -146,7 +145,7 @@ func _flag_row(here: Location) -> Control:
 	row.add_child(raise)
 
 	var burn := Button.new()
-	burn.text = "Burn it"
+	burn.text = "PROTEST: burn the flag"
 	burn.disabled = not here.has_flag
 	burn.pressed.connect(func() -> void:
 		Commands.flag(_session, here, true)
@@ -170,6 +169,8 @@ func _house() -> Location:
 func _heading(text: String) -> void:
 	var label := Label.new()
 	label.text = text
+	# The original's headings are whole prompts and are wider than a phone.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
 	_body.add_child(label)
 

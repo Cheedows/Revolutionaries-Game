@@ -20,7 +20,7 @@ func test_the_square_underfoot_reads() -> void:
 			"in the order they matter: %s" % line)
 
 	state.site.alarm = true
-	check(SiteText.underfoot(state).contains("knows you are here"),
+	check(SiteText.underfoot(state).contains("CONSERVATIVES ALARMED"),
 			"and the alarm most of all")
 
 

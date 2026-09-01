@@ -135,6 +135,6 @@ func _build() -> void:
 	footer.add_child(_going)
 
 	var pick := Button.new()
-	pick.text = "Somewhere else"
+	pick.text = "Travel to a Different City"
 	pick.pressed.connect(func() -> void: destination_wanted.emit())
 	footer.add_child(pick)

@@ -5,9 +5,12 @@ extends RefCounted
 ## The wording is from orderparty() and setvehicles() in
 ## src/basemode/baseactions.cpp.
 
-## The original's warning about two squads claiming the same car.
-const SHARING := "Cars claimed by another squad may be used by both, but " \
-		+ "not on the same day."
+## The original's warning about two squads claiming the same car, printed on
+## its own two lines the way the original prints them.
+const SHARING: Array[String] = [
+	"Vehicles in yellow have already been selected by another squad",
+	"These cars may be used by both squads but not on the same day.",
+]
 
 
 ## A car's name, the way the original writes it: year, colour and model.
@@ -27,6 +30,6 @@ static func seat(member: Creature, state: GameState,
 		return "on foot"
 	var car: Vehicle = state.vehicles.get(member.preferred_car_id)
 	if car == null:
-		return "in a car that is gone"
-	return "%s %s" % ["driving" if member.prefers_driving else "riding in",
+		return "Need Car"
+	return "%s in %s" % ["driver" if member.prefers_driving else "passenger",
 			vehicle(car, catalog)]

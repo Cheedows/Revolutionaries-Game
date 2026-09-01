@@ -21,7 +21,7 @@ const ORDERS := {
 		["Steal Equipment",
 		"will steal equipment and send it to the Shelter."],
 	&"sleeper_joinlcs":
-		["Join the Active LCS", "will surface and join the squad."],
+		["Join the Active LCS", "will be Quitting Job to join the LCS."],
 }
 
 ## What each heading is called.
@@ -39,7 +39,7 @@ static func label(order: StringName) -> String:
 
 ## What [param sleeper] is doing, in a sentence.
 static func standing(sleeper: Creature) -> String:
-	var told: Array = ORDERS.get(sleeper.activity, ["", "has no orders."])
+	var told: Array = ORDERS.get(sleeper.activity, ["", "will stay out of trouble."])
 	return "%s %s" % [sleeper.name, told[1]]
 
 

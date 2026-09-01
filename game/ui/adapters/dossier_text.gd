@@ -95,13 +95,13 @@ static func record(creature: Creature, state: GameState,
 	lines.append("%s, %d, %s." % [creature.proper_name if creature.proper_name
 			!= "" else creature.name, creature.age,
 			String(creature.alignment)])
-	lines.append("Juice %d.  $%d in hand.  %d%% blood."
-			% [creature.juice, creature.money, creature.body.blood])
-	lines.append("Doing: %s." % ActivityText.of(creature.activity).to_lower())
+	lines.append("Juice: %d  $%d  %s" % [creature.juice, creature.money,
+			ConditionText.of(creature)])
+	lines.append(ActivityText.of(creature.activity))
 
 	var attributes: Array[String] = []
 	for index in Ids.ATTRIBUTES.size():
-		attributes.append("%s %d" % [String(Ids.ATTRIBUTES[index]).capitalize(),
+		attributes.append("%s: %d" % [String(Ids.ATTRIBUTES[index]).capitalize(),
 				creature.attributes.values[index]])
 	lines.append(", ".join(attributes) + ".")
 
@@ -109,24 +109,23 @@ static func record(creature: Creature, state: GameState,
 	for index in Ids.SKILLS.size():
 		if creature.skills.values[index] <= 0:
 			continue
-		skills.append("%s %d" % [String(Ids.SKILLS[index]).capitalize(),
+		skills.append("%s: %d" % [String(Ids.SKILLS[index]).capitalize(),
 				creature.skills.values[index]])
-	lines.append("Skills: %s." % (", ".join(skills) if not skills.is_empty()
-			else "none worth the name"))
+	lines.append("SKILL   %s" % (", ".join(skills) if not skills.is_empty()
+			else "None"))
 
 	var hurt := wounds(creature)
-	lines.append("Hurt: %s." % (", ".join(hurt) if not hurt.is_empty()
-			else "nothing"))
+	lines.append("Body: %s" % (", ".join(hurt) if not hurt.is_empty()
+			else "Liberal"))
 
-	var crimes := charges(creature)
+	var crimes := charges(creature, state.law)
 	if not crimes.is_empty():
-		lines.append("Wanted for: %s.  Heat %d."
-				% [", ".join(crimes), creature.heat])
+		lines.append("%s  Heat: %d" % [", ".join(crimes), creature.heat])
 	if not creature.augmentations.is_empty():
 		var fitted: Array[String] = []
 		for slot: StringName in creature.augmentations:
 			fitted.append(String(creature.augmentations[slot]).to_lower())
-		lines.append("Fitted with: %s." % ", ".join(fitted))
+		lines.append("Augmentation: %s" % ", ".join(fitted))
 	return lines
 
 
@@ -145,32 +144,80 @@ static func wounds(creature: Creature) -> Array[String]:
 	return hurt
 
 
-## What the authorities want them for.
-static func charges(creature: Creature) -> Array[String]:
+## What the state calls each thing it can charge somebody with, from the
+## indictment the original reads out at trial in src/monthly/justice.cpp.
+## Flag burning and hiring depend on the law, which is why they are not here.
+const CHARGES := {
+	&"treason": "treason", &"terrorism": "terrorism", &"murder": "murder",
+	&"kidnapping": "kidnapping", &"bankrobbery": "bank robbery",
+	&"arson": "arson", &"speech": "sedition", &"brownies": "drug dealing",
+	&"escaped": "escaping prison", &"helpescape": "aiding a prison escape",
+	&"jury": "jury tampering", &"racketeering": "racketeering",
+	&"extortion": "extortion", &"armedassault": "felony assault",
+	&"assault": "misdemeanor assault", &"cartheft": "grand theft auto",
+	&"ccfraud": "credit card fraud", &"theft": "petty larceny",
+	&"prostitution": "prostitution",
+	&"commerce": "interference with interstate commerce",
+	&"information": "unlawful access of an information system",
+	&"burial": "unlawful burial", &"breaking": "breaking and entering",
+	&"vandalism": "vandalism", &"resist": "resisting arrest",
+	&"disturbance": "disturbing the peace",
+	&"publicnudity": "indecent exposure", &"loitering": "loitering",
+}
+
+
+## What the authorities want them for, in the words of the indictment.
+##
+## The original counts repeats — "3 counts of arson" — and says it that way,
+## so the port does too. Two charges are named by the law of the day, so they
+## need the law: with none to hand they take the wording the original uses
+## where the country is still Moderate.
+static func charges(creature: Creature, law: Law = null) -> Array[String]:
 	var wanted: Array[String] = []
 	for index in Ids.LAW_FLAGS.size():
-		if creature.crimes_suspected[index] > 0:
-			wanted.append(String(Ids.LAW_FLAGS[index]).capitalize().to_lower())
+		var count := creature.crimes_suspected[index]
+		if count <= 0:
+			continue
+		var flag: StringName = Ids.LAW_FLAGS[index]
+		var named := String(CHARGES.get(flag, String(flag)))
+		if flag == &"burnflag":
+			# The original charges nothing at all once flag burning is legal.
+			var burning := law.get_value(&"flagburning") if law != null else 0
+			if burning > 0:
+				continue
+			named = "Flag Murder" if burning == -2 \
+					else ("felony flag burning" if burning == -1
+					else "flag burning")
+		elif flag == &"hireillegal":
+			var immigration := law.get_value(&"immigration") if law != null else 1
+			if count > 1:
+				named = "hiring illegal aliens" if immigration < 1 \
+						else "hiring undocumented workers"
+			else:
+				named = "hiring an illegal alien" if immigration < 1 \
+						else "hiring an undocumented worker"
+		wanted.append(named if count == 1 or flag == &"hireillegal"
+				else "%d counts of %s" % [count, named])
 	return wanted
 
 
 ## What they have on them.
 static func carrying(creature: Creature, catalog: Catalog) -> Array[String]:
 	var lines: Array[String] = []
-	lines.append("Weapon: %s." % (item_title(creature.weapon, catalog)
-			if creature.weapon != null else "nothing"))
-	lines.append("Wearing: %s." % (item_title(creature.armor, catalog)
-			if creature.armor != null else "nothing at all"))
+	lines.append("Weapon: %s" % (item_title(creature.weapon, catalog)
+			if creature.weapon != null else "None"))
+	lines.append("Clothes: %s" % (item_title(creature.armor, catalog)
+			if creature.armor != null else "None"))
 	if not creature.clips.is_empty():
 		var ammunition: Array[String] = []
 		for clip: Clip in creature.clips:
 			ammunition.append(item_title(clip, catalog))
-		lines.append("Ammunition: %s." % ", ".join(ammunition))
+		lines.append("Ammunition: %s" % ", ".join(ammunition))
 	if not creature.spare_throwables.is_empty():
 		var spares: Array[String] = []
 		for spare: Weapon in creature.spare_throwables:
 			spares.append(item_title(spare, catalog))
-		lines.append("Also: %s." % ", ".join(spares))
+		lines.append("Also: %s" % ", ".join(spares))
 	return lines
 
 
@@ -197,8 +244,16 @@ static func item_title(item: Item, catalog: Catalog) -> String:
 
 ## What the player is told before they let somebody go for good.
 ##
-## Both halves of the original's warning: a released Liberal with more sense
-## than heart may go to the police, and killing one is not a Liberal act.
-static func discharge_warning() -> String:
-	return "Releasing them is permanent, and if their heart is weak they " \
-			+ "may go to the police. Killing your own is Not a Liberal Act."
+## The original asks this from reviewmode.cpp, in two lines.
+static func release_warning() -> String:
+	return "Do you want to permanently release this squad member from the LCS? " \
+			+ "If the member has low heart they may go to the police."
+
+
+## What the player is told before they have somebody killed.
+##
+## The original names the Liberal who would do it; the port asks on the record
+## itself, where the boss is a line above.
+static func execution_warning(boss: String) -> String:
+	return "Confirm you want to have %s kill this squad member? " % boss \
+			+ "Killing your squad members is Not a Liberal Act."

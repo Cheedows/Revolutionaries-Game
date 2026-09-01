@@ -56,7 +56,10 @@ func show_state(state: GameState) -> void:
 		_body.add_child(_disband_row())
 	elif state.disbanded:
 		_heading("Disbanded")
-		_line("The squad scattered in %d. There is nothing to do but watch."
+		_line("Disbanding scatters the Liberal Crime Squad, sending all of "
+				+ "its members into hiding, free to pursue their own lives. "
+				+ "You will be able to observe the political situation in "
+				+ "brief, and wait until a resolution is reached. (%d)"
 				% state.disband_year)
 
 
@@ -95,6 +98,11 @@ func _build() -> void:
 	scroll.add_child(_body)
 
 
+## How much room the disbanding warning asks for before it wraps. The original
+## has eighty columns for it; a phone has less, so it folds.
+const PHRASE_WIDTH := 180
+
+
 ## The phrase, the box, and the button that means it.
 func _disband_row() -> Control:
 	if _phrase == "":
@@ -102,7 +110,12 @@ func _disband_row() -> Control:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 4)
 	var asked := Label.new()
-	asked.text = "Type \"%s\" to scatter them." % _phrase
+	asked.text = "Type this Liberal phrase to confirm " \
+			+ "(press a wrong letter to rethink it):" \
+			+ " \"%s\"" % _phrase
+	asked.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	asked.custom_minimum_size = Vector2(PHRASE_WIDTH, 0)
+	asked.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	asked.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	column.add_child(asked)
 
@@ -135,6 +148,8 @@ func offer_disbanding(session: Session) -> void:
 func _heading(text: String) -> void:
 	var label := Label.new()
 	label.text = text
+	# The original's headings are whole prompts and are wider than a phone.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
 	_body.add_child(label)
 

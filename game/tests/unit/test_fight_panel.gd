@@ -14,12 +14,12 @@ func test_a_line_says_what_matters() -> void:
 
 	var line := FightText.line(thug, state)
 	check(line.begins_with("Cy Bower"), "the name comes first, got %s" % line)
-	check(line.contains("in a bad way"), "then the state of them: %s" % line)
+	check(line.contains("BadWound"), "then the state of them: %s" % line)
 	check(line.contains("with"), "then what they are holding: %s" % line)
 	check(line.contains("holding Wren"), "and who: %s" % line)
 
 	thug.alive = false
-	equal(FightText.condition(thug), "dead", "and a corpse is a corpse")
+	equal(FightText.condition(thug), "Deceased", "and a corpse is a corpse")
 	equal(FightText.colour(thug), Palette.TEXT_FAINT, "shown faded")
 
 
@@ -43,5 +43,5 @@ func test_somebody_with_nothing_is_bare_handed() -> void:
 	var state := GameState.new()
 	var person := state.add_creature(Creature.new())
 	person.name = "Ash"
-	check(FightText.line(person, state).contains("bare handed"),
+	check(FightText.line(person, state).contains("None"),
 			"empty hands are worth saying")

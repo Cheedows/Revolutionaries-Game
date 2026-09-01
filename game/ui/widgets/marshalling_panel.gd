@@ -40,17 +40,18 @@ func _refresh() -> void:
 	var squad := _session.state.active_squad()
 	if squad == null or squad.member_ids.is_empty():
 		_title.text = "Choosing the Right Liberal Vehicle"
-		_line("There is no squad to arrange.")
+		_line("Assemble a New Squad")
 		return
 	var members := _session.state.squad_members(squad)
-	_title.text = "Arranging the Squad — %d Liberal(s)" % members.size()
+	_title.text = "Choosing the Right Liberal Vehicle"
 
-	_heading("Marching order")
+	_heading("Choose squad member to move")
 	for index in members.size():
 		_body.add_child(_order_row(squad, members, index))
 
 	_heading("Vehicles")
-	_line(MarshallingText.SHARING)
+	for warning: String in MarshallingText.SHARING:
+		_line(warning)
 	for member in members:
 		_body.add_child(_seat_row(squad, member))
 

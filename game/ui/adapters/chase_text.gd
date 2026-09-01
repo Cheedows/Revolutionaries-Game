@@ -119,10 +119,12 @@ static func _survived(state: GameState, data: Dictionary) -> String:
 	var held := CAR_FRAME
 	if creature != null and creature.weapon != null:
 		held = DossierText.item_title(creature.weapon, null)
-	var got_to := "their feet"
+	var got_to := " feet."
 	if creature != null and creature.wheelchair:
-		got_to = "their wheelchair"
-	return who + GRIPS % [held, got_to]
+		got_to = " wheelchair."
+	# Built in the original's own three pieces, with the possessive between
+	# them, because that is how chase.cpp prints it.
+	return who + GRIPS % held + "their" + got_to
 
 
 ## What the car is called, which the original prints in full.
@@ -218,7 +220,7 @@ const BEATEN := "thrown to the ground, and beaten senseless!"
 ## The first of these names whatever the survivor was holding on to — their
 ## weapon if they had one, the car frame if not — and where they got to,
 ## which is a wheelchair for somebody who uses one.
-const GRIPS := " grips the %s and struggles to %s."
+const GRIPS := " grips the %s and struggles to "
 const CAR_FRAME := "car frame"
 const SURVIVALS: Array[String] = [
 	"",

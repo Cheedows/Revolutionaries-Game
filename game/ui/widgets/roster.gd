@@ -157,7 +157,7 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 
 	var look := Button.new()
 	look.text = "Look"
-	look.tooltip_text = "Read %s's record and hand them their gear" % creature.name
+	look.tooltip_text = "View Status  %s" % creature.name
 	look.pressed.connect(func() -> void: dossier_wanted.emit(creature))
 	row.add_child(look)
 	return row
@@ -214,13 +214,21 @@ func _wide(pixels: int) -> int:
 
 
 ## What is currently true of this person, in a word or two.
+##
+## The original's roster columns, from src/basemode/reviewmode.cpp: months
+## left to serve, months until the clinic lets them out, whether they are in
+## hiding, and otherwise the health word every screen shows beside a name.
 func _condition(creature: Creature) -> String:
+	if creature.sentence < -1:
+		return "%d Life Sentences" % -creature.sentence
+	if creature.sentence == -1:
+		return "Life Sentence"
 	if creature.sentence > 0:
-		return "serving %d days" % creature.sentence
+		return "%d %s" % [creature.sentence,
+				"Month" if creature.sentence == 1 else "Months"]
 	if creature.clinic > 0:
-		return "in the clinic"
+		return "Out in %d %s" % [creature.clinic,
+				"Month" if creature.clinic == 1 else "Months"]
 	if creature.hiding > 0:
-		return "laying low"
-	if creature.body.blood < 100:
-		return "%d%% blood" % creature.body.blood
-	return "well"
+		return "In Hiding"
+	return ConditionText.of(creature)

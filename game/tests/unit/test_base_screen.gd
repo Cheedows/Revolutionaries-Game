@@ -335,7 +335,7 @@ func test_the_switches_read() -> void:
 	var session := _a_game(1)
 	var lines := SettingsText.switches(session.state)
 	equal(lines.size(), 4, "four things were decided at the start")
-	check(String(lines[0]).begins_with("Winning:"), "the win condition first")
+	check(String(lines[0]).begins_with("Your Agenda"), "the win condition first")
 
 
 func test_the_courts_list_who_is_held() -> void:
@@ -357,12 +357,13 @@ func test_the_courts_list_who_is_held() -> void:
 
 	var held := JusticeText.in_custody(state)
 	equal(held.size(), 1, "one person is inside")
-	check(String(held[0]["line"]).contains("in prison"), "and it says where")
+	check(String(held[0]["line"]).contains("Prison"), "and it says where")
 	var details: Array = held[0]["details"]
 	check(String(details[0]).contains("arson"), "what for")
-	check(String(details[1]).contains("2 names"), "and what they gave up")
+	check(String(details[1]).contains("2 former LCS members"),
+			"and what they gave up")
 
 	jailed.death_penalty = 1
 	held = JusticeText.in_custody(state)
-	check(String((held[0]["details"] as Array)[2]).contains("death"),
+	check(String((held[0]["details"] as Array)[2]).contains("DEATH ROW"),
 			"a death sentence is said plainly")

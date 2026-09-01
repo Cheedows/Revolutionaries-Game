@@ -7,19 +7,19 @@ extends RefCounted
 
 ## What each document is called when the squad is offered it.
 const NAMES := {
-	&"LOOT_AMRADIOFILES": "AM radio plans",
-	&"LOOT_CABLENEWSFILES": "Cable news memos",
-	&"LOOT_CCS_BACKERLIST": "The Conservative Crime Squad's backers",
-	&"LOOT_CEOLOVELETTERS": "A CEO's love letters",
-	&"LOOT_CEOPHOTOS": "Photographs of a CEO",
-	&"LOOT_CEOTAXPAPERS": "A CEO's tax papers",
-	&"LOOT_CORPFILES": "Corporate files",
-	&"LOOT_INTHQDISK": "An intelligence disk",
-	&"LOOT_JUDGEFILES": "A judge's files",
-	&"LOOT_POLICERECORDS": "Police records",
-	&"LOOT_PRISONFILES": "Prison documents",
-	&"LOOT_RESEARCHFILES": "Research papers",
-	&"LOOT_SECRETDOCUMENTS": "Secret documents",
+	&"LOOT_AMRADIOFILES": "AM Radio Memos",
+	&"LOOT_CABLENEWSFILES": "Cable News Memos",
+	&"LOOT_CCS_BACKERLIST": "CCS Backer List",
+	&"LOOT_CEOLOVELETTERS": "CEO Love Letters",
+	&"LOOT_CEOPHOTOS": "CEO Photos",
+	&"LOOT_CEOTAXPAPERS": "CEO Tax Papers",
+	&"LOOT_CORPFILES": "Secret Corporate Files",
+	&"LOOT_INTHQDISK": "Intel. HQ Data Disk",
+	&"LOOT_JUDGEFILES": "Judge Corrupt. Evidence",
+	&"LOOT_POLICERECORDS": "Police Records",
+	&"LOOT_PRISONFILES": "Prison Records",
+	&"LOOT_RESEARCHFILES": "Research Papers",
+	&"LOOT_SECRETDOCUMENTS": "Secret Documents",
 }
 
 ## How each story opens.
@@ -141,11 +141,18 @@ const RILED := {
 ## side.
 const BACKERS: Array[String] = [
 	"The Liberal Guardian runs more than one thousand pages of documents about "
-			+ "the CCS organization, revealing in extreme detail the names and "
-			+ "responsibilities of Conservative Crime Squad sympathizers and "
-			+ "supporters in the state and federal governments.",
+			+ "the CCS organization, also revealing in extreme detail the names and "
+			+ "responsibilities of Conservative Crime Squad sympathizers and supporters "
+			+ "in the state and federal governments. Sections precisely document the "
+			+ "extensive planning to create an extra-judicial death squad that would be "
+			+ "above prosecution, and could hunt down law-abiding Liberals and act "
+			+ "as a foil when no other enemies were present to direct public energy "
+			+ "against.",
 	"The scandal reaches into the heart of the Conservative leadership in the "
-			+ "country, and the full ramifications may not be felt for months.",
+			+ "country, and the full ramifications of this revelation may not be felt "
+			+ "for months. One thing is clear, however, from the immediate public reaction "
+			+ "toward the revelations, and the speed with which even AM Radio and Cable "
+			+ "News denounce the CCS.",
 	"This is the beginning of the end for the Conservative Crime Squad.",
 ]
 

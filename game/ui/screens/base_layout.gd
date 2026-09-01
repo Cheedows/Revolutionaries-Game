@@ -12,14 +12,14 @@ extends RefCounted
 
 ## The buttons along the bottom, and what each says.
 const PANEL_BUTTONS: Array = [
-	[PanelStack.AGENDA, "The agenda"],
-	[PanelStack.HOUSE, "The safehouse"],
+	[PanelStack.AGENDA, "Liberal Agenda"],
+	[PanelStack.HOUSE, "Safehouse"],
 	[PanelStack.PAPER, "The paper"],
-	[PanelStack.STORES, "The stores"],
-	[PanelStack.JUSTICE, "The courts"],
+	[PanelStack.STORES, "Assets"],
+	[PanelStack.JUSTICE, "Justice System"],
 	[PanelStack.SQUAD, "The squad"],
-	[PanelStack.SLEEPERS, "The sleepers"],
-	[PanelStack.SETTINGS, "Save & settings"],
+	[PanelStack.SLEEPERS, "Sleepers"],
+	[PanelStack.SETTINGS, "Save File"],
 ]
 
 ## How tall each of the panels that share the right-hand column stands, with
@@ -184,7 +184,7 @@ static func _controls(parts: Dictionary) -> Control:
 	row.add_child(wait)
 
 	var run := Button.new()
-	run.text = "Let it run"
+	run.text = "Wait a day"
 	run.toggle_mode = true
 	parts["run"] = run
 	row.add_child(run)

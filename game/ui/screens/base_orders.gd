@@ -11,6 +11,29 @@ extends RefCounted
 ## them, so nothing here has to know there is a log.
 
 
+## How each ending reads, from the high score table in src/title/highscore.cpp.
+## The original writes the month and year after each of these; the port writes
+## the date on its own line, where a phone can wrap it.
+const ENDINGS := {
+	&"won": "The Liberal Crime Squad liberalized the country",
+	&"police": "The Liberal Crime Squad was brought to justice",
+	&"cia": "The Liberal Crime Squad was blotted out",
+	&"hicks": "The Liberal Crime Squad was mobbed",
+	&"corporate": "The Liberal Crime Squad was downsized",
+	&"dead": "The Liberal Crime Squad was KIA",
+	&"prison": "The Liberal Crime Squad died in prison",
+	&"executed": "The Liberal Crime Squad was executed",
+	&"dating": "The Liberal Crime Squad was on vacation",
+	&"hiding": "The Liberal Crime Squad was in permanent hiding",
+	&"disbanded": "The Liberal Crime Squad was hunted down",
+	&"dispersed": "The Liberal Crime Squad was scattered",
+	&"ccs": "The Liberal Crime Squad was out-Crime Squadded",
+	&"firemen": "The Liberal Crime Squad was burned",
+	&"reagan": "The country was Reaganified",
+	&"stalin": "The country was Stalinized",
+}
+
+
 ## Closes a finished game: the score goes in the book, and the lines to say so
 ## come back.
 ##
@@ -20,10 +43,9 @@ static func finish(session: Session, won: bool) -> PackedStringArray:
 	var ending: StringName = &"won" if won else EndCheck.cause(session.state)
 	var place := ScoreFile.finish(session, ending)
 	var said := PackedStringArray()
-	said.append("It is over. The squad %s."
-			% ("won" if won else "is finished"))
+	said.append(String(ENDINGS.get(ending, ENDINGS[&"dead"])))
 	if place >= 0:
-		said.append("That is number %d in the book." % (place + 1))
+		said.append("The Liberal ELITE  %d" % (place + 1))
 	return said
 
 
@@ -59,7 +81,7 @@ static func recruit(session: Session, recruiter: Creature,
 		type: StringName) -> PackedStringArray:
 	var said := PackedStringArray()
 	if Commands.recruit_for(session, recruiter, type):
-		said.append("%s will look for %s." % [recruiter.name,
+		said.append("%s will try to meet and recruit %s today." % [recruiter.name,
 				String(type).trim_prefix("CREATURE_").to_lower()])
 	return said
 
@@ -69,5 +91,5 @@ static func watch(session: Session, keeper: Creature,
 		hostage: Creature) -> PackedStringArray:
 	var said := PackedStringArray()
 	if Commands.watch_hostage(session, keeper, hostage):
-		said.append("%s will watch over %s." % [keeper.name, hostage.name])
+		said.append("%s will be watching over %s." % [keeper.name, hostage.name])
 	return said

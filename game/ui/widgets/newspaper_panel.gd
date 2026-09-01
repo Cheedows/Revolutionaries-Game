@@ -41,10 +41,11 @@ func show_paper(state: GameState, events: Array[Event]) -> void:
 			Event.NEWS_SEGMENT:
 				_segment(event)
 				printed += 1
-	_title.text = "The morning's news" if printed > 0 \
-			else "Nothing in the paper"
+	# The original names the paper "the monthly Liberal Guardian newspaper";
+	# a phone has room for the paper's name and no more.
+	_title.text = "Liberal Guardian"
 	if printed == 0:
-		_line("A quiet night.", Palette.TEXT_FAINT)
+		_line("Unfortunately, nobody seems interested.", Palette.TEXT_FAINT)
 
 
 func _headline(state: GameState, event: Event) -> void:
@@ -67,7 +68,7 @@ func _headline(state: GameState, event: Event) -> void:
 			major.get("headline", &""), major)
 	var picture := MajorEventPageText.picture(major.get("headline", &""))
 	if picture != &"":
-		_line("[a photograph: %s]" % String(picture).replace("_", " "),
+		_line("[%s]" % String(picture).replace("_", " "),
 				Palette.TEXT_FAINT)
 	if caption != "":
 		_line(caption, Palette.TEXT)
@@ -79,7 +80,8 @@ func _story(state: GameState, event: Event) -> void:
 			Palette.TEXT_DIM)
 	var slogan := String(event.data.get("slogan", &""))
 	if slogan != "" and state.slogan != "":
-		_line("They were heard shouting \"%s\"." % state.slogan, Palette.TEXT)
+		_line("The slogan, \"%s\" was found painted on the walls."
+				% state.slogan, Palette.TEXT)
 	var padding: Dictionary = event.data.get("filler", {})
 	if not padding.is_empty():
 		_line(_filler(padding), Palette.TEXT_FAINT)
@@ -89,7 +91,7 @@ func _story(state: GameState, event: Event) -> void:
 
 
 func _segment(event: Event) -> void:
-	_line("On television:", Palette.ACCENT)
+	_line("Cable News", Palette.ACCENT)
 	var card := BroadcastText.title_card(event.data)
 	if card != "":
 		_line(card, Palette.TEXT_DIM)

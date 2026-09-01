@@ -34,10 +34,10 @@ func show_stores(session: Session) -> void:
 func _refresh() -> void:
 	var here := _house()
 	_title.text = "The stores"
-	_fill(_left, "The squad is carrying",
+	_fill(_left, "Equip the Squad",
 			_session.state.active_squad().haul \
 					if _session.state.active_squad() != null else [], true)
-	_fill(_right, "The safehouse is keeping",
+	_fill(_right, "Stash things at the Safehouse",
 			here.ground_loot if here != null else [], false)
 
 

@@ -83,15 +83,14 @@ func _refresh() -> void:
 	for line in DossierText.record(_creature, state, _session.catalog):
 		_line(line)
 
-	_heading("Home")
+	_heading("LOCATION")
 	var home: Location = state.locations.get(_creature.base)
-	_line("Lives at %s." % (home.name if home != null else "nowhere in particular"))
+	_line(home.name if home != null else "Away")
 	_body.add_child(_home_row())
 
-	_heading("Contact")
+	_heading("Recruited")
 	var contact: Creature = state.creatures.get(_creature.hire_id)
-	_line("Reports to %s." % (contact.name if contact != null
-			else "nobody but themselves"))
+	_line(contact.name if contact != null else "<No Contact>")
 	_body.add_child(_promote_row())
 	_body.add_child(_discharge_row())
 	if not Augmentation.patients(state, _creature).is_empty():
@@ -106,9 +105,9 @@ func _refresh() -> void:
 		_line("Not with the squad, so there is nothing to hand them.")
 		return
 
-	_heading("The squad's kit")
+	_heading("Equip the Squad")
 	if squad.haul.is_empty():
-		_line("Empty.")
+		_line("Nothing here.")
 	for item: Item in squad.haul:
 		_body.add_child(_kit_row(item))
 	_body.add_child(_kit_buttons())
@@ -163,7 +162,7 @@ func _promote_row() -> Control:
 	var refused := Promotion.refused(_session.state, _creature)
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = refused if refused != "" else "They could be moved up."
+	label.text = refused if refused != "" else "Promote Liberals"
 	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	row.add_child(label)
 	var promote := Button.new()
@@ -184,19 +183,28 @@ func _discharge_row() -> Control:
 	var refused := Discharge.refused(_session.state, _creature)
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = refused if refused != "" else DossierText.discharge_warning()
+	label.text = refused
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	label.visible = refused != ""
 	row.add_child(label)
-	row.add_child(_confirming("Release", refused, func() -> void:
+	var boss: Creature = _session.state.creatures.get(_creature.hire_id)
+	row.add_child(_confirming("Remove member", refused,
+			DossierText.release_warning(), func() -> void:
 		Commands.release(_session, _creature)))
-	row.add_child(_confirming("Have them killed", refused, func() -> void:
+	row.add_child(_confirming("Kill member", refused,
+			DossierText.execution_warning(boss.name if boss != null
+			else "the LCS"), func() -> void:
 		Commands.execute(_session, _creature)))
 	return row
 
 
 ## A button that asks once, then does it.
-func _confirming(text: String, refused: String, act: Callable) -> Button:
+##
+## The original puts the warning on the screen and waits for C; the port shows
+## the same warning and turns the button into the same confirmation.
+func _confirming(text: String, refused: String, warning: String,
+		act: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.disabled = refused != ""
@@ -204,9 +212,12 @@ func _confirming(text: String, refused: String, act: Callable) -> Button:
 	button.toggled.connect(func(pressed: bool) -> void:
 		if not pressed:
 			button.text = text
+			_notice.visible = false
 			return
 		if button.text == text:
-			button.text = "%s — sure?" % text
+			button.text = "C - Confirm"
+			_notice.text = warning
+			_notice.visible = true
 			return
 		act.call()
 		closed.emit()
@@ -221,12 +232,12 @@ func _surgery_row() -> Control:
 	row.add_theme_constant_override("separation", 8)
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = "Their hands are worth %d in surgery." % \
-			Augmentation.skill_of(_creature)
+	label.text = "%s will augment another Liberal to make them " % _creature.name \
+			+ "physically superior."
 	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	row.add_child(label)
 	var operate := Button.new()
-	operate.text = "Operate on somebody"
+	operate.text = "Augmentation"
 	operate.pressed.connect(func() -> void: surgery_wanted.emit(_creature))
 	row.add_child(operate)
 	return row
@@ -256,6 +267,8 @@ func _give(item: Item) -> void:
 func _heading(text: String) -> void:
 	var label := Label.new()
 	label.text = text
+	# The original's headings are whole prompts and are wider than a phone.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
 	_body.add_child(label)
 

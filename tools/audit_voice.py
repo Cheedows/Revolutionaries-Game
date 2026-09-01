@@ -39,12 +39,13 @@ EXCEPTIONS_FILE = ROOT / "tools" / "voice_exceptions.json"
 
 # What has not been carried across yet.
 #
-# The rewording went in over a long time and there is a lot of it, so this is a
-# ratchet rather than a wall: every line still in the backlog is one the port
-# invented and the original had words for, and the build fails on anything that
-# is *not* in it. Nothing new can be added; the list only comes down.
+# This was a ratchet while the rewording was being undone: every line in it was
+# one the port had invented where the original had words, and the build failed
+# on anything that was *not* in it, so the list could only come down.
 #
-# Emptying it is the job. Do not add to it to make a build pass.
+# It is empty. It stays empty: a line the original has words for is carried, and
+# a line it has none for is explained in voice_exceptions.json with what the
+# original does instead. Do not put anything back in here to make a build pass.
 BACKLOG_FILE = ROOT / "tools" / "voice_backlog.json"
 
 
@@ -55,7 +56,13 @@ VENDORED = ("cmarkup", "sdl", "pdcurses", "sandbox")
 
 
 def original_strings():
-    """Every string literal in src/, with adjacent literals joined as C joins."""
+    """Every word the original shows, from its code and from its content.
+
+    Its code is src/; its content is art/*.xml, which is where the names and
+    descriptions of every weapon, item, piece of clothing and loot document
+    live. Both are the original's own words, so a port line matching either
+    is carried, not invented.
+    """
     out = []
     for path in sorted((ROOT / "src").rglob("*")):
         if path.suffix not in (".cpp", ".h"):
@@ -66,7 +73,14 @@ def original_strings():
         # its dashes and box characters are single high bytes, which reading
         # as UTF-8 would drop on the floor along with the words around them.
         out.extend(_c_strings(path.read_text(encoding="latin-1")))
+    for path in sorted((ROOT / "art").rglob("*.xml")):
+        out.extend(_xml_text(path.read_text(encoding="latin-1")))
     return out
+
+
+def _xml_text(text):
+    """The text between the tags: names, descriptions, everything readable."""
+    return [t for t in re.findall(r">([^<>]+)<", text) if t.strip()]
 
 
 def _c_strings(text):
@@ -157,13 +171,24 @@ def _plain(said):
     # match exactly.
     said = re.sub("[\u00c4\ufffd]{1,2}", "\u2014", said)
     said = said.replace("\u2014", " \u2014 ")
-    return re.sub(r"\s+", " ", said).strip()
+    # Runs of whitespace collapse, but the ends are left alone: the original
+    # puts the space *between* two halves of a sentence at the end of the
+    # first strcat(), so stripping here would run the halves together and lose
+    # every story that is assembled that way.
+    return re.sub(r"\s+", " ", said)
 
 
 def _pieces(said):
-    """The literal words, with the format holes taken out."""
+    """The literal words, with the format holes taken out.
+
+    A hole often has punctuation glued to it — "$%d", "(%s)" — which belongs
+    to the number, not to the words, so it comes off the ends of a fragment
+    before the fragment is looked for. Only brackets and the currency sign;
+    letters and sentence punctuation stay, because those are the words.
+    """
     split = re.split(r"%[-\d.]*[sdxfv%]|\{[^}]*\}", _plain(said))
-    return [piece for piece in (re.sub(r"\s+", " ", p).strip() for p in split)
+    pieces = (re.sub(r"\s+", " ", p).strip() for p in split)
+    return [piece for piece in pieces
             if len(piece) >= 4 and re.search(r"[A-Za-z]{3}", piece)]
 
 
@@ -179,9 +204,29 @@ def _found(piece, haystack):
     as it writes one whole, so a line it prints in two halves is still its
     line. Both halves have to be long enough that finding them means
     something.
+
+    [param haystack] is a pair: the strings one per line, and the same strings
+    run together in source order. The second is what a news story actually
+    reads like — the original assembles one out of a run of strcat() calls, so
+    a sentence of it spans several literals — and looking there is the only
+    way a story carried across whole can be recognised as carried.
     """
-    if piece in haystack:
+    lines, running = haystack
+    # Case is presentation, not voice: the original shouts its column headers
+    # and whispers the same words in a sentence two screens later, and a
+    # button that takes a line out of a "(Press A to ...)" prompt starts it
+    # with a capital. The words are what is being checked.
+    piece = piece.lower()
+    if piece in lines or piece in running:
         return True
+    # A hole often has punctuation glued to it — "$%d", "(%s)" — which belongs
+    # to the number, not to the words, so the fragment is tried again without
+    # it. Only brackets, quotes and the currency sign come off, and only after
+    # the fragment has been looked for whole: the original writes "[tar]".
+    bare = piece.strip(" $#([{)]}\"'")
+    if bare != piece and (bare in lines or bare in running):
+        return True
+    haystack = lines
     for cut in range(SPLIT_FLOOR, len(piece) - SPLIT_FLOOR):
         if piece[cut] != " ":
             continue
@@ -191,7 +236,12 @@ def _found(piece, haystack):
 
 
 def main():
-    haystack = "\n".join(_plain(s) for s in original_strings())
+    said = [_plain(s) for s in original_strings()]
+    # The run-together copy has its seams collapsed as well: two literals that
+    # each carry the space between them join into two spaces, which the words
+    # they spell do not have.
+    haystack = ("\n".join(said).lower(),
+                re.sub(r"\s+", " ", "".join(said)).lower())
     ours = dict(OURS)
     if EXCEPTIONS_FILE.exists():
         ours.update(json.loads(EXCEPTIONS_FILE.read_text()))
@@ -202,7 +252,10 @@ def main():
     carried, explained, waiting, unaccounted = 0, 0, [], []
     for where, said in port_strings():
         pieces = _pieces(said)
-        if pieces and all(_found(piece, haystack) for piece in pieces):
+        # A string with no words of its own — all format holes, or a fragment
+        # too short to mean anything — has no voice to get wrong, so there is
+        # nothing here to check and it passes.
+        if all(_found(piece, haystack) for piece in pieces):
             carried += 1
         elif said in ours:
             explained += 1

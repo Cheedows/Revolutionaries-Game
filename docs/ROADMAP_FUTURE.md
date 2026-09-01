@@ -74,12 +74,36 @@ rather than a description of it.
   is not even the same job. Presentation is the port's to write where the
   original printed nothing; where it printed words, those words are content.
   `tools/audit_voice.py` is the sixth check in CI. It reads every string a
-  player can see and looks for it in `src/`; what is not there must be either
-  explained in `tools/voice_exceptions.json` or on the backlog. The doors and
+  player can see and looks for it in the original's own code and content; what
+  is not there must be explained in `tools/voice_exceptions.json`. The doors and
   the courts are done: the club and the checkpoint say all sixty-odd of the
   original's complaints rather than one summary each, a jury reads five ways
   with four flavours at each end, both sides' performances are graded as the
   original grades them, and a month inside tells one of its thirty stories.
+
+  **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
+  the original's own words and the remaining 259 are explained one by one in
+  `tools/voice_exceptions.json` with what the original does instead. The
+  ratchet is now a wall: a line that is neither carried nor explained fails
+  the build, and `tools/voice_backlog.json` is `[]` and stays that way.
+
+  Emptying it turned up more than wording. The state's charges were being
+  printed as their own enum names — "bankrobbery", "armedassault" — where the
+  original reads an indictment ("bank robbery", "felony assault", "3 counts of
+  arson", and the two charges whose name depends on the law of the day).
+  `printhealthstat()` had never been ported at all, so every screen that shows
+  how somebody is holding up said "42% blood" where the original says "Badly
+  Wounded"; it is now `ui/adapters/condition_text.gd` and the roster, the
+  record and the fight all read from it. The CCS exposure story had been cut
+  to a third of its length. The high score screen and the endings said one
+  thing where the original has sixteen.
+
+  The tool learned four things in the process, each of which had been hiding
+  real matches: the original's content lives in `art/*.xml` as well as `src/`,
+  so an item's name is its name; a story is assembled from a run of
+  consecutive `strcat()` calls, so a sentence of it has to be looked for in
+  the run rather than in one literal; punctuation glued to a format hole
+  ("$%d") belongs to the number; and case is presentation, not voice.
 - **The back button means back.** Android's back button closes the game unless
   the game says otherwise, which is not what a player who has just opened the
   paper means by it. `quit_on_go_back` is off and `BaseLayout.step_back()`
@@ -110,13 +134,6 @@ rather than a description of it.
 
 What is still awkward on a phone, and is worth doing next:
 
-- **The voice backlog: 578 lines still to carry.** `tools/audit_voice.py` now
-  reads every string in `game/ui/` a player can see — 2,006 of them — and asks
-  whether the original had words for it. 1,482 are already the original's own.
-  The rest are listed in `tools/voice_backlog.json`, and the tool fails the
-  build on anything that is *not* in that list, so nothing new can be added
-  while the list comes down. Emptying it is the job; the file is not a place
-  to put new lines.
 - Landscape on a phone gets the desktop layout at finger size, which fits but
   is dense. It is the two-column layout that should give way at a height
   threshold, not only a width one.

@@ -4,15 +4,15 @@ extends RefCounted
 
 ## What each win condition is called.
 const WIN_CONDITIONS := {
-	&"elite_liberal": "the country is Elite Liberal on every issue",
-	&"nightmare": "every issue is Elite Liberal and the amendment is passed",
+	&"elite_liberal": "No Compromise Classic - I will make all our laws Elite Liberal!",
+	&"nightmare": "Democrat Mode - Most laws must be Elite Liberal, some can be Liberal.",
 }
 
 ## What each field skill rate is called.
 const SKILL_RATES := {
-	&"classic": "as slowly as the original",
-	&"fast": "faster than the original",
-	&"realistic": "only from doing it",
+	&"classic": "Classic - Excellence requires practice.",
+	&"fast": "Fast skills - Grinding is Conservative!",
+	&"realistic": "Hard Mode - Learn from the best, or face arrest!",
 }
 
 ## What may be in a slot name, so a save cannot be written anywhere else.
@@ -23,13 +23,14 @@ const MAX_LENGTH := 40
 ## The switches, one line each.
 static func switches(state: GameState) -> Array[String]:
 	var lines: Array[String] = []
-	lines.append("Winning: %s." % WIN_CONDITIONS.get(state.win_condition,
+	lines.append("Your Agenda  %s" % WIN_CONDITIONS.get(state.win_condition,
 			String(state.win_condition).replace("_", " ")))
-	lines.append("Field training: %s." % SKILL_RATES.get(state.field_skill_rate,
+	lines.append("Field Learning  %s" % SKILL_RATES.get(state.field_skill_rate,
 			String(state.field_skill_rate)))
-	lines.append("Classic mode: %s." % ("on" if state.classic_mode else "off"))
-	lines.append("Slogan: %s." % (state.slogan if state.slogan != ""
-			else "none chosen"))
+	lines.append("%s Classic Mode: No Conservative Crime Squad."
+			% ("[X]" if state.classic_mode else "[ ]"))
+	lines.append("What is your new slogan?  %s" % (state.slogan
+			if state.slogan != "" else "None"))
 	return lines
 
 
@@ -59,6 +60,6 @@ static func slot_line(slot: String) -> String:
 		return slot
 	var slogan := String(about.get("slogan", "")).strip_edges()
 	return "%s — %s, %d/%d/%d" % [slot,
-			slogan if slogan != "" else "no slogan",
+			slogan if slogan != "" else "None",
 			int(about.get("day", 0)), int(about.get("month", 0)),
 			int(about.get("year", 0))]

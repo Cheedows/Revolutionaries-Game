@@ -115,10 +115,15 @@ var interrogation: Interrogation = null
 ## The hostage somebody is looking after, when that is their assignment.
 var tending_id: int = 0
 
-## Days spent laying low, in hospital, in court, or dating.
+## Days spent laying low, and days left of a date.
 var hiding: int = 0
-var clinic: int = 0
 var dating: int = 0
+
+## Months left in the clinic.
+var clinic: int = 0
+
+## Months left to serve. The original writes a life sentence as a negative
+## number, so -3 is three consecutive life sentences.
 var sentence: int = 0
 var confessions: int = 0
 var death_penalty: int = 0

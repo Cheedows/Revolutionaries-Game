@@ -33,7 +33,7 @@ func _build() -> void:
 	add_child(outer)
 
 	var heading := Label.new()
-	heading.text = "The Agenda"
+	heading.text = "The Status of the Liberal Agenda"
 	heading.add_theme_color_override("font_color", Palette.ACCENT)
 	outer.add_child(heading)
 
