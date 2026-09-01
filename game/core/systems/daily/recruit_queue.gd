@@ -89,9 +89,12 @@ static func _hold(state: GameState, rng: Rng, catalog: Catalog, index: int,
 		return _next(state, rng, catalog, index - 1, events)
 
 	_forget(state, index)
-	if String(result["outcome"]) == RecruitMeeting.OVER:
+	# The original's recruitst owns the recruit and deletes it with the
+	# meeting, so anybody the meeting does not hand to the pool is gone —
+	# including one the recruiter simply forgot to turn up for.
+	if String(result["outcome"]) != RecruitMeeting.RECRUITED:
 		recruit.exists = false
-	elif String(result["outcome"]) == RecruitMeeting.RECRUITED:
+	else:
 		recruit.squad_id = 0
 		return _in_what_capacity(state, rng, catalog, index, recruiter,
 				recruit, events)

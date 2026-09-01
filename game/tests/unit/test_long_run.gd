@@ -20,6 +20,10 @@ const DAYS := 1100
 ## No single day should need more answers than this; one that does is a loop.
 const ANSWER_CAP := 400
 
+## How many creatures may be left over beyond the roster and the open meetings:
+## hostages, bodies not yet buried, a date in progress. Not hundreds.
+const LOOSE_ENDS := 40
+
 
 func test_the_world_survives_three_years_at_every_seed() -> void:
 	for seed_value in SEEDS:
@@ -63,6 +67,16 @@ func _run(seed_value: int) -> bool:
 	if state.members().size() < 2:
 		fail("seed %d: three years of recruiting brought in nobody"
 				% seed_value)
+		return false
+	# Nobody the game has finished with is still on the books. Three years of
+	# recruiting turns up thousands of strangers; what should be left is the
+	# organisation, its open meetings, and whoever it is holding.
+	var loose := state.creatures.size() - state.members().size() \
+			- state.recruit_meetings.size()
+	if loose > LOOSE_ENDS:
+		fail("seed %d: %d creatures, %d members and %d open meetings — the pool is leaking"
+				% [seed_value, state.creatures.size(), state.members().size(),
+				state.recruit_meetings.size()])
 		return false
 	if state.calendar.year - start < 3:
 		fail("seed %d: %d days only reached %d"
