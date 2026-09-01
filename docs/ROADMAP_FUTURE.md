@@ -1,11 +1,23 @@
 # Revolutionaries — Future Roadmap
 
-**Status:** parking lot for post-parity ideas only.  
-**Active conversion work belongs in:** `docs/ROADMAP_PORT_COMPLETION.md`.
+**Status:** the active roadmap. The parity conversion is finished;
+`docs/ROADMAP_PORT_COMPLETION.md` is now the record of how, and why the code
+is shaped the way it is, rather than a plan to work from.
 
-This is intentionally the only second roadmap document. An idea that is not necessary to finish the LCS → Godot parity conversion goes here rather than spawning a proposal, phase plan, handoff, TODO, design-roadmap or status file.
+This is intentionally the only second roadmap document. An idea goes here
+rather than spawning a proposal, phase plan, handoff, TODO, design-roadmap or
+status file.
 
-Nothing in this document is automatically approved for implementation. The current priority remains completing the parity port.
+Nothing in this document is approved for implementation. Parity is no longer
+an argument against any of it, but which of it to do is a decision, and the
+decision has not been made. What keeps the baseline honest through whatever
+comes next is in the tree: `tools/audit_parity.py`, `tools/audit_state.py` and
+`tools/audit_choices.py` fail the build when the port stops accounting for
+something the original does, the 71 probes and 12 golden traces diff it
+against an instrumented build of the original draw for draw, and
+`test_long_run` plays three years at three seeds with nobody at the keyboard.
+A deliberate departure from the original means updating those; an accidental
+one means a red build.
 
 ## 1. Post-parity bug-fix pass
 

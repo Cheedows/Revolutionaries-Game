@@ -2,16 +2,28 @@
 
 ## Current project goal
 
-Finish the Liberal Crime Squad → Godot 4.6 conversion to mechanical parity, then expand and modernize Revolutionaries from that stable baseline.
+The Liberal Crime Squad → Godot 4.6 conversion is finished: `game/` is the
+whole playable implementation and every gate in the port roadmap is green. The
+goal now is to expand and modernize Revolutionaries from that baseline, which
+means deciding what to build rather than what to port.
 
-The active execution plan is:
-
-- `docs/ROADMAP_PORT_COMPLETION.md` — **canonical current roadmap**. Work this top-to-bottom until the port is complete.
-- `docs/ROADMAP_FUTURE.md` — post-parity ideas/bug fixes/modernization only.
+- `docs/ROADMAP_FUTURE.md` — **the active roadmap.** Nothing in it is approved;
+  ask before starting any of it.
+- `docs/ROADMAP_PORT_COMPLETION.md` — the record of the conversion. Read it to
+  find out *why* something is the way it is; do not work from it.
 - `docs/port/ARCHITECTURE.md` — binding architecture and layer rules.
 - `docs/port/LICENSING-NOTES.md` — licensing constraints/reference.
 
-Do not treat old C++ code as the future architecture. `src/` is the parity oracle/reference; `game/` is the future game.
+Do not treat old C++ code as the future architecture. `src/` is a test fixture:
+three of the four checks CI runs read it to ask whether the port still accounts
+for everything the original does, and the trace harness compiles it into the
+build the golden traces come from. Nothing under `game/` may depend on it.
+
+**Parity is still enforced, not merely achieved.** `tools/audit_parity.py`,
+`tools/audit_state.py` and `tools/audit_choices.py` fail the build when the
+port stops accounting for something the original does; 71 probes and 12 golden
+traces diff it against the original draw for draw. A deliberate departure means
+updating those and saying so. An accidental one means a red build.
 
 ## Documentation discipline — mandatory
 

@@ -1677,10 +1677,42 @@ Do not silently fix these while converting because some change RNG draw counts o
 
 ## 8. Final cleanup after 100% parity
 
-Only after Gate J:
+- [x] Remove obsolete port-only trace scaffolding that no longer provides
+    maintenance value, while retaining useful regression tests. Nothing was
+    removed, because nothing in it is obsolete: `tools/trace_harness/` is what
+    records the 71 probes and 12 golden traces the suite diffs against, and a
+    goldens set with no way to re-record it is a set nobody can trust after
+    the next change. It is 656K of source and it earns its place. The goldens
+    themselves are 28M, which is the price of the evidence.
 
-- [ ] Remove obsolete port-only trace scaffolding that no longer provides maintenance value, while retaining useful regression tests.
-- [ ] Decide whether the legacy `src/`, vendored SDL/PDCurses and old build files remain as historical reference or move out of the production tree.
-- [ ] Collapse obsolete migration-era documentation.
-- [ ] Rebaseline `docs/ROADMAP_FUTURE.md` as the active product roadmap for post-LCS expansion.
-- [ ] Begin visual/UI modernization and new mechanics without parity ambiguity.
+- [x] Decide whether the legacy `src/`, vendored SDL/PDCurses and old build
+    files remain as historical reference or move out of the production tree.
+    **They stay, and they are not merely historical.** Three of the four
+    checks CI runs read `src/` directly — `audit_parity.py`, `audit_state.py`
+    and `audit_choices.py` are all questions of the form "does the port still
+    account for everything the original does", and they cannot be asked
+    without the original in the tree. The trace harness compiles `src/` into
+    the instrumented build the goldens come from. Deleting it would not tidy
+    the repository; it would delete the oracle and leave 279 tests asserting
+    only that the port still agrees with itself. `src/` is a test fixture now,
+    not a codebase: nothing under `game/` may depend on it, which is what
+    `tools/check_layers.py` enforces.
+
+- [x] Collapse obsolete migration-era documentation. There was none to
+    collapse: the discipline in `CLAUDE.md` held for the whole conversion, and
+    the repository still has exactly four documents — this one, the future
+    roadmap, the architecture contract and the licensing notes. This one is
+    now a record of a finished conversion rather than a plan for one, and is
+    kept for what it says about *why* things are the way they are.
+
+- [x] Rebaseline `docs/ROADMAP_FUTURE.md` as the active product roadmap for
+    post-LCS expansion. Done: it is the active roadmap now, and this file is
+    no longer the thing to work from.
+
+- [ ] Begin visual/UI modernization and new mechanics without parity
+    ambiguity. This is the first item that needs a decision rather than a
+    conversion, and it is the user's: `ROADMAP_FUTURE.md` holds the options
+    and nothing in it is approved. Parity is no longer an argument against any
+    of them — the audits and the golden traces are what keeps the baseline
+    honest through whatever comes next, and they will keep failing the build
+    if a change quietly moves it.
