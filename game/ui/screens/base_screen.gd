@@ -94,6 +94,7 @@ func _connect() -> void:
 	_roster.activity_chosen.connect(_on_activity_chosen)
 	_roster.dossier_wanted.connect(_open_dossier)
 	_roster.hostage_chosen.connect(_on_hostage_chosen)
+	_roster.recruit_chosen.connect(_on_recruit_chosen)
 	_panels.changed.connect(_refresh)
 	_panels.reported.connect(func(message: String) -> void:
 		_log.append(message, Palette.TEXT_DIM))
@@ -214,6 +215,22 @@ func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
 	if activity == &"hostagetending":
 		Commands.watch_hostage(_session, creature)
 		_refresh()
+	# So is recruiting: the first name on the list is the one the original
+	# leaves the cursor on.
+	elif activity == &"recruiting" and creature.recruiting == &"":
+		var offered := Recruiting.recruitable(_session.state)
+		if not offered.is_empty():
+			Commands.recruit_for(_session, creature,
+					StringName(offered[0]["type"]))
+		_refresh()
+
+
+func _on_recruit_chosen(recruiter: Creature, type: StringName) -> void:
+	if Commands.recruit_for(_session, recruiter, type):
+		_log.append("%s will look for %s." % [recruiter.name,
+				String(type).trim_prefix("CREATURE_").to_lower()],
+				Palette.TEXT_DIM)
+	_refresh()
 
 
 func _on_hostage_chosen(keeper: Creature, hostage: Creature) -> void:
@@ -228,6 +245,7 @@ func _refresh() -> void:
 	_laws.refresh(_session.state)
 	_roster.offer_garments(AssignmentChoice.garments(_session.state,
 			_session.catalog))
+	_roster.offer_recruits(Recruiting.recruitable(_session.state))
 	_roster.refresh(_session.state)
 	_squad.refresh(_session.state)
 	# The plan is only worth the room it takes while the squad is inside one.

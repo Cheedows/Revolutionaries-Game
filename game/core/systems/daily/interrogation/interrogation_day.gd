@@ -11,6 +11,16 @@ extends RefCounted
 ## after the escape check and after the day's rolls are made, which is why the
 ## restraint the escape check reads is yesterday's rather than today's.
 
+## The answer that stops toggling and runs the day, which cannot collide with
+## a technique index.
+const GET_ON_WITH_IT := -1
+
+## What each technique is called on the screen, in [Interrogation]'s order.
+const TACTIC_NAMES: Array[String] = [
+	"Talk to them", "Keep them tied up", "Beat them",
+	"Show them the literature", "Give them hallucinogens", "Kill them",
+]
+
 ## An unattended or unrestrained hostage tries the door, once they have been
 ## held long enough to have worked out how.
 const ESCAPE_SPREAD := 200
@@ -47,8 +57,21 @@ static func run(state: GameState, rng: Rng, hostage: Creature,
 			return events
 
 	var session := _open(state, rng, hostage, guards, catalog)
+	return _ask(state, rng, hostage, session, plan, catalog, events)
+
+
+## What is done to the hostage today.
+##
+## The original's screen toggles a technique per letter and confirms with
+## enter, so this asks the same question again after each toggle and carries
+## out the plan when the answer is [constant GET_ON_WITH_IT]. An answer that is
+## an [Array] sets the whole plan at once, which is how the tests drive it.
+static func _ask(state: GameState, rng: Rng, hostage: Creature,
+		session: Dictionary, plan: Interrogation, catalog: Catalog,
+		events: Array[Event]) -> PendingIntent:
 	return PendingIntent.new(
-			Intent.new(Intent.CHOOSE_INTERROGATION_TACTIC, [], {
+			Intent.new(Intent.CHOOSE_INTERROGATION_TACTIC,
+					_tactics(state, plan), {
 				"creature": hostage.id,
 				"interrogator": session["lead"].id,
 				"day": hostage.join_days,
@@ -56,10 +79,36 @@ static func run(state: GameState, rng: Rng, hostage: Creature,
 				"can_afford_props": state.ledger.funds >= PROPS_COST,
 				"can_afford_drugs": state.ledger.funds >= DRUGS_COST,
 			}, false),
-			func(answer: Variant) -> Array[Event]:
+			func(answer: Variant) -> Variant:
+				if answer is int and int(answer) != GET_ON_WITH_IT:
+					plan.techniques[int(answer)] = \
+							not plan.techniques[int(answer)]
+					return _ask(state, rng, hostage, session, plan, catalog,
+							events)
 				return _carry_out(state, rng, hostage, session, answer, catalog,
 						events),
 			events)
+
+
+## The techniques, each with whether it is currently on, and the line that
+## stops toggling and starts the day.
+static func _tactics(state: GameState, plan: Interrogation) -> Array[Dictionary]:
+	var options: Array[Dictionary] = []
+	for index in TACTIC_NAMES.size():
+		var affordable := true
+		if index == Interrogation.PROPS:
+			affordable = state.ledger.funds >= PROPS_COST
+		elif index == Interrogation.DRUGS:
+			affordable = state.ledger.funds >= DRUGS_COST
+		options.append({
+			"id": index,
+			"label": "%s %s" % ["[x]" if plan.techniques[index] else "[ ]",
+					TACTIC_NAMES[index]],
+			"enabled": affordable or plan.techniques[index],
+		})
+	options.append({"id": GET_ON_WITH_IT, "label": "Get on with it",
+			"enabled": true})
+	return options
 
 
 ## Everybody assigned to this hostage who is actually in the room. Anybody who

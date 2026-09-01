@@ -18,7 +18,7 @@ const PLAIN: Array[StringName] = [
 	&"sentence", &"confessions", &"death_penalty", &"recruiter_id",
 	&"preferred_car_id", &"prefers_driving", &"vehicle_id", &"is_driver",
 	&"forced_incapacitated", &"cannot_bluff", &"hire_id", &"meetings",
-	&"join_days", &"death_days",
+	&"join_days", &"death_days", &"enlisted",
 ]
 
 ## Fields held as names rather than numbers.

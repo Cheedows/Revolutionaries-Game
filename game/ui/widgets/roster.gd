@@ -14,12 +14,19 @@ signal dossier_wanted(creature: Creature)
 ## Emitted when a guard has been put on a particular prisoner.
 signal hostage_chosen(keeper: Creature, hostage: Creature)
 
+## Emitted when a recruiter has been told what kind of person to look for.
+signal recruit_chosen(recruiter: Creature, type: StringName)
+
 var _rows: VBoxContainer
 
 ## The garments a tailor could be told to make, worked out from the state and
 ## the catalog as the roster is drawn. Kept as a list rather than as the state
 ## itself, because a widget has no business holding onto [GameState].
 var _garment_choices: Array[StringName] = []
+
+## Who a recruiter could be told to look for, hardest last, with how hard each
+## one is. Set the same way, and for the same reason.
+var _recruit_choices: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -56,6 +63,11 @@ func _build() -> void:
 ## needs the catalog and the law and a widget should hold neither.
 func offer_garments(choices: Array[StringName]) -> void:
 	_garment_choices = choices
+
+
+## Who a recruiter can be sent to look for, with how hard each one is.
+func offer_recruits(choices: Array[Dictionary]) -> void:
+	_recruit_choices = choices
 
 
 ## Redraws from [param state].
@@ -122,6 +134,10 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 	if creature.activity == &"hostagetending" and not held.is_empty():
 		row.add_child(_hostages(creature, held))
 
+	# Recruiting needs a profession named, or asking around finds nobody.
+	if creature.activity == &"recruiting" and not _recruit_choices.is_empty():
+		row.add_child(_recruits(creature))
+
 	var look := Button.new()
 	look.text = "Look"
 	look.tooltip_text = "Read %s's record and hand them their gear" % creature.name
@@ -143,6 +159,22 @@ func _garments(creature: Creature) -> Control:
 	picker.item_selected.connect(func(index: int) -> void:
 		AssignmentChoice.choose(creature, creature.activity, choices[index])
 		activity_chosen.emit(creature, creature.activity))
+	return picker
+
+
+## Who a recruiter is out looking for.
+func _recruits(creature: Creature) -> Control:
+	var picker := OptionButton.new()
+	picker.custom_minimum_size = Vector2(230, 0)
+	var choices := _recruit_choices
+	for index in choices.size():
+		var type: StringName = choices[index]["type"]
+		picker.add_item(ActivityText.recruit_label(
+				type, int(choices[index]["difficulty"])), index)
+		if creature.recruiting == type:
+			picker.select(index)
+	picker.item_selected.connect(func(index: int) -> void:
+		recruit_chosen.emit(creature, StringName(choices[index]["type"])))
 	return picker
 
 

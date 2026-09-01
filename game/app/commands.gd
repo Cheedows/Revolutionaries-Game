@@ -214,3 +214,37 @@ static func execute(session: Session, creature: Creature) -> String:
 static func watch_hostage(session: Session, keeper: Creature,
 		hostage: Creature = null) -> bool:
 	return HostageWatch.watch(session.state, keeper, hostage)
+
+
+## Starts a fresh game in [param session], answering the founder's
+## questionnaire with [param answers] and the switches with [param options].
+##
+## The screen asks these one at a time; this is the same sequence with nobody
+## to ask, which is what a headless run and a long simulation need. The rolls
+## happen in the same order either way — including the suggestion the original
+## makes for every question whether or not the player takes it.
+static func start_new_game(session: Session, answers: PackedInt32Array,
+		options: Dictionary = {}) -> Array[Event]:
+	NewGame.choose(session.state, session.rng, options)
+	var choosing := Founder.begin(session.rng)
+	var outcome := {}
+	for question in FounderBackgrounds.QUESTIONS:
+		Founder.suggestion(session.rng)
+		var option := answers[question] if question < answers.size() else 0
+		Founder.answer(session.state, choosing, question, option, outcome)
+	return NewGame.begin(session.state, session.rng, choosing, outcome,
+			session.catalog)
+
+
+## Sends [param creature] out looking for somebody of [param type].
+##
+## Ports the tail of recruitSelect() from src/basemode/activate.cpp: the
+## profession is part of the assignment, and asking around without one finds
+## nobody, so the plain [method assign_activity] cannot do this one either.
+static func recruit_for(session: Session, creature: Creature,
+		type: StringName) -> bool:
+	if not Recruiting.FINDABLE.has(type):
+		return false
+	creature.activity = &"recruiting"
+	creature.recruiting = type
+	return true

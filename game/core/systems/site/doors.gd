@@ -16,6 +16,13 @@ const GRACE_PICKED := 50
 const GRACE_CROWBAR := 20
 const GRACE_KICKED := 5
 
+## Every door question is the same question. The answers are the booleans the
+## resumes take, so a screen that offers them needs no translation.
+const YES_OR_NO: Array[Dictionary] = [
+	{"id": true, "label": "Go through", "enabled": true},
+	{"id": false, "label": "Leave it", "enabled": true},
+]
+
 
 ## Handles the squad walking into the door at [param at].
 ##
@@ -38,7 +45,7 @@ static func bump(state: GameState, squad: Squad, at: Vector3i, from_secure: bool
 	if flags & Tables.SITE_BLOCKS[&"alarmed"]:
 		# Clearly marked either way, so the squad is asked before it trips it.
 		return PendingIntent.new(
-				Intent.new(Intent.CONFIRM_NOISY_DOOR, [], {
+				Intent.new(Intent.CONFIRM_NOISY_DOOR, YES_OR_NO, {
 					"locked": (flags & Tables.SITE_BLOCKS[&"locked"]) != 0,
 					"emergency_exit": (flags & Tables.SITE_BLOCKS[&"locked"]) == 0,
 				}),
@@ -88,7 +95,7 @@ static func _swing_open(state: GameState, at: Vector3i,
 static func _ask_to_pick(state: GameState, squad: Squad, at: Vector3i,
 		catalog: Catalog, rng: Rng) -> PendingIntent:
 	return PendingIntent.new(
-			Intent.new(Intent.CONFIRM_PICK_LOCK, [],
+			Intent.new(Intent.CONFIRM_PICK_LOCK, YES_OR_NO,
 					{"x": at.x, "y": at.y, "z": at.z}),
 			func(agreed: bool) -> Variant:
 				if not agreed:
@@ -129,7 +136,7 @@ static func _pick(state: GameState, squad: Squad, at: Vector3i,
 static func _ask_to_force(state: GameState, squad: Squad, at: Vector3i,
 		catalog: Catalog, rng: Rng, locked: bool) -> PendingIntent:
 	return PendingIntent.new(
-			Intent.new(Intent.CONFIRM_FORCE_DOOR, [], {
+			Intent.new(Intent.CONFIRM_FORCE_DOOR, YES_OR_NO, {
 				"x": at.x, "y": at.y, "z": at.z, "locked": locked,
 			}),
 			func(agreed: bool) -> Variant:

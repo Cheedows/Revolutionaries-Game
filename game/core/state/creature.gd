@@ -145,6 +145,15 @@ var forced_incapacitated: bool = false
 ## started.
 var cannot_bluff: int = 0
 
+## Whether this creature is in the organisation.
+##
+## The original has two lists, `pool` and `encounter`, and being in the LCS is
+## being in the first one. The port keeps everybody in one dictionary, so
+## membership has to be a flag; [member join_days] served as one for a long
+## time, but it is a day counter that starts at zero on the day somebody
+## joins, so a new recruit read as a stranger until the following morning.
+var enlisted: bool = false
+
 ## Which hire this creature is, or -1 for the founder. The founder takes half
 ## damage and gets shielded, which is what this is read for.
 var hire_id: int = -1
@@ -192,7 +201,7 @@ func is_naked() -> bool:
 
 ## Whether this creature belongs to the player's organisation.
 func is_member() -> bool:
-	return squad_id != 0 or join_days > 0
+	return enlisted or squad_id != 0 or join_days > 0
 
 ## A separate person with the same everything.
 ##

@@ -83,18 +83,14 @@ static func _converted(state: GameState, plan: DatePlan, dater: Creature,
 
 	date.love_slave = true
 	date.hire_id = dater.id
-	# The original asks whether they come home or stay where they work as a
-	# sleeper; coming home is the answer with no rolls in it, and the sleeper
-	# half is the recruitment system's prompt, reused.
-	date.location = dater.location
-	date.base = dater.base
-	Alignment.liberalize(date, false)
-	date.join_days = 0
 	state.recruits += 1
 	_drop(plan, date)
+	# Where they live is the sleeperize prompt, which the caller asks; without
+	# an answer they come home, which is the answer with no rolls in it.
+	events.append_array(Enlistment.enrol(state, date, dater))
 	events.append(Event.new(Event.DATE_JOINED,
 			{"creature": dater.id, "date": date.id}))
-	return {"outcome": JOINED, "events": events}
+	return {"outcome": JOINED, "events": events, "enlist": date}
 
 
 ## A good evening that changed nothing much: one point off their judgement, or

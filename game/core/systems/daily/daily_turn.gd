@@ -137,4 +137,7 @@ static func _close_the_day(state: GameState, rng: Rng,
 ## day and the month both, at the very end of the wait.
 static func _upkeep(state: GameState, rng: Rng,
 		events: Array[Event]) -> Array[Event]:
-	return events + SiteUpkeep.advance(state, rng)
+	var done := events + SiteUpkeep.advance(state, rng)
+	# Last of all, when nothing is left that wants to read the flag.
+	Tombstones.sweep(state)
+	return done

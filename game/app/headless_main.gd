@@ -4,6 +4,10 @@ extends SceneTree
 ##   godot --headless --path game --script res://app/headless_main.gd -- \
 ##       --seed 12345 --days 30 [--trace out.jsonl]
 ##
+## The run starts a fresh game answering every founder question with the first
+## option, then waits a day at a time. Nobody is given any orders, so what it
+## exercises is everything the world does on its own.
+##
 ## Prints one line per event, or writes the run as JSON Lines when --trace is
 ## given, in the same shape as the harness records from the original.
 
@@ -11,6 +15,11 @@ func _initialize() -> void:
 	var options := _parse(OS.get_cmdline_user_args())
 	var session := Session.new(int(options.get("seed", "1")))
 	var days := int(options.get("days", "1"))
+	# Without this the run has no founder and no city, and the end check
+	# reports the LCS dead on the first day.
+	Commands.start_new_game(session, PackedInt32Array(),
+			{&"win_condition": &"elite_liberal", &"field_skill_rate": &"fast"})
+	session.drain_events()
 
 	var trace: FileAccess = null
 	if options.has("trace"):

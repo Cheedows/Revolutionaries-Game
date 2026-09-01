@@ -40,7 +40,7 @@ static func _round(state: GameState, rng: Rng, squad: Squad, catalog: Catalog,
 	var obstacle: StringName = Ids.CHASE_OBSTACLES[state.chase.obstacle] \
 			if state.chase.obstacle != -1 else &""
 	return PendingIntent.new(
-			Intent.new(Intent.CHOOSE_CHASE_ACTION, [], {
+			Intent.new(Intent.CHOOSE_CHASE_ACTION, _actions(state, obstacle), {
 				"in_cars": ChaseTurn.in_cars(state),
 				"obstacle": obstacle,
 				"can_pull_over": state.chase.can_pull_over,
@@ -49,6 +49,28 @@ static func _round(state: GameState, rng: Rng, squad: Squad, catalog: Catalog,
 			func(choice: StringName) -> Variant:
 				return _act(state, rng, squad, catalog, choice, events),
 			events)
+
+
+## What the squad can do about this round.
+##
+## An obstacle in the road replaces the usual choice with the two ways past it,
+## which is how the original draws it: swerve, or keep going.
+static func _actions(state: GameState, obstacle: StringName) -> Array[Dictionary]:
+	if obstacle != &"":
+		return [
+			{"id": SWERVE, "label": "Swerve!", "enabled": true},
+			{"id": PLOW_ON, "label": "Keep going!", "enabled": true},
+		]
+	var options: Array[Dictionary] = [
+		{"id": RUN_FOR_IT, "label": "Try to lose them!", "enabled": true},
+		{"id": FIGHT, "label": "Fight!", "enabled": true},
+	]
+	if ChaseTurn.in_cars(state):
+		options.append({"id": BAIL_OUT, "label": "Bail out and run!",
+				"enabled": true})
+	options.append({"id": GIVE_UP, "label": "Pull over",
+			"enabled": state.chase.can_pull_over})
+	return options
 
 
 ## Carries out the squad's choice, then comes back for the next round.

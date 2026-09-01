@@ -57,3 +57,21 @@ const LABELS := {
 static func of(activity: StringName) -> String:
 	return String(LABELS.get(activity,
 			String(activity).capitalize().replace("_", " ")))
+
+
+## How hard somebody is to track down, in the original's words.
+##
+## From recruitSelect() and carselect(), which share the scale.
+const DIFFICULTY: Array[String] = [
+	"Simple", "Very Easy", "Easy", "Below Average", "Average",
+	"Above Average", "Hard", "Very Hard", "Extremely Difficult",
+	"Nearly Impossible", "Impossible",
+]
+
+
+## One line of the recruiter's menu: who they would be looking for, and how
+## hard they are to arrange a meeting with.
+static func recruit_label(type: StringName, difficulty: int) -> String:
+	var who := String(type).trim_prefix("CREATURE_").capitalize()
+	return "%s — %s" % [who,
+			DIFFICULTY[clampi(difficulty, 0, DIFFICULTY.size() - 1)]]

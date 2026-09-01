@@ -99,15 +99,7 @@ static func run_one(state: GameState, rng: Rng, creature: Creature,
 			return [Event.new(Event.WHEELCHAIR_SOUGHT,
 					{"creature": creature.id, "found": found})] as Array[Event]
 		&"recruiting":
-			# Asking around is ported and checked; the meeting it sets up is a
-			# conversation, and conversations wait on the talk system.
-			var found := Recruiting.ask_around(state, rng, creature,
-					creature.recruiting, catalog)
-			var ids := PackedInt32Array()
-			for candidate: Creature in found:
-				ids.append(candidate.id)
-			return [Event.new(Event.RECRUIT_FOUND,
-					{"creature": creature.id, "candidates": ids})] as Array[Event]
+			return RecruitDay.run(state, rng, creature, catalog)
 		&"stealcars":
 			return _steal_a_car(state, rng, creature, catalog)
 		&"polls":

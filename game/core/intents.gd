@@ -69,6 +69,8 @@ const CHOOSE_DATE_APPROACH := &"choose_date_approach"  # {creature, date}
 const CHOOSE_DIALOGUE := &"choose_dialogue"
 const CHOOSE_INTERROGATION_TACTIC := &"choose_interrogation_tactic"
 const CONFIRM_RECRUIT := &"confirm_recruit"
+const CHOOSE_CANDIDATE := &"choose_candidate"       # {creature, looking_for}
+const CHOOSE_ENLISTMENT := &"choose_enlistment"     # {creature, by}
 const CHOOSE_DEFENSE := &"choose_defense"            # {creature, charges}
 
 # --- Shops and money ------------------------------------------------------

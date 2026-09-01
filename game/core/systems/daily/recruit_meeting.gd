@@ -59,16 +59,16 @@ static func hold(state: GameState, rng: Rng, recruiter: Creature,
 
 
 ## The offer, and it being taken.
+##
+## Everything except where they live: the original asks that next, with the
+## sleeperize prompt, so [Enlistment] is left to whoever handles the outcome.
 static func _they_join(state: GameState, recruiter: Creature,
 		recruit: Creature, events: Array[Event]) -> Dictionary:
-	Alignment.liberalize(recruit, false)
 	recruit.hire_id = recruiter.id
 	recruit.recruiter_id = recruiter.id
 	TrainRules.train(recruiter, &"persuasion", Recruiting.RECRUIT_LESSON)
 	state.recruits += 1
-	events.append(Event.new(Event.CREATURE_RECRUITED,
-			{"creature": recruit.id, "by": recruiter.id}))
-	return {"outcome": RECRUITED, "events": events}
+	return {"outcome": RECRUITED, "events": events, "recruit": recruit}
 
 
 ## An afternoon of politics. Both of them learn something; then the recruit

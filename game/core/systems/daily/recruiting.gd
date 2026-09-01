@@ -113,6 +113,29 @@ static func refresh_difficulties(state: GameState) -> void:
 		state.recruit_difficulty[&"CREATURE_MUTANT"] = MUTANT_NEITHER
 
 
+## Who [param state] can be asked to look for, hardest last.
+##
+## Ports the list recruitSelect() draws. The difficulties are refreshed first,
+## because opening the menu is what refreshes them in the original — a player
+## who never opens it goes on looking under the old figure.
+static func recruitable(state: GameState) -> Array[Dictionary]:
+	refresh_difficulties(state)
+	var offered: Array[Dictionary] = []
+	for type: StringName in FINDABLE:
+		offered.append({
+			"type": type,
+			"difficulty": find_difficulty(state, type),
+		})
+	offered.sort_custom(_by_difficulty)
+	return offered
+
+
+static func _by_difficulty(first: Dictionary, second: Dictionary) -> bool:
+	if int(first["difficulty"]) != int(second["difficulty"]):
+		return int(first["difficulty"]) < int(second["difficulty"])
+	return String(first["type"]) < String(second["type"])
+
+
 ## A day spent asking around for somebody of [param type].
 ##
 ## Returns the candidates found, in the order they were found. The first comes

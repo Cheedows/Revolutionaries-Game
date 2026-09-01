@@ -121,12 +121,12 @@ static func _converted(state: GameState, rng: Rng, hostage: Creature,
 
 	if hostage.missing and not hostage.kidnapped:
 		# Nobody has reported them gone, so they could stay where they work as
-		# a sleeper. Coming home is the answer with no rolls in it; the choice
-		# belongs to the recruitment prompt.
-		hostage.location = lead.location
-		hostage.base = lead.base
-		Alignment.liberalize(hostage, false)
+		# a sleeper. Coming home is the answer with no rolls in it, and it is
+		# what they get: the port does not stop the interrogation to ask.
+		events.append_array(Enlistment.enrol(state, hostage, lead))
 		hostage.missing = false
+	else:
+		hostage.enlisted = true
 	events.append(Event.new(Event.HOSTAGE_CONVERTED,
 			{"creature": hostage.id, "by": lead.id}))
 	return events
