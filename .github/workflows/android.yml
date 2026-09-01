@@ -58,6 +58,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Godot signs the APK itself, with apksigner and zipalign out of the
+      # SDK's build-tools. The runner image ships the SDK but not necessarily
+      # those, and Godot's complaint when they are missing is an empty list of
+      # configuration errors, so they are installed rather than assumed.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: Install the SDK pieces Godot signs with
+        run: sdkmanager --install "platform-tools" "build-tools;34.0.0"
+
       - name: Make a throwaway debug keystore
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey \
@@ -69,7 +80,11 @@ jobs:
         run: |
           sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           echo "Android SDK at $sdk"
-          ls "$sdk/build-tools" || true
+          # Fail here, where the reason is obvious, rather than inside Godot,
+          # where it is an empty list of configuration errors.
+          test -x "$sdk/platform-tools/adb"
+          ls "$sdk/build-tools"
+          ls "$sdk"/build-tools/*/apksigner
           mkdir -p "$HOME/.config/godot"
           # Which file Godot reads depends on how it spells its own version,
           # so both spellings are written and whichever it opens is right.
