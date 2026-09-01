@@ -6,6 +6,20 @@ extends RefCounted
 ## mapspecials.cpp for the door staff and the specials, and sitemode.cpp for
 ## the rest.
 
+## What the site's own status line says once the room has turned on the squad.
+const ALIENATED: Array[String] = ["ALIENATED MASSES", "ALIENATED EVERYONE"]
+
+## What was opened, from unlock() in src/sitemode/miscactions.cpp.
+const UNLOCKS := {
+	&"door": "unlocks the door",
+	&"cage": "unlocks the cage",
+	&"cage_hard": "unlocks the cage",
+	&"cell": "unlocks the cell",
+	&"armory": "opens the armory",
+	&"safe": "cracks the safe",
+	&"vault": "cracks the combo locks",
+}
+
 ## What somebody does when their nerve goes, from blew_stealth_check[] in
 ## src/sitemode/stealth.cpp.
 const FUMBLES: Array[String] = [
@@ -21,13 +35,13 @@ static func describe(event: Event, state: GameState) -> String:
 	var data := event.data
 	match event.type:
 		Event.SITE_ALARM_RAISED:
-			return "The alarm goes off."
+			return "The alarm goes off!"
 		Event.SITE_ALIENATED:
-			return "The place has had enough of the squad."
+			return ALIENATED[clampi(int(data.get("level", 1)), 1, 2) - 1]
 		Event.SITE_PANIC_SENSED:
-			return "Something is wrong here."
+			return "CONSERVATIVES SUSPICIOUS"
 		Event.SQUAD_UNSEEN:
-			return "The squad fades into the shadows."
+			return "The squad sneaks past the conservatives!"
 		Event.SQUAD_ACTED_NATURAL:
 			return "The squad acts natural."
 		Event.SQUAD_FUMBLED:
@@ -52,7 +66,9 @@ static func describe(event: Event, state: GameState) -> String:
 			return "A sign: %s." % String(data.get("sign", &"nothing")) \
 					.replace("_", " ")
 		Event.DOOR_UNLOCKED:
-			return "%s gets the lock open." % _who(state, data)
+			return "%s %s!" % [_who(state, data),
+					String(UNLOCKS.get(data.get("kind", &"door"),
+							"unlocks the door"))]
 		Event.DOOR_ASSESSED:
 			return DoorText.said(data)
 		Event.BLUFF_TRIED:
@@ -105,15 +121,14 @@ static func describe(event: Event, state: GameState) -> String:
 	return ""
 
 
-## The teller, and how much of a scene it was.
+## The teller, and how much of a scene it was. A note is its own exchange; a
+## gun in the air is the other branch of the same prompt.
 static func _teller(state: GameState, data: Dictionary) -> String:
+	if data.has("note"):
+		return TellerText.robbed(state, data)
 	if not bool(data.get("worked", true)):
 		return "%s asks, and gets nowhere." % _who(state, data)
-	if bool(data.get("held_up", false)):
-		return "%s empties the drawer at gunpoint." % _who(state, data)
-	if bool(data.get("quiet", false)):
-		return "%s empties the drawer without a fuss." % _who(state, data)
-	return "%s empties the drawer." % _who(state, data)
+	return "%s empties the drawer at gunpoint." % _who(state, data)
 
 
 ## Letting somebody out of a cage, and who came along afterwards.

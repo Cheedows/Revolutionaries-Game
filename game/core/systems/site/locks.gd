@@ -28,4 +28,4 @@ static func pick(state: GameState, rng: Rng, squad: Squad,
 		kind: StringName) -> Dictionary:
 	var difficulty := int(DIFFICULTY.get(kind, Difficulty.AVERAGE))
 	return ForcedEntry.pick_at(state, rng, squad, difficulty,
-			Vector3i(state.site.x, state.site.y, state.site.z))
+			Vector3i(state.site.x, state.site.y, state.site.z), kind)

@@ -21,7 +21,7 @@ static func pick_lock(state: GameState, squad: Squad, at: Vector3i,
 ## The same attempt against a lock that is not a door: a cage, a cell, an
 ## armoury, a safe or a vault, each with a difficulty of its own.
 static func pick_at(state: GameState, rng: Rng, squad: Squad,
-		difficulty: int, at: Vector3i) -> Dictionary:
+		difficulty: int, at: Vector3i, kind: StringName = &"door") -> Dictionary:
 	var candidates := _most_skilled(state, squad)
 	if candidates.is_empty():
 		return {"opened": false, "attempted": false, "creature": null,
@@ -45,8 +45,11 @@ static func pick_at(state: GameState, rng: Rng, squad: Squad,
 			if watching < difficulty:
 				TrainRules.train(watcher, &"security",
 						FieldTraining.lesson(state, difficulty - watching, 5 * difficulty))
+		# What was opened: the original names it — a door, a cage, a cell, an
+		# armoury, a safe, or the combo locks on a vault.
 		events.append(Event.new(Event.DOOR_UNLOCKED, {
 			"creature": picker.id, "x": at.x, "y": at.y, "z": at.z,
+			"kind": kind,
 		}))
 		return {"opened": true, "attempted": true, "creature": picker,
 				"events": events}

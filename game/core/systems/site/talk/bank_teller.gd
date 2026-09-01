@@ -67,9 +67,10 @@ static func _note(state: GameState, rng: Rng, speaker: Creature,
 	var events: Array[Event] = []
 	var site: Location = state.locations.get(state.site.location)
 	var watched := site != null and site.high_security > 0
-	# What the note says, and what the teller does about it.
-	rng.below(NOTES)
-	rng.below(REACTIONS)
+	# What the note says, and what the teller does about it. Both carried,
+	# because the original prints them and the port was rolling them away.
+	var note := rng.below(NOTES)
+	var reaction := rng.below(REACTIONS)
 
 	events.append(CrimeRules.charge(state, speaker, &"bankrobbery"))
 	NewsQueue.record(state, &"banktellerrobbery")
@@ -86,7 +87,8 @@ static func _note(state: GameState, rng: Rng, speaker: Creature,
 			squad.haul.append(cash)
 	teller.cannot_bluff = 1
 	events.append(Event.new(Event.TELLER_ROBBED,
-			{"creature": speaker.id, "quiet": not watched}))
+			{"creature": speaker.id, "quiet": not watched,
+			"note": note, "reaction": reaction}))
 	return events
 
 
