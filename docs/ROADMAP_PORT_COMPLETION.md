@@ -1614,8 +1614,20 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     single "carry on" and answered null into a resume that wanted a real
     answer. Creatures marked gone were never taken off the board. All fixed;
     see the commits.
-- [ ] Fix accidental divergences.
-- [ ] Move intentional bug fixes or enhancements to `docs/ROADMAP_FUTURE.md` unless explicitly approved for the parity baseline.
+- [x] Fix accidental divergences. Every one the sweep turned up was fixed as
+    it was found, and the commits carry the detail. The instruments that keep
+    finding them are in the tree and run in CI: the three audits, the 71
+    probes, the 12 scripted traces, and `test_long_run`. The whole probe set
+    was re-recorded from one build to close the last of it — thirty-six of the
+    goldens predated the harness learning to dump a creature's name and
+    gender, so the set was no longer one recording of one binary.
+- [x] Move intentional bug fixes or enhancements to `docs/ROADMAP_FUTURE.md`
+    unless explicitly approved for the parity baseline. The quirks the port
+    keeps are written up at the code that reproduces them, marked
+    `**Original quirk, reproduced.**`, so `grep -rn "Original quirk" game/core`
+    is the list and it cannot go stale; `ROADMAP_FUTURE.md` says so, names the
+    two deliberately not reproduced, and names the three things the port fixed
+    rather than reproduced because the original is broken rather than quirky.
 - [ ] Update the completion estimate in this file to 100% only when all gates are green.
 
 **Gate J / PORT DONE:** Godot is the complete playable implementation and the legacy C++ is no longer required at runtime or as an implementation dependency.

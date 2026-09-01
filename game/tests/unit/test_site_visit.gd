@@ -16,6 +16,17 @@ const PATIENCE := 400
 ## The seeds each visit is run under.
 const SEEDS: Array[int] = [1, 7, 99, 12345, 8675309]
 
+## The buildings the wandering test goes into. One kind of building only
+## reaches one kind of special, one kind of guard and one kind of loot, so the
+## walk is repeated in a spread of them: a place with a vault, a place with
+## prisoners, a place with animals, a place with a broadcast desk, a shop, a
+## sweatshop, a vault and a courthouse.
+const BUILDINGS: Array[StringName] = [
+	&"corporate_headquarters", &"government_policestation",
+	&"laboratory_genetic", &"media_amradio", &"business_juicebar",
+	&"industry_sweatshop", &"business_bank", &"government_courthouse",
+]
+
 
 func test_a_squad_can_walk_in_and_out_again() -> void:
 	for seed_value in SEEDS:
@@ -40,7 +51,7 @@ func test_a_squad_can_wander_a_building_and_use_what_it_finds() -> void:
 		SiteLoop.MOVE_UP, SiteLoop.USE, SiteLoop.MOVE_LEFT, SiteLoop.TALK,
 		SiteLoop.MOVE_RIGHT, SiteLoop.TAKE, SiteLoop.MOVE_UP, SiteLoop.GRAB,
 		SiteLoop.WAIT, SiteLoop.RELEASE, SiteLoop.MOVE_RIGHT, SiteLoop.FREE,
-		SiteLoop.RELOAD, SiteLoop.MOVE_UP,
+		SiteLoop.RELOAD, SiteLoop.MOVE_UP, SiteLoop.FIGHT,
 	]
 	for seed_value in SEEDS:
 		var session := _visit(seed_value, script)
@@ -68,9 +79,25 @@ func test_the_visit_never_asks_a_question_with_no_answer() -> void:
 			return
 
 
+func test_the_walk_holds_up_in_every_kind_of_building() -> void:
+	# The same walk as above, in each kind of place, so the specials, the
+	# guards and the loot of each are all driven at least once.
+	var script: Array[int] = [
+		SiteLoop.MOVE_UP, SiteLoop.USE, SiteLoop.MOVE_LEFT, SiteLoop.TALK,
+		SiteLoop.MOVE_RIGHT, SiteLoop.TAKE, SiteLoop.FIGHT, SiteLoop.GRAB,
+		SiteLoop.WAIT, SiteLoop.RELEASE, SiteLoop.MOVE_RIGHT, SiteLoop.FREE,
+		SiteLoop.RELOAD, SiteLoop.MOVE_UP,
+	]
+	for building in BUILDINGS:
+		for seed_value in SEEDS:
+			if _visit(seed_value, script, true, building) == null:
+				return
+
+
 ## Walks one visit to its end. Returns the session, or null once a failure has
 ## been reported.
-func _visit(seed_value: int, script: Array, check_options: bool = false) -> Session:
+func _visit(seed_value: int, script: Array, check_options: bool = false,
+		building: StringName = &"corporate_headquarters") -> Session:
 	var session := Session.new(seed_value)
 	var state := session.state
 	state.endgame_state = &"none"
@@ -91,10 +118,9 @@ func _visit(seed_value: int, script: Array, check_options: bool = false) -> Sess
 		member.armor = Armor.new(&"ARMOR_CLOTHES")
 		squad.member_ids.append(member.id)
 
-	var site: Location = state.locations.get(
-			_first_of(state, &"corporate_headquarters"))
+	var site: Location = state.locations.get(_first_of(state, building))
 	if site == null:
-		fail("seed %d: the city has no corporate headquarters" % seed_value)
+		fail("seed %d: the city has no %s" % [seed_value, building])
 		return null
 	SiteEntry.enter(state, squad, site, session.catalog, session.rng)
 
