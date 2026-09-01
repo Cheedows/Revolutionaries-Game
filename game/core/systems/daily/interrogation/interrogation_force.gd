@@ -26,6 +26,13 @@ const CLUMSY_CEILING := 5
 const RESCUE_RAPPORT := 0.5
 
 ## A beating, and what the guards think of themselves for it.
+## How many lines each of the original's switches has.
+const TORTURES := 6
+const SCREAMS := 10
+const PROP_KINDS := 6
+const SHOUT_VERBS := 4
+const SLOGANS := 20
+
 const BEATING_RAPPORT := -0.4
 const TORTURE_RAPPORT := -3.0
 const TORTURE_FACTOR := 5
@@ -157,27 +164,34 @@ static func beat(state: GameState, rng: Rng, hostage: Creature,
 	# does something worse than beat them.
 	var tortured := not CheckRules.attribute_check(rng, lead, &"heart",
 			Difficulty.EASY) and plan.techniques[Interrogation.PROPS]
+	# Every one of these rolls picks a line the original prints, and each one
+	# moves the generator whether or not anybody reads the result. They are
+	# carried now rather than thrown away; see InterrogationText.
+	var act := -1
+	var said := PackedInt32Array()
+	var verb := -1
 	if tortured:
 		force *= TORTURE_FACTOR
 		plan.adjust(lead.id, TORTURE_RAPPORT)
-		rng.below(6)                        # which torture
+		act = rng.below(TORTURES)
 		for i in 2:
-			rng.below(10)                   # what was screamed
+			said.append(rng.below(SCREAMS))
 		if AttributeRules.effective(hostage, &"heart", true) > 1:
 			hostage.attributes.adjust(&"heart", -1)
 		if AttributeRules.effective(hostage, &"wisdom", true) > 1:
 			hostage.attributes.adjust(&"wisdom", -1)
 	else:
 		if plan.techniques[Interrogation.PROPS]:
-			rng.below(6)                    # which prop
-		rng.below(4)                        # scream, yell, shout or holler
+			act = rng.below(PROP_KINDS)
+		verb = rng.below(SHOUT_VERBS)
 		for i in 3:
-			rng.below(20)                   # what was shouted
+			said.append(rng.below(SLOGANS))
 
 	hostage.body.blood -= (BLOOD_BASE + rng.below(BLOOD_SPREAD)) \
 			* (1 + (1 if plan.techniques[Interrogation.PROPS] else 0))
 	events.append(Event.new(Event.HOSTAGE_BEATEN,
-			{"creature": hostage.id, "tortured": tortured}))
+			{"creature": hostage.id, "tortured": tortured, "guards": _ids(guards),
+			"act": act, "verb": verb, "said": said}))
 
 	if not CheckRules.attribute_check(rng, hostage, &"health", force):
 		InterrogationBeating.take_it_badly(state, rng, hostage, session, force,
@@ -185,3 +199,12 @@ static func beat(state: GameState, rng: Rng, hostage: Creature,
 
 	if tortured and hostage.alive:
 		_reckon(state, rng, lead, events)
+
+
+## The guards doing it, so the log can name them as the original does: one
+## name, two names joined by "and", or "somebody's guards" for a crowd.
+static func _ids(guards: Array) -> PackedInt32Array:
+	var found := PackedInt32Array()
+	for guard: Creature in guards:
+		found.append(guard.id)
+	return found

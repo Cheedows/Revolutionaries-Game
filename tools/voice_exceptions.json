@@ -28,5 +28,18 @@
  "Something is left behind.": "the original silently drops what will not fit; the port says so because a silent loss reads as a bug",
  "%s is the worse for it.": "the port's summary of a garment losing a quality level, which the original folds into the repair sentence it prints instead",
  "%s is ruined.": "the same, for a garment that did not survive",
- "Sold: %s, for $%d.": "fencing is the port's own screen — the original has no way to sell loot at all"
+ "Sold: %s, for $%d.": "fencing is the port's own screen — the original has no way to sell loot at all",
+ "%s is let go.": "the original releases a hostage from an interactive screen and prints nothing; the port's log records it",
+ "%s is killed.": "the same, for the K key on the interrogation screen",
+ "%s is given hallucinogens%s.": "the original states the technique on the interrogation screen rather than reporting it as an event",
+ ", and takes too much": "the original prints 'It is a lethal overdose in' as part of a sentence the port's event shape cannot rebuild",
+ "%s has come round.": "the original announces a conversion through the recruit's own arrival rather than a line of its own",
+ "%s did not survive it.": "the original folds the death into the overdose sentence above",
+ "%s is carried along.": "hauling an unconscious body prints nothing in the original",
+ "%s has quit their job to join the LCS.": "surfacing is a silent activity in the original — 'Quitting Job' is its name in the roster, which is carried, and there is no report",
+ "The network reports in.": "the port's heading for the monthly sleeper pass, which the original runs without one",
+ "Somebody gets an interview out to the press.": "the original names the outlet and the reporter in a sentence the port's event does not carry the parts for",
+ "%s turns the conversation back on them.": "the original shows a prisoner's resistance as a rapport number on the interrogation screen, not as a line",
+ "%s is starting to listen.": "the same",
+ "%s is talked to.": "the same"
 }

@@ -79,6 +79,15 @@ def _c_strings(text):
         elif ch == "/" and text[i + 1:i + 2] == "*":
             j = text.find("*/", i)
             i = n if j < 0 else j + 2
+        elif ch == "'":
+            # A character literal. Skipped whole, because one of them is '"'
+            # and letting it open a string desynchronises every literal in
+            # the rest of the file.
+            j = i + 1
+            if text[j:j + 1] == "\\":
+                j += 1
+            j += 1
+            i = j + 1 if text[j:j + 1] == "'" else i + 1
         elif ch == '"':
             j, buf = i + 1, []
             while j < n and text[j] != '"':

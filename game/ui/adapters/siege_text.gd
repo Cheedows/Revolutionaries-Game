@@ -5,18 +5,54 @@ extends RefCounted
 ## The wording is from src/daily/interrogation.cpp, src/daily/siege.cpp and
 ## src/monthly/sleeper_update.cpp.
 
-## How a siege escalates, in the order the original escalates it.
+## The warning a sleeper in a police station sends, from src/daily/siege.cpp.
+## What it adds depends on how far the escalation has gone.
+const WARNING_HEAD := "You have received advance warning from your sleepers"
+const REGARDING := " regarding "
+const A_RAID_ON := "an imminent police raid on"
 const ESCALATIONS: Array[String] = [
-	"The police are outside.",
-	"They have brought more.",
-	"They have brought the army.",
+	"",
+	"The fighting force will be composed of national guard troops.",
+	"A tank will cover the entrance to the compound.",
 ]
 
-## What the other side knocks down first.
+## Everything a sleeper does is reported under their rank, which the original
+## prints in front of the name.
+const SLEEPER := "Sleeper "
+const STASHED := "They are stashed at the homeless shelter."
+const PAPERS_STASHED := "The papers are stashed at the homeless shelter."
+const DISK_STASHED := "The disk is stashed at the homeless shelter."
+const HOMELESS := "The Liberal is now homeless and jobless..."
+const RECRUITED_A_NEW := " has recruited a new "
+
+## What was leaked, by what the sleeper got hold of.
+const LEAKS := {
+	&"LOOT_CIAFILES": " has leaked secret intelligence files.",
+	&"LOOT_POLICERECORDS": " has leaked secret police records.",
+	&"LOOT_CORPFILES": " has leaked secret corporate documents.",
+	&"LOOT_PRISONFILES": " has leaked internal prison records.",
+	&"LOOT_CABLENEWSFILES": " has leaked proof of systemic Cable News bias.",
+	&"LOOT_AMRADIOFILES": " has leaked proof of systemic AM Radio bias.",
+	&"LOOT_RESEARCHFILES": " has leaked internal animal research reports.",
+	&"LOOT_JUDGERECORDS": " has leaked proof of corruption in the judiciary.",
+	&"LOOT_CCS_BACKERLIST":
+			" has leaked a list of the CCS's government backers.",
+}
+
+## And what they were caught doing.
+const CAUGHT := {
+	&"spying": " has been caught snooping around.",
+	&"embezzling": " has been arrested while embezzling funds.",
+	&"stealing": " has been arrested while stealing things.",
+}
+
+## What the other side knocks down, and what it costs.
 const BREACHES := {
-	&"tanktraps": "The tank traps are gone.",
-	&"aagun": "The gun on the roof is gone.",
-	&"generator": "The generator is gone.",
+	&"tanktraps": "Army engineers have removed your tank traps.",
+	&"aagun": "The anti-aircraft gun takes a direct hit!"
+			+ " There's nothing left but smoking wreckage...",
+	&"generator": "The generator has been destroyed!"
+			+ " The lights fade and all is dark.",
 }
 
 
@@ -28,12 +64,11 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.HOSTAGE_FREED:
 			return "%s is let go." % _who(state, data)
 		Event.HOSTAGE_ESCAPED:
-			return "%s got out." % _who(state, data)
+			return "%s has escaped!" % _who(state, data)
 		Event.HOSTAGE_EXECUTED:
 			return "%s is killed." % _who(state, data)
 		Event.HOSTAGE_BEATEN:
-			return "%s is beaten%s." % [_who(state, data),
-					" badly" if bool(data.get("tortured", false)) else ""]
+			return InterrogationText.beaten(state, data)
 		Event.HOSTAGE_DRUGGED:
 			return "%s is given hallucinogens%s." % [_who(state, data),
 					", and takes too much"
@@ -47,49 +82,88 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.HOSTAGE_THREATENED:
 			return _threatened(state, data)
 		Event.CREATURE_KIDNAPPED:
-			return "%s is taken." % _who(state, data)
+			return "%s snatches %s!" % [_by(state, data), _who(state, data)]
 		Event.KIDNAP_ATTEMPTED:
-			return "%s will not be taken quietly." % _who(state, data)
+			return "%s grabs at %s, but %s writhes away!" % [
+					_by(state, data), _who(state, data), _who(state, data)]
 		Event.CREATURE_HAULED:
 			return "%s is carried along." % _who(state, data)
 		# --- The network -------------------------------------------------
 		Event.SLEEPER_SURFACED:
-			return "%s comes in from the cold." % _who(state, data)
+			return SLEEPER + "%s has quit their job to join the LCS." \
+					% _who(state, data)
 		Event.SLEEPER_LEAKED:
-			return "%s sends something over: %s." % [_who(state, data),
-					_thing(data.get("what", &""))]
+			return SLEEPER + "%s%s %s" % [_who(state, data),
+					String(LEAKS.get(data.get("what", &""),
+							" has leaked secret intelligence files.")),
+					STASHED]
 		Event.SLEEPER_EXPOSED:
-			return "%s was caught %s, and is finished undercover." % [
-					_who(state, data),
-					String(data.get("doing", &"at it")).replace("_", " ")]
+			return SLEEPER + "%s%s" % [_who(state, data),
+					String(CAUGHT.get(data.get("doing", &""),
+							" has been caught snooping around."))] \
+					+ " " + HOMELESS
 		Event.SLEEPER_STOLE:
-			return "%s sends over what they could take." % _who(state, data)
+			return SLEEPER + "%s has dropped a package off at the homeless"\
+					% _who(state, data) + " shelter."
 		Event.SLEEPER_RECRUITED:
-			return "%s has found somebody else to place." % _who(state, data)
+			return SLEEPER + _who(state, data) + RECRUITED_A_NEW \
+					+ _kind(state, data) + "."
 		Event.SLEEPER_REPORTED:
 			return "The network reports in."
 		# --- The door ----------------------------------------------------
+		Event.SIEGE_STARTED:
+			return "The police have surrounded the %s!" % _place(state, data)
 		Event.SIEGE_PLANNED:
-			return "Somebody is working out where %s is." % _place(state, data)
+			return _warned(state, data)
 		Event.SIEGE_WARNED:
-			return ESCALATIONS[clampi(int(data.get("escalation", 0)), 0,
-					ESCALATIONS.size() - 1)]
+			return _warned(state, data)
 		Event.SIEGE_RAIDED_EMPTY:
-			return "They raided %s and found nobody." % _place(state, data)
+			return "The cops have raided the %s, an unoccupied safehouse." \
+					% _place(state, data)
 		Event.SIEGE_BLACKOUT:
-			return "The power to %s is cut." % _place(state, data)
+			return "The police have cut the lights!"
 		Event.SIEGE_NEAR_MISS:
-			return "A shot goes past %s." % _who(state, data)
+			return "A sniper nearly hits %s!" % _who(state, data)
 		Event.SIEGE_AIR_REPELLED:
-			return "The gun on the roof drives them off."
+			return "The thunder of the anti-aircraft gun shakes the compound!"\
+					+ " Hit! One of the bombers slams into to the ground."
 		Event.SIEGE_AIR_MISSED:
-			return "The gun on the roof misses."
+			return "The thunder of the anti-aircraft gun shakes the compound!"\
+					+ " You didn't shoot any down, but you've made them think"\
+					+ " twice!"
 		Event.SIEGE_WALLS_BREACHED:
 			return String(BREACHES.get(data.get("what", &""),
-					"Something outside is knocked down."))
+					"The tank moves forward to your compound entrance."))
 		Event.SIEGE_INTERVIEW:
 			return "Somebody gets an interview out to the press."
 	return ""
+
+
+## What kind of person a sleeper has just placed, said as the original says it.
+static func _kind(state: GameState, data: Dictionary) -> String:
+	var recruit: Creature = state.creatures.get(data.get("recruit", -1))
+	if recruit == null:
+		return "sleeper"
+	return String(recruit.type).trim_prefix("CREATURE_").replace("_", " ")\
+			.to_lower()
+
+
+## Whoever did it, when the event names them.
+static func _by(state: GameState, data: Dictionary) -> String:
+	var creature: Creature = state.creatures.get(data.get("by", -1))
+	return creature.name if creature != null and creature.name != "" \
+			else "Someone"
+
+
+## The warning, and what it says about what is coming.
+static func _warned(state: GameState, data: Dictionary) -> String:
+	var said := WARNING_HEAD + REGARDING + A_RAID_ON + " " \
+			+ _place(state, data) + "."
+	var escalation := clampi(int(data.get("escalation", 0)), 0,
+			ESCALATIONS.size() - 1)
+	for step in range(1, escalation + 1):
+		said += " " + ESCALATIONS[step]
+	return said
 
 
 ## How a conversation with a prisoner went.
@@ -102,16 +176,32 @@ static func _talked(state: GameState, data: Dictionary) -> String:
 	return "%s is talked to." % _who(state, data)
 
 
-## Holding somebody in front of you in a fight.
+## The six things somebody with a gun to a head shouts, from talkInCombat() in
+## src/sitemode/talk.cpp. The last one swears unless free speech has gone.
+const THREATS: Array[String] = [
+	"\"Back off or the hostage dies!\"",
+	"\"Don't push the LCS!\"",
+	"\"Hostage says you better leave!\"",
+	"\"I'll do it! I'll kill this one!\"",
+	"\"You gonna tell the family you pushed me?!\"",
+	"\"Don't fuck with me!\"",
+]
+const CENSORED_THREAT := "\"Don't [play] with me!\""
+const THE_SWEARING_ONE := 5
+const PLOY_WORKS := "The ploy works! The Conservatives back off."
+
+
+## Holding somebody in front of you in a fight: what was shouted, and whether
+## it worked.
 static func _threatened(state: GameState, data: Dictionary) -> String:
-	match data.get("outcome", &""):
-		&"ignored":
-			return "They do not care who %s is holding." % _who(state, data)
-		&"routed":
-			return "They back off rather than risk the hostage."
-		&"standoff":
-			return "Nobody moves while the hostage is held."
-	return "%s holds the hostage up." % _who(state, data)
+	var pick := int(data.get("threat", 0)) % THREATS.size()
+	var shouted := THREATS[pick]
+	if pick == THE_SWEARING_ONE \
+			and state.law.get_value(&"freespeech") == Law.ARCH_CONSERVATIVE:
+		shouted = CENSORED_THREAT
+	if data.get("outcome", &"") == &"routed":
+		return "%s %s" % [shouted, PLOY_WORKS]
+	return shouted
 
 
 static func _thing(what: Variant) -> String:

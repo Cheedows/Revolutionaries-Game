@@ -60,8 +60,9 @@ static func threaten(state: GameState, rng: Rng, speaker: Creature,
 		hostages: Dictionary, catalog: Catalog) -> Variant:
 	var events: Array[Event] = []
 	# Which of the six threats is shouted; one of them claims the site for the
-	# Squad.
-	if rng.below(6) == 1 and state.current_story != null \
+	# Squad. Carried so the log can shout it rather than describe it.
+	var threat := rng.below(THREATS)
+	if threat == 1 and state.current_story != null \
 			and state.current_story.claimed == 0:
 		state.current_story.claimed = 1
 
@@ -72,7 +73,8 @@ static func threaten(state: GameState, rng: Rng, speaker: Creature,
 	if int(hostages["armed"]) == 0:
 		# Nothing in anybody's hands to make the threat with. Nobody moves.
 		events.append(Event.new(Event.HOSTAGE_THREATENED,
-				{"creature": speaker.id, "outcome": &"ignored"}))
+				{"creature": speaker.id, "outcome": &"ignored",
+				"threat": threat}))
 		return events
 
 	var negotiator := _who_stays(state, rng)
@@ -88,11 +90,12 @@ static func threaten(state: GameState, rng: Rng, speaker: Creature,
 					and Alignment.value_of(person.alignment) <= -1:
 				Encounters.remove(state, person)
 		events.append(Event.new(Event.HOSTAGE_THREATENED,
-				{"creature": speaker.id, "outcome": &"routed"}))
+				{"creature": speaker.id, "outcome": &"routed",
+				"threat": threat}))
 		return events
 
 	events.append(Event.new(Event.HOSTAGE_THREATENED, {
-		"creature": speaker.id, "outcome": &"standoff",
+		"creature": speaker.id, "outcome": &"standoff", "threat": threat,
 		"negotiator": negotiator.id,
 	}))
 	return PendingIntent.new(
@@ -181,6 +184,10 @@ static func _execute(state: GameState, rng: Rng, speaker: Creature,
 			if person != null and person.alive and Encounters.is_enemy(person):
 				Encounters.remove(state, person)
 	return events
+
+
+## How many ways there are of shouting it.
+const THREATS := 6
 
 
 ## Offering the hostage back for a clear way out. A hardliner takes the deal
