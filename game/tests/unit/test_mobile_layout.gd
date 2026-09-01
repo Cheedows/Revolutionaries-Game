@@ -93,6 +93,65 @@ func test_somebodys_record_and_their_gear_fit_on_a_phone() -> void:
 	_drop(held)
 
 
+func test_every_widget_fits_on_a_phone() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var viewport := SubViewport.new()
+	viewport.size = PHONE
+	tree.root.add_child(viewport)
+	var session := _a_session()
+	var tried := 0
+	for file in DirAccess.get_files_at("res://ui/widgets"):
+		if not file.ends_with(".gd"):
+			continue
+		var script: GDScript = load("res://ui/widgets/%s" % file)
+		var widget: Control = script.new()
+		widget.size = Vector2(PHONE)
+		viewport.add_child(widget)
+		if widget.has_method("compact"):
+			widget.call("compact", true)
+		if widget.has_method("refresh"):
+			widget.call("refresh", session.state)
+		Metrics.enlarge(widget, true)
+		tried += 1
+		var wide := widget.get_combined_minimum_size().x
+		if wide > float(PHONE.x):
+			fail("%s needs %d of %d across" % [file, int(wide), PHONE.x])
+			break
+		viewport.remove_child(widget)
+		widget.queue_free()
+	check(tried >= 15, "every widget was measured, got %d" % tried)
+	tree.root.remove_child(viewport)
+	viewport.queue_free()
+
+
+func test_a_chase_fits_on_a_phone() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var viewport := SubViewport.new()
+	viewport.size = PHONE
+	tree.root.add_child(viewport)
+	var session := _a_session()
+
+	# A chase is the one thing the fight panel shows that a site visit does
+	# not, and it is the widest: everybody on both sides, with the car each of
+	# them is in.
+	var squad := session.state.active_squad()
+	session.state.chase.location = 0
+	session.state.chase.enemy_cars = PackedInt32Array([1, 2])
+	session.state.chase.friendly_cars = PackedInt32Array([3])
+	var panel := FightPanel.new()
+	panel.size = Vector2(PHONE)
+	viewport.add_child(panel)
+	panel.refresh(session.state)
+	check(panel.visible, "the fight panel comes up for a chase")
+	check(squad != null, "and there is a squad in it")
+	Metrics.enlarge(panel, true)
+	var wide := panel.get_combined_minimum_size().x
+	check(wide <= float(PHONE.x), "a chase fits across a phone, needs %d of %d"
+			% [int(wide), PHONE.x])
+	tree.root.remove_child(viewport)
+	viewport.queue_free()
+
+
 func test_a_year_can_be_played_on_a_phone_without_a_keyboard() -> void:
 	var held := _screen_in(PHONE)
 	var screen: Control = held["screen"]

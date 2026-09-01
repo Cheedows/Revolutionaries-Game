@@ -58,6 +58,12 @@ rather than a description of it.
   it always was, which is what made this cheap — and the number-key shortcuts
   are a convenience rather than a route. Text is typed into `LineEdit`s, which
   Android answers with its own keyboard. Nothing is reachable only by hovering.
+- **The back button means back.** Android's back button closes the game unless
+  the game says otherwise, which is not what a player who has just opened the
+  paper means by it. `quit_on_go_back` is off and `BaseLayout.step_back()`
+  shuts the topmost thing that is open — the law column, then a panel — before
+  the screen falls back to declining a question that can be declined. At the
+  title, where there is nothing to back out of, it still leaves.
 - **Builds you can install from a phone.** `.github/workflows/android.yml`
   exports a debug APK on every push and attaches it to the run; a push to
   `master` also rolls the `mobile-latest` prerelease over to it, so the
@@ -69,8 +75,12 @@ rather than a description of it.
   what comes out: whether anything runs off the side, whether everything
   pressable is 48 pixels tall, whether every panel and somebody's record fit,
   whether a year can be played and a building walked with nothing but taps.
-  It found the overflows it was written to find. The workflow builds the APK
-  rather than only declaring how one would be built.
+  It found the overflows it was written to find — the kit buttons, the seating
+  chart and the status bar were all over the edge — and it sweeps every widget
+  in `ui/widgets/` rather than a list, so one added tomorrow is measured
+  tomorrow. The workflow builds and signs a real APK rather than only
+  declaring how one would be built; the first four attempts failed, and the
+  last of them for a reason Godot does not print at all.
 
 What is still awkward on a phone, and is worth doing next:
 
