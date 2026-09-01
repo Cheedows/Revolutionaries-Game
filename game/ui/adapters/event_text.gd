@@ -45,6 +45,14 @@ static func describe(event: Event, state: GameState) -> String:
 	var evening := DateText.describe(event, state)
 	if not evening.is_empty():
 		return evening
+	# And the courts, and the prisons.
+	var court := CourtText.describe(event, state)
+	if not court.is_empty():
+		return court
+	# And the basement, the network and the police at the door.
+	var held := SiegeText.describe(event, state)
+	if not held.is_empty():
+		return held
 
 	match event.type:
 		Event.DAY_ADVANCED:

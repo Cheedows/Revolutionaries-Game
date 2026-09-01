@@ -121,6 +121,7 @@ func test_everything_the_other_modes_report_has_words() -> void:
 	check(_kinds.size() >= 25,
 			"they reached the cells, the diary and the basement, got %d kinds"
 					% _kinds.size())
+
 	var unexplained: Array[String] = []
 	for shape: String in silent:
 		if not SILENT.has(shape):
