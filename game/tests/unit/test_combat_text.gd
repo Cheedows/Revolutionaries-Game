@@ -73,9 +73,22 @@ func test_a_blow_reads_the_way_it_landed() -> void:
 func test_a_chase_reads() -> void:
 	var state := _room()
 	equal(ChaseText.describe(Event.new(Event.CHASE_CAR_CRASHED,
-			{"friendly": true, "manner": "into a bus", "victims": [2]}), state),
-			"One of your cars crashes — into a bus. Bo were in it.",
-			"a crash names who was in it")
+			{"friendly": true, "manner": 0}), state),
+			"One of your cars crashes — it slams into a building.",
+			"the squad's own crash names nobody; the events after it do")
+	equal(ChaseText.describe(Event.new(Event.CHASE_CAR_CRASHED,
+			{"friendly": false, "manner": 2, "victims": 2}), state),
+			"One of theirs crashes — it hits a parked car and flips. 2 people were in it.",
+			"and theirs is a count, because the original never names them")
+	equal(ChaseText.describe(Event.new(Event.CHASE_PRISONER_KILLED,
+			{"creature": 2, "manner": 1}), state),
+			"Bo does not survive the crash — thrown through the windscreen.",
+			"and how somebody in it died is its own table")
+	equal(ChaseText.describe(Event.new(Event.CHASE_CAUGHT,
+			{"creature": 2, "by": &"CREATURE_DEATHSQUAD", "fatal": true}),
+			state),
+			"Bo is caught by deathsquad and does not get up.",
+			"who caught them is a kind of person, not one in particular")
 	equal(ChaseText.describe(Event.new(Event.CHASE_ENDED, {"escaped": true}),
 			state), "You have lost them.", "and a chase ends either way")
 
@@ -95,10 +108,10 @@ func _room() -> GameState:
 func _sample(type: StringName) -> Event:
 	return Event.new(type, {
 		"creature": 2, "attacker": 1, "target": 2, "carrier": 1, "holder": 1,
-		"medic": 1, "by": 1, "for": 2, "weapon": &"WEAPON_KNIFE",
+		"medic": 1, "by": &"CREATURE_COP", "for": 2, "weapon": &"WEAPON_KNIFE",
 		"part": &"head", "damage": 5, "wound": Wound.CUT, "organ": &"liver",
-		"kind": &"argues_with", "manner": "bleeds out", "obstacle": &"crowd",
-		"victims": [2], "friendly": true, "escaped": false, "turns": 2,
+		"kind": &"argues_with", "manner": 1, "obstacle": &"crowd",
+		"victims": 2, "friendly": true, "escaped": false, "turns": 2,
 		"amount": 3, "crawling": false, "trapped": true, "fatal": true,
 		"sneak": false, "vehicle": 1, "base": 1, "cause": &"wounds",
 	})

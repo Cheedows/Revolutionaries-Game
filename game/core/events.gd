@@ -107,7 +107,7 @@ const DATE_KIDNAP_FAILED := &"date_kidnap_failed"    # {creature, date, caught}
 
 # --- Stealing a car --------------------------------------------------------
 
-const CAR_FOUND := &"car_found"                      # {creature, wanted, found}
+const CAR_FOUND := &"car_found"                      # {creature, wanted, found: type, vehicle}
 const CAR_OPENED := &"car_opened"                    # {creature, vehicle, how}
 const CAR_ALARM := &"car_alarm"                      # {vehicle, proximity}
 const CAR_STARTED := &"car_started"                  # {creature, vehicle, how}
@@ -142,7 +142,7 @@ const HACK_SUCCEEDED := &"hack_succeeded"            # {story, team}
 const STUDY_FINISHED := &"study_finished"            # {creature, skill}
 const CLASS_TAUGHT := &"class_taught"                # {creature, course, places, cost}
 const BODY_BURIED := &"body_buried"                  # {creature, by}
-const TROUBLE_CAUSED := &"trouble_caused"            # {stunt, power, activists}
+const TROUBLE_CAUSED := &"trouble_caused"            # {stunt: index, power, activists}
 const MOB_CORNERED := &"mob_cornered"                # {creature}
 const MOB_SCATTERED := &"mob_scattered"              # {creature}
 const MOB_EXCHANGE := &"mob_exchange"                # {creature, won, manner}
@@ -253,7 +253,7 @@ const ATTACK_MISSED := &"attack_missed"
 const CHASE_STARTED := &"chase_started"
 const CHASE_ENDED := &"chase_ended"                  # {escaped}
 const CHASE_DRIVER_CHANGED := &"chase_driver_changed" # {creature, vehicle}
-const CHASE_CAR_CRASHED := &"chase_car_crashed"      # {vehicle, friendly, manner, victims}
+const CHASE_CAR_CRASHED := &"chase_car_crashed"      # {vehicle, friendly, manner, victims: count}
 const CHASE_CRASH_SURVIVED := &"chase_crash_survived" # {creature, manner}
 const CHASE_PRISONER_KILLED := &"chase_prisoner_killed" # {creature, manner}
 const CHASE_DODGED := &"chase_dodged"
@@ -262,7 +262,7 @@ const CHASE_PULLED_OVER := &"chase_pulled_over"
 const CHASE_LOST_PURSUIT := &"chase_lost_pursuit"  # {creature, manner}
 const CHASE_STILL_FOLLOWED := &"chase_still_followed" # {creature}
 const CHASE_BROKE_AWAY := &"chase_broke_away"        # {creature}
-const CHASE_CAUGHT := &"chase_caught"                # {creature, by, fatal}
+const CHASE_CAUGHT := &"chase_caught"                # {creature, by: type, fatal}
 const CHASE_OUTPACED := &"chase_outpaced"            # {creature, trapped}
 const CHASE_UNSTOPPABLE := &"chase_unstoppable"      # {creature, manner}
 const HOSTAGE_FREED := &"hostage_freed"              # {creature}

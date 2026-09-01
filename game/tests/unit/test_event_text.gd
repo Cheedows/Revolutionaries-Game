@@ -22,6 +22,11 @@ const AFTERMATH := 120
 ## What the player always says yes to, so the recruitment events happen.
 const ALWAYS_TAKE: Array = [RecruitMeeting.OFFER_TO_JOIN]
 
+## Every kind of event this case produced. Each case asserts a floor on it, so
+## a change that quietly stops the run reaching the fighting, or the courts, or
+## the recruiting, fails here rather than passing on an empty sweep.
+var _kinds := {}
+
 ## What the log deliberately keeps quiet about, and why. A kind of event that
 ## is only silent in some of its shapes is listed by the shape, so adding a new
 ## one is still caught.
@@ -37,6 +42,8 @@ const SILENT := {
 	"major_event:moved_house": "their record says where they live",
 	"major_event:crime_unprosecuted": "nothing was booked, so nothing happened",
 	"squad_moved": "the floor plan shows where they are",
+	"creature_trained": "practice is constant and says nothing; the skill "
+			+ "going up is what the log reports",
 	"attack_resolved": "a marker the rules read, not a blow: the swing that "
 			+ "caused it has already been described",
 }
@@ -53,12 +60,7 @@ func test_everything_the_day_reports_has_words() -> void:
 		_gather(session, session.drain_events(), silent)
 
 		for day in DAYS:
-			var offered := Recruiting.recruitable(session.state)
-			for creature: Creature in session.state.creatures.values():
-				if creature.is_member() and creature.activity == &"none" \
-						and creature.location != -1:
-					Commands.recruit_for(session, creature,
-							StringName(offered[0]["type"]))
+			_put_everybody_to_work(session, day)
 			Commands.advance_day(session, false)
 			var asked := 0
 			while session.is_waiting() and asked < PATIENCE:
@@ -70,6 +72,9 @@ func test_everything_the_day_reports_has_words() -> void:
 			seen += _gather(session, session.drain_events(), silent)
 
 	check(seen > 100, "the run produced something to look at, got %d" % seen)
+	check(_kinds.size() >= 40,
+			"the year reached most of what the day can report, got %d kinds"
+					% _kinds.size())
 	var unexplained: Array[String] = []
 	for shape: String in silent:
 		if not SILENT.has(shape):
@@ -79,10 +84,50 @@ func test_everything_the_day_reports_has_words() -> void:
 			"the log says nothing about: %s" % ", ".join(unexplained))
 
 
+## Gives everybody idle something different to do.
+##
+## One assignment does not exercise the day: graffiti, hacking, busking, the
+## clinic, teaching and the rest each report their own things, and a roster all
+## doing the same job never produces any of it. The rotation moves with the
+## day, so over a year every job on the list is done by somebody.
+func _put_everybody_to_work(session: Session, day: int) -> void:
+	var jobs := ActivityAssignment.AVAILABLE
+	var offered := Recruiting.recruitable(session.state)
+	var index := day
+	for creature: Creature in session.state.creatures.values():
+		if not creature.is_member() or creature.location == -1:
+			continue
+		# Reassigned every day rather than only when idle: an assignment
+		# sticks, so a roster told once spends the whole year doing that one
+		# thing and the day never reports anything else.
+		if creature.sleeper:
+			SleeperOrders.give(session.state, creature, &"sleeper_liberal")
+			continue
+		index += 1
+		# One in three goes recruiting, which is the only job that grows the
+		# organisation and so the only one that keeps the rest staffed.
+		if index % 3 == 0:
+			Commands.recruit_for(session, creature,
+					StringName(offered[0]["type"]))
+			continue
+		var job: StringName = jobs[index % jobs.size()]
+		if job == &"none":
+			continue
+		Commands.assign_activity(session, creature, job)
+		if job == &"make_armor":
+			var garments := AssignmentChoice.garments(session.state,
+					session.catalog)
+			if not garments.is_empty():
+				AssignmentChoice.choose(creature, job, garments[0])
+		elif job == &"hostagetending":
+			Commands.watch_hostage(session, creature)
+
+
 ## Describes each event and notes the ones that came out empty.
 func _gather(session: Session, events: Array[Event],
 		silent: Dictionary) -> int:
 	for event in events:
+		_kinds[event.type] = true
 		if EventText.describe(event, session.state).strip_edges().is_empty():
 			silent[_shape(event)] = true
 	return events.size()
@@ -121,6 +166,9 @@ func test_everything_a_visit_reports_has_words() -> void:
 				return
 			seen += _gather(session, session.drain_events(), silent)
 	check(seen > 40, "the visits produced something to look at, got %d" % seen)
+	check(_kinds.size() >= 15,
+			"the visits reached the site loop properly, got %d kinds"
+					% _kinds.size())
 
 	var unexplained: Array[String] = []
 	for shape: String in silent:
@@ -165,6 +213,9 @@ func test_everything_a_raid_reports_has_words() -> void:
 					return
 				seen += _gather(session, session.drain_events(), silent)
 	check(seen > 200, "the raids produced something to look at, got %d" % seen)
+	check(_kinds.size() >= 25,
+			"the raids reached the fighting and what follows it, got %d kinds"
+					% _kinds.size())
 
 	var unexplained: Array[String] = []
 	for shape: String in silent:

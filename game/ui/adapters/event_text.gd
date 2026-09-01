@@ -37,6 +37,10 @@ static func describe(event: Event, state: GameState) -> String:
 	var recruiting := RecruitText.describe(event, state)
 	if not recruiting.is_empty():
 		return recruiting
+	# The day's work, a car being taken, and the police at the door.
+	var worked := DayText.describe(event, state)
+	if not worked.is_empty():
+		return worked
 
 	match event.type:
 		Event.DAY_ADVANCED:

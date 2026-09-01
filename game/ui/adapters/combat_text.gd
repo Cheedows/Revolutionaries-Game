@@ -127,12 +127,18 @@ static func _hit(state: GameState, data: Dictionary) -> String:
 
 
 ## Somebody dying, the way the fight found them.
+##
+## The manner is an index the simulation rolled, not a phrase: [DeathText] owns
+## the words, and which of its three tables they come from depends on what is
+## left of the body.
 static func _died(state: GameState, data: Dictionary) -> String:
-	var manner := String(data.get("manner", &""))
-	var who := _who(state, data.get("creature", 0))
-	if manner != "":
-		return "%s %s." % [who, manner.replace("_", " ")]
-	return "%s is dead." % who
+	var said := DeathText.describe(state, data,
+			state.mode == &"chasecar")
+	if said != "":
+		return said
+	if bool(data.get("bystander", false)):
+		return "Somebody in the road does not get up."
+	return "%s is dead." % _who(state, data.get("creature", 0))
 
 
 static func _who(state: GameState, id: int) -> String:
