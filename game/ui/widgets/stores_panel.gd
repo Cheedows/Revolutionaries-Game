@@ -87,7 +87,7 @@ func _row(item: Item, index: int, stashing: bool) -> Control:
 
 
 func _move(index: int, many: int, stashing: bool) -> void:
-	Commands.move_kit(_session, {index: many}, stashing)
+	KitCommands.move_kit(_session, {index: many}, stashing)
 	changed.emit()
 	_refresh()
 

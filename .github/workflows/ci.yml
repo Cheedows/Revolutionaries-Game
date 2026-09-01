@@ -24,6 +24,8 @@ jobs:
         run: python3 tools/audit_choices.py
       - name: Every piece of the original's content is in the port
         run: python3 tools/audit_content.py
+      - name: Every entry point in core can be reached
+        run: python3 tools/audit_reach.py
       - name: The content is what the extractor produces, unedited
         run: |
           python3 tools/extract_data.py

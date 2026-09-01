@@ -948,6 +948,20 @@ Site construction is already strong; now port the gameplay that occurs inside th
 
 - [x] Enter/leave site lifecycle and squad placement.
 - [x] Movement across floors and stairs.
+- [x] **Newly discovered required work, now done.** Defending a safehouse from
+    inside it. `mode_site()` lays a siege out before the first turn and moves it
+    every turn after, and only the outdoor half of that was ported: the squad
+    could be besieged in the base screen but walking into the building put it on
+    an empty floor. `systems/site/siege_ground.gd` ports the laying out — the
+    traps a prepared compound already has, where the attackers stand and which
+    of them brought armour, and the wave that arrives when the last one is
+    spent — and `systems/site/siege_floor.gd` ports the turn: who is next to
+    whom, which way each unit steps, and what it does when it arrives.
+    `SiteLoop` now settles a siege turn after the squad's, and `SiegeAssault`
+    prepares the ground as the squad comes through the door.
+  - Verified by `test_siege_defence.gd`: the ground as it is laid out for each
+    kind of attacker, prepared and unprepared, and a floor walked forward turn
+    by turn until a wave is spent and the next one arrives.
 - [x] Enemy population: `prepareencounter()` and `addsiegeencounter()`, with
     the weights generated into `core/encounter_rules.gd` by
     `tools/extract_encounters.py` rather than transcribed — 784 weight
@@ -1590,6 +1604,18 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     `game/data`, so the content in the tree is exactly what the original's data
     files say and cannot be hand-edited into agreement.
 
+    A fifth joined them last, and it asks a different question: not whether the
+    port accounts for the original, but whether the port accounts for itself.
+    `tools/audit_reach.py` reads every public entry point in `core/` — 587 of
+    them — and reports the ones nothing calls. That is the failure mode this
+    port kept having: behaviour transcribed faithfully, verified against a
+    probe, and reachable by nobody, because a probe calls a function directly
+    and a player has to get to it through the game. It found the replacement of
+    a killed chief executive or President, surgery, naming the founder, fencing
+    what a squad carried out, disbanding the Squad and defending a safehouse
+    from inside it — every one of them ported and every one of them unreachable
+    in play. What it cannot reach and cannot explain fails the build.
+
     The sweep found five decisions the port could not make at all, and they
     were ported before the gate was ticked: sleeper orders
     (`activate_sleepers`, whose activities existed in the monthly pass with
@@ -1724,11 +1750,11 @@ Do not silently fix these while converting because some change RNG draw counts o
 
 - [x] Decide whether the legacy `src/`, vendored SDL/PDCurses and old build
     files remain as historical reference or move out of the production tree.
-    **They stay, and they are not merely historical.** Three of the four
-    checks CI runs read `src/` directly — `audit_parity.py`, `audit_state.py`
-    and `audit_choices.py` are all questions of the form "does the port still
-    account for everything the original does", and they cannot be asked
-    without the original in the tree. The trace harness compiles `src/` into
+    **They stay, and they are not merely historical.** Four of the five
+    audits CI runs read `src/` directly — `audit_parity.py`, `audit_state.py`,
+    `audit_choices.py` and `audit_content.py` are all questions of the form
+    "does the port still account for everything the original does", and they
+    cannot be asked without the original in the tree. The trace harness compiles `src/` into
     the instrumented build the goldens come from. Deleting it would not tidy
     the repository; it would delete the oracle and leave 279 tests asserting
     only that the port still agrees with itself. `src/` is a test fixture now,

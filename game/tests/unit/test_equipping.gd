@@ -110,7 +110,7 @@ func test_the_commands_refuse_somebody_who_is_not_there() -> void:
 	_load()
 	var session := Session.new(1)
 	var stranger := session.state.add_creature(Creature.new())
-	equal(Commands.equip(session, stranger, Weapon.new(&"WEAPON_SEMIPISTOL_9MM")),
+	equal(KitCommands.equip(session, stranger, Weapon.new(&"WEAPON_SEMIPISTOL_9MM")),
 			"They are not with the squad.", "the squad is who this is for")
 
 

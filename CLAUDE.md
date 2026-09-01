@@ -15,13 +15,15 @@ means deciding what to build rather than what to port.
 - `docs/port/LICENSING-NOTES.md` — licensing constraints/reference.
 
 Do not treat old C++ code as the future architecture. `src/` is a test fixture:
-three of the four checks CI runs read it to ask whether the port still accounts
+four of the five audits CI runs read it to ask whether the port still accounts
 for everything the original does, and the trace harness compiles it into the
 build the golden traces come from. Nothing under `game/` may depend on it.
 
 **Parity is still enforced, not merely achieved.** `tools/audit_parity.py`,
-`tools/audit_state.py` and `tools/audit_choices.py` fail the build when the
-port stops accounting for something the original does; 71 probes and 12 golden
+`tools/audit_state.py`, `tools/audit_choices.py` and `tools/audit_content.py`
+fail the build when the port stops accounting for something the original does,
+and `tools/audit_reach.py` fails it when something in the port can be reached
+by nothing; 71 probes and 12 golden
 traces diff it against the original draw for draw. A deliberate departure means
 updating those and saying so. An accidental one means a red build.
 

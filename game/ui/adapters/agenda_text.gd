@@ -118,3 +118,14 @@ static func _mood(attitude: int) -> String:
 		if attitude < int(entry[0]):
 			return String(entry[1])
 	return MOOD_TOP
+
+
+## What disbanding does, in the original's words.
+##
+## From confirmdisband() in src/basemode/liberalagenda.cpp.
+static func disbanding() -> Array[String]:
+	return [
+		"Disbanding scatters the squad, sending all of its members into",
+		"hiding, free to pursue their own lives. You will be able to watch",
+		"the political situation, and wait until it resolves.",
+	]

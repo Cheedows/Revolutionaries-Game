@@ -6,8 +6,9 @@ extends RefCounted
 ## clearing last visit's alarm, rebuilding the floor plan, putting the squad on
 ## the doorstep and handing it whatever map it already had.
 ##
-## The siege half — defending a safehouse under attack, with its fires, traps
-## and units — is the siege system's, and is not ported yet.
+## The siege half — defending a safehouse under attack, with its traps and its
+## waves of units — belongs to the siege system: SiegeGround.prepare() lays the
+## ground out behind this, and SiegeFloor advances it a turn at a time.
 
 ## The squad comes in through the middle of the map's bottom edge.
 const ENTRANCE_Y := 1

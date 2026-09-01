@@ -63,6 +63,7 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 		DOSSIER:
 			_dossier.show_creature(session, subject as Creature)
 		AGENDA:
+			_agenda.offer_disbanding(session)
 			_agenda.show_state(session.state)
 		HOUSE:
 			_house.show_house(session)

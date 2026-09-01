@@ -179,7 +179,8 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 		state.site.encounter_timer = 0
 	else:
 		state.site.encounter_timer += 1
-	var tail := events + _react(state, rng, squad, catalog)
+	var tail := events + _under_siege(state, rng, moved, catalog) \
+			+ _react(state, rng, squad, catalog)
 	# The way out is only taken by walking onto it: the squad comes in through
 	# the same square and standing still on it does not end the visit.
 	if moved and SiteMovement.on_the_way_out(state):
@@ -197,6 +198,27 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 					return tail + more + SiteRound.tick(state, rng),
 				tail + asked.events)
 	return tail + (result as Array[Event]) + SiteRound.tick(state, rng)
+
+
+## What the other side does when the building being walked is one of the
+## squad's own and there is a siege at the door.
+##
+## The units on the floor move first, then whatever is standing where the squad
+## is comes through, then the clock ticks towards the next wave. Nothing at all
+## happens in a building nobody is besieging, which is every ordinary visit.
+static func _under_siege(state: GameState, rng: Rng, moved: bool,
+		catalog: Catalog) -> Array[Event]:
+	var siege: Siege = state.sieges.get(state.site.location)
+	if siege == null or not siege.active or not siege.underway:
+		return [] as Array[Event]
+	if moved:
+		SiegeFloor.advance(state, rng)
+	var events := SiegeFloor.meet(state, rng, catalog)
+	var site: Location = state.locations.get(state.site.location)
+	if site != null and SiegeGround.next_wave(state, rng, site, siege):
+		events.append(Event.new(Event.SIEGE_ASSAULT,
+				{"location": site.id, "wave": true}))
+	return events
 
 
 ## What the people already in the room do about the squad: shoot at it once

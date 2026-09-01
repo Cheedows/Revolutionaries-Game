@@ -311,6 +311,15 @@ const SITE_BLOCKS: Dictionary = {
 	&"metal": 4194304,
 }
 
+## What the other side has put on a map tile during a siege, from the
+## SIEGEFLAG_ defines in src/locations/locations.h.
+const SIEGE_BLOCKS: Dictionary = {
+	&"unit": 1,
+	&"trap": 2,
+	&"heavy_unit": 4,
+	&"unit_damaged": 8,
+}
+
 ## What a safehouse can have built into it, from the COMPOUND_
 ## defines. A compound is the squad turning a rented flat into
 ## somewhere that can survive a police raid.

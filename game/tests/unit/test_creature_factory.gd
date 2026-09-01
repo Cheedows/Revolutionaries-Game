@@ -35,7 +35,9 @@ func test_matches_the_original_for_every_creature_type() -> void:
 			law.values[index] = int(recorded_law[index])
 
 		var rng := Rng.new(int(sample["seed"]))
-		var creature := CreatureFactory.create(type, rng, law, _catalog, int(sample["mood"]))
+		var creature := CreatureFactory.blank(rng)
+		CreatureFactory.populate(creature, type, rng, law, _catalog,
+				int(sample["mood"]))
 		var where := "%s sample %d" % [sample["type"], sample["sample"]]
 
 		if not _same(creature, sample, where):

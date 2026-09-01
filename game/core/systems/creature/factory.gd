@@ -62,20 +62,12 @@ static func reset(creature: Creature, rng: Rng) -> Creature:
 	return creature
 
 
-## Creates a creature of [param type]. [param law_values] is the current legal
-## climate, which the gender and civilian-weapon rolls read.
-static func create(type: CreatureType, rng: Rng, law: Law, catalog: Catalog,
-		public_mood: int = 50) -> Creature:
-	var creature := blank(rng)
-	populate(creature, type, rng, law, catalog, public_mood)
-	return creature
-
-
 ## Applies a creature type to an already-blank creature.
 ##
-## Split out from [method create] because the original does other things between
-## the two — placing the creature and choosing where it works — and those
-## consume randomness, so the halves cannot be run back to back.
+## Deliberately separate from [method blank]: the original does other things
+## between the two — placing the creature and choosing where it works — and
+## those consume randomness, so the halves cannot be run back to back. There is
+## no convenience wrapper around the pair for that reason.
 static func populate(creature: Creature, type: CreatureType, rng: Rng, law: Law,
 		catalog: Catalog, public_mood: int = 50) -> void:
 	creature.type = type.idname

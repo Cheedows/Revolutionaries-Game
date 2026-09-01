@@ -111,7 +111,7 @@ func _refresh() -> void:
 		_line("Empty.")
 	for item: Item in squad.haul:
 		_body.add_child(_kit_row(item))
-	_body.add_child(_buttons())
+	_body.add_child(_kit_buttons())
 
 
 ## One line of the squad's kit, with the button that hands it over.
@@ -230,33 +230,21 @@ func _surgery_row() -> Control:
 	operate.pressed.connect(func() -> void: surgery_wanted.emit(_creature))
 	row.add_child(operate)
 	return row
-
-
-func _buttons() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var disarm := Button.new()
-	disarm.text = "Take their weapon"
-	disarm.disabled = _creature.weapon == null
-	disarm.pressed.connect(func() -> void:
-		Commands.disarm(_session, _creature)
+## The row of things that can be done to what they are carrying.
+func _kit_buttons() -> Control:
+	var buttons := KitButtons.new()
+	buttons.show_member(_session, _creature)
+	buttons.changed.connect(func() -> void:
 		changed.emit()
 		_refresh())
-	row.add_child(disarm)
-
-	var strip := Button.new()
-	strip.text = "Take their clothes"
-	strip.disabled = _creature.armor == null
-	strip.pressed.connect(func() -> void:
-		Commands.strip(_session, _creature)
-		changed.emit()
-		_refresh())
-	row.add_child(strip)
-	return row
+	buttons.refused.connect(func(why: String) -> void:
+		_notice.text = why
+		_notice.visible = true)
+	return buttons
 
 
 func _give(item: Item) -> void:
-	var refused := Commands.equip(_session, _creature, item)
+	var refused := KitCommands.equip(_session, _creature, item)
 	if refused != "":
 		_notice.text = refused
 		_notice.visible = true

@@ -19,6 +19,12 @@ const NO_SPECIAL := -1
 var flags: PackedInt32Array = PackedInt32Array()
 var specials: PackedInt32Array = PackedInt32Array()
 
+## What the other side has put on each cell during a siege: a unit waiting to
+## come through, a tank, a unit that has already been hurt on the way in, or a
+## trap the squad laid. The original keeps this as a second mask beside the
+## first, and so does this.
+var siege_flags: PackedInt32Array = PackedInt32Array()
+
 
 func _init() -> void:
 	clear()
@@ -41,8 +47,10 @@ func fill(flag: int) -> void:
 	var cells := WIDTH * HEIGHT * LEVELS
 	flags.resize(cells)
 	specials.resize(cells)
+	siege_flags.resize(cells)
 	flags.fill(flag)
 	specials.fill(NO_SPECIAL)
+	siege_flags.fill(0)
 
 
 ## Whether a coordinate is on the map at all.
@@ -74,6 +82,23 @@ func clear_flag(x: int, y: int, z: int, value: int) -> void:
 func keep_flag(x: int, y: int, z: int, mask: int) -> void:
 	var index := _index(x, y, z)
 	flags[index] = flags[index] & mask
+
+
+## What the siege has put on a cell.
+func get_siege(x: int, y: int, z: int) -> int:
+	return siege_flags[_index(x, y, z)]
+
+
+## Adds siege bits to a cell.
+func add_siege(x: int, y: int, z: int, value: int) -> void:
+	var index := _index(x, y, z)
+	siege_flags[index] = siege_flags[index] | value
+
+
+## Removes siege bits from a cell.
+func clear_siege(x: int, y: int, z: int, value: int) -> void:
+	var index := _index(x, y, z)
+	siege_flags[index] = siege_flags[index] & ~value
 
 
 func get_special(x: int, y: int, z: int) -> int:

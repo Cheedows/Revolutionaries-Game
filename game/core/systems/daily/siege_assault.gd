@@ -118,6 +118,9 @@ static func engage(state: GameState, rng: Rng, site: Location, siege: Siege,
 	if state.current_story != null:
 		state.current_story.positive = 1
 	events.append_array(SiteEntry.enter(state, squad, site, catalog, rng))
+	# The traps the compound laid, the units massing at the front of the map,
+	# and the tank if the police have escalated far enough to bring one.
+	SiegeGround.prepare(state, rng, site, siege)
 	return events
 
 
