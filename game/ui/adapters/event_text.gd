@@ -41,6 +41,10 @@ static func describe(event: Event, state: GameState) -> String:
 	var worked := DayText.describe(event, state)
 	if not worked.is_empty():
 		return worked
+	# And the evenings.
+	var evening := DateText.describe(event, state)
+	if not evening.is_empty():
+		return evening
 
 	match event.type:
 		Event.DAY_ADVANCED:

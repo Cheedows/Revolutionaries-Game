@@ -84,6 +84,102 @@ func test_everything_the_day_reports_has_words() -> void:
 			"the log says nothing about: %s" % ", ".join(unexplained))
 
 
+## And the modes a run cannot be steered into: a hostage in the basement, a
+## date in the diary, and a Liberal in the cells.
+##
+## These are fixtures rather than play, because a scripted run reaches them
+## only by luck: somebody has to be kidnapped, somebody has to be flirted with
+## at a site, and somebody has to be arrested and charged with enough to stand
+## trial. Each is set up directly and then the days are run.
+func test_everything_the_other_modes_report_has_words() -> void:
+	var silent := {}
+	var seen := 0
+	for seed_value in SEEDS:
+		var session := Session.new(seed_value)
+		Commands.start_new_game(session, PackedInt32Array(),
+				{&"win_condition": &"elite_liberal",
+				&"field_skill_rate": &"fast"})
+		session.drain_events()
+		var founder: Creature = session.state.members()[0]
+		founder.juice = 1000
+		_take_a_hostage(session, founder)
+		_arrange_a_date(session, founder)
+		_get_somebody_arrested(session, founder)
+
+		for day in AFTERMATH:
+			Commands.advance_day(session, false)
+			var asked := 0
+			while session.is_waiting() and asked < PATIENCE:
+				asked += 1
+				session.answer(_pick(session.pending().intent))
+			if session.is_waiting():
+				fail("seed %d day %d would not stop asking" % [seed_value, day])
+				return
+			seen += _gather(session, session.drain_events(), silent)
+
+	check(seen > 100, "the fixtures produced something to look at, got %d" % seen)
+	check(_kinds.size() >= 25,
+			"they reached the cells, the diary and the basement, got %d kinds"
+					% _kinds.size())
+	var unexplained: Array[String] = []
+	for shape: String in silent:
+		if not SILENT.has(shape):
+			unexplained.append(shape)
+	unexplained.sort()
+	check(unexplained.is_empty(),
+			"the log says nothing about: %s" % ", ".join(unexplained))
+
+
+## Somebody Conservative, tied up in the safehouse, with a guard on them.
+func _take_a_hostage(session: Session, founder: Creature) -> void:
+	var hostage := session.state.add_creature(Creature.new())
+	hostage.name = "The Guest"
+	hostage.type = &"CREATURE_CORPORATE_MANAGER"
+	hostage.alignment = &"conservative"
+	hostage.location = founder.location
+	hostage.base = founder.base
+	hostage.work_location = founder.location
+	hostage.kidnapped = true
+	hostage.missing = true
+	hostage.interrogation = Interrogation.new()
+	Commands.watch_hostage(session, founder, hostage)
+
+
+## Somebody the founder is seeing, which is how the original starts a date:
+## a copy of a stranger, on the founder's own list.
+func _arrange_a_date(session: Session, founder: Creature) -> void:
+	var date := session.state.add_creature(Creature.new())
+	date.name = "The Date"
+	date.type = &"CREATURE_TEACHER"
+	date.alignment = &"moderate"
+	date.location = founder.location
+	date.base = founder.base
+	var here: Location = session.state.locations.get(founder.location)
+	var plan := DatePlan.new()
+	plan.dater_id = founder.id
+	plan.city = here.city if here != null else -1
+	plan.date_ids.append(date.id)
+	session.state.dates.append(plan)
+	founder.dating = 0
+
+
+## A Liberal in the cells with enough against them to reach a courtroom.
+func _get_somebody_arrested(session: Session, founder: Creature) -> void:
+	var caught := session.state.add_creature(Creature.new())
+	caught.name = "The Accused"
+	caught.alignment = &"liberal"
+	caught.enlisted = true
+	caught.hire_id = founder.id
+	caught.recruiter_id = founder.id
+	caught.base = founder.base
+	for crime in [&"murder", &"racketeering", &"burglary"]:
+		caught.crimes_suspected[Ids.LAW_FLAGS.find(crime)] = 2
+	for site: Location in session.state.locations.values():
+		if site.type == &"government_policestation":
+			caught.location = site.id
+			break
+
+
 ## Gives everybody idle something different to do.
 ##
 ## One assignment does not exercise the day: graffiti, hacking, busking, the
