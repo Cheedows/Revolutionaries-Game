@@ -1587,8 +1587,33 @@ This is functional UI coverage, not final art direction. Keep mechanics in `core
     stalls in that menu or quits out of it. It is covered instead by four
     probes that diff it draw for draw — `chase`, `carfight`, `cartheft` and
     `arrest` — which is stronger evidence than a keystroke script would be.
-- [ ] Add deterministic fixture-based tests where the original interactive harness cannot reliably reach a mode.
-- [ ] Run long deterministic simulations across multiple seeds.
+- [x] Add deterministic fixture-based tests where the original interactive
+    harness cannot reliably reach a mode. This is what the 71 probes are: each
+    builds its own fixture inside the original — a world, a squad, the
+    creatures and the laws the case needs — and dumps what the original did,
+    so behaviour a keystroke script cannot steer into is still diffed draw for
+    draw. `tools/trace_harness/record_probes.sh` records them all.
+- [x] Run long deterministic simulations across multiple seeds.
+    `test_long_run` starts a fresh game and waits 1100 days — three years and
+    a bit — at three seeds, gives every idle Liberal something to do, answers
+    every question the day raises, and checks the world's invariants after
+    each one: everybody somewhere real, every squad made of people who think
+    they are in it, the country on the scale it is measured on, the calendar
+    moving one real date at a time. It is also what proves every Intent
+    carries options a player could actually pick.
+
+    It found a great deal. The headless runner never started a game at all, so
+    the end check called the LCS dead on the first day. `recruitment_activity`
+    was half-ported — candidates were found and nobody ever spoke to them —
+    and `recruitSelect` was missing, so the recruiting assignment went looking
+    for the empty profession. `sleeperize_prompt` was missing at all three
+    places somebody comes over, and with it the thing that made the funnel
+    inert: nothing put a recruit in the pool, because membership was
+    `join_days > 0` and that is a day counter starting at zero on the day
+    somebody joins. Six Intents shipped with no options, so the dialog drew a
+    single "carry on" and answered null into a resume that wanted a real
+    answer. Creatures marked gone were never taken off the board. All fixed;
+    see the commits.
 - [ ] Fix accidental divergences.
 - [ ] Move intentional bug fixes or enhancements to `docs/ROADMAP_FUTURE.md` unless explicitly approved for the parity baseline.
 - [ ] Update the completion estimate in this file to 100% only when all gates are green.
