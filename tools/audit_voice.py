@@ -264,6 +264,39 @@ def main():
         else:
             unaccounted.append((where, said))
 
+    # An em dash in this port stands for one thing: the original's own "──",
+    # which it writes as two CP437 0xC4 bytes and which a modern font draws as
+    # a dash. It writes that twice in ten thousand strings — the title screen's
+    # quote attributions, and one news story — so an em dash in a line the port
+    # wrote itself is not a punctuation choice, it is a tell. The port had six
+    # of them, all in separators it invented; the original separates with " - "
+    # in every menu line it has, and with ": " between a thing and what it is.
+    invented = []
+    for path in sorted((ROOT / "game" / "ui").rglob("*.gd")):
+        for number, line in enumerate(path.read_text().splitlines(), 1):
+            if "\u2014" not in line or line.lstrip().startswith("#"):
+                continue
+            for literal in re.findall(r'"((?:[^"\\]|\\.)*)"', line):
+                if "\u2014" not in literal:
+                    continue
+                pieces = _pieces(literal)
+                # A line whose only content is the dash — a separator such as
+                # "%s \u2014 %s" — has nothing it could have carried, so the
+                # dash is the port's and nothing else.
+                if pieces and all(_found(p, haystack) for p in pieces):
+                    continue
+                where = str(path.relative_to(ROOT / "game" / "ui"))
+                invented.append(("%s:%d" % (where, number), literal))
+    if invented:
+        print("\nThese lines are the port's own words and have an em dash in"
+              " them:\n")
+        for where, line in invented:
+            print(f"  {where.replace('game/ui/', '')}: {line[:70]!r}")
+        print("\nThe original writes \u2014 only where it drew \u2500\u2500."
+              " Separate with \" - \" as its menus do,\nor with \": \""
+              " between a thing and what it is.")
+        return 1
+
     total = carried + explained + len(waiting) + len(unaccounted)
     print(f"{total} strings in game/ui/ that a player reads.")
     print(f"  {carried} are the original's own words.")

@@ -106,8 +106,12 @@ func _upgrade_row(here: Location, upgrade: StringName) -> Control:
 	var buy := Atoms.button("", false)
 	var cost := SafehouseUpgrades.price(_session.state, upgrade)
 	buy.text = "$%d" % cost
-	buy.disabled = not SafehouseUpgrades.can_have(here, upgrade) \
-			or _session.state.ledger.funds < cost
+	var possible := SafehouseUpgrades.can_have(here, upgrade)
+	buy.disabled = not possible or _session.state.ledger.funds < cost
+	# Greyed all the way across, not just the button: something that cannot be
+	# built here is not a thing you are choosing not to buy today.
+	if not possible:
+		label.add_theme_color_override(&"font_color", Palette.TEXT_FAINT)
 	buy.pressed.connect(func() -> void:
 		Commands.fortify(_session, here, upgrade)
 		changed.emit()

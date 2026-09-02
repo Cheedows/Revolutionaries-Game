@@ -28,7 +28,7 @@ static func in_custody(state: GameState) -> Array[Dictionary]:
 		if not CreatureCondition.is_imprisoned(member, where):
 			continue
 		held.append({
-			"line": "%s — %s." % [member.name, _where(where)],
+			"line": "%s - %s." % [member.name, _where(where)],
 			"details": _details(member),
 			"colour": Palette.CONSERVATIVE if member.death_penalty > 0
 					else Palette.TEXT,

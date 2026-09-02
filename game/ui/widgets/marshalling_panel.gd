@@ -91,7 +91,7 @@ func _move(squad: Squad, from: int, to: int, text: String) -> Button:
 ## One Liberal, and every car they could be put in.
 func _seat_row(squad: Squad, member: Creature) -> Control:
 	var row := _row()
-	var label := Atoms.cell("%s — %s" % [member.name, MarshallingText.seat(
+	var label := Atoms.cell("%s - %s" % [member.name, MarshallingText.seat(
 			member, _session.state, _session.catalog)], NAME_WIDTH)
 	label.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
 	row.add_child(label)

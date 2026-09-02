@@ -64,7 +64,7 @@ static func question(intent: Intent, state: GameState) -> String:
 	if intent.type == Intent.ASSIGN_ACTIVITY or intent.type == Intent.CHOOSE_DIALOGUE:
 		var who := _who(state, int(intent.context.get("creature", 0)))
 		if not who.is_empty():
-			return "%s — %s" % [who, asked]
+			return "%s - %s" % [who, asked]
 	return asked
 
 

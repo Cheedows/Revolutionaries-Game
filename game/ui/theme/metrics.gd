@@ -30,6 +30,25 @@ const POINTER_TARGET := 24
 const BASE_FONT := 16
 const TOUCH_FONT := 19
 
+## The sizes text comes in, as steps away from the body size.
+##
+## Four sizes, and the range between the largest and the smallest is six
+## points. That is deliberate and it is not timidity: the original is a
+## terminal where every character is the same size, and its hierarchy is
+## carried by colour, by capitals and by position. A port that shouts its
+## headings in thirty-two point is not the same game. So the steps are small
+## enough to read as one voice and large enough to sort what you are looking
+## at, and the rest of the hierarchy is done the way the original does it.
+
+## A screen's own name, at the top. One per screen.
+const TITLE_STEP := 2
+
+## The name of a section inside a screen.
+const HEADING_STEP := 0
+
+## A column header, a timestamp, a footnote.
+const SMALL_STEP := -2
+
 ## The gap between things, and the room inside them.
 const BASE_GAP := 12
 const TOUCH_GAP := 8

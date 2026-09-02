@@ -40,6 +40,31 @@ Enforced mechanically:
   meant to contain it, or has wrapped into a column of single letters. The
   headless suite cannot see either — a container only lays its children out
   inside a live tree, and `--script` has none
+- Colour is verified too: `tools/audit_contrast.py` fails on any text/background
+  pair below its WCAG threshold, and on any scheme whose two political sides
+  collapse into one colour under simulated colour blindness
+
+### The design system
+
+Six rules, each of which exists because breaking it shipped:
+
+1. **Nothing below a screen names a colour or a number.** Widgets ask `Atoms`
+   for a control and `Metrics` for a size. Colours come from `Palette`, which
+   is a set of swappable schemes (`Palette.use`), so a widget that names a hex
+   value is a widget that cannot follow a scheme.
+2. **Gaps come off the scale** — 4, 8, 12, 16, 24, all multiples of four. The
+   scale has to be able to say what the screens already say; an earlier one
+   dropped 12 and grew the safehouse past the bottom of the window.
+3. **Depth is a lighter surface, not a shadow.** Page, panel, control. There is
+   no drop shadow in this interface.
+4. **Wrapping is opt-in** (`Atoms.wrapped`). Most text here is a short value in
+   a row; wrapping it by default drew a whole column as single letters.
+5. **Type barely changes size.** Four steps spanning six points, because the
+   original is a terminal where everything is one size and the hierarchy is
+   carried by colour, capitals and position.
+6. **Colour is never the only thing saying something.** State is carried by the
+   control (a switch that is on, a row that is refused), and alignment is
+   written in words beside its colour.
 
 If a rule needs breaking, the rule changes in this file first, in its own commit.
 

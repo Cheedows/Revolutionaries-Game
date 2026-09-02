@@ -61,7 +61,7 @@ func _refresh() -> void:
 ## One thing that could be fitted, and the button that fits it.
 func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
 	var row := Atoms.row(Metrics.SNUG)
-	var label := Atoms.dim("  %s — %s" % [String(slot).capitalize(), type.name])
+	var label := Atoms.dim("  %s - %s" % [String(slot).capitalize(), type.name])
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 

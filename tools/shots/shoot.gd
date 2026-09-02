@@ -25,6 +25,12 @@ func _initialize() -> void:
 	var out := String(args[2])
 	var presses: Array = args.slice(3)
 
+	# SCHEME=<name> renders the same screen in another palette, so the choice
+	# can be made by looking at the game rather than at swatches.
+	var scheme := OS.get_environment("SCHEME")
+	if scheme != "":
+		Palette.use(StringName(scheme))
+
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	root.content_scale_size = Vector2i(

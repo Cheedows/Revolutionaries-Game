@@ -103,7 +103,7 @@ func _segment(event: Event) -> void:
 
 ## The grey block the original pads a story out with, as words of tildes.
 func _filler(padding: Dictionary) -> String:
-	var text := "%s — " % padding.get("city", "")
+	var text := "%s - " % padding.get("city", "")
 	var words: PackedInt32Array = padding.get("words", PackedInt32Array())
 	var written := 0
 	for length in words:

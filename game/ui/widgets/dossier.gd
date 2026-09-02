@@ -67,7 +67,7 @@ func _refresh() -> void:
 	_notice.visible = false
 
 	var state := _session.state
-	_head.set_title("%s — %s" % [_creature.name,
+	_head.set_title("%s - %s" % [_creature.name,
 			DossierText.standing(_creature)])
 	for line in DossierText.record(_creature, state, _session.catalog):
 		_line(line)

@@ -147,7 +147,7 @@ func _ask_name() -> void:
 	]
 	_typed.visible = true
 	_typed.placeholder_text = "FIRST NAME:"
-	_show("%s — %s" % [Founder.chosen_name(_choosing),
+	_show("%s - %s" % [Founder.chosen_name(_choosing),
 			StrangerText.gender(founder)],
 			Intent.new(Intent.CHOOSE_FOUNDER_NAME, options, {}, false))
 

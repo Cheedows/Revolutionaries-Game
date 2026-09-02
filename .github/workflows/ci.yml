@@ -30,6 +30,8 @@ jobs:
         run: python3 tools/audit_reach.py
       - name: The interface is built out of its own pieces
         run: python3 tools/audit_design.py
+      - name: Every colour can be read, and the two sides stay apart
+        run: python3 tools/audit_contrast.py
       - name: The content is what the extractor produces, unedited
         run: |
           python3 tools/extract_data.py

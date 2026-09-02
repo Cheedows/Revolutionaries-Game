@@ -59,7 +59,7 @@ static func slot_line(slot: String) -> String:
 	if about.is_empty():
 		return slot
 	var slogan := String(about.get("slogan", "")).strip_edges()
-	return "%s — %s, %d/%d/%d" % [slot,
+	return "%s - %s, %d/%d/%d" % [slot,
 			slogan if slogan != "" else "None",
 			int(about.get("day", 0)), int(about.get("month", 0)),
 			int(about.get("year", 0))]

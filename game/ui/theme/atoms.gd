@@ -18,11 +18,9 @@ extends RefCounted
 ## control to reach for. Between them nothing below a screen should ever need
 ## to name a colour or a number.
 
-## The type sizes, relative to the body size the theme is built at. Headings
-## are barely larger than body text on purpose: the original is a terminal
-## where everything is one size and the hierarchy is carried by colour and by
-## capitals, and shouting it in 32pt would not be the same game.
-const HEADING_STEP := 2
+## Where the sizes live. See [Metrics] — the scale is there with the rest of
+## the measurements, so nothing has to look in two places to find out how big a
+## thing is.
 
 
 ## A screen's own title. One per screen, at the top, in the accent colour.
@@ -31,7 +29,7 @@ static func title(said: String) -> Label:
 	label.text = said
 	label.add_theme_color_override(&"font_color", Palette.ACCENT)
 	label.add_theme_font_size_override(&"font_size",
-			Metrics.BASE_FONT + HEADING_STEP)
+			Metrics.BASE_FONT + Metrics.TITLE_STEP)
 	return label
 
 
@@ -105,10 +103,15 @@ static func cell(said: String, wide: int) -> Label:
 
 
 ## A column header, which the original shouts and so does this.
+##
+## Capitals and a smaller size rather than bold, because that is what the
+## original does: CODE NAME, SKILL, HEALTH, DAYS IN CAPTIVITY.
 static func column_header(said: String) -> Label:
 	var label := Label.new()
 	label.text = said.to_upper()
 	label.add_theme_color_override(&"font_color", Palette.TEXT_FAINT)
+	label.add_theme_font_size_override(&"font_size",
+			Metrics.BASE_FONT + Metrics.SMALL_STEP)
 	return label
 
 

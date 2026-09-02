@@ -60,15 +60,15 @@ static func upgrade_line(state: GameState, site: Location,
 	var name := String(NAMES.get(upgrade, String(upgrade)))
 	if upgrade == &"rations":
 		return name
-	if upgrade == &"businessfront":
-		if site.front_business != -1:
-			return "%s — %s" % [name, site.front_name]
-		return name if SafehouseUpgrades.can_have(site, upgrade) \
-				else "%s — not here" % name
-	if site.compound_walls & int(Tables.COMPOUND[upgrade]) != 0:
-		return "%s — already here" % name
-	if not SafehouseUpgrades.can_have(site, upgrade):
-		return "%s — not here" % name
+	if upgrade == &"businessfront" and site.front_business != -1:
+		# A colon, which is how the original writes a thing and what it is:
+		# "A - Classic Mode: No Conservative Crime Squad."
+		return "%s: %s" % [name, site.front_name]
+	# Whether it can be built here is not said in words any more. The row
+	# disables its own button and greys itself, which is the same sentence in
+	# the state of the control rather than appended to the label — and it was
+	# the port's own wording, with an em dash in it, for a thing the original
+	# says by refusing the key.
 	return name
 
 

@@ -61,7 +61,7 @@ static func government(state: GameState) -> Array[String]:
 						% ("first" if branch.executive_term == 1 else "second")
 		var name := branch.executive_names[post] \
 				if post < branch.executive_names.size() else ""
-		lines.append("%s: %s — %s" % [title,
+		lines.append("%s: %s - %s" % [title,
 				name if name != "" else "nobody",
 				String(Alignment.name_of(branch.executive[post]))])
 
@@ -73,7 +73,7 @@ static func government(state: GameState) -> Array[String]:
 				else ""
 		if name == "":
 			continue
-		lines.append("  %s — %s"
+		lines.append("  %s - %s"
 				% [name, String(Alignment.name_of(branch.court[seat]))])
 	return lines
 
@@ -110,7 +110,7 @@ static func _chamber(seats: PackedInt32Array) -> String:
 		if lead < int(entry[0]):
 			reading = String(entry[1])
 			break
-	return "%d Liberal, %d Conservative, %d in between — %s"\
+	return "%d Liberal, %d Conservative, %d in between - %s"\
 			% [liberal, conservative, seats.size() - liberal - conservative,
 					reading]
 

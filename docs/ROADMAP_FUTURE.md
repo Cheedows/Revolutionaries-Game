@@ -150,6 +150,25 @@ rather than a description of it.
   rather than set to appear when needed. And the two buttons that both said
   "Wait a day" now say "Wait a day" and "Keep waiting".
 
+  **The palette is three schemes now, not one** — `terminal` (the original's
+  own green and red), `newsprint` (warm paper and ink, the register the game is
+  written in) and `signal` (blue and orange, which survive colour blindness).
+  `Palette.use()` switches the lot; nothing below a screen names a colour, so
+  they all follow. Nothing is wired to a settings row yet: the default is
+  `terminal` and changing it is one constant.
+
+  `tools/audit_contrast.py` is what makes that a decision rather than a taste.
+  It checks every text-on-background pair in every scheme against its WCAG
+  threshold, and runs the two political colours through simulations of the
+  three kinds of colour blindness — separating how much of the difference is
+  hue (which colour blindness takes away) from how much is brightness (which it
+  does not). It found that newsprint's first green and red were one colour to a
+  protanope, and that its ledger red was too dark to read on a button. Both are
+  fixed. The commonly repeated claim that green-and-red simply fails turned out
+  to be too strong for this game's pastels: the original's pair is 66 apart in
+  hue and 1.55:1 apart in brightness, which is legible. Blue and orange is 193
+  apart, which is not close.
+
   The scale learned something too. It was four steps that doubled — 4, 8, 16,
   24 — until that pushed every 12px gap up to 16 and grew the safehouse past
   the bottom of the window. It is five steps of four now. A scale has to fit

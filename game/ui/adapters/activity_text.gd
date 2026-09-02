@@ -99,5 +99,5 @@ const DIFFICULTY: Array[String] = [
 ## hard they are to arrange a meeting with.
 static func recruit_label(type: StringName, difficulty: int) -> String:
 	var who := String(type).trim_prefix("CREATURE_").capitalize()
-	return "%s — %s" % [who,
+	return "%s - %s" % [who,
 			DIFFICULTY[clampi(difficulty, 0, DIFFICULTY.size() - 1)]]
