@@ -116,8 +116,14 @@ func test_nothing_the_game_builds_runs_off_the_side_of_a_phone() -> void:
 
 func test_everything_you_can_press_is_big_enough_to_hit() -> void:
 	var held := _screen_in(PHONE)
-	var pressable := _pressable(held["screen"])
-	check(pressable.size() > 8, "there are controls to check, found %d"
+	var screen: Control = held["screen"]
+	# The page itself, and then the list behind More — which is where eight of
+	# this screen's eleven buttons now live, and where a check that only looked
+	# at the page would stop seeing them.
+	var pressable := _pressable(screen)
+	(screen.get("_parts")["more"] as Button).pressed.emit()
+	pressable.append_array(_pressable(screen.get("_parts")["menu"]))
+	check(pressable.size() > 12, "there are controls to check, found %d"
 			% pressable.size())
 	for control: Control in pressable:
 		var tall := control.get_combined_minimum_size().y
@@ -132,7 +138,7 @@ func test_every_panel_fits_on_a_phone() -> void:
 	var held := _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	var opened := 0
-	for entry: Array in BaseLayout.PANEL_BUTTONS:
+	for entry: Array in BaseNav.PANEL_BUTTONS:
 		var button: Button = _named(screen, str(entry[1]))
 		if button == null:
 			fail("no way to open %s" % entry[0])
@@ -150,7 +156,7 @@ func test_every_panel_fits_on_a_phone() -> void:
 				fail("%s in %s is too small to hit" % [_describe(control),
 						entry[0]])
 				break
-	check(opened == BaseLayout.PANEL_BUTTONS.size(),
+	check(opened == BaseNav.PANEL_BUTTONS.size(),
 			"every panel was opened, got %d" % opened)
 	_drop(held)
 
@@ -338,7 +344,7 @@ func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 				"and it has no bar to grab")
 
 	# Opening a panel must not bring a second one back with it.
-	for entry: Array in BaseLayout.PANEL_BUTTONS:
+	for entry: Array in BaseNav.PANEL_BUTTONS:
 		(_named(screen, str(entry[1])) as Button).pressed.emit()
 		var still := _scrollers(screen, true)
 		if still.size() != 1:

@@ -49,7 +49,7 @@ func _fill(column: VBoxContainer, heading: String, pile: Array,
 	column.add_child(label)
 
 	if pile.is_empty():
-		var empty := Atoms.tinted("Nothing.", Palette.TEXT_FAINT)
+		var empty := Atoms.nothing("Nothing.")
 		column.add_child(empty)
 		return
 
@@ -58,19 +58,16 @@ func _fill(column: VBoxContainer, heading: String, pile: Array,
 
 
 func _row(item: Item, index: int, stashing: bool) -> Control:
-	var row := Atoms.row(Metrics.TIGHT)
-	var label := Atoms.dim(DossierText.item_title(item, _session.catalog))
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
+	var row := ListRow.new(DossierText.item_title(item, _session.catalog))
 
 	var one := Atoms.button("Stash" if stashing else "Take", false)
 	one.pressed.connect(func() -> void: _move(index, 1, stashing))
-	row.add_child(one)
+	row.act(one)
 
 	if item.count > 1:
 		var all := Atoms.button("All", false)
 		all.pressed.connect(func() -> void: _move(index, item.count, stashing))
-		row.add_child(all)
+		row.act(all)
 	return row
 
 

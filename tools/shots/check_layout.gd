@@ -96,7 +96,8 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 		await process_frame
 	for press: String in walk["press"]:
 		_press(screen, press)
-		for _settle in 3:
+		# Long enough for anything that animates to have arrived.
+		for _settle in 12:
 			await process_frame
 
 	var where := "%s%s at %s" % [which,
@@ -224,17 +225,14 @@ func _a_session() -> Session:
 ## Answers whatever is being asked: a number takes that option from the list,
 ## "c" takes the first action in the bar.
 func _press(screen: Control, said: String) -> void:
+	if said == "menu":
+		(screen.get("_parts")["more"] as Button).pressed.emit()
+		return
 	if said.begins_with("p:"):
-		var stack := _find(screen, "PanelStack")
-		if stack == null:
-			return
-		var which := StringName(said.substr(2))
-		# The paper is the one panel that is about something rather than about
-		# the game as a whole, and it casts what it is given; handing it null
-		# throws rather than opening empty.
-		var about: Variant = [] as Array[Event] if which == PanelStack.PAPER \
-				else null
-		stack.call("open", which, screen.get("_session"), about)
+		# Through the screen's own way in, not straight at the stack: the
+		# screen is what brings a panel to the front, and going round it means
+		# checking a layout no player ever sees.
+		screen.call("_open_panel", StringName(said.substr(2)))
 		return
 	var dialog := _find(screen, "IntentDialog")
 	if dialog == null:

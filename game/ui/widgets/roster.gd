@@ -90,7 +90,7 @@ func refresh(state: GameState) -> void:
 
 	var members := state.members()
 	if members.is_empty():
-		var empty := Atoms.tinted("Nobody yet.", Palette.TEXT_FAINT)
+		var empty := Atoms.nothing("Nobody yet.")
 		_rows.add_child(empty)
 		return
 

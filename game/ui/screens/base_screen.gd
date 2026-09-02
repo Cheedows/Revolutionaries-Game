@@ -24,6 +24,7 @@ var _squad: SquadPanel
 var _map: SiteMapView
 var _fight: FightPanel
 var _panels: PanelStack
+var _sheet: Sheet
 var _news: Array[Event] = []
 var _log: LogView
 var _wait_button: Button
@@ -115,18 +116,30 @@ func _build() -> void:
 	_wait_button = parts["wait"]
 	_run_button = parts["run"]
 	_buttons = parts["buttons"]
+	_sheet = parts["sheet"]
 	_connect()
 
 
 ## Wires the widgets to the screen. Split from building them so that the shape
 ## of the screen and what it does with it stay separate things.
 func _connect() -> void:
-	_roster.activity_chosen.connect(_on_activity_chosen)
+	_roster.activity_chosen.connect(
+			func(who: Creature, doing: StringName) -> void:
+		_say(BaseOrders.assign(_session, who, doing)))
 	_roster.dossier_wanted.connect(_open_dossier)
-	_roster.hostage_chosen.connect(_on_hostage_chosen)
-	_roster.recruit_chosen.connect(_on_recruit_chosen)
+	_roster.hostage_chosen.connect(
+			func(keeper: Creature, held: Creature) -> void:
+		_say(BaseOrders.watch(_session, keeper, held)))
+	_roster.recruit_chosen.connect(
+			func(who: Creature, kind: StringName) -> void:
+		_say(BaseOrders.recruit(_session, who, kind)))
 	_panels.surgery_wanted.connect(func(surgeon: Creature) -> void:
-		_panels.open(PanelStack.SURGERY, _session, surgeon)
+		BaseFront.panel(_parts, _session, PanelStack.SURGERY, surgeon,
+				_narrow)
+		_refresh())
+	# Tapping the darkened page, or pressing escape, is the way back.
+	_sheet.dismissed.connect(func() -> void:
+		_panels.open(PanelStack.NONE, null)
 		_refresh())
 	_panels.changed.connect(_refresh)
 	_panels.reported.connect(func(message: String) -> void:
@@ -146,6 +159,11 @@ func _connect() -> void:
 	for which: StringName in _buttons:
 		var button: Button = _buttons[which]
 		button.pressed.connect(func() -> void: _open_panel(which))
+	(_parts["more"] as Button).pressed.connect(
+			func() -> void: BaseFront.menu(_parts, _narrow))
+	(_parts["menu"] as Card).closed.connect(func() -> void:
+		_sheet.dismiss()
+		_refresh())
 
 func _advance_one_day() -> void:
 	if _session.is_waiting():
@@ -159,20 +177,9 @@ func _advance_one_day() -> void:
 ## The simulation never blocks: it hands back a question and waits, so the
 ## screen's whole job here is to show it and hand the answer back.
 func _settle() -> void:
-	var drained := _session.drain_events()
-	# The morning's paper is kept aside so it can be read whenever the player
-	# wants it, rather than only as it scrolls past in the log.
-	var morning: Array[Event] = []
-	for event: Event in drained:
-		if event.type == Event.NEWS_PUBLISHED or event.type == Event.HEADLINE_RUN \
-				or event.type == Event.NEWS_SEGMENT:
-			morning.append(event)
+	var morning := BaseOrders.drain(_session, _log)
 	if not morning.is_empty():
 		_news = morning
-	for event in drained:
-		var line := EventText.describe(event, _session.state)
-		if not line.is_empty():
-			_log.append(line, EventText.colour_of(event))
 	_refresh()
 
 	if _session.is_waiting():
@@ -195,13 +202,8 @@ func _end(how: StringName) -> void:
 	_ended = true
 	_running = false
 	_run_button.button_pressed = false
-	var said := BaseOrders.finish(_session, how == &"won")
-	_log.append_heading(said[0])
-	for line in said.slice(1):
-		_log.append(line, Palette.ACCENT)
-	_wait_button.text = "Live to fight EVIL another day"
-	_wait_button.pressed.disconnect(_advance_one_day)
-	_wait_button.pressed.connect(func() -> void: finished.emit())
+	BaseOrders.finish_up(_session, how == &"won", _log, _wait_button,
+			func() -> void: finished.emit())
 
 
 ## Re-reads how much room there is and lays the screen out for it.
@@ -224,15 +226,19 @@ func _on_answer(id: Variant) -> void:
 
 
 ## Opens somebody's record, or closes it when given nobody.
-## Opens one of the panels that sit over the roster, closing the others.
 func _open_panel(which: StringName) -> void:
-	_panels.open(which, _session, _news if which == PanelStack.PAPER else null)
+	BaseFront.panel(_parts, _session, which,
+			_news if which == PanelStack.PAPER else null, _narrow)
+	# A panel builds itself the first time it is opened, long after the screen
+	# was laid out, so nothing in it has been made big enough to hit or given
+	# the press until this runs.
 	_refresh()
 
 
 func _open_dossier(creature: Creature) -> void:
-	_panels.open(PanelStack.DOSSIER if creature != null else PanelStack.NONE,
-			_session, creature)
+	BaseFront.panel(_parts, _session,
+			PanelStack.DOSSIER if creature != null else PanelStack.NONE,
+			creature, _narrow)
 	_refresh()
 
 
@@ -244,18 +250,6 @@ func _on_step(direction: int) -> void:
 	if _session.pending().intent.type != Intent.CHOOSE_SITE_MOVE:
 		return
 	_on_answer(direction)
-
-
-func _on_activity_chosen(creature: Creature, activity: StringName) -> void:
-	_say(BaseOrders.assign(_session, creature, activity))
-
-
-func _on_recruit_chosen(recruiter: Creature, type: StringName) -> void:
-	_say(BaseOrders.recruit(_session, recruiter, type))
-
-
-func _on_hostage_chosen(keeper: Creature, hostage: Creature) -> void:
-	_say(BaseOrders.watch(_session, keeper, hostage))
 
 
 ## Writes what an order came to in the log, and redraws.
@@ -286,6 +280,7 @@ func _refresh() -> void:
 	# and here rather than in reflow() because a panel builds itself the first
 	# time it is opened, long after the screen was laid out.
 	Metrics.enlarge(self, Metrics.touch(self))
+	PressFeel.teach(self)
 	Metrics.unscroll(_parts["columns"], _narrow)
 
 

@@ -70,32 +70,22 @@ const LABEL_WIDTH := 180
 
 
 func _upgrade_row(here: Location, upgrade: StringName) -> Control:
-	var row := Atoms.row(Metrics.SNUG)
-	var label := Atoms.body("")
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# The original names these by what buying them does — "Install a perfectly
-	# legal Anti-Aircraft gun on the roof" — which is a sentence, not a noun,
-	# and has to be allowed to wrap on a narrow screen.
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.custom_minimum_size.x = LABEL_WIDTH
-	label.text = SafehouseText.upgrade_line(_session.state, here, upgrade)
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
-	row.add_child(label)
+	# legal Anti-Aircraft gun on the roof" — a sentence rather than a noun, so
+	# the row wraps it and puts the price after.
+	var row := ListRow.new(
+			SafehouseText.upgrade_line(_session.state, here, upgrade))
 
-	var buy := Atoms.button("", false)
 	var cost := SafehouseUpgrades.price(_session.state, upgrade)
-	buy.text = "$%d" % cost
+	var buy := Atoms.button("$%d" % cost, false)
 	var possible := SafehouseUpgrades.can_have(here, upgrade)
 	buy.disabled = not possible or _session.state.ledger.funds < cost
-	# Greyed all the way across, not just the button: something that cannot be
-	# built here is not a thing you are choosing not to buy today.
-	if not possible:
-		label.add_theme_color_override(&"font_color", Palette.TEXT_FAINT)
+	row.out_of_reach(not possible)
 	buy.pressed.connect(func() -> void:
 		Commands.fortify(_session, here, upgrade)
 		changed.emit()
 		_refresh())
-	row.add_child(buy)
+	row.act(buy)
 	return row
 
 

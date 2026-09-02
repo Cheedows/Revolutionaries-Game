@@ -102,6 +102,22 @@ static func cell(said: String, wide: int) -> Label:
 	return label
 
 
+## What a list says when there is nothing in it.
+##
+## Five widgets wrote their own — "Nothing.", "Nobody.", "Nobody yet.", "No
+## save files yet.", "Nobody is in the hands of the state." — in three
+## different colours and two different weights. The words differ because the
+## original's words differ, and that is right; what should not differ is how
+## an empty list looks, which is faint, wrapped, and set apart from a list that
+## has something in it.
+static func nothing(said: String) -> Label:
+	var label := wrapped(tinted(said, Palette.TEXT_FAINT))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.custom_minimum_size.y = Metrics.TOUCH_TARGET
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return label
+
+
 ## A column header, which the original shouts and so does this.
 ##
 ## Capitals and a smaller size rather than bold, because that is what the

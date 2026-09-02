@@ -54,6 +54,10 @@ func card() -> void:
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# Off until somebody says otherwise. A card that is not on screen is not a
+	# thing that scrolls, and a phone is supposed to have exactly one of those;
+	# the [Sheet] switches this on when it brings the card to the front.
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
@@ -84,6 +88,14 @@ func empty() -> void:
 func hold(control: Control) -> void:
 	card()
 	_body.add_child(control)
+
+
+## What this card says when there is nothing in it.
+##
+## Not a line of the body's prose, which is what three panels were using and is
+## why an empty list looked like a list with one thing in it.
+func says_nothing(said: String) -> void:
+	hold(Atoms.nothing(said))
 
 
 ## Says why the last thing did not work, until the body is emptied again.

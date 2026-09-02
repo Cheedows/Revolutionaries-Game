@@ -93,3 +93,41 @@ static func watch(session: Session, keeper: Creature,
 	if Commands.watch_hostage(session, keeper, hostage):
 		said.append("%s will be watching over %s." % [keeper.name, hostage.name])
 	return said
+
+
+## The game is over: says so in the log and turns the day button into the way
+## out.
+##
+## Here rather than on the screen because it is the last order the session
+## takes, and because base_screen.gd is a screen rather than a place to keep
+## the rules about what happens at the end of one.
+static func finish_up(session: Session, won: bool, log: LogView,
+		day: Button, done: Callable) -> void:
+	var said := finish(session, won)
+	log.append_heading(said[0])
+	for line in said.slice(1):
+		log.append(line, Palette.ACCENT)
+	day.text = "Live to fight EVIL another day"
+	for existing in day.pressed.get_connections():
+		day.pressed.disconnect(existing["callable"])
+	day.pressed.connect(func() -> void: done.call())
+
+
+## Empties the session's events into the log, and hands back the morning's
+## paper.
+##
+## The paper is kept aside rather than only scrolling past in the log, because
+## a player who wants to read it wants to read it when they choose.
+static func drain(session: Session, log: LogView) -> Array[Event]:
+	var drained := session.drain_events()
+	var morning: Array[Event] = []
+	for event: Event in drained:
+		if event.type == Event.NEWS_PUBLISHED \
+				or event.type == Event.HEADLINE_RUN \
+				or event.type == Event.NEWS_SEGMENT:
+			morning.append(event)
+	for event in drained:
+		var line := EventText.describe(event, session.state)
+		if not line.is_empty():
+			log.append(line, EventText.colour_of(event))
+	return morning

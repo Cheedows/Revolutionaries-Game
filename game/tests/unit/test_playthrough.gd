@@ -140,7 +140,11 @@ func _give_orders(screen: Object, session: Session) -> void:
 		if not creature.is_member() or creature.activity != &"none" \
 				or creature.location == -1 or creature.sleeper:
 			continue
-		screen._on_recruit_chosen(creature, StringName(offered[0]["type"]))
+		# Through the roster's own signal, which is the path the game takes.
+		# Calling the screen's handler directly meant that when the handler
+		# became the lambda it always was, this stopped working.
+		(screen.get("_roster") as Roster).recruit_chosen.emit(
+				creature, StringName(offered[0]["type"]))
 
 
 ## Picks somewhere to go through the destination picker, and forms a squad if

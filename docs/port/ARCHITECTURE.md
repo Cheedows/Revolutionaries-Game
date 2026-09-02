@@ -70,12 +70,21 @@ Six rules, each of which exists because breaking it shipped:
    first press and act on the second — the shape the original uses (`C -
    Confirm`).
 
-The components, in the order a screen reaches for them: `Card` (a panel: head,
-notice, scrolling body, action bar), `PanelHeader`, `ActionBar`, `IntentDialog`,
-`ToggleRow` / `OptionRow` over `RowButton`, `ConfirmButton`, and `Atoms` for
-everything smaller. A button is one of four weights — `primary` (the one action
-on the screen), `button` (the default), `quiet` (Close, Back), `danger`
-(destroys something).
+8. **One thing at a time, and the page stays behind it.** A panel comes to the
+   front in a `Sheet` — over a scrim, edge to edge on a phone and centred on a
+   desk — rather than taking a share of the page. Tapping the scrim or pressing
+   escape is the way back, and the page underneath stops scrolling while it is
+   up, so the only thing that moves is the thing being read.
+
+The components, in the order a screen reaches for them: `Sheet` (what is in
+front), `Card` (a panel: head, notice, scrolling body, action bar),
+`PanelHeader`, `ActionBar`, `IntentDialog`, `ListRow`, `ToggleRow` /
+`OptionRow` over `RowButton`, `ConfirmButton`, and `Atoms` for everything
+smaller. A button is one of four weights — `primary` (the one action on the
+screen), `button` (the default), `quiet` (Close, Back), `danger` (destroys
+something). `PressFeel` gives every one of them a press to feel, because a
+touchscreen has no hover and a tap with no response reads as a tap that
+missed.
 
 If a rule needs breaking, the rule changes in this file first, in its own commit.
 

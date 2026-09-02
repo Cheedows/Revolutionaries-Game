@@ -48,7 +48,7 @@ func _fill(column: VBoxContainer, people: Array[Creature],
 		column.remove_child(child)
 		child.queue_free()
 	if people.is_empty():
-		var empty := Atoms.tinted("Nobody.", Palette.TEXT_FAINT)
+		var empty := Atoms.nothing("Nobody.")
 		column.add_child(empty)
 		return
 	for person in people:

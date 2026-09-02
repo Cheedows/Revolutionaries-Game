@@ -147,6 +147,11 @@ def _read_by_a_player(said):
     said = said.strip()
     if len(said) < 4 or said.startswith(("res://", "user://")):
         return False
+    # A property path handed to a tween or to set()/get() — "modulate:a",
+    # "position:y". It is the name of a thing in the engine, not a word
+    # anybody reads, and it looks like prose only because it is in quotes.
+    if re.fullmatch(r"[a-z_]+(?::[a-z_]+)+", said):
+        return False
     if re.fullmatch(r"[a-z0-9_]+", said):
         return False  # an idname
     if re.fullmatch(r"[A-Z][A-Za-z0-9]*", said):

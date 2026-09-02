@@ -56,12 +56,16 @@ func _initialize() -> void:
 	# being used rather than only as it opens.
 	for press: String in presses:
 		# "p:<name>" opens one of the safehouse panels.
+		if press == "menu":
+			(screen.get("_parts")["more"] as Button).pressed.emit()
+			for _settle in 12:
+				await process_frame
+			continue
 		if press.begins_with("p:"):
-			var stack := _find(screen, "PanelStack")
-			if stack != null:
-				stack.call("open", StringName(press.substr(2)),
-						screen.get("_session"))
-			for _settle in 3:
+			# Through the screen's own way in, not straight at the stack: the
+			# screen is what brings a panel to the front.
+			screen.call("_open_panel", StringName(press.substr(2)))
+			for _settle in 12:
 				await process_frame
 			continue
 		var dialog := _find(screen, "IntentDialog")
@@ -76,7 +80,8 @@ func _initialize() -> void:
 				var at := int(press) - 1
 				if at >= 0 and at < rows.size():
 					(rows[at] as Button).pressed.emit()
-		for _settle in 3:
+		# Long enough for anything that animates to have arrived.
+		for _settle in 12:
 			await process_frame
 
 	var shot := root.get_texture().get_image()

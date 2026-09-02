@@ -276,3 +276,4 @@ func _adapt() -> void:
 	if _dialog != null:
 		_dialog.compact(Metrics.narrow(self))
 	Metrics.enlarge(self, Metrics.touch(self))
+	PressFeel.teach(self)

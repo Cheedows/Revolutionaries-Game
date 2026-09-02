@@ -190,6 +190,25 @@ rather than a description of it.
   nothing at all and deleted on the first press. Both are fixed, and the
   original already had the words: "Are you sure you want to delete <file>?"
 
+  **Panels come to the front now instead of sharing the page.** `Sheet` puts a
+  card over a darkened copy of the screen — edge to edge on a phone, centred on
+  a desk — and the page behind stops scrolling while it is up. The safehouse
+  panel used to get two lines and a scrollbar; it gets the whole screen.
+
+  That is what let the navigation shrink. Eleven buttons wrapped onto five
+  lines and took **327 of a phone's 800 pixels — two fifths of the screen, to
+  say what could be looked at**. Eight of them now live behind one button
+  marked More, in a list that is a sheet like any other, and the row is 90
+  pixels: content went from 374 to 611. On a desk they fit on one line and cost
+  forty, so there they stay, and the same `Button` objects move between the two
+  homes rather than there being two sets to keep in step.
+
+  Also: `ListRow` for the shape most of this game's content has (a thing and
+  what can be done to it), `Atoms.nothing()` so five different empty lists stop
+  looking like five different things, and `PressFeel`, which is not decoration
+  — a touchscreen has no hover, so until the game reacts there is nothing at
+  all to say a tap landed.
+
   The scale learned something too. It was four steps that doubled — 4, 8, 16,
   24 — until that pushed every 12px gap up to 16 and grew the safehouse past
   the bottom of the window. It is five steps of four now. A scale has to fit

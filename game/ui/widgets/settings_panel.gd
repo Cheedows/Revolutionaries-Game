@@ -51,19 +51,13 @@ func _refresh() -> void:
 	_heading("Title")
 	var slots := SaveGame.slots()
 	if slots.is_empty():
-		_line("No save files yet.")
+		says_nothing("No save files yet.")
 	for slot: String in slots:
 		_body.add_child(_slot_row(slot))
 
 
 func _slot_row(slot: String) -> Control:
-	# A flow, not a row: the name of a save file beside a button that says
-	# "Delete a Save File" is wider than a phone, and a row would simply
-	# draw the button off the edge.
-	var row := Atoms.flow(Metrics.SNUG)
-	var label := Atoms.dim(SettingsText.slot_line(slot))
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
+	var row := ListRow.new(SettingsText.slot_line(slot))
 	# Two presses. This was one, and one press deleted the file — the only
 	# thing in the game that destroys something outside the fiction, and the
 	# only destructive action that was not asking first.
@@ -74,7 +68,7 @@ func _slot_row(slot: String) -> Control:
 	erase.confirmed.connect(func() -> void:
 		SaveGame.erase(slot)
 		_refresh())
-	row.add_child(erase)
+	row.act(erase)
 	return row
 
 

@@ -70,7 +70,7 @@ func _refresh() -> void:
 
 	_heading("Equip the Squad")
 	if squad.haul.is_empty():
-		_line("Nothing here.")
+		says_nothing("Nothing here.")
 	for item: Item in squad.haul:
 		_body.add_child(_kit_row(item))
 	_body.add_child(_kit_buttons())

@@ -11,16 +11,6 @@ extends RefCounted
 ## [method reflow]'s job and is re-asked every time the window changes size.
 
 ## The buttons along the bottom, and what each says.
-const PANEL_BUTTONS: Array = [
-	[PanelStack.AGENDA, "Liberal Agenda"],
-	[PanelStack.HOUSE, "Safehouse"],
-	[PanelStack.PAPER, "The paper"],
-	[PanelStack.STORES, "Assets"],
-	[PanelStack.JUSTICE, "Justice System"],
-	[PanelStack.SQUAD, "The squad"],
-	[PanelStack.SLEEPERS, "Sleepers"],
-	[PanelStack.SETTINGS, "Save File"],
-]
 
 ## How tall each of the panels that share the right-hand column stands, with
 ## room to breathe and without.
@@ -52,6 +42,12 @@ static func build(screen: Control) -> Dictionary:
 
 	var parts := {}
 	parts["page"] = page
+
+	# Over the page rather than in it. A panel that shares the page with the
+	# roster, the squad, the log and the row of buttons that opens it gets
+	# whatever is left, which on a phone was two lines and a scroll bar.
+	parts["sheet"] = Sheet.new()
+	screen.add_child(parts["sheet"])
 	parts["status"] = StatusBar.new()
 	page.add_child(parts["status"])
 
@@ -104,7 +100,13 @@ static func build(screen: Control) -> Dictionary:
 	parts["dialog"] = IntentDialog.new()
 	right.add_child(parts["dialog"])
 
-	page.add_child(_controls(parts))
+	page.add_child(BaseNav.controls(parts))
+	# The list of everything that can be looked at is parked on the screen,
+	# hidden, rather than built only when it is needed: everything that walks
+	# the screen to make controls big enough to hit, or to give them the press,
+	# has to be able to reach the buttons inside it. The sheet takes it from
+	# here when it is opened and puts it back when it is closed.
+	screen.add_child(parts["menu"])
 	reflow(parts, false)
 	return parts
 
@@ -136,6 +138,8 @@ static func reflow(parts: Dictionary, narrow: bool) -> void:
 	page.offset_top = gap
 	page.offset_right = -gap
 	page.offset_bottom = -gap
+
+	BaseNav.reflow(parts, narrow)
 
 	for part: Variant in [parts["roster"], parts["map"], parts["laws"],
 			parts["dialog"], parts["status"], parts["log"], parts["panels"]]:
@@ -174,38 +178,6 @@ static func reflow(parts: Dictionary, narrow: bool) -> void:
 ##
 ## An [HFlowContainer] rather than a row, so that eleven buttons that sit on
 ## one line on a desk sit on three on a phone instead of running off the edge.
-static func _controls(parts: Dictionary) -> Control:
-	var row := Atoms.flow(Metrics.SNUG)
-	parts["controls"] = row
-
-	var wait := Atoms.button("Wait a day", false)
-	parts["wait"] = wait
-	row.add_child(wait)
-
-	# Not "Wait a day" a second time, which is what both of these said. One
-	# waits a day; this one keeps waiting until something happens, and a player
-	# looking at two identical buttons has no way to know which is which.
-	var run := Atoms.button("Keep waiting", false)
-	run.toggle_mode = true
-	parts["run"] = run
-	row.add_child(run)
-
-	# On a wide screen the law column is simply there. On a narrow one there is
-	# no room beside anything, so it becomes another thing to open.
-	var country := Atoms.button("The country", false)
-	country.toggle_mode = true
-	parts["country"] = country
-	row.add_child(country)
-
-	var buttons := {}
-	for entry: Array in PANEL_BUTTONS:
-		var button := Atoms.button(str(entry[1]), false)
-		buttons[entry[0]] = button
-		row.add_child(button)
-	parts["buttons"] = buttons
-	return row
-
-
 ## Decides what is on screen at once.
 ##
 ## Nearly everything, which is the whole point of not being a terminal any
@@ -246,8 +218,4 @@ static func step_back(parts: Dictionary) -> bool:
 	if country.visible and country.button_pressed:
 		country.button_pressed = false
 		return true
-	var panels: PanelStack = parts["panels"]
-	if panels.is_open():
-		panels.open(PanelStack.NONE, null)
-		return true
-	return false
+	return BaseFront.step_back(parts)
