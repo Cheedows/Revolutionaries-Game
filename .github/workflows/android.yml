@@ -174,15 +174,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete mobile-latest --yes --cleanup-tag || true
-          # The version is in the release title as well as in the APK, because
-          # an updater watching this repository reads the title to decide
-          # whether what is published is newer than what is installed.
+          # The title is the version and nothing else. The tag never changes —
+          # mobile-latest is rolled over in place so the download link stays
+          # good — and an updater watching a repository takes the version from
+          # the tag unless told otherwise. Told otherwise, it reads the title,
+          # and a title that is exactly the APK's own versionName is one it can
+          # compare against what is installed without a regex to pick the
+          # version out of a sentence.
           gh release create mobile-latest build/revolutionaries-debug.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "Playtest build $VERSION_NAME" \
-            --notes "Debug APK built from ${GITHUB_SHA:0:7} on $(date -u +%Y-%m-%d).
-          Version $VERSION_NAME.
+            --title "$VERSION_NAME" \
+            --notes "Playtest build $VERSION_NAME, from ${GITHUB_SHA:0:7} on $(date -u +%Y-%m-%d).
 
           **Installing it once.** Download the .apk below, open it, and allow
           installing from this app when Android asks. It is signed with a
@@ -190,11 +193,15 @@ jobs:
           unknown developer — that is expected for a playtest build.
 
           **Having it update itself.** Install
-          [Obtainium](https://github.com/ImranR98/Obtainium/releases), add an
-          app with this repository's URL, and tick *Include prereleases*.
-          Obtainium checks on its own schedule and offers each new build; the
-          key never changes, so updates install over the top and the saves stay
-          where they are.
+          [Obtainium](https://github.com/ImranR98/Obtainium/releases) — the
+          \`app-arm64-v8a-release.apk\` asset, for a normal phone — add an app
+          with this repository's URL, and turn on two settings: *Include
+          prereleases*, and *Use release title as version string*. The second
+          one matters because this release keeps the same tag forever so the
+          download link stays good, and the title is where the version
+          actually changes. Obtainium then checks on its own schedule and
+          offers each new build; the signing key never changes, so updates
+          install over the top and the saves stay where they are.
 
           This release is rolled over on every push to master, so the link
           above always points at the newest build."

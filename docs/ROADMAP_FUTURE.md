@@ -126,9 +126,13 @@ rather than a description of it.
   made every build look like the same build to Android and to any updater. A
   phone keeps itself current by pointing
   [Obtainium](https://github.com/ImranR98/Obtainium) at this repository with
-  *Include prereleases* ticked: it watches `mobile-latest`, sees the version in
-  the release title change, and installs over the top without touching the
-  saves. Nothing in the repository has to know that it is happening.
+  *Include prereleases* and *Use release title as version string* turned on. The
+  second is needed because `mobile-latest` keeps its tag forever so that the
+  download link stays good, and an updater reads the tag for the version unless
+  told otherwise — so the release title is the version string and nothing else,
+  which is also what the APK reports to Android. Obtainium then installs each
+  build over the top without touching the saves, and nothing in the repository
+  has to know it is happening.
 - **Portrait on a phone, and a way out of a list that is not in the list.**
   The Android build asks for `portrait` rather than `sensor`: the layout is one
   narrow column, and turned sideways it gets the desktop's two-column form at
