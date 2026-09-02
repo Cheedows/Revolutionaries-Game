@@ -33,6 +33,22 @@ that can be downloaded and installed from the phone it is going to be played
 on, without a PC in the loop, so that the thing being argued about is the game
 rather than a description of it.
 
+- **The base viewport is portrait, which is what makes the rest of this work.**
+  With `stretch/aspect` set to `expand` the scale is
+  `min(screen.x/base.x, screen.y/base.y)` and the viewport is the screen
+  divided by it, so the tighter axis decides what the layout is handed. A base
+  of `1280x800` gave a 1080x2400 phone a viewport of **1280x2844 at 0.84x** —
+  the desktop layout, shrunk below readable, in a viewport three times taller
+  than it had anything to put in. `400x800` gives that phone `400x888` at
+  2.7x, and leaves desktop identical, because any window wider than 1:2 is
+  bound by its height either way; `window_width_override` keeps the desktop
+  window opening at 1280x800 rather than at the base size.
+
+  Every mobile test passed throughout that, because each one began by handing
+  the layout a 400x800 viewport itself rather than asking what a phone would
+  hand it. `test_a_real_phone_screen_hands_the_layout_a_narrow_viewport`
+  starts from the screen instead, running the project's own content-scale
+  settings through Godot's stretch system, and fails on the old base.
 - **One interface, two sizes.** `ui/theme/metrics.gd` answers two questions the
   rest of the interface asks: how much room there is, and whether what is
   hitting the screen is a fingertip or a pointer. They are deliberately

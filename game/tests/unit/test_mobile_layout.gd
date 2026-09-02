@@ -31,6 +31,67 @@ func test_a_phone_is_asked_to_stay_upright() -> void:
 			"Android is asked for portrait, as the number the exporter reads")
 
 
+## Real phones and desktops, to put through the stretch system below.
+const SCREENS: Array[Dictionary] = [
+	{"what": "a Pixel 6a upright", "screen": Vector2i(1080, 2400), "narrow": true},
+	{"what": "a tall phone upright", "screen": Vector2i(1440, 3200), "narrow": true},
+	{"what": "a small phone upright", "screen": Vector2i(720, 1600), "narrow": true},
+	{"what": "a laptop", "screen": Vector2i(1920, 1080), "narrow": false},
+	{"what": "a small window", "screen": Vector2i(1280, 800), "narrow": false},
+]
+
+
+## What a real screen actually hands the layout, computed by Godot's own
+## stretch system from the project's own settings.
+##
+## Everything else in this file picks a viewport and measures what is drawn
+## into it, which is worth doing and is not this. A phone does not hand the
+## game a viewport; it hands it a screen, and the stretch settings decide what
+## the layout sees. Those settings got that wrong for the entire life of the
+## project — a 1280x800 base gave a 1080x2400 phone a viewport of 1280x2844 at
+## 0.84x, so it drew the desktop layout, shrunk below readable, in a viewport
+## three times taller than it had content for. Every test here passed
+## throughout, because every one of them started by handing the layout 400x800
+## itself.
+##
+## So this one starts from the screen. A Window carrying the project's real
+## content-scale settings is the same machine the running game uses.
+func test_a_real_phone_screen_hands_the_layout_a_narrow_viewport() -> void:
+	var base := Vector2i(
+			int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	for entry: Dictionary in SCREENS:
+		var window := Window.new()
+		window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+		window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+		window.content_scale_size = base
+		window.size = entry["screen"]
+		(Engine.get_main_loop() as SceneTree).root.add_child(window)
+		var seen: Vector2 = window.get_visible_rect().size
+		var scale := float(entry["screen"].x) / maxf(seen.x, 1.0)
+		(Engine.get_main_loop() as SceneTree).root.remove_child(window)
+		window.queue_free()
+
+		var is_narrow: bool = seen.x < float(Metrics.PHONE_WIDTH)
+		if is_narrow != bool(entry["narrow"]):
+			fail("%s (%s) gets a %s viewport of %s, wanted %s" % [
+					entry["what"], entry["screen"],
+					"narrow" if is_narrow else "wide", seen,
+					"narrow" if entry["narrow"] else "wide"])
+			return
+		if bool(entry["narrow"]):
+			# Below 1:1 the text comes out smaller than it was drawn, which on
+			# a phone held at arm's length is the difference between a game
+			# and an eye test.
+			check(scale >= 1.0, "%s reads at %.2fx, which is shrunk" % [
+					entry["what"], scale])
+			# A viewport much taller than the screen means the layout is being
+			# asked to fill a space the phone does not have.
+			check(seen.y <= float(entry["screen"].y),
+					"%s gets %d units of height for %d pixels" % [
+					entry["what"], int(seen.y), entry["screen"].y])
+
+
 func test_a_phone_is_recognised_as_one_and_a_desk_is_not() -> void:
 	var phone := _screen_in(PHONE)
 	check(Metrics.narrow(phone["screen"]), "400px across is narrow")

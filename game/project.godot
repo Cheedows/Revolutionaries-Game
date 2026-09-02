@@ -21,15 +21,28 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 ; The screen is laid out with anchors and expand flags rather than fixed
 ; positions, so it survives being resized; the scale mode keeps it legible on
 ; a large display without redrawing everything.
-window/size/viewport_width=1280
+; The base viewport is portrait, and this is the whole trick. With
+; stretch/aspect "expand" the scale is min(screen.x/base.x, screen.y/base.y)
+; and the viewport is the screen divided by it, so whichever axis is tighter
+; against the base decides what the layout is handed.
+;
+; A base of 400x800 gives a 1080x2400 phone a viewport of 400x888 at 2.7x —
+; narrow, which is what ui/theme/metrics.gd calls a phone, and large enough to
+; read. A base of 1280x800 gave the same phone 1280x2844 at 0.84x: the desktop
+; layout, shrunk to unreadability, in a viewport three times taller than it
+; had anything to put in. That is what this project shipped.
+;
+; Desktop is untouched, because any window wider than 1:2 is bound by its
+; height either way: 1920x1080 gives 1422x800 under both, and 1280x800 gives
+; 1280x800 under both. The window_*_override pair is what keeps the desktop
+; window opening at 1280x800 rather than at the base size.
+window/size/viewport_width=400
 window/size/viewport_height=800
+window/size/window_width_override=1280
+window/size/window_height_override=800
 window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-; "expand" is what makes one interface fit both: the base viewport is
-; 1280x800, and a taller screen keeps the 800 and gets fewer pixels across
-; rather than letter-boxing. A phone held upright therefore hands the layout
-; about 360 of them, which is what ui/theme/metrics.gd calls narrow.
 
 ; Portrait. The layout is built for a narrow column — one scroller, a stack of
 ; panels, a row of buttons along the bottom — and a phone turned sideways gets
