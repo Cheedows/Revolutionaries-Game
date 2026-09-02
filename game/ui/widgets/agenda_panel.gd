@@ -1,19 +1,14 @@
 class_name AgendaPanel
-extends PanelContainer
+extends Card
 ## The state of the Liberal agenda: who holds the country, and what it thinks.
 ##
 ## The original's `liberalagenda()` is three pages reached by arrow keys — the
 ## government, then the issues in two halves. There is room for all of it here,
 ## so it is one scrolling page.
 
-## Emitted when the panel should close.
-signal closed
-
 ## Emitted when the squad has been scattered.
 signal changed
 
-var _body: VBoxContainer
-var _head: PanelHeader
 
 ## The session, kept only while the panel is up: disbanding is a decision made
 ## here and nowhere else, and it needs the generator to pick the phrase.
@@ -22,7 +17,6 @@ var _session: Session
 ## The phrase the player has to type, and where they type it.
 var _phrase: String = ""
 var _typed: LineEdit
-var _notice: Label
 
 
 func _ready() -> void:
@@ -64,27 +58,7 @@ func show_state(state: GameState) -> void:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	_notice = Atoms.tinted("", Palette.CONSERVATIVE)
-	_notice.visible = false
-	column.add_child(_notice)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-
-	_body = Atoms.column(0)
-	scroll.add_child(_body)
+	card()
 
 
 ## How much room the disbanding warning asks for before it wraps. The original
@@ -114,8 +88,7 @@ func _disband_row() -> Control:
 	go.pressed.connect(func() -> void:
 		var refused := Commands.disband(_session, _phrase, _typed.text)
 		if refused != "":
-			_notice.text = refused
-			_notice.visible = true
+			refuse(refused)
 			return
 		changed.emit()
 		show_state(_session.state))

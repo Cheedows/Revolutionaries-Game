@@ -169,6 +169,27 @@ rather than a description of it.
   hue and 1.55:1 apart in brightness, which is legible. Blue and orange is 193
   apart, which is not close.
 
+  **`Card` is what a panel is.** Ten of them had written out the same
+  scaffolding — a stylebox, a column, a header, a scroller with horizontal
+  scrolling off and vertical fill on, a body column inside it — which came to
+  223 lines of identical code. They extend `Card` now and write only their
+  content; every one of them gained a notice region and an action bar it did
+  not have before, and the rule that only the body scrolls is written into the
+  thing rather than repeated ten times.
+
+  **Buttons come in four weights**: `primary` (the one action on the screen),
+  the default, `quiet` (Close, Back) and `danger`. The game had "Kill member"
+  and "Close" side by side in identical buttons.
+
+  **`ConfirmButton` is how anything irreversible happens**, and writing it
+  turned up a bug that had been there since the pattern was written. It was a
+  toggle: first press armed it, and the second press *untoggled* it, so the
+  branch that did the work could not be reached. "Kill member" and "Remove
+  member" armed themselves, said what would happen, and then cancelled — for as
+  long as the buttons have existed. Deleting a save file, meanwhile, asked
+  nothing at all and deleted on the first press. Both are fixed, and the
+  original already had the words: "Are you sure you want to delete <file>?"
+
   The scale learned something too. It was four steps that doubled — 4, 8, 16,
   24 — until that pushed every 12px gap up to 16 and grew the safehouse past
   the bottom of the window. It is five steps of four now. A scale has to fit

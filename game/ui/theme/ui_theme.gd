@@ -78,6 +78,13 @@ static func filled(colour: Color,
 	return style
 
 
+## An outline with nothing behind it — a quiet button, or a dangerous one.
+static func outlined(border: Color = Palette.BORDER) -> StyleBoxFlat:
+	var style := filled(Palette.SURFACE_RAISED, border)
+	style.draw_center = false
+	return style
+
+
 ## The focus ring. Transparent inside, so it sits over whatever state the
 ## control is already in rather than replacing it — a focused switch that is on
 ## has to still look on.

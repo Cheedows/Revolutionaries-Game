@@ -65,6 +65,17 @@ Six rules, each of which exists because breaking it shipped:
 6. **Colour is never the only thing saying something.** State is carried by the
    control (a switch that is on, a row that is refused), and alignment is
    written in words beside its colour.
+7. **Nothing that cannot be undone happens on one press.** Destructive actions
+   are `ConfirmButton`s, drawn in the opposition's colour, which arm on the
+   first press and act on the second — the shape the original uses (`C -
+   Confirm`).
+
+The components, in the order a screen reaches for them: `Card` (a panel: head,
+notice, scrolling body, action bar), `PanelHeader`, `ActionBar`, `IntentDialog`,
+`ToggleRow` / `OptionRow` over `RowButton`, `ConfirmButton`, and `Atoms` for
+everything smaller. A button is one of four weights — `primary` (the one action
+on the screen), `button` (the default), `quiet` (Close, Back), `danger`
+(destroys something).
 
 If a rule needs breaking, the rule changes in this file first, in its own commit.
 

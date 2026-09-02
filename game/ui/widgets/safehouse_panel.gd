@@ -1,5 +1,5 @@
 class_name SafehousePanel
-extends PanelContainer
+extends Card
 ## The safehouse: what has been built into it, its flag, the slogan, and where
 ## the money went.
 ##
@@ -10,12 +10,7 @@ extends PanelContainer
 ## Emitted after anything is bought or burnt.
 signal changed
 
-## Emitted when the panel should close.
-signal closed
-
 var _session: Session
-var _body: VBoxContainer
-var _head: PanelHeader
 var _slogan: LineEdit
 
 
@@ -32,23 +27,7 @@ func show_house(session: Session) -> void:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-
-	_body = Atoms.column(Metrics.TIGHT)
-	scroll.add_child(_body)
+	card()
 
 
 func _refresh() -> void:

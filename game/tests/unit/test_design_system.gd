@@ -154,6 +154,73 @@ func test_the_keyboard_stays_where_it_was_left() -> void:
 	_drop(held)
 
 
+## A card scrolls its body and nothing else.
+##
+## The rule the new-game screen was breaking when its Continue button was drawn
+## below the bottom of the phone, now written into the thing every panel is
+## built from: the title stays where it is, the actions stay reachable, and the
+## content between them is the only part that moves.
+func test_a_card_scrolls_its_body_and_nothing_else() -> void:
+	var card := Card.new()
+	card.card()
+	card.title("Liberals and the Justice System")
+	card.act(Atoms.button("Close"))
+	var head := _find(card, "PanelHeader") as Control
+	var bar := _find(card, "ActionBar") as Control
+	check(head != null and bar != null, "a card has a head and a bar")
+	if head == null or bar == null:
+		card.free()
+		return
+	equal(_scroller_over(head, card), "", "the title does not scroll away")
+	equal(_scroller_over(bar, card), "", "and neither do the actions")
+	var body: Control = card.get("_body")
+	check(_scroller_over(body, card) != "", "the body does")
+	card.free()
+
+
+## Nothing that cannot be undone happens on one press.
+##
+## The original never takes a destructive key on the first press: it puts the
+## warning on the screen and waits for a different one. The port had that for
+## two of its four destructive actions and, for deleting a save file, none at
+## all — one press and the file was gone.
+func test_the_things_that_cannot_be_undone_ask_twice() -> void:
+	var button := ConfirmButton.new("Kill member", "They will be dead.")
+	var done: Array = []
+	var warned: Array = []
+	button.confirmed.connect(func() -> void: done.append(true))
+	button.warned.connect(func(said: String) -> void: warned.append(said))
+
+	button.pressed.emit()
+	check(done.is_empty(), "the first press does not do it")
+	equal(warned, ["They will be dead."], "it says what would happen")
+	equal(button.text, ConfirmButton.CONFIRM,
+			"and asks in the original's own words")
+	check(button.armed(), "and is waiting for the second")
+
+	button.disarm()
+	check(done.is_empty(), "backing out does nothing")
+	equal(button.text, "Kill member", "and puts the label back")
+
+	button.pressed.emit()
+	button.pressed.emit()
+	equal(done.size(), 1, "two presses in a row does it, once")
+	check(not button.armed(), "and leaves it back where it started")
+	button.free()
+
+
+## A destructive button does not look like Close.
+func test_a_destructive_button_is_drawn_as_one() -> void:
+	var kill := ConfirmButton.new("Kill member", "")
+	var close := Atoms.quiet("Close")
+	equal(kill.get_theme_color(&"font_color"), Palette.CONSERVATIVE,
+			"the one that kills somebody is drawn in the opposition's colour")
+	check(close.get_theme_color(&"font_color") != Palette.CONSERVATIVE,
+			"and the one that closes a panel is not")
+	kill.free()
+	close.free()
+
+
 ## Every gap comes off the scale.
 ##
 ## Not a matter of taste: two lists built a fortnight apart sat at different

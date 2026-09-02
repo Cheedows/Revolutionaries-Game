@@ -1,5 +1,5 @@
 class_name SleeperPanel
-extends PanelContainer
+extends Card
 ## The sleeper network, and what each of them is told to do.
 ##
 ## Draws activate_sleepers() and activate_sleeper() from
@@ -10,12 +10,7 @@ extends PanelContainer
 ## Emitted when an order changed.
 signal changed
 
-## Emitted when the panel should close.
-signal closed
-
 var _session: Session
-var _body: VBoxContainer
-var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -76,22 +71,7 @@ func _order_button(sleeper: Creature, order: StringName) -> Button:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-	_body = Atoms.column(0)
-	scroll.add_child(_body)
+	card()
 
 
 func _line(text: String) -> void:

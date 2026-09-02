@@ -16,7 +16,9 @@ const WIDGET_DIR := "res://ui/widgets"
 ## base the two kinds of row are built on and has no face of its own, so on its
 ## own it is correctly empty.
 const EMPTY_UNTIL_ASKED: Array[String] = [
-	"row_button.gd",
+	# The two bases and the two bare controls: a Card has nothing in it until
+	# a panel calls card(), and a ConfirmButton draws its own label.
+	"row_button.gd", "card.gd", "confirm_button.gd",
 	"intent_dialog.gd", "panel_stack.gd", "dossier.gd", "agenda_panel.gd",
 	"safehouse_panel.gd", "newspaper_panel.gd", "stores_panel.gd",
 	"settings_panel.gd", "justice_panel.gd", "sleeper_panel.gd",

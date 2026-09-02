@@ -63,3 +63,12 @@ static func slot_line(slot: String) -> String:
 			slogan if slogan != "" else "None",
 			int(about.get("day", 0)), int(about.get("month", 0)),
 			int(about.get("year", 0))]
+
+
+## What the original asks before it deletes a save file.
+##
+## Carried whole: "Are you sure you want to delete " + the name + "? (y/n)".
+## The port drops the "(y/n)" because there are no keys to press — the button
+## itself becomes the confirmation.
+static func erase_warning(slot: String) -> String:
+	return "Are you sure you want to delete %s?" % slot

@@ -1,5 +1,5 @@
 class_name StoresPanel
-extends PanelContainer
+extends Card
 ## What the safehouse is keeping, and what the squad is carrying.
 ##
 ## Ports the reading of `moveloot()` from src/common/equipment.cpp: two piles
@@ -10,14 +10,10 @@ extends PanelContainer
 ## Emitted after anything is moved.
 signal changed
 
-## Emitted when the panel should close.
-signal closed
-
 var _session: Session
 var _columns: BoxContainer
 var _left: VBoxContainer
 var _right: VBoxContainer
-var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -96,23 +92,14 @@ func _house() -> Location:
 
 
 func _build() -> void:
+	card()
+	# card() guards itself; the columns need their own guard, and losing it
+	# meant every call to compact() built a second pair of them beside the
+	# first — which is a panel twice as wide as a phone.
 	if _left != null:
 		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-
 	_columns = Atoms.split(Metrics.WIDE)
-	scroll.add_child(_columns)
+	hold(_columns)
 	var columns := _columns
 
 	_left = Atoms.column(Metrics.SNUG)

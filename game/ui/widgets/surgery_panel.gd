@@ -1,5 +1,5 @@
 class_name SurgeryPanel
-extends PanelContainer
+extends Card
 ## Fitting something to somebody, in the safehouse.
 ##
 ## Draws select_augmentation() from src/basemode/activate.cpp. One Liberal
@@ -10,14 +10,8 @@ extends PanelContainer
 ## Emitted when an operation has been performed.
 signal changed
 
-## Emitted when the panel should close.
-signal closed
-
 var _session: Session
 var _surgeon: Creature
-var _body: VBoxContainer
-var _head: PanelHeader
-var _notice: Label
 
 
 func _ready() -> void:
@@ -38,7 +32,7 @@ func _refresh() -> void:
 	for child in _body.get_children():
 		_body.remove_child(child)
 		child.queue_free()
-	_notice.visible = false
+	refuse("")
 
 	_head.set_title("%s will augment another Liberal to make them physically " \
 			% _surgeon.name + "superior.")
@@ -72,8 +66,7 @@ func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
 	go.pressed.connect(func() -> void:
 		var refused := Commands.operate(_session, _surgeon, patient, type)
 		if refused != "":
-			_notice.text = refused
-			_notice.visible = true
+			refuse(refused)
 			return
 		changed.emit()
 		_refresh())
@@ -82,26 +75,7 @@ func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	_notice = Atoms.tinted("", Palette.CONSERVATIVE)
-	_notice.visible = false
-	column.add_child(_notice)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-	_body = Atoms.column(0)
-	scroll.add_child(_body)
+	card()
 
 
 func _heading(text: String) -> void:

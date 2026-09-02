@@ -146,6 +146,42 @@ static func primary(said: String) -> Button:
 	return control
 
 
+## A button that is there but is not what you came for — Close, Back, the
+## third choice in a row of three.
+##
+## Quieter than a default button by having no fill until you touch it, which is
+## the only way left to make something quieter in an interface with one weight
+## of type. It still has a border and is still a fingertip tall: quiet is not
+## hidden, and the way out of a screen has to be findable.
+static func quiet(said: String, fill: bool = false) -> Button:
+	var control := button(said, fill)
+	control.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
+	control.add_theme_stylebox_override(&"normal", UiTheme.outlined())
+	return control
+
+
+## A button that destroys something: killing a member, deleting a save,
+## disbanding the Squad.
+##
+## Drawn in the opposition's colour, the one colour in this game that already
+## means "this is against you". It is the only place the interface raises its
+## voice and it is worth spending: the game had "Kill member" and "Close" side
+## by side in identical buttons, and one of them ends a character the player
+## has spent a year on.
+##
+## Colour is not the whole of it — see [ConfirmButton], which is what these are
+## built as. A red button that fires on the first press is a red button
+## somebody hits by accident.
+static func danger(said: String, fill: bool = false) -> Button:
+	var control := button(said, fill)
+	control.add_theme_color_override(&"font_color", Palette.CONSERVATIVE)
+	control.add_theme_stylebox_override(&"normal",
+			UiTheme.outlined(Palette.CONSERVATIVE))
+	control.add_theme_stylebox_override(&"hover",
+			UiTheme.filled(Palette.CONSERVATIVE.darkened(0.55)))
+	return control
+
+
 ## A line of text to be typed into.
 static func field(placeholder: String) -> LineEdit:
 	var control := LineEdit.new()

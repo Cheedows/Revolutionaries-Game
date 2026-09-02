@@ -1,5 +1,5 @@
 class_name Dossier
-extends PanelContainer
+extends Card
 ## Everything known about one person, and what they are carrying.
 ##
 ## The original splits this across three screens reached by different keys —
@@ -9,17 +9,11 @@ extends PanelContainer
 ## Emitted when the player has changed what somebody is carrying.
 signal changed
 
-## Emitted when the panel should close.
-signal closed
-
 ## Emitted when this person should be put to work operating on somebody.
 signal surgery_wanted(surgeon: Creature)
 
 var _session: Session
 var _creature: Creature
-var _body: VBoxContainer
-var _head: PanelHeader
-var _notice: Label
 
 
 func _ready() -> void:
@@ -37,34 +31,14 @@ func show_creature(session: Session, creature: Creature) -> void:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	_notice = Atoms.tinted("", Palette.CONSERVATIVE)
-	_notice.visible = false
-	column.add_child(_notice)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-
-	_body = Atoms.column(Metrics.TIGHT)
-	scroll.add_child(_body)
+	card()
 
 
 func _refresh() -> void:
 	for child in _body.get_children():
 		_body.remove_child(child)
 		child.queue_free()
-	_notice.visible = false
+	refuse("")
 
 	var state := _session.state
 	_head.set_title("%s - %s" % [_creature.name,
@@ -175,23 +149,17 @@ func _discharge_row() -> Control:
 
 ## A button that asks once, then does it.
 ##
-## The original puts the warning on the screen and waits for C; the port shows
-## the same warning and turns the button into the same confirmation.
+## The pattern itself is [ConfirmButton] — it was written here, in one panel,
+## for two of the four things in this game that cannot be undone. This is now
+## just the wiring: what to warn about, and what to do when the player has
+## meant it twice.
 func _confirming(text: String, refused: String, warning: String,
 		act: Callable) -> Button:
-	var button := Atoms.button(text, false)
+	var button := ConfirmButton.new(text, warning)
 	button.disabled = refused != ""
-	button.toggle_mode = true
-	button.toggled.connect(func(pressed: bool) -> void:
-		if not pressed:
-			button.text = text
-			_notice.visible = false
-			return
-		if button.text == text:
-			button.text = "C - Confirm"
-			_notice.text = warning
-			_notice.visible = true
-			return
+	button.warned.connect(func(said: String) -> void:
+		refuse(said))
+	button.confirmed.connect(func() -> void:
 		act.call()
 		closed.emit()
 		changed.emit())
@@ -219,17 +187,14 @@ func _kit_buttons() -> Control:
 	buttons.changed.connect(func() -> void:
 		changed.emit()
 		_refresh())
-	buttons.refused.connect(func(why: String) -> void:
-		_notice.text = why
-		_notice.visible = true)
+	buttons.refused.connect(func(why: String) -> void: refuse(why))
 	return buttons
 
 
 func _give(item: Item) -> void:
 	var refused := KitCommands.equip(_session, _creature, item)
 	if refused != "":
-		_notice.text = refused
-		_notice.visible = true
+		refuse(refused)
 		return
 	changed.emit()
 	_refresh()

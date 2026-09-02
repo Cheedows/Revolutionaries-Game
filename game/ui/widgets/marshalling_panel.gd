@@ -1,5 +1,5 @@
 class_name MarshallingPanel
-extends PanelContainer
+extends Card
 ## Arranging the squad before it goes out: the marching order, and the cars.
 ##
 ## Draws orderparty() and setvehicles() from src/basemode/baseactions.cpp. The
@@ -12,12 +12,7 @@ const NAME_WIDTH := 160
 ## Emitted when the arrangement changed.
 signal changed
 
-## Emitted when the panel should close.
-signal closed
-
 var _session: Session
-var _body: VBoxContainer
-var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -125,21 +120,7 @@ func _board(squad: Squad, member: Creature, car: Vehicle,
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-	_body = Atoms.column(0)
-	scroll.add_child(_body)
+	card()
 
 
 func _heading(text: String) -> void:

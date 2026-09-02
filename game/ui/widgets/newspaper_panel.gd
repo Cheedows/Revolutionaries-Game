@@ -1,5 +1,5 @@
 class_name NewspaperPanel
-extends PanelContainer
+extends Card
 ## The morning's paper.
 ##
 ## The original draws it as a page of a newspaper with a block-letter headline,
@@ -7,14 +7,9 @@ extends PanelContainer
 ## paper as text: the headline over each story, the story, the padding it was
 ## printed with, and the advertisements around it.
 
-## Emitted when the panel should close.
-signal closed
-
 ## What the padding is drawn as, since it is only tildes in the original.
 const FILLER_MARK := "~"
 
-var _body: VBoxContainer
-var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -120,23 +115,7 @@ func _filler(padding: Dictionary) -> String:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-
-	_body = Atoms.column(0)
-	scroll.add_child(_body)
+	card()
 
 
 func _line(text: String, colour: Color) -> void:

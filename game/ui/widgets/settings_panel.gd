@@ -1,5 +1,5 @@
 class_name SettingsPanel
-extends PanelContainer
+extends Card
 ## Saving to a slot, and the switches the game was started with.
 ##
 ## The original keeps its options in an init file read at startup and shows the
@@ -8,15 +8,10 @@ extends PanelContainer
 ## this shows them, and offers the only thing that can be done mid-game: put
 ## the game somewhere it can be found again.
 
-## Emitted when the panel should close.
-signal closed
-
 ## Emitted with what happened, so the screen can say it.
 signal saved(message: String)
 
 var _session: Session
-var _body: VBoxContainer
-var _head: PanelHeader
 var _name: LineEdit
 
 
@@ -69,8 +64,14 @@ func _slot_row(slot: String) -> Control:
 	var label := Atoms.dim(SettingsText.slot_line(slot))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
-	var erase := Atoms.button("Delete a Save File", false)
-	erase.pressed.connect(func() -> void:
+	# Two presses. This was one, and one press deleted the file — the only
+	# thing in the game that destroys something outside the fiction, and the
+	# only destructive action that was not asking first.
+	var erase := ConfirmButton.new("Delete a Save File",
+			SettingsText.erase_warning(slot))
+	erase.warned.connect(func(said: String) -> void:
+		refuse(said))
+	erase.confirmed.connect(func() -> void:
 		SaveGame.erase(slot)
 		_refresh())
 	row.add_child(erase)
@@ -90,23 +91,7 @@ func _save() -> void:
 
 
 func _build() -> void:
-	if _body != null:
-		return
-	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
-
-	_head = PanelHeader.new()
-	_head.closed.connect(func() -> void: closed.emit())
-	column.add_child(_head)
-
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-
-	_body = Atoms.column(Metrics.TIGHT)
-	scroll.add_child(_body)
+	card()
 
 
 func _heading(text: String) -> void:
