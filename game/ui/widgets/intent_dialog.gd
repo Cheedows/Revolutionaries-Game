@@ -36,11 +36,18 @@ var _title: Label
 var _detail: Label
 var _options: VBoxContainer
 var _scroll: ScrollContainer
+var _footer: HBoxContainer
 var _refuse: Button
 
-## The option each button stands for, so the buttons stay the only thing that
-## knows about layout and the ids stay data.
+## The option each button stands for, in the list and in the footer both, so
+## the buttons stay the only thing that knows about layout and the ids stay
+## data.
 var _ids: Dictionary = {}
+
+## How many of them are in the numbered list, which is what the next one's
+## number is. Counted rather than taken from _ids, because the footer's
+## buttons are in there too and are not numbered.
+var _listed := 0
 
 ## Whether the options are being sized for a fingertip.
 var _touch := false
@@ -101,25 +108,54 @@ func ask(intent: Intent, state: GameState) -> void:
 	_detail.visible = not _detail.text.is_empty()
 
 	_ids.clear()
+	_listed = 0
 	for child in _options.get_children():
 		child.queue_free()
 		_options.remove_child(child)
+
+	for child in _footer.get_children():
+		child.queue_free()
+		_footer.remove_child(child)
 
 	var entries := intent.options
 	if entries.is_empty():
 		# A report rather than a choice: the original's "press any key".
 		_add(IntentText.CARRY_ON, "", true, null)
 	for entry: Dictionary in entries:
+		if bool(entry.get("footer", false)):
+			_add_footer(IntentText.option(entry, state),
+					IntentText.enabled(entry), entry.get("id"))
+			continue
 		_add(IntentText.option(entry, state), IntentText.note(entry),
 				IntentText.enabled(entry), entry.get("id"))
+	_footer.visible = _footer.get_child_count() > 0
 
 	var rows := TOUCH_SCROLL_AFTER if _touch else SCROLL_AFTER
 	var each := Metrics.TOUCH_TARGET if _touch else ROW_HEIGHT
-	_scroll.custom_minimum_size.y = mini(maxi(entries.size(), 1), rows) * each
+	_scroll.custom_minimum_size.y = mini(maxi(_listed, 1), rows) * each
 	_refuse.visible = intent.cancellable
 	_refuse.text = IntentText.refusal(intent)
 	visible = true
 	_focus_first()
+
+
+## The ids a player could take right now, in the order they would reach them:
+## down the numbered list, then the way out under it.
+##
+## The buttons stay private, but something has to be able to ask what is on
+## offer without knowing where each one is drawn — a test driving the game
+## through the interface, most of all, which would otherwise have to be
+## rewritten every time the layout moves.
+func answerable() -> Array:
+	var ids: Array = []
+	for row in _options.get_children():
+		for child in (row as Control).get_children():
+			if child is Button and not (child as Button).disabled:
+				ids.append(_ids.get(child))
+	for child in _footer.get_children():
+		if child is Button and not (child as Button).disabled:
+			ids.append(_ids.get(child))
+	return ids
 
 
 ## Takes the dialog away.
@@ -133,7 +169,8 @@ func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
 
 	var button := Button.new()
 	# The number that picks it, so the shortcut is visible rather than folklore.
-	var place := _ids.size() + 1
+	_listed += 1
+	var place := _listed
 	var said: String = "%d. %s" % [place, label] if place <= SHORTCUTS else label
 	var aside := note.length() > NOTE_IS_PROSE
 	if aside:
@@ -162,6 +199,26 @@ func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
 	_options.add_child(row)
 
 
+## An option that means "I have finished with this list" rather than "pick me".
+##
+## A screen of switches needs somewhere to say it is done, and the original
+## says it with "Press any other key to continue..." — which is not one of the
+## lettered choices. Rendering it as another numbered row made the six things
+## you toggle and the one thing that leaves look like seven equal options. So
+## it sits under the list instead, out of the numbering and out of the scroll.
+func _add_footer(label: String, enabled: bool, id: Variant) -> void:
+	var button := Button.new()
+	button.text = label
+	button.disabled = not enabled
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if _touch:
+		button.custom_minimum_size.y = Metrics.TOUCH_TARGET
+	button.pressed.connect(func() -> void: chosen.emit(id))
+	_ids[button] = id
+	_footer.add_child(button)
+
+
 func _focus_first() -> void:
 	if not is_inside_tree():
 		return
@@ -170,6 +227,12 @@ func _focus_first() -> void:
 			if child is Button and not (child as Button).disabled:
 				(child as Button).grab_focus()
 				return
+	# A question that is nothing but a way out — a report with a Back button —
+	# still has to be answerable from the keyboard.
+	for child in _footer.get_children():
+		if child is Button and not (child as Button).disabled:
+			(child as Button).grab_focus()
+			return
 
 
 func _build() -> void:
@@ -195,6 +258,11 @@ func _build() -> void:
 	_options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_options.add_theme_constant_override("separation", 4)
 	_scroll.add_child(_options)
+
+	_footer = HBoxContainer.new()
+	_footer.add_theme_constant_override("separation", 8)
+	_footer.visible = false
+	box.add_child(_footer)
 
 	_refuse = Button.new()
 	_refuse.size_flags_horizontal = Control.SIZE_EXPAND_FILL

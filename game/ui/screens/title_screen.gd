@@ -70,7 +70,7 @@ func _list_saves() -> void:
 		var about := SaveGame.describe(slot)
 		options.append({"id": slot, "label": _title_of(slot, about),
 				"note": _when(about)})
-	options.append({"id": BACK, "label": "Back"})
+	options.append({"id": BACK, "label": "Back", "footer": true})
 	_heading.text = "Choose a Save File"
 	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.CHOOSE_BASE_ACTION, options, {}, false),
@@ -101,7 +101,8 @@ func _show_scores() -> void:
 	_heading.text = "The Liberal ELITE"
 	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.ACKNOWLEDGE_REPORT,
-			[{"id": BACK, "label": "Back"}] as Array[Dictionary], {}, false),
+			[{"id": BACK, "label": "Back", "footer": true}] as Array[Dictionary],
+			{}, false),
 			GameState.new())
 
 

@@ -13,6 +13,17 @@ const PHONE := Vector2i(400, 800)
 const DESK := Vector2i(1280, 800)
 
 
+## Every measurement in this file assumes a phone held upright, and so does the
+## layout: one column, one scroller, the panel buttons along the bottom. Turned
+## sideways an Android build gets the desktop's two-column layout at fingertip
+## size, which fits and is unreadable, so the project asks Android for portrait
+## rather than leaving it to the sensor. Checked here because the setting is one
+## word in project.godot and nothing else would notice it changing back.
+func test_a_phone_is_asked_to_stay_upright() -> void:
+	equal(ProjectSettings.get_setting("display/window/handheld/orientation"),
+			"portrait", "Android is asked for portrait")
+
+
 func test_a_phone_is_recognised_as_one_and_a_desk_is_not() -> void:
 	var phone := _screen_in(PHONE)
 	check(Metrics.narrow(phone["screen"]), "400px across is narrow")

@@ -120,6 +120,24 @@ rather than a description of it.
   Android refuses to install a new version signed by a different key, and the
   uninstall that would otherwise be needed takes the player's saves with it;
   CI fails the build if the signer's fingerprint ever changes.
+
+  Each build now carries a real version — `versionCode` is the workflow's run
+  number and `versionName` is `0.1.<run>+<sha>` — because a preset pinned at 1
+  made every build look like the same build to Android and to any updater. A
+  phone keeps itself current by pointing
+  [Obtainium](https://github.com/ImranR98/Obtainium) at this repository with
+  *Include prereleases* ticked: it watches `mobile-latest`, sees the version in
+  the release title change, and installs over the top without touching the
+  saves. Nothing in the repository has to know that it is happening.
+- **Portrait on a phone, and a way out of a list that is not in the list.**
+  The Android build asks for `portrait` rather than `sensor`: the layout is one
+  narrow column, and turned sideways it gets the desktop's two-column form at
+  fingertip size, which fits and is unreadable. `IntentDialog` also grew a
+  footer: an option marked `"footer": true` is drawn as a button under the
+  list rather than as another numbered row, so the six switches on the
+  new-game screen read as six things you flip and Continue reads as the one
+  thing that leaves. The original says that with "Press any other key to
+  continue...", which is likewise not one of the lettered choices.
 - **Tested rather than configured.** `tests/unit/test_mobile_layout.gd` draws
   each screen into a 400x800 viewport — a small phone, upright — and measures
   what comes out: whether anything runs off the side, whether everything

@@ -30,7 +30,13 @@ window/stretch/aspect="expand"
 ; 1280x800, and a taller screen keeps the 800 and gets fewer pixels across
 ; rather than letter-boxing. A phone held upright therefore hands the layout
 ; about 360 of them, which is what ui/theme/metrics.gd calls narrow.
-window/handheld/orientation="sensor"
+
+; Portrait, not "sensor". The layout is built for a narrow column — one
+; scroller, a stack of panels, a row of buttons along the bottom — and a phone
+; turned sideways gets the desktop's two-column layout at finger size, which
+; fits but is unreadable. Desktop is unaffected: handheld/ only applies to
+; Android and iOS.
+window/handheld/orientation="portrait"
 
 [input_devices]
 

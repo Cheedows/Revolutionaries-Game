@@ -97,7 +97,9 @@ func _ask_switches() -> void:
 			"label": "%s  %s" % ["[x]" if on else "[ ]", switch[&"label"]],
 			"note": switch.get(&"note", ""),
 		})
-	options.append({"id": &"done", "label": "Continue"})
+	# Under the list rather than in it: the six switches are things you flip,
+	# and this is the one thing that leaves.
+	options.append({"id": &"done", "label": "Continue", "footer": true})
 	_show("Advanced Gameplay Options", Intent.new(Intent.CONFIRM_NEW_GAME,
 			options, {}, false))
 
@@ -121,7 +123,7 @@ func _ask_name() -> void:
 		{"id": &"first", "label": "Have your parents reconsider"},
 		{"id": &"last", "label": "Be born to a different family"},
 		{"id": &"gender", "label": "Change your sex at birth"},
-		{"id": &"done", "label": "Ready to begin"},
+		{"id": &"done", "label": "Ready to begin", "footer": true},
 	]
 	_typed.visible = true
 	_typed.placeholder_text = "FIRST NAME:"

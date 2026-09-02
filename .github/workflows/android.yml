@@ -119,6 +119,22 @@ jobs:
           echo "--- what Godot will read ---"
           cat "$HOME/.config/godot/editor_settings-4.6.tres"
 
+      - name: Stamp the build with a version
+        # Android decides whether an APK is an upgrade or a reinstall by
+        # versionCode, and an updater — Obtainium, say — decides whether to
+        # offer it by the version it can read. A preset pinned at 1 makes every
+        # build look like the same build, so a phone that already has one never
+        # sees a newer one. The run number only ever goes up, which is exactly
+        # what versionCode has to do.
+        run: |
+          VERSION_NAME="0.1.${GITHUB_RUN_NUMBER}+${GITHUB_SHA:0:7}"
+          sed -i "s|^version/code=.*|version/code=${GITHUB_RUN_NUMBER}|" \
+            game/export_presets.cfg
+          sed -i "s|^version/name=.*|version/name=\"${VERSION_NAME}\"|" \
+            game/export_presets.cfg
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          grep -n "^version/" game/export_presets.cfg
+
       - name: Import the project
         run: godot --headless --path game --import
 
@@ -158,16 +174,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete mobile-latest --yes --cleanup-tag || true
+          # The version is in the release title as well as in the APK, because
+          # an updater watching this repository reads the title to decide
+          # whether what is published is newer than what is installed.
           gh release create mobile-latest build/revolutionaries-debug.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "Playtest build (mobile-latest)" \
+            --title "Playtest build $VERSION_NAME" \
             --notes "Debug APK built from ${GITHUB_SHA:0:7} on $(date -u +%Y-%m-%d).
+          Version $VERSION_NAME.
 
-          Install it on a phone: download the .apk below, open it, and allow
+          **Installing it once.** Download the .apk below, open it, and allow
           installing from this app when Android asks. It is signed with a
           throwaway debug key, so Android will treat it as an app from an
           unknown developer — that is expected for a playtest build.
+
+          **Having it update itself.** Install
+          [Obtainium](https://github.com/ImranR98/Obtainium/releases), add an
+          app with this repository's URL, and tick *Include prereleases*.
+          Obtainium checks on its own schedule and offers each new build; the
+          key never changes, so updates install over the top and the saves stay
+          where they are.
 
           This release is rolled over on every push to master, so the link
           above always points at the newest build."

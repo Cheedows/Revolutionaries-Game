@@ -180,12 +180,12 @@ func test_a_site_visit_shows_the_floor_plan() -> void:
 
 
 ## The id of an option the dialog is offering that can be taken.
+##
+## [param last] asks for the final one, which is the way out of a list of
+## switches: the dialog draws that under the list rather than in it, and
+## answerable() reports both in the order a player reaches them.
 func _option(dialog: IntentDialog, last: bool) -> Variant:
-	var found: Variant = null
-	for row in dialog._options.get_children():
-		for child in (row as Control).get_children():
-			if child is Button and not (child as Button).disabled:
-				if not last:
-					return dialog._ids.get(child)
-				found = dialog._ids.get(child)
-	return found
+	var ids := dialog.answerable()
+	if ids.is_empty():
+		return null
+	return ids[-1] if last else ids[0]

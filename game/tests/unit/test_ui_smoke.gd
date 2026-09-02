@@ -115,6 +115,52 @@ func test_a_question_can_be_answered_with_the_number_keys() -> void:
 	dialog.queue_free()
 
 
+## The switches on the new-game screen are things you flip; Continue is the one
+## thing that leaves. Rendering it as another numbered row made seven equal
+## options out of six toggles and a way out, so it goes under the list instead.
+func test_a_way_out_of_a_list_is_not_another_item_in_it() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var dialog := IntentDialog.new()
+	tree.root.add_child(dialog)
+	var options: Array[Dictionary] = [
+		{"id": &"one", "label": "[ ]  Classic Mode"},
+		{"id": &"two", "label": "[ ]  Nightmare Mode"},
+		{"id": &"done", "label": "Continue", "footer": true},
+	]
+	dialog.ask(Intent.new(Intent.CONFIRM_NEW_GAME, options, {}, false),
+			GameState.new())
+
+	var taken: Array = []
+	dialog.chosen.connect(func(id: Variant) -> void: taken.append(id))
+
+	# The numbers reach the switches and stop there.
+	dialog.call("_gui_input", _key(KEY_2))
+	equal(taken, [&"two"], "the second key still takes the second switch")
+	dialog.call("_gui_input", _key(KEY_3))
+	equal(taken.size(), 1, "and there is no third number to press")
+
+	var listed := 0
+	var footed: Button = null
+	for row in dialog.get("_options").get_children():
+		for child in (row as Control).get_children():
+			if child is Button:
+				listed += 1
+				check(not String((child as Button).text).contains("Continue"),
+						"the way out is not in the list")
+	for child in dialog.get("_footer").get_children():
+		if child is Button:
+			footed = child
+	equal(listed, 2, "two switches in the list")
+	check(footed != null and footed.text == "Continue",
+			"and Continue under it, unnumbered")
+
+	footed.pressed.emit()
+	equal(taken, [&"two", &"done"], "pressing it answers the question")
+
+	tree.root.remove_child(dialog)
+	dialog.queue_free()
+
+
 ## A game far enough along to hand to a screen that wants one.
 func _a_session() -> Session:
 	var session := Session.new(4242)

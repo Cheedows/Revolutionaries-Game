@@ -247,17 +247,15 @@ func _save_and_read_it_back(screen: Object, session: Session,
 ## interface cannot present has nothing here to return.
 func _from_the_buttons(dialog: IntentDialog, last: bool,
 		skip: Variant = null) -> Variant:
+	# answerable() reports the list and then the way out under it, which is the
+	# order a player reaches them: asking for the last one asks for Continue.
 	var found: Variant = null
-	for row in dialog._options.get_children():
-		for child in (row as Control).get_children():
-			if not (child is Button) or (child as Button).disabled:
-				continue
-			var id: Variant = dialog._ids.get(child)
-			if skip != null and id == skip:
-				continue
-			if not last:
-				return id
-			found = id
+	for id: Variant in dialog.answerable():
+		if skip != null and id == skip:
+			continue
+		if not last:
+			return id
+		found = id
 	return found
 
 
