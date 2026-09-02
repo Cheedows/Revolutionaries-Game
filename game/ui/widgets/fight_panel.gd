@@ -48,9 +48,7 @@ func _fill(column: VBoxContainer, people: Array[Creature],
 		column.remove_child(child)
 		child.queue_free()
 	if people.is_empty():
-		var empty := Label.new()
-		empty.text = "Nobody."
-		empty.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+		var empty := Atoms.tinted("Nobody.", Palette.TEXT_FAINT)
 		column.add_child(empty)
 		return
 	for person in people:
@@ -58,32 +56,25 @@ func _fill(column: VBoxContainer, people: Array[Creature],
 
 
 func _row(person: Creature, state: GameState) -> Control:
-	var label := Label.new()
-	label.text = FightText.line(person, state)
-	label.add_theme_color_override("font_color", FightText.colour(person))
-	return label
+	return Atoms.tinted(FightText.line(person, state),
+			FightText.colour(person))
 
 
 func _build() -> void:
 	if _left != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 4)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	_title = Label.new()
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
+	_title = Atoms.heading("")
 	column.add_child(_title)
 
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 16)
+	var columns := Atoms.row(Metrics.WIDE)
 	column.add_child(columns)
 
-	_left = VBoxContainer.new()
-	_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_left = Atoms.column(Metrics.SNUG)
 	columns.add_child(_left)
 
-	_right = VBoxContainer.new()
-	_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_right = Atoms.column(Metrics.SNUG)
 	columns.add_child(_right)

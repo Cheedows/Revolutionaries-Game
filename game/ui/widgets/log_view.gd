@@ -39,7 +39,7 @@ func _build() -> void:
 
 	_lines = VBoxContainer.new()
 	_lines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_lines.add_theme_constant_override("separation", 2)
+	_lines.add_theme_constant_override(&"separation", 0)
 	_scroll.add_child(_lines)
 
 
@@ -54,11 +54,7 @@ func append(text: String, colour: Color = Palette.TEXT) -> void:
 	if text.is_empty():
 		return
 	_build()
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", colour)
-	_lines.add_child(label)
+	_lines.add_child(Atoms.wrapped(Atoms.tinted(text, colour)))
 
 	while _lines.get_child_count() > _kept:
 		var oldest := _lines.get_child(0)
@@ -86,10 +82,7 @@ func compact(on: bool) -> void:
 ## Adds a heading, for the start of a day or a report.
 func append_heading(text: String) -> void:
 	_build()
-	var label := Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", Palette.ACCENT)
-	_lines.add_child(label)
+	_lines.add_child(Atoms.wrapped(Atoms.heading(text)))
 
 
 func clear() -> void:

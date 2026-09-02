@@ -124,3 +124,14 @@ func _build() -> void:
 			panel.connect(&"saved", func(message: String) -> void:
 				reported.emit(message))
 		add_child(panel)
+
+
+## Passes the word down to whichever panels care.
+##
+## The stack itself is the same shape at any width; the panels inside it are
+## not, and nothing else is in a position to tell them.
+func compact(on: bool) -> void:
+	_build()
+	for panel in get_children():
+		if (panel as Object).has_method(&"compact"):
+			(panel as Object).call(&"compact", on)

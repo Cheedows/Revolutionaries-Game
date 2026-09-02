@@ -36,14 +36,19 @@ const TOUCH_GAP := 8
 
 ## The only gaps anything may use.
 ##
-## Before this there were eight different hand-picked separations in ui/ — 2,
-## 4, 6, 8, 12, 16, 24 and 0 — chosen a widget at a time by whoever was writing
+## Before this there were eight different hand-picked separations in ui/ — 0,
+## 2, 4, 6, 8, 12, 16 and 24 — chosen a widget at a time by whoever was writing
 ## that widget. That is not a look, it is the absence of one: two lists built a
 ## fortnight apart sat at different rhythms for no reason a player could read.
 ##
-## A scale is the fix, and a short one is the point. Four steps that double is
-## enough to build every screen in the game, and being short is what makes it
-## hold: there is no 6 to reach for, so nothing drifts to 6.
+## Every step is a multiple of four, which is what stops the in-between values
+## coming back: there is no 6 and no 14 to reach for.
+##
+## An earlier version of this was four steps that doubled — 4, 8, 16, 24 — on
+## the theory that a shorter scale holds better. It does not hold if it cannot
+## say what the screens already say. Dropping 12 pushed every gap that was 12
+## up to 16, which grew the safehouse past the bottom of a 1280x800 window; the
+## rendered check caught it. A scale has to fit the thing it is describing.
 
 ## Rows of one list, which should read as one block rather than as separate
 ## things.
@@ -53,10 +58,13 @@ const TIGHT := 4
 const SNUG := 8
 
 ## The ordinary gap between controls.
-const ROOM := 16
+const ROOM := 12
 
-## Between one section of a screen and the next.
-const WIDE := 24
+## Between one group of controls and the next.
+const WIDE := 16
+
+## Between one section of a screen and the next, and around the edge of a page.
+const EDGE := 24
 
 
 ## Whether this build is running on something held in a hand.

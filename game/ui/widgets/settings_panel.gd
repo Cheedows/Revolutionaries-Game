@@ -16,7 +16,7 @@ signal saved(message: String)
 
 var _session: Session
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 var _name: LineEdit
 
 
@@ -36,22 +36,19 @@ func _refresh() -> void:
 	for child in _body.get_children():
 		_body.remove_child(child)
 		child.queue_free()
-	_title.text = "Settings"
+	_head.set_title("Settings")
 
 	_heading("In what world will you pursue your Liberal Agenda?")
 	for line in SettingsText.switches(_session.state):
 		_line(line)
 
 	_heading("Choose a Save File")
-	_name = LineEdit.new()
+	_name = Atoms.field("Enter a name for the save file.")
 	_name.text = SettingsText.suggested_slot(_session.state)
-	_name.placeholder_text = "Enter a name for the save file."
 	_body.add_child(_name)
 
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var save := Button.new()
-	save.text = "Save"
+	var row := Atoms.row(Metrics.SNUG)
+	var save := Atoms.button("Save", false)
 	save.pressed.connect(_save)
 	row.add_child(save)
 	_body.add_child(row)
@@ -65,15 +62,14 @@ func _refresh() -> void:
 
 
 func _slot_row(slot: String) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var label := Label.new()
+	# A flow, not a row: the name of a save file beside a button that says
+	# "Delete a Save File" is wider than a phone, and a row would simply
+	# draw the button off the edge.
+	var row := Atoms.flow(Metrics.SNUG)
+	var label := Atoms.dim(SettingsText.slot_line(slot))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = SettingsText.slot_line(slot)
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
-	var erase := Button.new()
-	erase.text = "Delete a Save File"
+	var erase := Atoms.button("Delete a Save File", false)
 	erase.pressed.connect(func() -> void:
 		SaveGame.erase(slot)
 		_refresh())
@@ -97,35 +93,24 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 4)
+	_body = Atoms.column(Metrics.TIGHT)
 	scroll.add_child(_body)
 
 
 func _heading(text: String) -> void:
-	var label := Label.new()
-	label.text = text
+	var label := Atoms.wrapped(Atoms.body(text))
 	# The original's headings are whole questions and are wider than a phone.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
@@ -133,8 +118,5 @@ func _heading(text: String) -> void:
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	var label := Atoms.wrapped(Atoms.dim(text))
 	_body.add_child(label)

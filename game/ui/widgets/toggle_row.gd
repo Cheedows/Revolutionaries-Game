@@ -80,11 +80,12 @@ func _init(said: String = "", explained: String = "", place: int = 0,
 	stack.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(stack)
 
-	_label = Atoms.body(said if place <= 0 else "%d. %s" % [place, said])
+	_label = Atoms.wrapped(
+			Atoms.body(said if place <= 0 else "%d. %s" % [place, said]))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(_label)
 
-	_note = Atoms.dim(explained)
+	_note = Atoms.wrapped(Atoms.dim(explained))
 	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_note.visible = not explained.is_empty()
 	stack.add_child(_note)

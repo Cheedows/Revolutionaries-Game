@@ -133,11 +133,27 @@ rather than a description of it.
   C++ override wins. `RowButton` pushes the height into `custom_minimum_size`
   instead, which `Button` does respect.
 
-  `tools/audit_design.py` fails the build when something under `ui/` goes
-  around them. The twenty widgets not yet moved over are listed in it, and the
-  list may only shrink: a file on it that has been cleaned up fails the build
-  until it is taken off, so it cannot rot into a permanent exemption. Moving
-  the remaining twenty over is the work left, and it is mechanical.
+  **All 78 files under `game/ui` are on it now**, and `audit_design.py`'s
+  exemption list is empty. A file added back to it is a file exempted from the
+  design system, so adding one is a decision rather than a convenience.
+
+  Moving the last twenty over turned up what the system was for. Ten panels had
+  written out the same header — a heading and a Close button in a row — and a
+  row does not wrap, so on every panel with a long name ("Choosing the Right
+  Liberal Vehicle") the Close button was drawn off the side of the phone,
+  unreachable. Ten copies of a bug is one bug: `PanelHeader` is a flow, and
+  fixing it once fixed all ten. The stores panel's two columns are wider than
+  a phone put together and now stack (`Atoms.split`/`Atoms.stack`, because an
+  `HBoxContainer` refuses to be laid out vertically). The safehouse page on a
+  desk grew past the bottom of a 1280x800 window whenever a panel was open,
+  taking the panel buttons with it, because its scroller was switched off
+  rather than set to appear when needed. And the two buttons that both said
+  "Wait a day" now say "Wait a day" and "Keep waiting".
+
+  The scale learned something too. It was four steps that doubled — 4, 8, 16,
+  24 — until that pushed every 12px gap up to 16 and grew the safehouse past
+  the bottom of the window. It is five steps of four now. A scale has to fit
+  the thing it is describing.
 
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in

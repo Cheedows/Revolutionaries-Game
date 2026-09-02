@@ -18,7 +18,7 @@ signal surgery_wanted(surgeon: Creature)
 var _session: Session
 var _creature: Creature
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 var _notice: Label
 
 
@@ -40,23 +40,14 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
-	_notice = Label.new()
-	_notice.add_theme_color_override("font_color", Palette.CONSERVATIVE)
+	_notice = Atoms.tinted("", Palette.CONSERVATIVE)
 	_notice.visible = false
 	column.add_child(_notice)
 
@@ -65,9 +56,7 @@ func _build() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 4)
+	_body = Atoms.column(Metrics.TIGHT)
 	scroll.add_child(_body)
 
 
@@ -78,8 +67,8 @@ func _refresh() -> void:
 	_notice.visible = false
 
 	var state := _session.state
-	_title.text = "%s — %s" % [_creature.name,
-			DossierText.standing(_creature)]
+	_head.set_title("%s — %s" % [_creature.name,
+			DossierText.standing(_creature)])
 	for line in DossierText.record(_creature, state, _session.catalog):
 		_line(line)
 
@@ -115,15 +104,11 @@ func _refresh() -> void:
 
 ## One line of the squad's kit, with the button that hands it over.
 func _kit_row(item: Item) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var label := Label.new()
+	var row := Atoms.row(Metrics.SNUG)
+	var label := Atoms.dim(DossierText.item_title(item, _session.catalog))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = DossierText.item_title(item, _session.catalog)
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
-	var give := Button.new()
-	give.text = "Give"
+	var give := Atoms.button("Give", false)
 	give.pressed.connect(func() -> void: _give(item))
 	row.add_child(give)
 	return row
@@ -131,13 +116,10 @@ func _kit_row(item: Item) -> Control:
 
 ## Where they live, and the places they could be moved to.
 func _home_row() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	var row := Atoms.row(Metrics.SNUG)
 	var refused := BaseAssignment.refused(_session.state, _creature)
 	if refused != "":
-		var label := Label.new()
-		label.text = refused
-		label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+		var label := Atoms.wrapped(Atoms.tinted(refused, Palette.TEXT_FAINT))
 		row.add_child(label)
 		return row
 
@@ -157,16 +139,12 @@ func _home_row() -> Control:
 
 ## The one thing that can be done about somebody's place in the chain.
 func _promote_row() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	var row := Atoms.row(Metrics.SNUG)
 	var refused := Promotion.refused(_session.state, _creature)
-	var label := Label.new()
+	var label := Atoms.tinted(refused if refused != "" else "Promote Liberals", Palette.TEXT_FAINT)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = refused if refused != "" else "Promote Liberals"
-	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	row.add_child(label)
-	var promote := Button.new()
-	promote.text = "Promote"
+	var promote := Atoms.button("Promote", false)
 	promote.disabled = refused != ""
 	promote.pressed.connect(func() -> void:
 		Commands.promote(_session, _creature)
@@ -178,14 +156,10 @@ func _promote_row() -> Control:
 
 ## Leaving the LCS, either way. Both are irreversible, so both are asked twice.
 func _discharge_row() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	var row := Atoms.row(Metrics.SNUG)
 	var refused := Discharge.refused(_session.state, _creature)
-	var label := Label.new()
+	var label := Atoms.wrapped(Atoms.tinted(refused, Palette.TEXT_FAINT))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = refused
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	label.visible = refused != ""
 	row.add_child(label)
 	var boss: Creature = _session.state.creatures.get(_creature.hire_id)
@@ -205,8 +179,7 @@ func _discharge_row() -> Control:
 ## the same warning and turns the button into the same confirmation.
 func _confirming(text: String, refused: String, warning: String,
 		act: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button := Atoms.button(text, false)
 	button.disabled = refused != ""
 	button.toggle_mode = true
 	button.toggled.connect(func(pressed: bool) -> void:
@@ -228,16 +201,14 @@ func _confirming(text: String, refused: String, warning: String,
 ## Somebody else in the safehouse could be operated on, and this is who would
 ## be doing it.
 func _surgery_row() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var label := Label.new()
+	var row := Atoms.row(Metrics.SNUG)
+	var label := Atoms.wrapped(Atoms.body(
+			"%s will augment another Liberal to make them " % _creature.name
+			+ "physically superior."))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = "%s will augment another Liberal to make them " % _creature.name \
-			+ "physically superior."
 	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	row.add_child(label)
-	var operate := Button.new()
-	operate.text = "Augmentation"
+	var operate := Atoms.button("Augmentation", false)
 	operate.pressed.connect(func() -> void: surgery_wanted.emit(_creature))
 	row.add_child(operate)
 	return row
@@ -265,8 +236,7 @@ func _give(item: Item) -> void:
 
 
 func _heading(text: String) -> void:
-	var label := Label.new()
-	label.text = text
+	var label := Atoms.wrapped(Atoms.body(text))
 	# The original's headings are whole prompts and are wider than a phone.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
@@ -274,8 +244,5 @@ func _heading(text: String) -> void:
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	var label := Atoms.wrapped(Atoms.dim(text))
 	_body.add_child(label)

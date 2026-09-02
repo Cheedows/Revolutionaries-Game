@@ -33,7 +33,7 @@ THEME = {"atoms.gd", "metrics.gd", "palette.gd", "ui_theme.gd"}
 
 # The gaps anything may ask for, from Metrics. Kept here as numbers because
 # this reads GDScript as text; test_design_system.gd holds them to the scale.
-SCALE = {0, 4, 8, 16, 24}
+SCALE = {0, 4, 8, 12, 16, 24}
 
 RULES = [
     (r"\bLabel\.new\(\)",
@@ -47,31 +47,14 @@ RULES = [
 ]
 
 SEPARATION = re.compile(
-    r'add_theme_constant_override\(\s*&?"separation"\s*,\s*(-?\d+)\s*\)')
+    r'add_theme_constant_override\(\s*&?"[hv]?_?separation"\s*,\s*(-?\d+)\s*\)')
 
-# Files not yet moved onto the atoms. Shrink this; never add to it.
-ALLOWED = {
-    "screens/base_layout.gd",
-    "screens/title_screen.gd",
-    "widgets/agenda_panel.gd",
-    "widgets/dossier.gd",
-    "widgets/fight_panel.gd",
-    "widgets/justice_panel.gd",
-    "widgets/kit_buttons.gd",
-    "widgets/law_list.gd",
-    "widgets/log_view.gd",
-    "widgets/marshalling_panel.gd",
-    "widgets/newspaper_panel.gd",
-    "widgets/roster.gd",
-    "widgets/safehouse_panel.gd",
-    "widgets/settings_panel.gd",
-    "widgets/site_map_view.gd",
-    "widgets/sleeper_panel.gd",
-    "widgets/squad_panel.gd",
-    "widgets/status_bar.gd",
-    "widgets/stores_panel.gd",
-    "widgets/surgery_panel.gd",
-}
+# Files not yet moved onto the atoms. Empty, and meant to stay that way: the
+# whole interface is built out of the same pieces now. A file added here is a
+# file exempted from the design system, so adding one is a decision, not a
+# convenience — and a file that no longer needs to be here fails the build
+# until it is taken back out.
+ALLOWED = set()
 
 
 def _broken(path):
@@ -125,8 +108,13 @@ def main():
             print("  %s" % rel)
         return 1
 
-    print("The interface is built out of its own pieces. %d file(s) still to"
-          " move over." % len(ALLOWED))
+    looked = sum(1 for p in UI.rglob("*.gd") if p.name not in THEME)
+    if ALLOWED:
+        print("The interface is built out of its own pieces. %d of %d file(s)"
+              " still to move over." % (len(ALLOWED), looked))
+    else:
+        print("All %d files under game/ui are built out of the same pieces."
+              % looked)
     return 0
 
 

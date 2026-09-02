@@ -165,23 +165,17 @@ func _build() -> void:
 	_scroll.offset_bottom = -24
 	add_child(_scroll)
 
-	var page := VBoxContainer.new()
-	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var page := Atoms.column(Metrics.ROOM)
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_theme_constant_override("separation", 12)
 	_scroll.add_child(page)
 
-	_heading = Label.new()
-	_heading.add_theme_color_override("font_color", Palette.ACCENT)
+	_heading = Atoms.heading("")
 	page.add_child(_heading)
 
 	# One of the original's thirty-two quotations, chosen afresh each time the
 	# menu is shown, as the original does.
-	_epigraph = Label.new()
-	_epigraph.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	_epigraph = Atoms.wrapped(Atoms.dim("\n".join(TitleQuotes.pick(Rng.new(randi())))))
 	_epigraph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_epigraph.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_epigraph.text = "\n".join(TitleQuotes.pick(Rng.new(randi())))
 	page.add_child(_epigraph)
 
 	_body = RichTextLabel.new()

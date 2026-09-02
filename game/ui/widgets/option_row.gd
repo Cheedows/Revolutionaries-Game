@@ -36,12 +36,13 @@ func _init(said: String = "", explained: String = "", place: int = 0,
 	stack.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(stack)
 
-	var label := Atoms.body(said if place <= 0 else "%d. %s" % [place, said])
+	var label := Atoms.wrapped(
+			Atoms.body(said if place <= 0 else "%d. %s" % [place, said]))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(label)
 
 	if aside:
-		var under := Atoms.dim(explained)
+		var under := Atoms.wrapped(Atoms.dim(explained))
 		under.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(under)
 	elif not explained.is_empty():

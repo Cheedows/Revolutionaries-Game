@@ -14,7 +14,7 @@ signal closed
 const FILLER_MARK := "~"
 
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -43,7 +43,7 @@ func show_paper(state: GameState, events: Array[Event]) -> void:
 				printed += 1
 	# The original names the paper "the monthly Liberal Guardian newspaper";
 	# a phone has room for the paper's name and no more.
-	_title.text = "Liberal Guardian"
+	_head.set_title("Liberal Guardian")
 	if printed == 0:
 		_line("Unfortunately, nobody seems interested.", Palette.TEXT_FAINT)
 
@@ -123,35 +123,22 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 2)
+	_body = Atoms.column(0)
 	scroll.add_child(_body)
 
 
 func _line(text: String, colour: Color) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", colour)
+	var label := Atoms.wrapped(Atoms.tinted(text, colour))
 	_body.add_child(label)

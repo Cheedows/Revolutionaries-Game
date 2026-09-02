@@ -29,7 +29,7 @@ func _build() -> void:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel(Palette.SURFACE_RAISED))
 	_row = HBoxContainer.new()
-	_row.add_theme_constant_override("separation", 24)
+	_row.add_theme_constant_override(&"separation", Metrics.EDGE)
 	add_child(_row)
 	var row := _row
 
@@ -55,7 +55,8 @@ func _build() -> void:
 ## them and the width of the bar.
 func compact(on: bool) -> void:
 	_build()
-	_row.add_theme_constant_override("separation", 8 if on else 24)
+	_row.add_theme_constant_override(&"separation",
+			Metrics.SNUG if on else Metrics.EDGE)
 	_mood_bar.custom_minimum_size.x = NARROW_BAR_WIDTH if on else BAR_WIDTH
 	_mood.text = "Mood" if on else _mood.text
 
@@ -78,8 +79,10 @@ func refresh(state: GameState) -> void:
 
 
 func _label(parent: Node, colour: Color) -> Label:
-	var label := Label.new()
-	label.add_theme_color_override("font_color", colour)
+	var label := Atoms.tinted("", colour)
+	# The bar is one line and its three parts are short; wrapping them would
+	# make the bar two lines tall to say the same thing.
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	parent.add_child(label)
 	return label
 

@@ -32,7 +32,6 @@ static func title(said: String) -> Label:
 	label.add_theme_color_override(&"font_color", Palette.ACCENT)
 	label.add_theme_font_size_override(&"font_size",
 			Metrics.BASE_FONT + HEADING_STEP)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
 
 
@@ -41,16 +40,19 @@ static func heading(said: String) -> Label:
 	var label := Label.new()
 	label.text = said
 	label.add_theme_color_override(&"font_color", Palette.ACCENT)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
 
 
-## Ordinary text. Wraps, because a phone is narrow and a line that has run off
-## the edge cannot be read.
+## Ordinary text: a name, a value, one line of a row.
+##
+## It does not wrap. Most text in this interface is a short thing in a row and
+## wrapping it turns one row into two — or, where the row sets a width, into a
+## column of single letters, which is what happened the day this wrapped by
+## default. Prose asks for [method wrapped]; a name in a column asks for
+## [method cell].
 static func body(said: String) -> Label:
 	var label := Label.new()
 	label.text = said
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
 
 
@@ -60,7 +62,45 @@ static func dim(said: String) -> Label:
 	var label := Label.new()
 	label.text = said
 	label.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
+	return label
+
+
+## Text in one of the palette's own colours — money, an alignment, a warning.
+##
+## The colour has to come from [Palette]. That is the whole rule: a literal
+## Color() in a widget is a colour nothing else in the game can match and
+## nothing can change in one place.
+static func tinted(said: String, colour: Color) -> Label:
+	var label := body(said)
+	label.add_theme_color_override(&"font_color", colour)
+	return label
+
+
+## Lets a label run onto as many lines as it needs.
+##
+## For prose — a sentence, an explanation, a line of the log. Wrap the thing
+## that is a paragraph; leave the thing that is a value alone.
+static func wrapped(label: Label) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return label
+
+
+## Text in a fixed column, cut off with an ellipsis rather than wrapped.
+##
+## The other way a line of text can be too long for the room it has, and the
+## right one wherever the eye runs down a column and the rows have to line up:
+## law names, code names, who is carrying what. Wrapping those makes the row
+## two lines tall and the column stops being a column.
+##
+## Everywhere else, wrap. A sentence that has been cut off has lost its end,
+## and only a name in a column can afford that.
+static func cell(said: String, wide: int) -> Label:
+	var label := Label.new()
+	label.text = said
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.custom_minimum_size.x = wide
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 
 
@@ -78,7 +118,6 @@ static func column_header(said: String) -> Label:
 static func button(said: String, fill: bool = true) -> Button:
 	var control := Button.new()
 	control.text = said
-	control.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	control.clip_text = false
 	if fill:
 		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -89,6 +128,9 @@ static func button(said: String, fill: bool = true) -> Button:
 ## it is findable without reading it.
 static func primary(said: String) -> Button:
 	var control := button(said)
+	# The one full-width action on the screen, so it has the room to wrap and
+	# a label too long for one line is better wrapped than clipped.
+	control.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	control.add_theme_color_override(&"font_color", Palette.BACKGROUND)
 	control.add_theme_stylebox_override(&"normal",
 			UiTheme.filled(Palette.ACCENT))
@@ -123,6 +165,40 @@ static func row(gap: int = Metrics.SNUG) -> HBoxContainer:
 	box.add_theme_constant_override(&"separation", gap)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return box
+
+
+## A line of things that wraps onto the next line when it runs out of room.
+##
+## What a row of buttons has to be on a phone. Four buttons with real sentences
+## on them do not fit across four hundred pixels, and a button that has run off
+## the edge cannot be pressed.
+static func flow(gap: int = Metrics.SNUG) -> HFlowContainer:
+	var box := HFlowContainer.new()
+	box.add_theme_constant_override(&"h_separation", gap)
+	box.add_theme_constant_override(&"v_separation", gap)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return box
+
+
+## Two things side by side, which can be asked to stack instead.
+##
+## Not [method row]: an [HBoxContainer] refuses to be laid out vertically —
+## setting it throws and the container stays horizontal — so a row that has to
+## change its mind has to be a plain [BoxContainer] from the start.
+static func split(gap: int = Metrics.SNUG) -> BoxContainer:
+	var box := BoxContainer.new()
+	box.vertical = false
+	box.add_theme_constant_override(&"separation", gap)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return box
+
+
+## Stacks a [method split] one above the other, or puts it back side by side.
+##
+## Two columns that sit beside each other on a desk are wider than a phone put
+## together, and there is nowhere for the second one to go but underneath.
+static func stack(box: BoxContainer, on: bool) -> void:
+	box.vertical = on
 
 
 ## Empty space that pushes whatever comes after it to the far end of a row.

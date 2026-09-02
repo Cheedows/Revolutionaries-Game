@@ -50,23 +50,18 @@ func refresh(state: GameState) -> void:
 
 ## One person, with the button that puts them in or takes them out.
 func _row(creature: Creature, inside: bool) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	var row := Atoms.row(Metrics.SNUG)
 
-	var name := Label.new()
-	name.text = creature.name
+	var name := Atoms.body(creature.name)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name.add_theme_color_override("font_color",
 			Palette.LIBERAL if inside else Palette.TEXT_DIM)
 	row.add_child(name)
 
-	var where := Label.new()
-	where.text = "%d blood" % creature.body.blood
-	where.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	var where := Atoms.tinted("%d blood" % creature.body.blood, Palette.TEXT_FAINT)
 	row.add_child(where)
 
-	var button := Button.new()
-	button.text = "Drop" if inside else "Take"
+	var button := Atoms.button("Drop" if inside else "Take", false)
 	button.pressed.connect(func() -> void: _toggle(creature, inside))
 	row.add_child(button)
 	return row
@@ -109,11 +104,10 @@ func _build() -> void:
 	if _rows != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
+	var column := Atoms.column(Metrics.SNUG)
 	add_child(column)
 
-	_heading = Label.new()
-	_heading.add_theme_color_override("font_color", Palette.ACCENT)
+	_heading = Atoms.heading("")
 	column.add_child(_heading)
 
 	var scroll := ScrollContainer.new()
@@ -121,20 +115,16 @@ func _build() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_rows = VBoxContainer.new()
-	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_rows = Atoms.column(Metrics.SNUG)
 	scroll.add_child(_rows)
 
-	var footer := HBoxContainer.new()
-	footer.add_theme_constant_override("separation", 8)
+	var footer := Atoms.row(Metrics.SNUG)
 	column.add_child(footer)
 
-	_going = Label.new()
+	_going = Atoms.dim("")
 	_going.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_going.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	footer.add_child(_going)
 
-	var pick := Button.new()
-	pick.text = "Travel to a Different City"
+	var pick := Atoms.button("Travel to a Different City", false)
 	pick.pressed.connect(func() -> void: destination_wanted.emit())
 	footer.add_child(pick)

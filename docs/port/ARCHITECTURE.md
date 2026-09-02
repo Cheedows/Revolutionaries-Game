@@ -33,8 +33,13 @@ Enforced mechanically:
 - `ui/**` must build its controls out of `ui/theme/atoms.gd` and the widgets over
   it, never `Label.new()`/`Button.new()`/`LineEdit.new()` or a literal `Color`,
   and must space them off the scale in `ui/theme/metrics.gd`
-  (`tools/audit_design.py`; files not yet moved over are listed in it, and that
-  list may only shrink)
+  (`tools/audit_design.py`; its exemption list is empty and adding to it is a
+  decision, not a convenience)
+- Layout is verified by rendering it: `tools/check_layout.sh` draws every screen
+  under `xvfb` at four sizes and fails if anything is drawn outside the thing
+  meant to contain it, or has wrapped into a column of single letters. The
+  headless suite cannot see either — a container only lays its children out
+  inside a live tree, and `--script` has none
 
 If a rule needs breaking, the rule changes in this file first, in its own commit.
 

@@ -239,16 +239,16 @@ func _build() -> void:
 	# shipped.
 	var page := VBoxContainer.new()
 	page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	page.offset_left = Metrics.WIDE
-	page.offset_top = Metrics.WIDE
-	page.offset_right = -Metrics.WIDE
-	page.offset_bottom = -Metrics.WIDE
+	page.offset_left = Metrics.EDGE
+	page.offset_top = Metrics.EDGE
+	page.offset_right = -Metrics.EDGE
+	page.offset_bottom = -Metrics.EDGE
 	page.add_theme_constant_override("separation", Metrics.SNUG)
 	add_child(page)
 
-	page.add_child(Atoms.title(Branding.GAME_TITLE))
+	page.add_child(Atoms.wrapped(Atoms.title(Branding.GAME_TITLE)))
 
-	_heading = Atoms.body("")
+	_heading = Atoms.wrapped(Atoms.body(""))
 	page.add_child(_heading)
 
 	_typed = Atoms.field("")

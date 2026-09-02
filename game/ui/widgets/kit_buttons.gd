@@ -23,7 +23,8 @@ func show_member(session: Session, member: Creature) -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	add_theme_constant_override("separation", 8)
+	add_theme_constant_override(&"h_separation", Metrics.SNUG)
+	add_theme_constant_override(&"v_separation", Metrics.SNUG)
 
 	_add("Drop that Squad member's Conservative weapon", member.weapon == null,
 			func() -> String:
@@ -41,8 +42,7 @@ func show_member(session: Session, member: Creature) -> void:
 
 ## One button, and what it says when it will not do it.
 func _add(text: String, disabled: bool, act: Callable) -> void:
-	var button := Button.new()
-	button.text = text
+	var button := Atoms.button(text, false)
 	button.disabled = disabled
 	button.pressed.connect(func() -> void:
 		var why: String = act.call()

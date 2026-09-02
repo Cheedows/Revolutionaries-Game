@@ -13,7 +13,7 @@ signal closed
 signal changed
 
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 
 ## The session, kept only while the panel is up: disbanding is a decision made
 ## here and nowhere else, and it needs the generator to pick the phrase.
@@ -41,7 +41,7 @@ func show_state(state: GameState) -> void:
 		_body.remove_child(child)
 		child.queue_free()
 
-	_title.text = AgendaText.heading(state)
+	_head.set_title(AgendaText.heading(state))
 	_heading("The government")
 	for line in AgendaText.government(state):
 		_line(line)
@@ -67,24 +67,15 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
-	_notice = Label.new()
+	_notice = Atoms.tinted("", Palette.CONSERVATIVE)
 	_notice.visible = false
-	_notice.add_theme_color_override("font_color", Palette.CONSERVATIVE)
 	column.add_child(_notice)
 
 	var scroll := ScrollContainer.new()
@@ -92,9 +83,7 @@ func _build() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 2)
+	_body = Atoms.column(0)
 	scroll.add_child(_body)
 
 
@@ -107,25 +96,21 @@ const PHRASE_WIDTH := 180
 func _disband_row() -> Control:
 	if _phrase == "":
 		_phrase = Commands.disband_phrase(_session)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 4)
-	var asked := Label.new()
-	asked.text = "Type this Liberal phrase to confirm " \
-			+ "(press a wrong letter to rethink it):" \
-			+ " \"%s\"" % _phrase
-	asked.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var column := Atoms.column(Metrics.TIGHT)
+	var asked := Atoms.wrapped(Atoms.body(
+			"Type this Liberal phrase to confirm "
+			+ "(press a wrong letter to rethink it):"
+			+ " \"%s\"" % _phrase))
 	asked.custom_minimum_size = Vector2(PHRASE_WIDTH, 0)
 	asked.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	asked.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	column.add_child(asked)
 
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	_typed = LineEdit.new()
+	var row := Atoms.row(Metrics.SNUG)
+	_typed = Atoms.field("")
 	_typed.custom_minimum_size = Vector2(240, 0)
 	row.add_child(_typed)
-	var go := Button.new()
-	go.text = "Disband"
+	var go := Atoms.button("Disband", false)
 	go.pressed.connect(func() -> void:
 		var refused := Commands.disband(_session, _phrase, _typed.text)
 		if refused != "":
@@ -146,8 +131,7 @@ func offer_disbanding(session: Session) -> void:
 
 
 func _heading(text: String) -> void:
-	var label := Label.new()
-	label.text = text
+	var label := Atoms.wrapped(Atoms.body(text))
 	# The original's headings are whole prompts and are wider than a phone.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
@@ -155,8 +139,5 @@ func _heading(text: String) -> void:
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	var label := Atoms.wrapped(Atoms.dim(text))
 	_body.add_child(label)

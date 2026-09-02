@@ -16,7 +16,7 @@ signal closed
 var _session: Session
 var _surgeon: Creature
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 var _notice: Label
 
 
@@ -40,8 +40,8 @@ func _refresh() -> void:
 		child.queue_free()
 	_notice.visible = false
 
-	_title.text = "%s will augment another Liberal to make them physically " \
-			% _surgeon.name + "superior."
+	_head.set_title("%s will augment another Liberal to make them physically " \
+			% _surgeon.name + "superior.")
 	var patients := Augmentation.patients(_session.state, _surgeon)
 	if patients.is_empty():
 		_line("Nobody else is here to be operated on.")
@@ -60,21 +60,15 @@ func _refresh() -> void:
 
 ## One thing that could be fitted, and the button that fits it.
 func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var label := Label.new()
+	var row := Atoms.row(Metrics.SNUG)
+	var label := Atoms.dim("  %s — %s" % [String(slot).capitalize(), type.name])
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = "  %s — %s" % [String(slot).capitalize(), type.name]
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
 
-	var risk := Label.new()
-	risk.text = "difficulty %d" % type.difficulty
-	risk.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	var risk := Atoms.tinted("difficulty %d" % type.difficulty, Palette.TEXT_FAINT)
 	row.add_child(risk)
 
-	var go := Button.new()
-	go.text = "Operate"
+	var go := Atoms.button("Operate", false)
 	go.pressed.connect(func() -> void:
 		var refused := Commands.operate(_session, _surgeon, patient, type)
 		if refused != "":
@@ -91,46 +85,30 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
-	_notice = Label.new()
+	_notice = Atoms.tinted("", Palette.CONSERVATIVE)
 	_notice.visible = false
-	_notice.add_theme_color_override("font_color", Palette.CONSERVATIVE)
 	column.add_child(_notice)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 2)
+	_body = Atoms.column(0)
 	scroll.add_child(_body)
 
 
 func _heading(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", Palette.ACCENT)
+	var label := Atoms.wrapped(Atoms.heading(text))
 	_body.add_child(label)
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	var label := Atoms.wrapped(Atoms.tinted(text, Palette.TEXT_FAINT))
 	_body.add_child(label)

@@ -15,7 +15,7 @@ signal closed
 
 var _session: Session
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 var _slogan: LineEdit
 
 
@@ -35,29 +35,19 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 4)
+	_body = Atoms.column(Metrics.TIGHT)
 	scroll.add_child(_body)
 
 
@@ -70,7 +60,7 @@ func _refresh() -> void:
 	var here := _house()
 	# The money is in the status bar above; the panel's own title is what the
 	# original calls the money spent here.
-	_title.text = "Safehouse Investments"
+	_head.set_title("Safehouse Investments")
 	if here == null:
 		_line("I - Invest in this location")
 		return
@@ -84,9 +74,8 @@ func _refresh() -> void:
 	_body.add_child(_flag_row(here))
 
 	_heading("FREE SPEECH: the Liberal Slogan")
-	_slogan = LineEdit.new()
+	_slogan = Atoms.field("What is your new slogan?")
 	_slogan.text = state.slogan
-	_slogan.placeholder_text = "What is your new slogan?"
 	_slogan.text_submitted.connect(func(text: String) -> void:
 		Commands.set_slogan(_session, text)
 		changed.emit())
@@ -102,9 +91,8 @@ const LABEL_WIDTH := 180
 
 
 func _upgrade_row(here: Location, upgrade: StringName) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var label := Label.new()
+	var row := Atoms.row(Metrics.SNUG)
+	var label := Atoms.body("")
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# The original names these by what buying them does — "Install a perfectly
 	# legal Anti-Aircraft gun on the roof" — which is a sentence, not a noun,
@@ -115,7 +103,7 @@ func _upgrade_row(here: Location, upgrade: StringName) -> Control:
 	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
 
-	var buy := Button.new()
+	var buy := Atoms.button("", false)
 	var cost := SafehouseUpgrades.price(_session.state, upgrade)
 	buy.text = "$%d" % cost
 	buy.disabled = not SafehouseUpgrades.can_have(here, upgrade) \
@@ -131,12 +119,10 @@ func _upgrade_row(here: Location, upgrade: StringName) -> Control:
 func _flag_row(here: Location) -> Control:
 	# Both options carry the original's whole prompt, which is longer than a
 	# phone is wide, so they stack rather than sit side by side.
-	var row := VBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
+	var row := Atoms.column(Metrics.TIGHT)
 	# The original offers only whichever of the two applies, so the port shows
 	# both and lets the one that does not go grey.
-	var raise := Button.new()
-	raise.text = "PATRIOTISM: fly a flag here ($%d)" % FlagPole.PRICE
+	var raise := Atoms.button("PATRIOTISM: fly a flag here ($%d)" % FlagPole.PRICE, false)
 	raise.disabled = not FlagPole.can_buy(_session.state, here)
 	raise.pressed.connect(func() -> void:
 		Commands.flag(_session, here, false)
@@ -144,8 +130,7 @@ func _flag_row(here: Location) -> Control:
 		_refresh())
 	row.add_child(raise)
 
-	var burn := Button.new()
-	burn.text = "PROTEST: burn the flag"
+	var burn := Atoms.button("PROTEST: burn the flag", false)
 	burn.disabled = not here.has_flag
 	burn.pressed.connect(func() -> void:
 		Commands.flag(_session, here, true)
@@ -167,8 +152,7 @@ func _house() -> Location:
 
 
 func _heading(text: String) -> void:
-	var label := Label.new()
-	label.text = text
+	var label := Atoms.wrapped(Atoms.body(text))
 	# The original's headings are whole prompts and are wider than a phone.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Palette.ACCENT)
@@ -176,8 +160,5 @@ func _heading(text: String) -> void:
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	var label := Atoms.wrapped(Atoms.dim(text))
 	_body.add_child(label)

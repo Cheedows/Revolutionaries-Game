@@ -160,14 +160,15 @@ func test_the_keyboard_stays_where_it_was_left() -> void:
 ## rhythms because each picked its own separation, and a player reads that as
 ## sloppiness without being able to name it.
 func test_the_gaps_all_come_off_the_scale() -> void:
-	var allowed := [0, Metrics.TIGHT, Metrics.SNUG, Metrics.ROOM, Metrics.WIDE]
+	var allowed := [0, Metrics.TIGHT, Metrics.SNUG, Metrics.ROOM, Metrics.WIDE,
+			Metrics.EDGE]
 	for box: BoxContainer in [Atoms.column(), Atoms.row()]:
 		check(allowed.has(box.get_theme_constant(&"separation")),
 				"a stack built by Atoms is spaced off the scale")
 		box.free()
-	# The scale doubles, so that there is nothing between the steps to drift to.
-	equal([Metrics.TIGHT, Metrics.SNUG, Metrics.ROOM, Metrics.WIDE],
-			[4, 8, 16, 24], "and the scale is the scale")
+	# Every step a multiple of four, so there is no 6 or 14 to drift back to.
+	equal([Metrics.TIGHT, Metrics.SNUG, Metrics.ROOM, Metrics.WIDE,
+			Metrics.EDGE], [4, 8, 12, 16, 24], "and the scale is the scale")
 
 
 ## A switch and an answer are the same size and shape, because underneath they

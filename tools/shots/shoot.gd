@@ -49,6 +49,15 @@ func _initialize() -> void:
 	# in the bar, so a screenshot can be taken of a screen part-way through
 	# being used rather than only as it opens.
 	for press: String in presses:
+		# "p:<name>" opens one of the safehouse panels.
+		if press.begins_with("p:"):
+			var stack := _find(screen, "PanelStack")
+			if stack != null:
+				stack.call("open", StringName(press.substr(2)),
+						screen.get("_session"))
+			for _settle in 3:
+				await process_frame
+			continue
 		var dialog := _find(screen, "IntentDialog")
 		if dialog != null:
 			if press == "c":

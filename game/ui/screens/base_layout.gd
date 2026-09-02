@@ -41,9 +41,9 @@ static func build(screen: Control) -> Dictionary:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	screen.add_child(background)
 
-	var page := VBoxContainer.new()
+	var page := Atoms.column(Metrics.SNUG)
 	page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	page.add_theme_constant_override("separation", 12)
+	page.add_theme_constant_override(&"separation", Metrics.SNUG)
 	page.offset_left = 16
 	page.offset_top = 16
 	page.offset_right = -16
@@ -63,10 +63,8 @@ static func build(screen: Control) -> Dictionary:
 	page.add_child(scroll)
 	parts["scroll"] = scroll
 
-	var columns := HBoxContainer.new()
+	var columns := Atoms.row(Metrics.ROOM)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 12)
 	scroll.add_child(columns)
 	parts["columns"] = columns
 
@@ -74,9 +72,7 @@ static func build(screen: Control) -> Dictionary:
 	(parts["laws"] as Control).custom_minimum_size = Vector2(LAWS_WIDTH, 0)
 	columns.add_child(parts["laws"])
 
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 12)
+	var right := Atoms.column(Metrics.ROOM)
 	columns.add_child(right)
 	parts["right"] = right
 
@@ -142,7 +138,7 @@ static func reflow(parts: Dictionary, narrow: bool) -> void:
 	page.offset_bottom = -gap
 
 	for part: Variant in [parts["roster"], parts["map"], parts["laws"],
-			parts["dialog"], parts["status"], parts["log"]]:
+			parts["dialog"], parts["status"], parts["log"], parts["panels"]]:
 		if (part as Object).has_method(&"compact"):
 			(part as Object).call(&"compact", narrow)
 
@@ -156,7 +152,13 @@ static func reflow(parts: Dictionary, narrow: bool) -> void:
 		if scroll.has_meta(&"page_scroller"):
 			scroll.remove_meta(&"page_scroller")
 		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		# Auto rather than off. A desk usually has room for the whole
+		# safehouse at once and shows no bar, but opening a panel in a 1280x800
+		# window does not fit — and with scrolling off the page simply grew
+		# past the bottom of the window, taking the row of panel buttons with
+		# it. A bar that appears only when it is needed costs nothing on the
+		# days it is not.
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 		columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	Metrics.unscroll(columns, narrow)
 
@@ -173,34 +175,31 @@ static func reflow(parts: Dictionary, narrow: bool) -> void:
 ## An [HFlowContainer] rather than a row, so that eleven buttons that sit on
 ## one line on a desk sit on three on a phone instead of running off the edge.
 static func _controls(parts: Dictionary) -> Control:
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 8)
-	row.add_theme_constant_override("v_separation", 8)
+	var row := Atoms.flow(Metrics.SNUG)
 	parts["controls"] = row
 
-	var wait := Button.new()
-	wait.text = "Wait a day"
+	var wait := Atoms.button("Wait a day", false)
 	parts["wait"] = wait
 	row.add_child(wait)
 
-	var run := Button.new()
-	run.text = "Wait a day"
+	# Not "Wait a day" a second time, which is what both of these said. One
+	# waits a day; this one keeps waiting until something happens, and a player
+	# looking at two identical buttons has no way to know which is which.
+	var run := Atoms.button("Keep waiting", false)
 	run.toggle_mode = true
 	parts["run"] = run
 	row.add_child(run)
 
 	# On a wide screen the law column is simply there. On a narrow one there is
 	# no room beside anything, so it becomes another thing to open.
-	var country := Button.new()
-	country.text = "The country"
+	var country := Atoms.button("The country", false)
 	country.toggle_mode = true
 	parts["country"] = country
 	row.add_child(country)
 
 	var buttons := {}
 	for entry: Array in PANEL_BUTTONS:
-		var button := Button.new()
-		button.text = str(entry[1])
+		var button := Atoms.button(str(entry[1]), false)
 		buttons[entry[0]] = button
 		row.add_child(button)
 	parts["buttons"] = buttons

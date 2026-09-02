@@ -14,9 +14,10 @@ signal changed
 signal closed
 
 var _session: Session
+var _columns: BoxContainer
 var _left: VBoxContainer
 var _right: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -33,7 +34,7 @@ func show_stores(session: Session) -> void:
 
 func _refresh() -> void:
 	var here := _house()
-	_title.text = "The stores"
+	_head.set_title("The stores")
 	_fill(_left, "Equip the Squad",
 			_session.state.active_squad().haul \
 					if _session.state.active_squad() != null else [], true)
@@ -48,15 +49,11 @@ func _fill(column: VBoxContainer, heading: String, pile: Array,
 		column.remove_child(child)
 		child.queue_free()
 
-	var label := Label.new()
-	label.text = heading
-	label.add_theme_color_override("font_color", Palette.ACCENT)
+	var label := Atoms.heading(heading)
 	column.add_child(label)
 
 	if pile.is_empty():
-		var empty := Label.new()
-		empty.text = "Nothing."
-		empty.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+		var empty := Atoms.tinted("Nothing.", Palette.TEXT_FAINT)
 		column.add_child(empty)
 		return
 
@@ -65,22 +62,17 @@ func _fill(column: VBoxContainer, heading: String, pile: Array,
 
 
 func _row(item: Item, index: int, stashing: bool) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	var label := Label.new()
+	var row := Atoms.row(Metrics.TIGHT)
+	var label := Atoms.dim(DossierText.item_title(item, _session.catalog))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = DossierText.item_title(item, _session.catalog)
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
 
-	var one := Button.new()
-	one.text = "Stash" if stashing else "Take"
+	var one := Atoms.button("Stash" if stashing else "Take", false)
 	one.pressed.connect(func() -> void: _move(index, 1, stashing))
 	row.add_child(one)
 
 	if item.count > 1:
-		var all := Button.new()
-		all.text = "All"
+		var all := Atoms.button("All", false)
 		all.pressed.connect(func() -> void: _move(index, item.count, stashing))
 		row.add_child(all)
 	return row
@@ -107,35 +99,32 @@ func _build() -> void:
 	if _left != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	var columns := HBoxContainer.new()
-	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 16)
-	scroll.add_child(columns)
+	_columns = Atoms.split(Metrics.WIDE)
+	scroll.add_child(_columns)
+	var columns := _columns
 
-	_left = VBoxContainer.new()
-	_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_left = Atoms.column(Metrics.SNUG)
 	columns.add_child(_left)
 
-	_right = VBoxContainer.new()
-	_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_right = Atoms.column(Metrics.SNUG)
 	columns.add_child(_right)
+
+
+## What the squad is carrying and what is in the safehouse sit side by side on
+## a desk. Two of those columns are wider than a phone put together, so on a
+## phone one goes under the other.
+func compact(on: bool) -> void:
+	_build()
+	Atoms.stack(_columns, on)

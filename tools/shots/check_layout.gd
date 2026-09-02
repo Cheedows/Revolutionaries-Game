@@ -31,6 +31,15 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "new_game_screen", "press": ["c"]},
 	{"screen": "new_game_screen", "press": ["c", "1", "1", "c"]},
 	{"screen": "base_screen", "press": []},
+	{"screen": "base_screen", "press": ["p:house"]},
+	{"screen": "base_screen", "press": ["p:squad"]},
+	{"screen": "base_screen", "press": ["p:dossier"]},
+	{"screen": "base_screen", "press": ["p:agenda"]},
+	{"screen": "base_screen", "press": ["p:paper"]},
+	{"screen": "base_screen", "press": ["p:stores"]},
+	{"screen": "base_screen", "press": ["p:justice"]},
+	{"screen": "base_screen", "press": ["p:sleepers"]},
+	{"screen": "base_screen", "press": ["p:settings"]},
 ]
 
 ## Sizes to check every screen at: a small phone, an ordinary one, a tall one,
@@ -95,6 +104,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 			size]
 	_rows_do_not_overlap(screen, where)
 	_nothing_spills_out_of_its_parent(screen, where)
+	_nothing_is_wrapped_to_a_sliver(screen, where)
 	root.remove_child(screen)
 	screen.queue_free()
 	await process_frame
@@ -153,12 +163,50 @@ func _nothing_spills_out_of_its_parent(screen: Control, where: String) -> void:
 			continue
 		if room.encloses(box):
 			continue
-		var over := maxf(box.end.y - room.end.y, room.position.y - box.position.y)
-		if over <= SLACK:
-			continue
-		_wrong.append("%s: %s runs %d pixels out of %s"
-				% [where, _describe(control), int(over), _describe(parent)])
+		# Both axes. An earlier version of this asked only about height, and a
+		# panel that ran off the right-hand edge of a phone — its Close button
+		# drawn past the screen, unreachable — went straight through it.
+		var down := maxf(box.end.y - room.end.y, room.position.y - box.position.y)
+		var across := maxf(box.end.x - room.end.x, room.position.x - box.position.x)
+		if down > SLACK:
+			_wrong.append("%s: %s runs %d pixels below %s"
+					% [where, _describe(control), int(down), _describe(parent)])
+		if across > SLACK:
+			_wrong.append("%s: %s runs %d pixels past the side of %s"
+					% [where, _describe(control), int(across), _describe(parent)])
 
+
+
+## Nothing has wrapped into a column of single letters.
+##
+## The other half of the wrapping question, and this file did not ask it at
+## first. Turning wrapping on for every label made the law column on the
+## safehouse screen render "Moderate" as eight lines of one letter, twenty-two
+## times over — and the check passed, because nothing had spilled out of
+## anything. Each letter was neatly inside its label and each label neatly
+## inside its row.
+##
+## So: a label wide enough to have been given room, but narrower than the word
+## it is trying to draw, has wrapped where it should not have. The threshold is
+## generous on purpose — this is looking for a collapsed column, not for a
+## slightly tight fit.
+func _nothing_is_wrapped_to_a_sliver(screen: Control, where: String) -> void:
+	for label: Label in _every(screen, "Label"):
+		if not label.is_visible_in_tree():
+			continue
+		if label.autowrap_mode == TextServer.AUTOWRAP_OFF:
+			continue
+		var said := label.text.strip_edges()
+		if said.length() < 4 or label.size.x <= 0.0:
+			continue
+		# More lines than the text has words means it is breaking words, not
+		# wrapping between them.
+		var words := said.split(" ", false).size()
+		var lines := label.get_line_count()
+		if lines > maxi(words, 1) * 2 and lines > 2:
+			_wrong.append("%s: %s is %d wide and has wrapped to %d lines of %d"
+					% [where, _describe(label), int(label.size.x), lines, words]
+					+ " word(s)")
 
 
 ## A game far enough along to be drawn.
@@ -176,6 +224,12 @@ func _a_session() -> Session:
 ## Answers whatever is being asked: a number takes that option from the list,
 ## "c" takes the first action in the bar.
 func _press(screen: Control, said: String) -> void:
+	if said.begins_with("p:"):
+		var stack := _find(screen, "PanelStack")
+		if stack != null:
+			stack.call("open", StringName(said.substr(2)),
+					screen.get("_session"))
+		return
 	var dialog := _find(screen, "IntentDialog")
 	if dialog == null:
 		return

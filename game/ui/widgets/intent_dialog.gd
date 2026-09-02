@@ -276,10 +276,10 @@ func _build() -> void:
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(box)
 
-	_title = Atoms.heading("")
+	_title = Atoms.wrapped(Atoms.heading(""))
 	box.add_child(_title)
 
-	_detail = Atoms.dim("")
+	_detail = Atoms.wrapped(Atoms.dim(""))
 	box.add_child(_detail)
 
 	_scroll = ScrollContainer.new()

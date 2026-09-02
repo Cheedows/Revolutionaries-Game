@@ -44,12 +44,10 @@ func _build() -> void:
 	if _rows != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
+	var column := Atoms.column(Metrics.SNUG)
 	add_child(column)
 
-	var heading := Label.new()
-	heading.text = Branding.ORG_MEMBERS
-	heading.add_theme_color_override("font_color", Palette.ACCENT)
+	var heading := Atoms.heading(Branding.ORG_MEMBERS)
 	column.add_child(heading)
 
 	var scroll := ScrollContainer.new()
@@ -57,8 +55,7 @@ func _build() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_rows = VBoxContainer.new()
-	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_rows = Atoms.column(Metrics.SNUG)
 	scroll.add_child(_rows)
 
 
@@ -93,9 +90,7 @@ func refresh(state: GameState) -> void:
 
 	var members := state.members()
 	if members.is_empty():
-		var empty := Label.new()
-		empty.text = "Nobody yet."
-		empty.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+		var empty := Atoms.tinted("Nobody yet.", Palette.TEXT_FAINT)
 		_rows.add_child(empty)
 		return
 
@@ -105,26 +100,22 @@ func refresh(state: GameState) -> void:
 
 func _row(creature: Creature, held: Array[Creature]) -> Control:
 	var row: Container = HFlowContainer.new() if _compact else HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	row.add_theme_constant_override("h_separation", 8)
-	row.add_theme_constant_override("v_separation", 4)
+	row.add_theme_constant_override(&"separation", Metrics.SNUG)
+	row.add_theme_constant_override(&"h_separation", Metrics.SNUG)
+	row.add_theme_constant_override(&"v_separation", Metrics.TIGHT)
 
-	var name_label := Label.new()
-	name_label.text = creature.name
+	var name_label := Atoms.body(creature.name)
 	name_label.custom_minimum_size = Vector2(_wide(180), 0)
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.add_theme_color_override("font_color",
 			Palette.for_alignment(Alignment.value_of(creature.alignment)))
 	row.add_child(name_label)
 
-	var juice := Label.new()
-	juice.text = "%d juice" % creature.juice
+	var juice := Atoms.dim("%d juice" % creature.juice)
 	juice.custom_minimum_size = Vector2(_wide(90), 0)
-	juice.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(juice)
 
-	var condition := Label.new()
-	condition.text = _condition(creature)
+	var condition := Atoms.body(_condition(creature))
 	condition.custom_minimum_size = Vector2(_wide(130), 0)
 	condition.add_theme_color_override("font_color",
 			Palette.TEXT_DIM if creature.body.blood > 50 else Palette.CONSERVATIVE)
@@ -155,8 +146,7 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 	if creature.activity == &"recruiting" and not _recruit_choices.is_empty():
 		row.add_child(_recruits(creature))
 
-	var look := Button.new()
-	look.text = "Look"
+	var look := Atoms.button("Look", false)
 	look.tooltip_text = "View Status  %s" % creature.name
 	look.pressed.connect(func() -> void: dossier_wanted.emit(creature))
 	row.add_child(look)

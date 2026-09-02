@@ -17,7 +17,7 @@ signal closed
 
 var _session: Session
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -39,11 +39,11 @@ func _refresh() -> void:
 
 	var squad := _session.state.active_squad()
 	if squad == null or squad.member_ids.is_empty():
-		_title.text = "Choosing the Right Liberal Vehicle"
+		_head.set_title("Choosing the Right Liberal Vehicle")
 		_line("Assemble a New Squad")
 		return
 	var members := _session.state.squad_members(squad)
-	_title.text = "Choosing the Right Liberal Vehicle"
+	_head.set_title("Choosing the Right Liberal Vehicle")
 
 	_heading("Choose squad member to move")
 	for index in members.size():
@@ -62,20 +62,16 @@ func _refresh() -> void:
 ## buttons, so the width of one of these rows is not something the interface
 ## gets to decide.
 func _row() -> HFlowContainer:
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 6)
-	row.add_theme_constant_override("v_separation", 4)
+	var row := Atoms.flow(Metrics.TIGHT)
 	return row
 
 
 ## One Liberal, with the buttons that move them up and down the line.
 func _order_row(squad: Squad, members: Array[Creature], index: int) -> Control:
 	var row := _row()
-	var label := Label.new()
+	var label := Atoms.dim("%d. %s" % [index + 1, members[index].name])
 	label.custom_minimum_size = Vector2(NAME_WIDTH, 0)
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.text = "%d. %s" % [index + 1, members[index].name]
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
 	row.add_child(label)
 	row.add_child(_move(squad, index, index - 1, "Up"))
 	row.add_child(_move(squad, index, index + 1, "Down"))
@@ -83,8 +79,7 @@ func _order_row(squad: Squad, members: Array[Creature], index: int) -> Control:
 
 
 func _move(squad: Squad, from: int, to: int, text: String) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button := Atoms.button(text, false)
 	button.disabled = to < 0 or to >= squad.member_ids.size()
 	button.pressed.connect(func() -> void:
 		Commands.reorder_squad(_session, from, to)
@@ -96,19 +91,15 @@ func _move(squad: Squad, from: int, to: int, text: String) -> Button:
 ## One Liberal, and every car they could be put in.
 func _seat_row(squad: Squad, member: Creature) -> Control:
 	var row := _row()
-	var label := Label.new()
-	label.custom_minimum_size = Vector2(NAME_WIDTH, 0)
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.text = "%s — %s" % [member.name, MarshallingText.seat(
-			member, _session.state, _session.catalog)]
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	var label := Atoms.cell("%s — %s" % [member.name, MarshallingText.seat(
+			member, _session.state, _session.catalog)], NAME_WIDTH)
+	label.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
 	row.add_child(label)
 
 	for car: Vehicle in _session.state.vehicles.values():
 		row.add_child(_board(squad, member, car, true))
 		row.add_child(_board(squad, member, car, false))
-	var out := Button.new()
-	out.text = "On foot"
+	var out := Atoms.button("On foot", false)
 	out.disabled = member.preferred_car_id == -1
 	out.pressed.connect(func() -> void:
 		Commands.disembark(_session, member)
@@ -120,9 +111,8 @@ func _seat_row(squad: Squad, member: Creature) -> Control:
 
 func _board(squad: Squad, member: Creature, car: Vehicle,
 		driving: bool) -> Button:
-	var button := Button.new()
-	button.text = "%s %s" % ["Drive" if driving else "Ride",
-			MarshallingText.vehicle(car, _session.catalog)]
+	var button := Atoms.button("%s %s" % ["Drive" if driving else "Ride",
+			MarshallingText.vehicle(car, _session.catalog)], false)
 	button.disabled = member.preferred_car_id == car.id \
 			and member.prefers_driving == driving
 	if SquadMarshalling.claimed_elsewhere(_session.state, squad, car.id):
@@ -138,40 +128,25 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 2)
+	_body = Atoms.column(0)
 	scroll.add_child(_body)
 
 
 func _heading(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", Palette.ACCENT)
+	var label := Atoms.wrapped(Atoms.heading(text))
 	_body.add_child(label)
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+	var label := Atoms.wrapped(Atoms.tinted(text, Palette.TEXT_FAINT))
 	_body.add_child(label)

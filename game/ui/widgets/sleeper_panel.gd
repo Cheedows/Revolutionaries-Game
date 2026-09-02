@@ -15,7 +15,7 @@ signal closed
 
 var _session: Session
 var _body: VBoxContainer
-var _title: Label
+var _head: PanelHeader
 
 
 func _ready() -> void:
@@ -36,7 +36,7 @@ func _refresh() -> void:
 		child.queue_free()
 
 	var sleepers := SleeperOrders.available(_session.state)
-	_title.text = "Taking Undercover Action:   %d" % sleepers.size()
+	_head.set_title("Taking Undercover Action:   %d" % sleepers.size())
 	if sleepers.is_empty():
 		_line("Nobody undercover can be reached this month.")
 		return
@@ -47,33 +47,26 @@ func _refresh() -> void:
 
 ## The buttons for one sleeper, grouped under the original's two headings.
 func _orders_for(sleeper: Creature) -> Control:
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 2)
+	var column := Atoms.column(0)
 	var open: Dictionary = SleeperOrders.orders(_session.state, sleeper)
 	for heading: StringName in [SleeperOrders.ADVOCACY,
 			SleeperOrders.ESPIONAGE, SleeperOrders.SURFACE]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		var name := Label.new()
+		var row := Atoms.row(Metrics.TIGHT)
+		var name := Atoms.tinted(String(SleeperText.HEADINGS[heading]), Palette.TEXT_FAINT)
 		name.custom_minimum_size = Vector2(200, 0)
-		name.text = String(SleeperText.HEADINGS[heading])
-		name.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 		row.add_child(name)
 		for order: StringName in open[heading]:
 			row.add_child(_order_button(sleeper, order))
 		if heading == SleeperOrders.ADVOCACY \
 				and not SleeperOrders.can_recruit(_session.state, sleeper):
-			var why := Label.new()
-			why.text = "[%s]" % SleeperText.cannot_recruit(sleeper)
-			why.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+			var why := Atoms.tinted("[%s]" % SleeperText.cannot_recruit(sleeper), Palette.TEXT_FAINT)
 			row.add_child(why)
 		column.add_child(row)
 	return column
 
 
 func _order_button(sleeper: Creature, order: StringName) -> Button:
-	var button := Button.new()
-	button.text = SleeperText.label(order)
+	var button := Atoms.button(SleeperText.label(order), false)
 	button.disabled = sleeper.activity == order
 	button.pressed.connect(func() -> void:
 		Commands.order_sleeper(_session, sleeper, order)
@@ -86,34 +79,21 @@ func _build() -> void:
 	if _body != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
-	var heading := HBoxContainer.new()
-	column.add_child(heading)
-	_title = Label.new()
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
-	heading.add_child(_title)
-	var close := Button.new()
-	close.text = "Close"
-	close.pressed.connect(func() -> void: closed.emit())
-	heading.add_child(close)
+	_head = PanelHeader.new()
+	_head.closed.connect(func() -> void: closed.emit())
+	column.add_child(_head)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 2)
+	_body = Atoms.column(0)
 	scroll.add_child(_body)
 
 
 func _line(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	var label := Atoms.wrapped(Atoms.dim(text))
 	_body.add_child(label)

@@ -70,12 +70,10 @@ func _build() -> void:
 	if _grid != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := VBoxContainer.new()
+	var column := Atoms.column(Metrics.SNUG)
 	add_child(column)
 
-	var heading := Label.new()
-	heading.text = "Current Location"
-	heading.add_theme_color_override("font_color", Palette.ACCENT)
+	var heading := Atoms.wrapped(Atoms.heading("Current Location"))
 	column.add_child(heading)
 
 	_grid = Control.new()
@@ -85,9 +83,7 @@ func _build() -> void:
 	column.add_child(_grid)
 
 	# What is underfoot, which the original says in the message area.
-	_here = Label.new()
-	_here.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_here.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	_here = Atoms.dim("")
 	column.add_child(_here)
 
 

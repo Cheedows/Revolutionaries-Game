@@ -28,13 +28,10 @@ func _build() -> void:
 	if not _rows.is_empty():
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 4)
+	var outer := Atoms.column(Metrics.TIGHT)
 	add_child(outer)
 
-	var heading := Label.new()
-	heading.text = "The Status of the Liberal Agenda"
-	heading.add_theme_color_override("font_color", Palette.ACCENT)
+	var heading := Atoms.heading("The Status of the Liberal Agenda")
 	outer.add_child(heading)
 
 	# Every law in the game is a row, which is more rows than a phone has
@@ -44,23 +41,19 @@ func _build() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(scroll)
 
-	var column := VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 2)
+	var column := Atoms.column(0)
 	scroll.add_child(column)
 
 	for law: StringName in Ids.LAWS:
-		var row := HBoxContainer.new()
-		var name_label := Label.new()
-		name_label.text = EventText.LAW_NAMES.get(law, String(law).capitalize())
-		name_label.custom_minimum_size = Vector2(NAME_WIDTH, 0)
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		name_label.add_theme_color_override("font_color", Palette.TEXT_DIM)
+		var row := Atoms.row(Metrics.SNUG)
+		var name_label := Atoms.cell(
+				EventText.LAW_NAMES.get(law, String(law).capitalize()),
+				NAME_WIDTH)
+		name_label.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
 		_names.append(name_label)
 		row.add_child(name_label)
 
-		var value_label := Label.new()
+		var value_label := Atoms.body("")
 		row.add_child(value_label)
 		column.add_child(row)
 		_rows[law] = value_label

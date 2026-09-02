@@ -17,7 +17,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 run() {
 	xvfb-run -a -s "-screen 0 1600x1600x24" "$GODOT" --path "$ROOT/game" \
-		--rendering-driver opengl3 --resolution 400x800 "$@"
+		--rendering-driver opengl3 --resolution "${RES:-400x800}" "$@"
 }
 
 if [ "$1" = "--shot" ]; then
