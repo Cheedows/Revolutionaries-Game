@@ -31,12 +31,19 @@ window/stretch/aspect="expand"
 ; rather than letter-boxing. A phone held upright therefore hands the layout
 ; about 360 of them, which is what ui/theme/metrics.gd calls narrow.
 
-; Portrait, not "sensor". The layout is built for a narrow column — one
-; scroller, a stack of panels, a row of buttons along the bottom — and a phone
-; turned sideways gets the desktop's two-column layout at finger size, which
-; fits but is unreadable. Desktop is unaffected: handheld/ only applies to
-; Android and iOS.
-window/handheld/orientation="portrait"
+; Portrait. The layout is built for a narrow column — one scroller, a stack of
+; panels, a row of buttons along the bottom — and a phone turned sideways gets
+; the desktop's two-column layout at finger size, which fits but is unreadable.
+; Desktop is unaffected: handheld/ only applies to Android and iOS.
+;
+; The number matters. This setting is an int in Godot 4 —
+; DisplayServer.SCREEN_PORTRAIT is 1 — and the Android exporter casts whatever
+; it finds to int on the way into the manifest. A string here does not fail:
+; it casts to 0, which is SCREEN_LANDSCAPE, and every build comes out locked
+; sideways with nothing to say it went wrong. This project shipped for months
+; reading "sensor" and meaning landscape. tools/android/check_orientation.py
+; reads the exported APK back and fails the build if it ever happens again.
+window/handheld/orientation=1
 
 [input_devices]
 

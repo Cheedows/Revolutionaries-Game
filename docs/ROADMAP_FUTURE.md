@@ -134,9 +134,16 @@ rather than a description of it.
   build over the top without touching the saves, and nothing in the repository
   has to know it is happening.
 - **Portrait on a phone, and a way out of a list that is not in the list.**
-  The Android build asks for `portrait` rather than `sensor`: the layout is one
-  narrow column, and turned sideways it gets the desktop's two-column form at
-  fingertip size, which fits and is unreadable. `IntentDialog` also grew a
+  The Android build is locked upright: the layout is one narrow column, and
+  turned sideways it gets the desktop's two-column form at fingertip size,
+  which fits and is unreadable. This took two goes. The setting is an int in
+  Godot 4 and the project held a string — `"sensor"`, then `"portrait"` — which
+  the exporter casts to 0, which is `SCREEN_LANDSCAPE`. Every APK had shipped
+  hard-locked sideways, and a test comparing the setting to `"portrait"`
+  passed the whole time. It is `window/handheld/orientation=1` now, the test
+  compares against `DisplayServer.SCREEN_PORTRAIT`, and
+  `tools/android/check_orientation.py` decodes the built APK's manifest in CI
+  so that only the artefact gets to say what the artefact does. `IntentDialog` also grew a
   footer: an option marked `"footer": true` is drawn as a button under the
   list rather than as another numbered row, so the six switches on the
   new-game screen read as six things you flip and Continue reads as the one

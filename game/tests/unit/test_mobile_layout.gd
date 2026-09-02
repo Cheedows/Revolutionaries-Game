@@ -16,12 +16,19 @@ const DESK := Vector2i(1280, 800)
 ## Every measurement in this file assumes a phone held upright, and so does the
 ## layout: one column, one scroller, the panel buttons along the bottom. Turned
 ## sideways an Android build gets the desktop's two-column layout at fingertip
-## size, which fits and is unreadable, so the project asks Android for portrait
-## rather than leaving it to the sensor. Checked here because the setting is one
-## word in project.godot and nothing else would notice it changing back.
+## size, which fits and is unreadable, so the project asks Android for portrait.
+##
+## It has to be the number. The setting is an int, and the Android exporter
+## casts what it finds to int on its way into the manifest — so a string casts
+## to 0, which is SCREEN_LANDSCAPE, and the build comes out locked sideways
+## with nothing anywhere saying so. This project shipped that way reading
+## "sensor", and an earlier version of this test asserted the string and passed
+## while every APK went out landscape. Compare against the enum instead: a
+## string is not equal to 1, and this fails.
 func test_a_phone_is_asked_to_stay_upright() -> void:
 	equal(ProjectSettings.get_setting("display/window/handheld/orientation"),
-			"portrait", "Android is asked for portrait")
+			DisplayServer.SCREEN_PORTRAIT,
+			"Android is asked for portrait, as the number the exporter reads")
 
 
 func test_a_phone_is_recognised_as_one_and_a_desk_is_not() -> void:

@@ -144,6 +144,13 @@ jobs:
           godot --headless --path game --export-debug Android \
             "$PWD/build/revolutionaries-debug.apk"
 
+      - name: Check that it comes up the right way round
+        # Not a duplicate of the test that reads the project setting: that one
+        # passed for months while every APK went out locked landscape, because
+        # the setting is an int and a string in it casts to 0. Only the built
+        # manifest settles it.
+        run: python3 tools/android/check_orientation.py build/revolutionaries-debug.apk
+
       - name: Check that it is really an APK, signed with the key we expect
         run: |
           test -s build/revolutionaries-debug.apk
