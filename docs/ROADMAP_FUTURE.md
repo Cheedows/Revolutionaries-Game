@@ -97,6 +97,27 @@ rather than a description of it.
   with four flavours at each end, both sides' performances are graded as the
   original grades them, and a month inside tells one of its thirty stories.
 
+- **The interface has a design system, and twenty files still to move onto it.**
+  Reported as three separate complaints about one screen — the Continue button
+  drawn off the bottom, six switches with no visible on state, and a focus ring
+  on the first row of every list — which turned out to be one cause: nothing
+  said what a switch, an action or a gap was, so all forty widgets answered for
+  themselves. Across `ui/` that had come to 43 hand-built buttons, 73
+  hand-built labels, 155 theme overrides and eight different hand-picked
+  separations.
+
+  `ui/theme/atoms.gd` now holds the primitives, `Metrics` holds a four-step
+  spacing scale, `Palette` holds the states a control can be in, and
+  `ToggleRow`, `OptionRow` and `ActionBar` sit over them. A screen's actions
+  live in the bar and the bar never scrolls, which is the rule that fixes the
+  cut-off button for good rather than one screen at a time.
+
+  `tools/audit_design.py` fails the build when something under `ui/` goes
+  around them. The twenty widgets not yet moved over are listed in it, and the
+  list may only shrink: a file on it that has been cleaned up fails the build
+  until it is taken off, so it cannot rot into a permanent exemption. Moving
+  the remaining twenty over is the work left, and it is mechanical.
+
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in
   `tools/voice_exceptions.json` with what the original does instead. The

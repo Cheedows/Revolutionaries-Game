@@ -53,7 +53,6 @@ signal started(session: Session)
 
 var _session: Session
 var _dialog: IntentDialog
-var _scroll: ScrollContainer
 
 ## Where a player types their own name, shown only while that is being asked.
 var _typed: LineEdit
@@ -91,11 +90,15 @@ func session() -> Session:
 func _ask_switches() -> void:
 	var options: Array[Dictionary] = []
 	for switch: Dictionary in SWITCHES:
-		var on := bool(_chosen.get(switch[&"id"], false))
+		# Marked as switches rather than drawn as "[x] " and "[ ] " in front of
+		# the label. The brackets are what the original has to draw a checkbox
+		# with; a screen that can draw one should draw one. See [ToggleRow].
 		options.append({
 			"id": switch[&"id"],
-			"label": "%s  %s" % ["[x]" if on else "[ ]", switch[&"label"]],
+			"label": switch[&"label"],
 			"note": switch.get(&"note", ""),
+			"toggle": true,
+			"on": bool(_chosen.get(switch[&"id"], false)),
 		})
 	# Under the list rather than in it: the six switches are things you flip,
 	# and this is the one thing that leaves.
@@ -212,38 +215,33 @@ func _build() -> void:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	# The whole screen scrolls as one thing on a phone, rather than the list
-	# of options scrolling inside it. See Metrics.unscroll().
-	_scroll = ScrollContainer.new()
-	_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_scroll.offset_left = 24
-	_scroll.offset_top = 24
-	_scroll.offset_right = -24
-	_scroll.offset_bottom = -24
-	add_child(_scroll)
-
+	# The page itself does not scroll. What is long here is the list of
+	# options, and it is the list that scrolls, inside the dialog, under a bar
+	# of actions pinned to the bottom — otherwise the one button that leaves
+	# the screen is drawn below the bottom of the screen, which is what
+	# shipped.
 	var page := VBoxContainer.new()
-	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_theme_constant_override("separation", 12)
-	_scroll.add_child(page)
+	page.set_anchors_preset(Control.PRESET_FULL_RECT)
+	page.offset_left = Metrics.WIDE
+	page.offset_top = Metrics.WIDE
+	page.offset_right = -Metrics.WIDE
+	page.offset_bottom = -Metrics.WIDE
+	page.add_theme_constant_override("separation", Metrics.SNUG)
+	add_child(page)
 
-	var title := Label.new()
-	title.text = Branding.GAME_TITLE
-	title.add_theme_color_override("font_color", Palette.ACCENT)
-	page.add_child(title)
+	page.add_child(Atoms.title(Branding.GAME_TITLE))
 
-	_heading = Label.new()
-	_heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_heading = Atoms.body("")
 	page.add_child(_heading)
 
-	_typed = LineEdit.new()
+	_typed = Atoms.field("")
 	_typed.visible = false
 	_typed.custom_minimum_size = Vector2(280, 0)
 	page.add_child(_typed)
 
 	_dialog = IntentDialog.new()
 	_dialog.chosen.connect(_on_chosen)
+	_dialog.pin(true)
 	page.add_child(_dialog)
 
 
@@ -258,17 +256,6 @@ func _notification(what: int) -> void:
 
 func _adapt() -> void:
 	theme = UiTheme.build(Metrics.touch(self))
-	var narrow := Metrics.narrow(self)
-	if _scroll != null:
-		if narrow:
-			Metrics.page_scroller(_scroll)
-		else:
-			if _scroll.has_meta(&"page_scroller"):
-				_scroll.remove_meta(&"page_scroller")
-			_scroll.horizontal_scroll_mode = \
-					ScrollContainer.SCROLL_MODE_DISABLED
-			_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		Metrics.unscroll(_scroll, narrow)
 	if _dialog != null:
 		_dialog.compact(Metrics.narrow(self))
 	Metrics.enlarge(self, Metrics.touch(self))

@@ -59,14 +59,8 @@ func _play_a_day(screen: Control, session: Session) -> void:
 	while session.is_waiting() and asked < 200:
 		asked += 1
 		var dialog: IntentDialog = screen.get("_dialog")
-		var picked: Variant = null
-		for row in dialog._options.get_children():
-			for child in (row as Control).get_children():
-				if child is Button and not (child as Button).disabled:
-					picked = dialog._ids.get(child)
-					break
-			if picked != null:
-				break
+		var live := dialog.answerable()
+		var picked: Variant = live[0] if not live.is_empty() else null
 		screen.call("_on_answer", picked)
 
 

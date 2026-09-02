@@ -123,8 +123,8 @@ func test_a_way_out_of_a_list_is_not_another_item_in_it() -> void:
 	var dialog := IntentDialog.new()
 	tree.root.add_child(dialog)
 	var options: Array[Dictionary] = [
-		{"id": &"one", "label": "[ ]  Classic Mode"},
-		{"id": &"two", "label": "[ ]  Nightmare Mode"},
+		{"id": &"one", "label": "Classic Mode", "toggle": true, "on": false},
+		{"id": &"two", "label": "Nightmare Mode", "toggle": true, "on": true},
 		{"id": &"done", "label": "Continue", "footer": true},
 	]
 	dialog.ask(Intent.new(Intent.CONFIRM_NEW_GAME, options, {}, false),
@@ -139,22 +139,26 @@ func test_a_way_out_of_a_list_is_not_another_item_in_it() -> void:
 	dialog.call("_gui_input", _key(KEY_3))
 	equal(taken.size(), 1, "and there is no third number to press")
 
-	var listed := 0
-	var footed: Button = null
-	for row in dialog.get("_options").get_children():
-		for child in (row as Control).get_children():
-			if child is Button:
-				listed += 1
-				check(not String((child as Button).text).contains("Continue"),
-						"the way out is not in the list")
-	for child in dialog.get("_footer").get_children():
-		if child is Button:
-			footed = child
-	equal(listed, 2, "two switches in the list")
-	check(footed != null and footed.text == "Continue",
-			"and Continue under it, unnumbered")
+	# The list holds the switches; the way out is in the bar under it, and the
+	# order answerable() reports them in is the order a player reaches them.
+	equal(dialog.answerable(), [&"one", &"two", &"done"],
+			"two switches, then the way out")
+	var listed: Array[Button] = dialog.call("_listed_buttons")
+	equal(listed.size(), 2, "two switches in the list")
+	for button in listed:
+		check(button is ToggleRow, "a switch is drawn as a switch")
 
-	footed.pressed.emit()
+	# The switch carries its own state, rather than the state being two
+	# characters of punctuation inside the label.
+	check(not listed[0].button_pressed, "the first switch is off")
+	check(listed[1].button_pressed, "and the second is on")
+
+	var bar: ActionBar = dialog.get("_bar")
+	var footed := bar.buttons()
+	equal(footed.size(), 1, "one way out")
+	check(footed[0].text == "Continue", "and it is Continue, unnumbered")
+
+	footed[0].pressed.emit()
 	equal(taken, [&"two", &"done"], "pressing it answers the question")
 
 	tree.root.remove_child(dialog)

@@ -94,13 +94,10 @@ func test_the_title_screen_offers_what_is_there() -> void:
 
 	var dialog: IntentDialog = screen._dialog
 	check(dialog.visible, "the menu is up")
-	var enabled := {}
-	for row in dialog._options.get_children():
-		for child in (row as Control).get_children():
-			if child is Button:
-				enabled[dialog._ids.get(child)] = not (child as Button).disabled
-	check(bool(enabled[&"new"]), "a new game can always be started")
-	check(not bool(enabled[&"continue"]),
+	var enabled := dialog.offered()
+	check(bool(enabled.get(&"new", false)),
+			"a new game can always be started")
+	check(enabled.has(&"continue") and not bool(enabled[&"continue"]),
 			"but there is nothing to carry on")
 
 	# The book opens even when it is empty.

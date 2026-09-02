@@ -198,7 +198,7 @@ func _answer_everything(screen: Object, session: Session, day: int) -> bool:
 			_site_turns += 1
 			continue
 		var choice: Variant = _from_the_buttons(screen._dialog, false)
-		if choice == null and not screen._dialog._ids.is_empty():
+		if choice == null and not screen._dialog.offered().is_empty():
 			fail("day %d: %s offered nothing that could be clicked"
 					% [day, session.pending().intent.type])
 			return false

@@ -34,6 +34,30 @@ const TOUCH_FONT := 19
 const BASE_GAP := 12
 const TOUCH_GAP := 8
 
+## The only gaps anything may use.
+##
+## Before this there were eight different hand-picked separations in ui/ — 2,
+## 4, 6, 8, 12, 16, 24 and 0 — chosen a widget at a time by whoever was writing
+## that widget. That is not a look, it is the absence of one: two lists built a
+## fortnight apart sat at different rhythms for no reason a player could read.
+##
+## A scale is the fix, and a short one is the point. Four steps that double is
+## enough to build every screen in the game, and being short is what makes it
+## hold: there is no 6 to reach for, so nothing drifts to 6.
+
+## Rows of one list, which should read as one block rather than as separate
+## things.
+const TIGHT := 4
+
+## Things that belong together — a label and the control it names.
+const SNUG := 8
+
+## The ordinary gap between controls.
+const ROOM := 16
+
+## Between one section of a screen and the next.
+const WIDE := 24
+
 
 ## Whether this build is running on something held in a hand.
 ##

@@ -7,50 +7,47 @@ extends PanelContainer
 ## of options. So one widget can render all of them, and a screen only needs a
 ## bespoke one where a list of buttons is genuinely not enough.
 ##
+## The options themselves are [OptionRow]s and [ToggleRow]s, and the ways out
+## live in an [ActionBar]; this decides which of them a question needs and
+## keeps track of what the player can currently answer.
+##
 ## Emits [signal chosen] with the option's id, or [signal declined] when the
 ## player backs out of a question that allows it.
 
 signal chosen(id: Variant)
 signal declined
 
-## Beyond this many options the list scrolls rather than growing.
-const SCROLL_AFTER := 8
-const ROW_HEIGHT := 34
-
-## The same, for a screen being poked with a finger: fewer of them, each big
-## enough to hit. The list is the same list; it is read a thumb at a time.
-const TOUCH_SCROLL_AFTER := 6
-
 ## The number keys pick the first nine options, as the original's letters pick
 ## its own. Past nine there is no key for it and the list is walked instead.
 const SHORTCUTS := 9
-
-## A note longer than this is a sentence rather than a price, and goes on a
-## line of its own under the option instead of in the column to the right.
-##
-## The original writes both kinds — "$60 a day" and "Liberalism is forgotten.
-## Is it too late to fight back?" — and only the first fits in a column.
-const NOTE_IS_PROSE := 16
 
 var _title: Label
 var _detail: Label
 var _options: VBoxContainer
 var _scroll: ScrollContainer
-var _footer: HBoxContainer
+var _bar: ActionBar
 var _refuse: Button
 
-## The option each button stands for, in the list and in the footer both, so
-## the buttons stay the only thing that knows about layout and the ids stay
-## data.
+## The option each button stands for, so the buttons stay the only thing that
+## knows about layout and the ids stay data.
 var _ids: Dictionary = {}
 
 ## How many of them are in the numbered list, which is what the next one's
-## number is. Counted rather than taken from _ids, because the footer's
-## buttons are in there too and are not numbered.
+## number is. Counted rather than taken from _ids, because the bar's buttons
+## are in there too and are not numbered.
 var _listed := 0
+
+## What the player last answered. A screen that rebuilds its list after every
+## answer — the switches on the new-game screen do exactly this — puts the
+## keyboard back where it was rather than at the top. See [method _restore].
+var _last: Variant = null
 
 ## Whether the options are being sized for a fingertip.
 var _touch := false
+
+## Whether the bar is held against the bottom of the dialog rather than
+## trailing the list. See [method pin].
+var _pinned := false
 
 
 func _init() -> void:
@@ -71,24 +68,11 @@ func _gui_input(event: InputEvent) -> void:
 	var index := key.keycode - KEY_1
 	if index < 0 or index >= SHORTCUTS:
 		return
-	var button := _button_at(index)
-	if button == null or button.disabled:
+	var listed := _listed_buttons()
+	if index >= listed.size() or listed[index].disabled:
 		return
-	chosen.emit(_ids.get(button))
+	_answer(_ids.get(listed[index]))
 	accept_event()
-
-
-## The nth option's button, or null.
-func _button_at(index: int) -> Button:
-	var seen := 0
-	for row in _options.get_children():
-		for child in (row as Control).get_children():
-			if not (child is Button):
-				continue
-			if seen == index:
-				return child
-			seen += 1
-	return null
 
 
 ## Sizes the options for a finger, or back for a pointer.
@@ -98,6 +82,26 @@ func _button_at(index: int) -> Button:
 ## reshuffle itself under the thumb about to answer it.
 func compact(on: bool) -> void:
 	_touch = on
+	_bar.adapt(on)
+
+
+## Holds the ways out against the bottom of the dialog, with the options
+## scrolling behind them.
+##
+## For a screen the dialog fills on its own. Off by default, because where the
+## dialog is one panel among several the screen owns the scrolling and the bar
+## rides at the end of the list like anything else.
+func pin(on: bool) -> void:
+	_pinned = on
+	size_flags_vertical = Control.SIZE_EXPAND_FILL if on else Control.SIZE_FILL
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL if on \
+			else Control.SIZE_FILL
+	if on:
+		# The one scroller on the screen, so Metrics.unscroll() leaves it alone
+		# and the list keeps scrolling under the pinned bar.
+		Metrics.page_scroller(_scroll)
+	elif _scroll.has_meta(&"page_scroller"):
+		_scroll.remove_meta(&"page_scroller")
 
 
 ## Shows [param intent]. The dialog stays up until an option is taken.
@@ -110,37 +114,39 @@ func ask(intent: Intent, state: GameState) -> void:
 	_ids.clear()
 	_listed = 0
 	for child in _options.get_children():
-		child.queue_free()
 		_options.remove_child(child)
-
-	for child in _footer.get_children():
 		child.queue_free()
-		_footer.remove_child(child)
+	_bar.clear()
 
 	var entries := intent.options
 	if entries.is_empty():
 		# A report rather than a choice: the original's "press any key".
-		_add(IntentText.CARRY_ON, "", true, null)
+		_add(IntentText.CARRY_ON, "", true, null, false, false)
 	for entry: Dictionary in entries:
+		var label := IntentText.option(entry, state)
+		var enabled := IntentText.enabled(entry)
 		if bool(entry.get("footer", false)):
-			_add_footer(IntentText.option(entry, state),
-					IntentText.enabled(entry), entry.get("id"))
+			var action := Atoms.primary(label)
+			action.disabled = not enabled
+			action.pressed.connect(_answer.bind(entry.get("id")))
+			_ids[action] = entry.get("id")
+			_bar.add(action)
 			continue
-		_add(IntentText.option(entry, state), IntentText.note(entry),
-				IntentText.enabled(entry), entry.get("id"))
-	_footer.visible = _footer.get_child_count() > 0
+		_add(label, IntentText.note(entry), enabled, entry.get("id"),
+				bool(entry.get("toggle", false)), bool(entry.get("on", false)))
 
-	var rows := TOUCH_SCROLL_AFTER if _touch else SCROLL_AFTER
-	var each := Metrics.TOUCH_TARGET if _touch else ROW_HEIGHT
-	_scroll.custom_minimum_size.y = mini(maxi(_listed, 1), rows) * each
 	_refuse.visible = intent.cancellable
 	_refuse.text = IntentText.refusal(intent)
+	if _refuse.visible:
+		_bar.add(_refuse)
+	_bar.visible = _bar.filled()
+	_bar.adapt(_touch)
 	visible = true
-	_focus_first()
+	_restore()
 
 
 ## The ids a player could take right now, in the order they would reach them:
-## down the numbered list, then the way out under it.
+## down the list, then along the ways out under it.
 ##
 ## The buttons stay private, but something has to be able to ask what is on
 ## offer without knowing where each one is drawn — a test driving the game
@@ -148,14 +154,34 @@ func ask(intent: Intent, state: GameState) -> void:
 ## rewritten every time the layout moves.
 func answerable() -> Array:
 	var ids: Array = []
-	for row in _options.get_children():
-		for child in (row as Control).get_children():
-			if child is Button and not (child as Button).disabled:
-				ids.append(_ids.get(child))
-	for child in _footer.get_children():
-		if child is Button and not (child as Button).disabled:
-			ids.append(_ids.get(child))
+	for button in _listed_buttons():
+		if not button.disabled:
+			ids.append(_ids.get(button))
+	for button in _bar.buttons():
+		if not button.disabled and button != _refuse:
+			ids.append(_ids.get(button))
 	return ids
+
+
+## Every option the question put up, and whether it can be taken.
+##
+## The companion to [method answerable], which reports only what is live. A
+## test that wants to prove an option is *offered and refused* — a saved game
+## to carry on with when there is none — needs to see the disabled ones too.
+##
+## Both exist so that nothing outside has to walk the buttons. Four tests used
+## to, and every one of them broke silently the day the rows stopped being
+## wrapped in a container: the loop found no buttons, the dictionary came back
+## empty, and the assertion that should have failed errored instead and was
+## counted as a pass.
+func offered() -> Dictionary:
+	var found := {}
+	for button in _listed_buttons():
+		found[_ids.get(button)] = not button.disabled
+	for button in _bar.buttons():
+		if button != _refuse:
+			found[_ids.get(button)] = not button.disabled
+	return found
 
 
 ## Takes the dialog away.
@@ -163,108 +189,109 @@ func dismiss() -> void:
 	visible = false
 
 
-func _add(label: String, note: String, enabled: bool, id: Variant) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+func _answer(id: Variant) -> void:
+	_last = id
+	chosen.emit(id)
 
-	var button := Button.new()
-	# The number that picks it, so the shortcut is visible rather than folklore.
+
+func _add(label: String, note: String, enabled: bool, id: Variant,
+		toggle: bool, on: bool) -> void:
 	_listed += 1
-	var place := _listed
-	var said: String = "%d. %s" % [place, label] if place <= SHORTCUTS else label
-	var aside := note.length() > NOTE_IS_PROSE
-	if aside:
-		said += "\n" + note
-	button.text = said
+	# The number is only drawn where there is a keyboard to type it. On a phone
+	# it is a number nobody can enter, in front of every line in the game.
+	var place := 0 if _touch else (_listed if _listed <= SHORTCUTS else 0)
+	var button: Button
+	if toggle:
+		var switch := ToggleRow.new(label, note, place, _touch)
+		switch.set_on(on)
+		button = switch
+	else:
+		button = OptionRow.new(label, note, place, _touch)
 	button.disabled = not enabled
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	# A phone is narrow enough that some of these do not fit on one line, and
-	# an option that has run off the edge cannot be chosen.
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if _touch:
-		button.custom_minimum_size.y = Metrics.TOUCH_TARGET
-	button.pressed.connect(func() -> void: chosen.emit(id))
+	button.pressed.connect(_answer.bind(id))
 	_ids[button] = id
-	row.add_child(button)
-
-	if not note.is_empty() and not aside:
-		var cost := Label.new()
-		cost.text = note
-		cost.add_theme_color_override("font_color", Palette.TEXT_DIM)
-		cost.custom_minimum_size.x = 72
-		cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		row.add_child(cost)
-
-	_options.add_child(row)
+	_options.add_child(button)
 
 
-## An option that means "I have finished with this list" rather than "pick me".
+func _listed_buttons() -> Array[Button]:
+	var found: Array[Button] = []
+	for child in _options.get_children():
+		if child is Button:
+			found.append(child)
+	return found
+
+
+## Which option the keyboard should be sitting on, or null for none at all.
 ##
-## A screen of switches needs somewhere to say it is done, and the original
-## says it with "Press any other key to continue..." — which is not one of the
-## lettered choices. Rendering it as another numbered row made the six things
-## you toggle and the one thing that leaves look like seven equal options. So
-## it sits under the list instead, out of the numbering and out of the scroll.
-func _add_footer(label: String, enabled: bool, id: Variant) -> void:
-	var button := Button.new()
-	button.text = label
-	button.disabled = not enabled
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if _touch:
-		button.custom_minimum_size.y = Metrics.TOUCH_TARGET
-	button.pressed.connect(func() -> void: chosen.emit(id))
-	_ids[button] = id
-	_footer.add_child(button)
+## Kept apart from the act of focusing it so that it can be asked. Godot will
+## not move focus onto a control that is not inside a live tree, and this
+## suite runs without one — so a test that watched for the ring would be
+## watching an engine refusal rather than this decision, and would go on
+## passing whatever this decided.
+##
+## Null on a phone. Focus draws a ring; the first option of every list was
+## wearing it; and a ring around the first of six identical switches reads as
+## the one already chosen. Nothing on a touchscreen has moved it there, so
+## nothing should be wearing it.
+##
+## Otherwise the option last answered, while it is still on offer. The switches
+## screen rebuilds its whole list after every press, and starting at the top
+## each time means six presses to reach the sixth switch, every time.
+func keyboard_lands_on() -> Variant:
+	if _touch or Metrics.handheld():
+		return null
+	var reachable := _listed_buttons()
+	reachable.append_array(_bar.buttons())
+	var first: Variant = null
+	var found := false
+	for button in reachable:
+		if button.disabled:
+			continue
+		if _last != null and _ids.get(button) == _last:
+			return _last
+		if not found:
+			first = _ids.get(button)
+			found = true
+	return first if found else null
 
 
-func _focus_first() -> void:
+func _restore() -> void:
 	if not is_inside_tree():
 		return
-	for row in _options.get_children():
-		for child in (row as Control).get_children():
-			if child is Button and not (child as Button).disabled:
-				(child as Button).grab_focus()
-				return
-	# A question that is nothing but a way out — a report with a Back button —
-	# still has to be answerable from the keyboard.
-	for child in _footer.get_children():
-		if child is Button and not (child as Button).disabled:
-			(child as Button).grab_focus()
+	var wanted: Variant = keyboard_lands_on()
+	var reachable := _listed_buttons()
+	reachable.append_array(_bar.buttons())
+	for button in reachable:
+		if not button.disabled and _ids.get(button) == wanted:
+			button.grab_focus()
 			return
 
 
 func _build() -> void:
 	# The dialog takes the keyboard so its shortcuts work wherever focus is.
 	focus_mode = Control.FOCUS_ALL
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	var box := Atoms.column(Metrics.SNUG)
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(box)
 
-	_title = Label.new()
-	_title.add_theme_color_override("font_color", Palette.ACCENT)
+	_title = Atoms.heading("")
 	box.add_child(_title)
 
-	_detail = Label.new()
-	_detail.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	_detail = Atoms.dim("")
 	box.add_child(_detail)
 
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(_scroll)
 
-	_options = VBoxContainer.new()
+	_options = Atoms.column(Metrics.TIGHT)
 	_options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_options.add_theme_constant_override("separation", 4)
 	_scroll.add_child(_options)
 
-	_footer = HBoxContainer.new()
-	_footer.add_theme_constant_override("separation", 8)
-	_footer.visible = false
-	box.add_child(_footer)
+	_bar = ActionBar.new()
+	_bar.visible = false
+	box.add_child(_bar)
 
-	_refuse = Button.new()
-	_refuse.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_refuse = Atoms.button("")
 	_refuse.pressed.connect(func() -> void: declined.emit())
-	box.add_child(_refuse)

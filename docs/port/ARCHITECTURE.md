@@ -30,6 +30,11 @@ Enforced mechanically:
 - `core/**` must not match `Node|Scene|print(|randf|randi|Time\.|Input\.|await get_tree`
 - `data/**` must not match `func ` outside schema helpers — content is data, not behaviour
 - `ui/**` must not mutate `GameState` directly — it emits Intents and reads state
+- `ui/**` must build its controls out of `ui/theme/atoms.gd` and the widgets over
+  it, never `Label.new()`/`Button.new()`/`LineEdit.new()` or a literal `Color`,
+  and must space them off the scale in `ui/theme/metrics.gd`
+  (`tools/audit_design.py`; files not yet moved over are listed in it, and that
+  list may only shrink)
 
 If a rule needs breaking, the rule changes in this file first, in its own commit.
 
@@ -89,7 +94,7 @@ game/
     headless_main.gd            # CLI entry: --seed N --script file --trace out.jsonl
 
   ui/
-    theme/                      # one theme resource, no per-scene inline styling
+    theme/                      # palette, scale, theme, and atoms — the design system
     screens/                    # safehouse, squad, site, chase, news, politics, review
     widgets/                    # creature_card, skill_bar, item_row, log_view, map_view
     adapters/                   # Event -> widget calls. The ONLY place that knows both.
