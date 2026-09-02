@@ -165,15 +165,13 @@ func answerable() -> Array:
 
 ## Every option the question put up, and whether it can be taken.
 ##
-## The companion to [method answerable], which reports only what is live. A
-## test that wants to prove an option is *offered and refused* — a saved game
-## to carry on with when there is none — needs to see the disabled ones too.
-##
-## Both exist so that nothing outside has to walk the buttons. Four tests used
-## to, and every one of them broke silently the day the rows stopped being
-## wrapped in a container: the loop found no buttons, the dictionary came back
-## empty, and the assertion that should have failed errored instead and was
-## counted as a pass.
+## The companion to [method answerable], which reports only what is live: a
+## test proving an option is *offered and refused* — a saved game to carry on
+## with when there is none — needs the disabled ones too. Both exist so that
+## nothing outside walks the buttons. Four tests used to, and all four broke
+## silently the day the rows stopped being wrapped in a container: the loop
+## found nothing, and the assertion that should have failed errored instead
+## and was counted as a pass.
 func offered() -> Dictionary:
 	var found := {}
 	for button in _listed_buttons():
@@ -203,6 +201,10 @@ func _add(label: String, note: String, enabled: bool, id: Variant,
 	var button: Button
 	if toggle:
 		var switch := ToggleRow.new(label, note, place, _touch)
+		# Refused before it is set, so a switch that is both on and refused —
+		# which is what the original leaves behind when Classic Mode is turned
+		# on over the top of it — draws as refused rather than as on.
+		switch.disabled = not enabled
 		switch.set_on(on)
 		button = switch
 	else:

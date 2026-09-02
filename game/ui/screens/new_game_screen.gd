@@ -27,6 +27,19 @@ const SWITCHES: Array[Dictionary] = [
 			&"note": "Enable Stalinist Comrade Squad (not fully implemented)."},
 ]
 
+## Which switches cancel which. A switch named here is refused for as long as
+## the switch it points at is on.
+##
+## The original does this to exactly one pair, and does it by drawing the row
+## black on black: turn Classic Mode on and "We Didn't Start The Fire" goes
+## dark, because a game with no Conservative Crime Squad cannot also have a
+## strong one. It is not only presentation — newgame.cpp sets the endgame from
+## classicmode first and only falls through to strongccs when classicmode is
+## off, so the switch genuinely does nothing while the other is on.
+const CANCELLED_BY := {
+	&"strong_ccs": &"classic",
+}
+
 const WIN_CONDITIONS: Array[Dictionary] = [
 	{&"id": &"elite_liberal", &"label": "No Compromise Classic",
 			&"note": "I will make all our laws Elite Liberal!"},
@@ -93,12 +106,16 @@ func _ask_switches() -> void:
 		# Marked as switches rather than drawn as "[x] " and "[ ] " in front of
 		# the label. The brackets are what the original has to draw a checkbox
 		# with; a screen that can draw one should draw one. See [ToggleRow].
+		var cancelled_by: Variant = CANCELLED_BY.get(switch[&"id"])
+		var refused := cancelled_by != null \
+				and bool(_chosen.get(cancelled_by, false))
 		options.append({
 			"id": switch[&"id"],
 			"label": switch[&"label"],
 			"note": switch.get(&"note", ""),
 			"toggle": true,
 			"on": bool(_chosen.get(switch[&"id"], false)),
+			"enabled": not refused,
 		})
 	# Under the list rather than in it: the six switches are things you flip,
 	# and this is the one thing that leaves.

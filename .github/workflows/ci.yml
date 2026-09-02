@@ -49,3 +49,20 @@ jobs:
           sudo mv Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
       - name: Run tests
         run: tools/run_tests.sh
+
+  layout:
+    name: Rendered layout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6 and a virtual screen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libglx-mesa0
+          curl -sSL -o godot.zip \
+            https://github.com/godotengine/godot-builds/releases/download/4.6-stable/Godot_v4.6-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.6-stable_linux.x86_64
+          sudo mv Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Nothing is drawn outside the thing that contains it
+        run: tools/check_layout.sh

@@ -178,13 +178,50 @@ func test_a_switch_and_an_answer_are_built_the_same_way() -> void:
 		var answer := OptionRow.new("Classic Mode", "No CCS.", 1, touch)
 		check(switch is Button and answer is Button,
 				"both are buttons, so both get the theme's states")
-		equal(switch.custom_minimum_size.y, answer.custom_minimum_size.y,
-				"and both are the same height to hit")
+		check(switch is RowButton and answer is RowButton,
+				"and both measure themselves the same way")
 		if touch:
-			equal(switch.custom_minimum_size.y, float(Metrics.TOUCH_TARGET),
-					"which on a phone is a fingertip")
+			for row: Button in [switch, answer]:
+				check(row.get_combined_minimum_size().y
+						>= float(Metrics.TOUCH_TARGET),
+						"and neither is smaller than a fingertip on a phone")
 		switch.free()
 		answer.free()
+
+
+## A row is as tall as what is written on it.
+##
+## This is the one that shipped twice. A row puts real controls on the face of
+## a [Button], and a [Button] is not a [Container]: children anchored to it are
+## not measured, so it went on reporting the height of the empty text it has —
+## 48 pixels, a fingertip — while carrying three wrapped lines. Every row
+## overlapped the next and every one was cut off at the bottom.
+##
+## The obvious fix is to override _get_minimum_size(), and that is silently
+## ignored, which is why it shipped a second time: [Button] overrides it in C++
+## and the C++ override wins over the script's. The row measured 48 while its
+## face measured 94 and nothing said so.
+##
+## So the check is the one that would have caught both: give the row a real
+## width and ask whether it is willing to be as tall as the thing inside it.
+##
+## This suite has no live tree, so the face is measured before its own
+## container has laid anything out — which means this catches a row that
+## refuses to grow at all, and cannot catch one that grows by the wrong amount.
+## tools/shots/check_layout.gd renders a real frame and checks that.
+func test_a_row_is_as_tall_as_what_is_written_on_it() -> void:
+	for touch: bool in [false, true]:
+		var held := _row_in_a_list(ToggleRow.new("Nightmare Mode",
+				"Liberalism is forgotten. Is it too late to fight back?",
+				0, touch), touch)
+		_no_shorter_than_its_face(held, "a switch")
+		_drop(held)
+
+		held = _row_in_a_list(OptionRow.new(
+				"the Polish priest Popieluszko was kidnapped by government"
+				+ " agents.", "", 0, touch), touch)
+		_no_shorter_than_its_face(held, "an answer")
+		_drop(held)
 
 
 ## A switch says whether it is on somewhere a player can see, and says it
@@ -246,6 +283,44 @@ func _switch_count(screen: Control) -> int:
 	var script: Script = screen.get_script()
 	var switches: Array = script.get_script_constant_map().get("SWITCHES", [])
 	return switches.size()
+
+
+## Puts [param row] in a list the width of a phone, and lets it settle.
+##
+## The width is the whole point: a label only knows how tall it is once it
+## knows how wide it is, so a row measured before it has been given a width has
+## not been measured at all.
+func _row_in_a_list(row: Button, touch: bool) -> Dictionary:
+	var tree := Engine.get_main_loop() as SceneTree
+	var viewport := SubViewport.new()
+	viewport.size = PHONE
+	tree.root.add_child(viewport)
+	var list := Atoms.column(Metrics.TIGHT)
+	list.theme = UiTheme.build(touch)
+	list.size = Vector2(PHONE)
+	viewport.add_child(list)
+	list.add_child(row)
+	# Handing the row its width by hand. A container only sorts its children
+	# inside a live tree and this suite has none, so waiting for the layout to
+	# do it means measuring a row that was never given a width — and a label
+	# that does not know how wide it is does not know how tall it is either.
+	for _pass in 3:
+		row.size = Vector2(float(PHONE.x), 1.0)
+		row.notification(Control.NOTIFICATION_RESIZED)
+	return {"viewport": viewport, "row": row}
+
+
+func _no_shorter_than_its_face(held: Dictionary, what: String) -> void:
+	var row: Button = held["row"]
+	var face: Control = row.get("_face")
+	if face == null:
+		fail("%s has no face to measure" % what)
+		return
+	var needs := face.get_combined_minimum_size().y
+	var offers := row.get_combined_minimum_size().y
+	check(offers >= needs,
+			"%s carries %d pixels of content but will only stand %d tall"
+			% [what, int(needs), int(offers)])
 
 
 func _screen_in(size: Vector2i, which: String) -> Dictionary:

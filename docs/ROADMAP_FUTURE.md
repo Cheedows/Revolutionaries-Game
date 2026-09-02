@@ -110,7 +110,28 @@ rather than a description of it.
   spacing scale, `Palette` holds the states a control can be in, and
   `ToggleRow`, `OptionRow` and `ActionBar` sit over them. A screen's actions
   live in the bar and the bar never scrolls, which is the rule that fixes the
-  cut-off button for good rather than one screen at a time.
+  cut-off button for good rather than one screen at a time. Switches that
+  cancel each other are refused rather than merely ignored: turn Classic Mode
+  on and "We Didn't Start The Fire" greys out, which is what the original does
+  to it and is honest, because `classicmode` beats `strongccs` in newgame.cpp
+  whatever `strongccs` is set to.
+
+  **A rendered check, because the headless one cannot see this.** Three rounds
+  of visibly broken layout — rows overlapping, every line cut off, a button
+  drawn past the bottom edge — went past a green suite, and the reason is
+  structural: a container only lays its children out inside a live tree, and a
+  `--script` run has none. So a label never wraps, a row never learns how tall
+  it needs to be, and the whole class of bug is invisible to every test in the
+  project. `tools/check_layout.sh` renders real frames under `xvfb` at four
+  sizes and reads the rectangles back, asking the one question that matters:
+  is anything drawn outside the thing meant to contain it? It named all six
+  broken rows, by name and by pixel, on the build that shipped them.
+
+  The bug underneath was that a `Button` is not a `Container`, so a face
+  anchored to one is never measured — and that overriding `_get_minimum_size()`
+  to fix it is silently ignored, because `Button` overrides it in C++ and the
+  C++ override wins. `RowButton` pushes the height into `custom_minimum_size`
+  instead, which `Button` does respect.
 
   `tools/audit_design.py` fails the build when something under `ui/` goes
   around them. The twenty widgets not yet moved over are listed in it, and the

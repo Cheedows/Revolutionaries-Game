@@ -1,5 +1,5 @@
 class_name OptionRow
-extends Button
+extends RowButton
 ## One answer in a list of answers.
 ##
 ## The plain counterpart to [ToggleRow]: a thing you pick rather than a thing
@@ -20,46 +20,38 @@ const NOTE_IS_PROSE := 16
 ## How much room the right-hand column gets.
 const NOTE_COLUMN := 72
 
-var _label: Label
-var _note: Label
-
 
 ## Builds an answer called [param said], with [param explained] beside or under
 ## it, numbered [param place] where there is a keyboard to type the number.
 func _init(said: String = "", explained: String = "", place: int = 0,
 		touch: bool = false) -> void:
-	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text = ""
 	if touch:
-		custom_minimum_size.y = Metrics.TOUCH_TARGET
+		stand_at_least(Metrics.TOUCH_TARGET)
 
 	var row := Atoms.row(Metrics.SNUG)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# Decoration over the button rather than something to click in its own
-	# right: every press on it has to reach the button underneath.
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(row)
-
 	var aside := explained.length() > NOTE_IS_PROSE
+
 	var stack := Atoms.column(0)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(stack)
 
-	_label = Atoms.body(said if place <= 0 else "%d. %s" % [place, said])
-	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(_label)
+	var label := Atoms.body(said if place <= 0 else "%d. %s" % [place, said])
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(label)
 
-	_note = Atoms.dim(explained)
-	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_note.visible = aside and not explained.is_empty()
-	stack.add_child(_note)
-
-	if not explained.is_empty() and not aside:
+	if aside:
+		var under := Atoms.dim(explained)
+		under.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stack.add_child(under)
+	elif not explained.is_empty():
 		var cost := Atoms.dim(explained)
 		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cost.autowrap_mode = TextServer.AUTOWRAP_OFF
 		cost.custom_minimum_size.x = NOTE_COLUMN
+		cost.size_flags_horizontal = Control.SIZE_SHRINK_END
 		cost.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(cost)
+
+	hold(row)

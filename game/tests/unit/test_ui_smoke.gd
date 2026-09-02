@@ -12,8 +12,11 @@ const SCREEN_DIR := "res://ui/screens"
 const WIDGET_DIR := "res://ui/widgets"
 
 ## Widgets that are only meaningful with something handed to them, and build
-## nothing until then.
+## nothing until then. [RowButton] is here for a different reason: it is the
+## base the two kinds of row are built on and has no face of its own, so on its
+## own it is correctly empty.
 const EMPTY_UNTIL_ASKED: Array[String] = [
+	"row_button.gd",
 	"intent_dialog.gd", "panel_stack.gd", "dossier.gd", "agenda_panel.gd",
 	"safehouse_panel.gd", "newspaper_panel.gd", "stores_panel.gd",
 	"settings_panel.gd", "justice_panel.gd", "sleeper_panel.gd",

@@ -1,5 +1,5 @@
 class_name ToggleRow
-extends Button
+extends RowButton
 ## One switch in a list of switches.
 ##
 ## The new-game screen offers six independent switches and the port drew them
@@ -8,14 +8,12 @@ extends Button
 ## checkbox it has. On a screen that can draw, it is a transliteration rather
 ## than a port: the state of the switch was six pixels of punctuation inside a
 ## label, indistinguishable at a glance from the number in front of it, and the
-## control had no on state at all — pressing it rebuilt the list with different
-## text in the same button.
+## control had no on state at all.
 ##
-## So the state lives in the control here. It is a [Button] in toggle mode, so
+## So the state lives in the control. It is a [Button] in toggle mode, so
 ## focus, hover, press and disable come from the theme and match every other
 ## button in the game; what it adds is a box on the left that is filled when
-## the switch is on, and a second line underneath for the sentence that says
-## what the switch does.
+## the switch is on, and a second line for the sentence explaining it.
 ##
 ## The row is one target, all of it. There is no separate little checkbox to
 ## hit, because a nine-millimetre fingertip cannot hit a fourteen-pixel square.
@@ -41,28 +39,30 @@ var _note: Label
 func _init(said: String = "", explained: String = "", place: int = 0,
 		touch: bool = false) -> void:
 	toggle_mode = true
-	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# The button draws no text of its own — everything is in the box below, so
-	# the label and the sentence under it can be styled apart.
-	text = ""
 	if touch:
-		custom_minimum_size.y = Metrics.TOUCH_TARGET
+		stand_at_least(Metrics.TOUCH_TARGET)
 
 	var row := Atoms.row(Metrics.SNUG)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# The row is decoration over the button, not a thing to click: every press
-	# anywhere on it has to reach the button underneath.
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override(&"separation", Metrics.SNUG)
-	add_child(row)
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 
 	var side := TOUCH_MARK if touch else MARK
+	# Held against the top line rather than centred on the row. A row is two
+	# lines and the second is only an explanation, so a box centred on both
+	# floats opposite the gap between them instead of beside the thing it
+	# switches.
+	var beside := MarginContainer.new()
+	beside.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	beside.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	beside.add_theme_constant_override(&"margin_top",
+			maxi((Metrics.TOUCH_FONT if touch else Metrics.BASE_FONT) - side, 0)
+			+ MARK_INSET / 2)
+	row.add_child(beside)
+
 	_mark = Panel.new()
 	_mark.custom_minimum_size = Vector2(side, side)
-	_mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mark.add_theme_stylebox_override(&"panel", _box(false))
-	row.add_child(_mark)
+	beside.add_child(_mark)
 
 	_fill = ColorRect.new()
 	_fill.color = Palette.ON
@@ -89,6 +89,7 @@ func _init(said: String = "", explained: String = "", place: int = 0,
 	_note.visible = not explained.is_empty()
 	stack.add_child(_note)
 
+	hold(row)
 	toggled.connect(_redraw)
 
 
@@ -102,11 +103,24 @@ func set_on(on: bool) -> void:
 	_redraw(on)
 
 
-func _redraw(on: bool) -> void:
-	_fill.visible = on
-	_mark.add_theme_stylebox_override(&"panel", _box(on))
+## Draws the row in the state it is in.
+##
+## Called for a switch being flipped and for one being greyed out, because the
+## two interact: a switch that is on and then refused has to stop looking on.
+##
+## The original greys "We Didn't Start The Fire" the moment Classic Mode is
+## switched on, by drawing it black on black — a terminal's only way of saying
+## "this one no longer counts". It writes no reason, and neither does this: the
+## grey is the sentence. Nor is refusing it a rule the port invented, because
+## classicmode wins over strongccs in newgame.cpp whatever strongccs is set to.
+func _redraw(on: bool = button_pressed) -> void:
+	_fill.visible = on and not disabled
+	_mark.add_theme_stylebox_override(&"panel", _box(on and not disabled))
 	_label.add_theme_color_override(&"font_color",
-			Palette.TEXT if not disabled else Palette.TEXT_FAINT)
+			Palette.TEXT_FAINT if disabled else Palette.TEXT)
+	_note.add_theme_color_override(&"font_color",
+			Palette.TEXT_FAINT if disabled else Palette.TEXT_DIM)
+
 
 
 static func _box(on: bool) -> StyleBoxFlat:
