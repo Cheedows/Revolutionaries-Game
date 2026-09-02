@@ -15,6 +15,12 @@ set -e
 GODOT="${GODOT:-godot}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+# A fresh checkout has no .godot/ — it is not committed — so nothing knows
+# what a Session or an ActionBar is until the project has been imported once.
+# Without this the whole script fails to parse, which is how it shipped: it
+# had always been run here on a tree that had been imported hours earlier.
+"$GODOT" --headless --path "$ROOT/game" --import >/dev/null 2>&1
+
 run() {
 	xvfb-run -a -s "-screen 0 1600x1600x24" "$GODOT" --path "$ROOT/game" \
 		--rendering-driver opengl3 --resolution "${RES:-400x800}" "$@"

@@ -226,9 +226,15 @@ func _a_session() -> Session:
 func _press(screen: Control, said: String) -> void:
 	if said.begins_with("p:"):
 		var stack := _find(screen, "PanelStack")
-		if stack != null:
-			stack.call("open", StringName(said.substr(2)),
-					screen.get("_session"))
+		if stack == null:
+			return
+		var which := StringName(said.substr(2))
+		# The paper is the one panel that is about something rather than about
+		# the game as a whole, and it casts what it is given; handing it null
+		# throws rather than opening empty.
+		var about: Variant = [] as Array[Event] if which == PanelStack.PAPER \
+				else null
+		stack.call("open", which, screen.get("_session"), about)
 		return
 	var dialog := _find(screen, "IntentDialog")
 	if dialog == null:
