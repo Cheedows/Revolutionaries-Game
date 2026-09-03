@@ -111,7 +111,7 @@ func _talk_matches(sample: Dictionary) -> bool:
 		if meeting.eagerness != int(fields["eagerness"]):
 			return _diverged(where, "how willing they were",
 					fields["eagerness"], meeting.eagerness)
-		if joined.name != String(fields["name"]):
+		if joined.name != TraceFile.recorded_name(fields["name"]):
 			return _diverged(where, "their name", fields["name"], joined.name)
 		if joined.id == listener.id:
 			return _diverged(where, "the recruit", "a copy",

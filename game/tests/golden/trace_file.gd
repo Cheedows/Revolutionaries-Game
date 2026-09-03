@@ -53,6 +53,34 @@ static func load_records(path: String) -> Array:
 	return records
 
 
+## Every byte from 0x80 up, as the code page a DOS terminal draws it.
+const HIGH_BYTES := "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
+
+
+## Turns a name the harness recorded into the name it stands for.
+##
+## The harness writes strings a byte at a time and escapes anything outside
+## printable ASCII as \u00XX, so a recorded string is a run of byte values
+## dressed as code points — Latin-1 by accident of the escape, never by
+## decision. The original is a code-page terminal and its names are code page
+## 437, where the same bytes are the accented letters the name actually has:
+## byte 0xA1 is the "i" in Dominguez, not an inverted exclamation mark.
+##
+## The port stores those names decoded (see tools/extract_names.py), so a
+## comparison against a recorded one has to bring the recorded side across.
+## Only names go through here. A trace's drawn screen also carries high bytes,
+## but those are box-drawing glyphs from the same code page rather than text,
+## and nothing in the port draws them.
+static func recorded_name(recorded: Variant) -> String:
+	var said := String(recorded)
+	var out := ""
+	for index in said.length():
+		var unit := said.unicode_at(index)
+		out += HIGH_BYTES[unit - 0x80] if unit >= 0x80 and unit <= 0xff \
+				else said[index]
+	return out
+
+
 ## The C++ writes RNG words through a signed conversion; this brings them back
 ## into the unsigned 32-bit range the generator actually works in.
 static func to_unsigned(value: int) -> int:

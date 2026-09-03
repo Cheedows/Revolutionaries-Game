@@ -71,7 +71,8 @@ func _election_matches(sample: Dictionary) -> bool:
 
 	var names: Array = sample["exec_names"]
 	for index in names.size():
-		if state.government.executive_names[index] != String(names[index]):
+		if state.government.executive_names[index] \
+				!= TraceFile.recorded_name(names[index]):
 			return _diverged(where, "name of exec %d" % index, names[index],
 					state.government.executive_names[index])
 	var laws: Array = sample["law_after"]

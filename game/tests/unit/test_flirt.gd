@@ -124,7 +124,7 @@ func _dates_match(where: String, sample: Dictionary,
 			var date: Creature = state.creatures.get(plan.date_ids[slot])
 			if date == null:
 				continue
-			if date.name != String(names[slot]):
+			if date.name != TraceFile.recorded_name(names[slot]):
 				return _diverged(at, "the name of date %d" % slot,
 						names[slot], date.name)
 	return true

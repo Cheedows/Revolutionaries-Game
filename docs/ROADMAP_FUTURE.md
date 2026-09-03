@@ -255,10 +255,16 @@ rather than a description of it.
     original's `enter_name()` actually asks.
   - **Mojibake in four thousand names.** `tools/extract_names.py` decoded
     `creaturenames.cpp` as Latin-1 on the strength of a comment claiming the
-    trace harness compared against it. It does not — no golden trace contains
-    one of these characters, checked before changing it — and the source is
-    code page 437, which disagrees with Latin-1 about exactly the bytes these
-    names use. Seventy-two names were drawn as "Jes£s", "Garc¡a", "M\x81ller".
+    trace harness compares against it. The source is code page 437, which
+    disagrees with Latin-1 about exactly the bytes these names use, so
+    seventy-two names were drawn as "Jes£s", "Garc¡a", "M\x81ller". The comment
+    was half right and I read it as wholly wrong: five probes *do* compare
+    against recorded names, and decoding here failed all five. The harness
+    escapes strings a byte at a time, so a recorded name is byte values dressed
+    as code points; `TraceFile.recorded_name()` brings that side across at the
+    point of comparison, which is where the conversion belongs. A trace's drawn
+    screen keeps its high bytes untouched — those are box-drawing glyphs from
+    the same code page, and nothing in the port draws them.
   - **Issues named by their ids.** The opinion log and the agenda printed
     enum-ish ids where `getview()` in `src/common/getnames.cpp` has both a
     short and a long name for every view. `ui/adapters/view_text.gd` carries

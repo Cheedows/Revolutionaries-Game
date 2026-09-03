@@ -14,11 +14,16 @@ thousand names came out mojibake, and they were drawn that way on the roster,
 in the squad and in every line of news about the person.
 
 An earlier version of this file said Latin-1 was deliberate, because it is
-"what the trace harness's byte-wise escaping compares against". Whether that
-was ever true, it is not load-bearing now: no golden trace in the project
-contains a single one of these characters, because the traces name creature
-types ("Political Activist") and the unnamed placeholder, never a generated
-person. Checked before changing it.
+"what the trace harness's byte-wise escaping compares against". That much was
+true, and the conclusion drawn from it was not. The harness escapes bytes as
+\\u00XX, so a recorded name is byte values dressed as code points — Latin-1 by
+accident of the escape, not by decision. Five probes did compare against them,
+and decoding here broke all five until the comparison learned to bring the
+recorded side across too: see TraceFile.recorded_name().
+
+The port stores names as text, because it draws them as text. The recorded
+side stores bytes, because the original wrote bytes. Only one of the two is a
+decision, and it belongs here.
 """
 import re
 import sys

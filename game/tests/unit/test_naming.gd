@@ -30,15 +30,17 @@ func test_names_match_the_original() -> void:
 			var parts := NamingRules.long_name(rng, gender)
 			var wanted: Array = expected_long[index]
 			for part in 3:
-				if parts[part] != String(wanted[part]):
+				if parts[part] != TraceFile.recorded_name(wanted[part]):
 					fail("sample %s long name %d part %d: expected %s, got %s"
 							% [sample["sample"], index, part, wanted[part], parts[part]])
 					return
 
 
 func test_accented_names_survive_extraction() -> void:
-	# The source file is Latin-1, and several names carry high bytes. If the
-	# extraction mangled them these lists would differ from the original's.
+	# The source file is a code page, not UTF-8, and seventy-odd of its four
+	# thousand names carry high bytes. Read as Latin-1 they come out mojibake —
+	# and they did, on the roster and in every line of news about the person,
+	# because nothing here looked at what the characters actually were.
 	var accented := 0
 	for name: String in Names.MALE_FIRST:
 		for unit in name.to_utf8_buffer():
@@ -47,12 +49,19 @@ func test_accented_names_survive_extraction() -> void:
 				break
 	check(accented > 0, "some first names carry accented characters")
 
+	# Code page 437, where 0xA1 is an accented i. Latin-1 makes it "Dom¡nguez".
+	check(Names.REGULAR_LAST.has("Domínguez"), "and they are the right ones")
+	for name: String in Names.REGULAR_LAST:
+		if name.contains("¡") or name.contains("£") or name.contains("\u0081"):
+			fail("%s was decoded with the wrong code page" % name)
+			return
+
 
 func _match(sample: Dictionary, key: String, generate: Callable) -> bool:
 	var expected: Array = sample[key]
 	for index in expected.size():
 		var actual: String = generate.call()
-		if actual != String(expected[index]):
+		if actual != TraceFile.recorded_name(expected[index]):
 			fail("sample %s %s %d: expected %s, got %s"
 					% [sample["sample"], key, index, expected[index], actual])
 			return false

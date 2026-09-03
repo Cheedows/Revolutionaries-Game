@@ -70,7 +70,8 @@ func _amendment_matches(sample: Dictionary) -> bool:
 					state.government.executive[index])
 	var names: Array = sample["court_names"]
 	for index in names.size():
-		if state.government.court_names[index] != String(names[index]):
+		if state.government.court_names[index] \
+				!= TraceFile.recorded_name(names[index]):
 			return _diverged(where, "justice %d's name" % index, names[index],
 					state.government.court_names[index])
 	return true
