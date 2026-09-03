@@ -39,24 +39,27 @@ var _ended := false
 var _elapsed := 0.0
 
 
+## Nothing to show until a game has been started; main.gd hands one over. A
+## screen opened on its own rolls one so it can be looked at — deferred,
+## because main.gd calls setup() immediately *after* adding the screen, which
+## is after _ready(). Rolling one here rolled a whole throwaway game every time
+## a real one was about to arrive, and wrote its opening line to the log, so
+## every game began by announcing itself twice.
 func _ready() -> void:
-	# Nothing to show until a game has been started; new_game_screen.gd hands
-	# one over. A screen opened on its own rolls one so it can be looked at.
 	if _session == null:
-		var opening := Session.new(
-				int(Time.get_unix_time_from_system()) & 0xffffffff)
-		var choosing := Founder.begin(opening.rng)
-		var outcome := {}
-		for question in FounderBackgrounds.QUESTIONS:
-			Founder.answer(opening.state, choosing, question,
-					Founder.suggestion(opening.rng), outcome)
-		NewGame.begin(opening.state, opening.rng, choosing, outcome,
-				opening.catalog)
-		setup(opening)
+		_roll_a_game.call_deferred()
+
+
+func _roll_a_game() -> void:
+	if _session == null:
+		setup(Commands.roll_a_game(
+				int(Time.get_unix_time_from_system()) & 0xffffffff))
 
 
 ## Builds the screen around a game that has already been started.
 func setup(session: Session) -> void:
+	if _session == session:
+		return
 	_session = session
 	_build()
 	_adapt()
@@ -96,9 +99,8 @@ func _process(delta: float) -> void:
 	_advance_one_day()
 
 
-## Builds the screen once. A screen opened on its own builds itself in
-## _ready(); one handed a game builds in setup(). Whichever happens first wins,
-## and the second is a no-op rather than a second screen underneath the first.
+## Builds the screen once. Called from setup(), and a second call is a no-op
+## rather than a second screen underneath the first.
 func _build() -> void:
 	if not _parts.is_empty():
 		return
@@ -233,31 +235,28 @@ func _on_answer(id: Variant) -> void:
 	_settle()
 
 
-## Opens somebody's record, or closes it when given nobody.
-func _open_panel(which: StringName) -> void:
+## Brings one of the panels to the front, or closes them when given NONE.
+func _open_panel(which: StringName, subject: Variant = null) -> void:
 	BaseFront.panel(_parts, _session, which,
-			_news if which == PanelStack.PAPER else null, _narrow)
+			_news if which == PanelStack.PAPER else subject, _narrow)
 	# A panel builds itself the first time it is opened, long after the screen
 	# was laid out, so nothing in it has been made big enough to hit or given
 	# the press until this runs.
 	_refresh()
 
 
+## Opens somebody's record, or closes it when given nobody.
 func _open_dossier(creature: Creature) -> void:
-	BaseFront.panel(_parts, _session,
-			PanelStack.DOSSIER if creature != null else PanelStack.NONE,
-			creature, _narrow)
-	_refresh()
+	_open_panel(PanelStack.DOSSIER if creature != null else PanelStack.NONE,
+			creature)
 
 
 ## A square next to the squad was clicked: walk that way, if the site loop is
 ## the thing waiting for an answer.
 func _on_step(direction: int) -> void:
-	if not _session.is_waiting():
-		return
-	if _session.pending().intent.type != Intent.CHOOSE_SITE_MOVE:
-		return
-	_on_answer(direction)
+	if _session.is_waiting() \
+			and _session.pending().intent.type == Intent.CHOOSE_SITE_MOVE:
+		_on_answer(direction)
 
 
 ## Writes what an order came to in the log, and redraws.

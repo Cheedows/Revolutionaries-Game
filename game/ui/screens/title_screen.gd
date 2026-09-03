@@ -148,7 +148,16 @@ func _when(about: Dictionary) -> String:
 			int(about.get("year", 0))]
 
 
+## Builds the screen's widgets, once.
+##
+## Guarded, because build() is public and documented as callable before the
+## tree has got round to _ready(). Without the guard a caller that takes that
+## offer gets two whole screens stacked on top of each other, the second built
+## when _ready() finally runs — which in a headless tree is not until the first
+## frame is processed, so nothing sees it until something waits for one.
 func _build() -> void:
+	if _scroll != null:
+		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	var background := ColorRect.new()
 	background.color = Palette.BACKGROUND

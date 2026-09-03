@@ -47,7 +47,13 @@ func _initialize() -> void:
 				continue
 			total += 1
 			suite.set("failures", PackedStringArray())
-			suite.call(name)
+			# Awaited, because a test that waits for frames is a coroutine:
+			# calling one without awaiting returns at its first await and the
+			# assertions after it never run, so it passes whatever it would
+			# have found. A widget's real height and scroll position cannot be
+			# measured without letting the tree lay it out, so such tests are
+			# exactly the ones worth having.
+			await suite.call(name)
 			var failures: PackedStringArray = suite.get("failures")
 			if failures.is_empty():
 				print("  PASS  %s.%s" % [suite_name, name])

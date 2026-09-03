@@ -325,6 +325,14 @@ func _fits_and_can_be_hit(screen: Control, where: String) -> bool:
 	return true
 
 
+## The page, and the log, and nothing else.
+##
+## The log is the one exception, and it earns it by being the one thing on the
+## page with no length: every other list is as long as the game says — six in
+## the squad, twenty-two issues in the country — so those can grow and the page
+## can carry them. The log gains lines forever, and a page that is taller every
+## morning is a page whose buttons are further down every morning. So it holds
+## a height of its own and scrolls inside it. See LogView.NARROW_HEIGHT.
 func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 	for scene in ["title_screen", "new_game_screen"]:
 		var opening := _screen_in(PHONE, scene)
@@ -335,25 +343,22 @@ func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 
 	var held := _screen_in(PHONE)
 	var screen: Control = held["screen"]
-	var moving := _scrollers(screen, true)
-	equal(moving.size(), 1, "one scroller on a phone, found %d: %s"
-			% [moving.size(), _names(moving)])
-	if moving.size() == 1:
-		# It shows its bar. A bar is not only a handle, it is the only thing on
-		# screen saying there is more below; without one a page that scrolls
+	if not _only_the_page_and_the_log(screen, "the safehouse"):
+		_drop(held)
+		return
+	for moving: Control in _scrollers(screen, true):
+		# Each shows its bar. A bar is not only a handle, it is the only thing
+		# on screen saying there is more below; without one a page that scrolls
 		# perfectly well looks like a page that ends where the screen does, and
 		# that is exactly what got reported about the newsfeed.
-		check(moving[0].vertical_scroll_mode
+		check((moving as ScrollContainer).vertical_scroll_mode
 				== ScrollContainer.SCROLL_MODE_AUTO,
-				"and it says so with a bar")
+				"%s says so with a bar" % _describe(moving))
 
-	# Opening a panel must not bring a second one back with it.
+	# Opening a panel must not bring another one back with it.
 	for entry: Array in BaseNav.PANEL_BUTTONS:
 		(_named(screen, str(entry[1])) as Button).pressed.emit()
-		var still := _scrollers(screen, true)
-		if still.size() != 1:
-			fail("%s brought back %d scrollers: %s"
-					% [entry[0], still.size(), _names(still)])
+		if not _only_the_page_and_the_log(screen, str(entry[0])):
 			break
 	_drop(held)
 
@@ -363,6 +368,23 @@ func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 	check(_scrollers(desk["screen"], true).size() > 1,
 			"a desk keeps a scroller per pane")
 	_drop(desk)
+
+
+## Checks that the only things moving are the page and the log.
+func _only_the_page_and_the_log(screen: Control, where: String) -> bool:
+	var moving := _scrollers(screen, true)
+	var logs := 0
+	var pages := 0
+	for scroll: Control in moving:
+		if scroll.has_meta(&"own_scroller"):
+			logs += 1
+		elif scroll.has_meta(&"page_scroller"):
+			pages += 1
+	if moving.size() == 2 and pages == 1 and logs == 1:
+		return true
+	fail("%s has %d scrollers, wanted the page and the log: %s"
+			% [where, moving.size(), _names(moving)])
+	return false
 
 
 ## Every scroller under [param control], or only the ones that actually move.

@@ -63,6 +63,22 @@ func _initialize() -> void:
 			for _settle in 12:
 				await process_frame
 			continue
+		# "wait:<n>" runs n days by regardless of what happened in them, for
+		# looking at what a screen has become after a while of play.
+		if press.begins_with("wait:"):
+			for day in int(press.substr(5)):
+				screen.call("_advance_one_day")
+				var waited := 0
+				while (screen.get("_session") as Session).is_waiting() \
+						and waited < 200:
+					waited += 1
+					var asking := _find(screen, "IntentDialog")
+					var offered: Array = asking.call("answerable")
+					screen.call("_on_answer",
+							offered[0] if not offered.is_empty() else null)
+			for _settle in 12:
+				await process_frame
+			continue
 		# "days" runs days by until a morning prints something, which is the
 		# only way to see the paper as a player meets it: it comes up on its
 		# own, out of a day that had news in it.
@@ -79,6 +95,13 @@ func _initialize() -> void:
 							live[0] if not live.is_empty() else null)
 				if not (screen.get("_news") as Array).is_empty():
 					break
+			for _settle in 12:
+				await process_frame
+			continue
+		# "close" puts away whatever is in front, the way the back gesture
+		# does, so a shot can be taken of the page underneath it.
+		if press == "close":
+			screen.call("_step_back")
 			for _settle in 12:
 				await process_frame
 			continue

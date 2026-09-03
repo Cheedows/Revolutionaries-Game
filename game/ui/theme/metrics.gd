@@ -199,11 +199,14 @@ static func _pressable(control: Control) -> Array[Control]:
 ## puts one scroller around the lot. Disabled is what makes a [ScrollContainer]
 ## report its content's height as its own, so the column simply gets longer.
 ##
-## Never touches a scroller already marked as the page's own — see
-## [method page_scroller].
+## Never touches the page's own scroller (see [method page_scroller]), nor one
+## marked "own_scroller" — a widget whose content has no length the page can
+## absorb, which in this game is the log and only the log. See
+## LogView.NARROW_HEIGHT.
 static func unscroll(root: Control, on: bool) -> void:
 	for scroll in _scrollers(root):
-		if scroll.has_meta(&"page_scroller"):
+		if scroll.has_meta(&"page_scroller") \
+				or scroll.has_meta(&"own_scroller"):
 			continue
 		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if on \
 				else ScrollContainer.SCROLL_MODE_AUTO

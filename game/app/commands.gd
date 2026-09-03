@@ -6,6 +6,26 @@ extends RefCounted
 ## state and returns the events describing what changed — the same shape the
 ## systems use, so the log does not care where a line came from.
 
+## Starts a game, answering the founder's questions with what the original
+## suggests.
+##
+## The original has no such thing — every game there is answered by a player.
+## This is for the two callers that need a game without one being played:
+## main.gd's safehouse screen when it is opened on its own, and the layout
+## checks, which draw a real screen full of a real game at every size a phone
+## comes in.
+static func roll_a_game(seed_value: int) -> Session:
+	var session := Session.new(seed_value)
+	var choosing := Founder.begin(session.rng)
+	var outcome := {}
+	for question in FounderBackgrounds.QUESTIONS:
+		Founder.answer(session.state, choosing, question,
+				Founder.suggestion(session.rng), outcome)
+	NewGame.begin(session.state, session.rng, choosing, outcome,
+			session.catalog)
+	return session
+
+
 ## Runs a day.
 ##
 ## The game writes itself out first, as the original does at the top of

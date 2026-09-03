@@ -125,7 +125,36 @@ func test_nothing_wears_the_focus_ring_on_a_touchscreen() -> void:
 	_drop(held)
 
 
-## On a desk it is focused, and it stays where the player put it.
+## And it survives the question changing under it.
+##
+## The dialog outlives the intent it is showing, so what it remembers of the
+## last answer is regularly an id of a different kind from the ones now on
+## offer — a StringName from a switch against an int from a list. GDScript
+## throws on == between those two rather than answering false, so this was a
+## crash, not a wrong answer. It hid behind the new-game screen being built
+## twice: the dialog that got asked the second question was a second dialog,
+## with nothing remembered.
+func test_the_keyboard_survives_the_question_changing_kind() -> void:
+	var held := _screen_in(DESK, "new_game_screen")
+	var dialog := _find(held["screen"], "IntentDialog") as IntentDialog
+	if dialog == null:
+		fail("no dialog on the switches screen")
+		_drop(held)
+		return
+
+	var named: Array[Dictionary] = [{"id": &"a_switch", "label": "A switch"}]
+	dialog.ask(Intent.new(&"a_question", named), GameState.new())
+	(dialog.call("_listed_buttons") as Array[Button])[0].pressed.emit()
+
+	var numbered: Array[Dictionary] = [{"id": 0, "label": "The first"},
+			{"id": 1, "label": "The second"}]
+	dialog.ask(Intent.new(&"another_question", numbered), GameState.new())
+	equal(dialog.keyboard_lands_on(), 0,
+			"a remembered id of another kind is simply not on offer")
+	_drop(held)
+
+
+## On a desk it is focused, and it stays where the player put it.## On a desk it is focused, and it stays where the player put it.
 ##
 ## The switches screen rebuilds its whole list every time one is flipped, so
 ## "focus the first option" meant the keyboard walked back to the top after

@@ -56,6 +56,45 @@ func test_every_screen_builds() -> void:
 	check(built >= 3, "every screen was tried, got %d" % built)
 
 
+## A screen built twice is still one screen.
+##
+## Every screen here is buildable on demand as well as from _ready(), so that a
+## test or a host does not have to wait a frame for it. That makes building it
+## twice a thing that happens — and in a headless tree it happens invisibly,
+## because _ready() does not run until the first frame is processed. Two of
+## these screens had no guard, so a caller that took the offer got two whole
+## screens stacked, and nothing noticed until a test elsewhere waited for a
+## frame and the phone layout suddenly had twice as many scrollers as the rule
+## allows.
+func test_building_a_screen_twice_leaves_one_screen() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	for file in DirAccess.get_files_at(SCREEN_DIR):
+		if not file.ends_with(".tscn"):
+			continue
+		var screen: Control = (load("%s/%s" % [SCREEN_DIR, file])
+				as PackedScene).instantiate()
+		tree.root.add_child(screen)
+		_start(screen)
+		var once := screen.get_child_count()
+		# Once by hand and once as the tree gets round to it, which is what
+		# _ready() amounts to here.
+		_start(screen)
+		if screen.has_method("_ready"):
+			screen.call("_ready")
+		equal(screen.get_child_count(), once,
+				"%s built itself twice" % file)
+		tree.root.remove_child(screen)
+		screen.queue_free()
+
+
+## Builds [param screen] whichever way it offers.
+func _start(screen: Control) -> void:
+	if screen.has_method("build"):
+		screen.call("build")
+	elif screen.has_method("setup"):
+		screen.call("setup", _a_session())
+
+
 func test_every_widget_builds() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	var built := 0

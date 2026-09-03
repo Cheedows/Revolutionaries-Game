@@ -243,29 +243,23 @@ func _listed_buttons() -> Array[Button]:
 func keyboard_lands_on() -> Variant:
 	if _touch or Metrics.handheld():
 		return null
+	return DialogKeys.lands_on(_reachable(), _ids, _last)
+
+
+## Every button a key could answer, in the order a player walks them: down the
+## list, then along the ways out under it.
+func _reachable() -> Array[Button]:
 	var reachable := _listed_buttons()
 	reachable.append_array(_bar.buttons())
-	var first: Variant = null
-	var found := false
-	for button in reachable:
-		if button.disabled:
-			continue
-		if _last != null and _ids.get(button) == _last:
-			return _last
-		if not found:
-			first = _ids.get(button)
-			found = true
-	return first if found else null
+	return reachable
 
 
 func _restore() -> void:
 	if not is_inside_tree():
 		return
 	var wanted: Variant = keyboard_lands_on()
-	var reachable := _listed_buttons()
-	reachable.append_array(_bar.buttons())
-	for button in reachable:
-		if not button.disabled and _ids.get(button) == wanted:
+	for button in _reachable():
+		if not button.disabled and DialogKeys.same(_ids.get(button), wanted):
 			button.grab_focus()
 			return
 

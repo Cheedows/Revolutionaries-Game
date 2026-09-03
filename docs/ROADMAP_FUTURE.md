@@ -316,6 +316,57 @@ rather than a description of it.
   mastheads are block letters in `art/newstops.cpc` and the letters do not
   spell anything.
 
+  **The log holds its own height and scrolls inside it**, which is the fifth
+  departure and the one that made the game unplayable. Everything else on a
+  phone gives up its scroller and grows, so the page scrolls as one thing —
+  and that works because every other list is as long as the game says it is:
+  six in the squad, twenty-two issues in the country. The log gains lines
+  forever. A page that is taller every morning is a page whose buttons are
+  further down every morning, and eventually there is no getting back to them.
+  So the log is the one exemption from `Metrics.unscroll()`, at a fixed 200
+  pixels, and it follows the tail only while the player is already at the tail
+  — a log that always jumps cannot be read, and one that never jumps has to be
+  dragged down every morning to see what just happened.
+
+  Two more things fell out of it:
+
+  - **The screen rolled a whole throwaway game before every real one.** A
+    safehouse screen with no session rolls one so it can be looked at, and it
+    did so in `_ready()` — but `main.gd` calls `setup()` immediately *after*
+    adding the screen, which is after `_ready()`. So starting a game built a
+    second complete world, threw it away, and left its opening line in the
+    log, which is why every game announced itself twice. The roll is deferred
+    now, and skipped when a session has arrived. `Commands.roll_a_game()` is
+    the one place that does it.
+  - **The test runner did not await coroutine tests.** `suite.call(name)`
+    returns at the first `await`, so every assertion after it never ran and
+    the test passed whatever it would have found. Nothing had fallen into it
+    yet — the log tests are the first that must wait for frames, because a
+    widget's real height and scroll position cannot be measured without
+    letting the tree lay it out. Three of my five log tests passed against
+    deliberately broken code before this was found. They fail against it now.
+
+  Awaiting a frame then found two more, both of which had been sitting behind
+  the fact that nothing in the suite ever waited for one. In a headless tree
+  `_ready()` does not run until a frame is processed, so a screen built on
+  demand had never yet had `_ready()` build it a second time:
+
+  - **`title_screen` and `new_game_screen` had no guard on `_build()`.** Both
+    offer a public `build()`, documented as callable before the tree gets
+    round to `_ready()` — an offer that requires the thing to be idempotent,
+    and neither was. Taking it got two whole screens stacked on top of each
+    other. `test_ui_smoke` now builds every screen twice and checks it is
+    still one screen.
+  - **`IntentDialog` crashed when the question changed kind.** It remembers
+    the id last answered so the keyboard does not walk back to the top of a
+    rebuilt list, and compared it with `==` — but an id is a StringName for a
+    switch and an int for a member of a list, and GDScript throws on `==`
+    between those rather than answering false. The double build had been
+    hiding it: the dialog asked the second question was always a second
+    dialog, remembering nothing. Comparing by type first is now
+    `DialogKeys.same()`, split out with the rest of the keyboard bookkeeping
+    because the dialog had grown past the file cap.
+
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in
   `tools/voice_exceptions.json` with what the original does instead. The

@@ -239,7 +239,12 @@ func _on_chosen(id: Variant) -> void:
 			started.emit(_session)
 
 
+## Builds the screen's widgets, once. Guarded for the reason title_screen.gd's
+## _build() is guarded: begin() and build() are both public and both callable
+## before _ready() has run.
 func _build() -> void:
+	if _dialog != null:
+		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	var background := ColorRect.new()
 	background.color = Palette.BACKGROUND
