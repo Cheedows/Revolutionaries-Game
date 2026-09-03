@@ -101,7 +101,7 @@ static func record(creature: Creature, state: GameState,
 
 	var attributes: Array[String] = []
 	for index in Ids.ATTRIBUTES.size():
-		attributes.append("%s: %d" % [String(Ids.ATTRIBUTES[index]).capitalize(),
+		attributes.append("%s: %d" % [StatText.attribute(Ids.ATTRIBUTES[index]),
 				creature.attributes.values[index]])
 	lines.append(", ".join(attributes) + ".")
 
@@ -109,7 +109,7 @@ static func record(creature: Creature, state: GameState,
 	for index in Ids.SKILLS.size():
 		if creature.skills.values[index] <= 0:
 			continue
-		skills.append("%s: %d" % [String(Ids.SKILLS[index]).capitalize(),
+		skills.append("%s: %d" % [StatText.skill(Ids.SKILLS[index]),
 				creature.skills.values[index]])
 	lines.append("SKILL   %s" % (", ".join(skills) if not skills.is_empty()
 			else "None"))

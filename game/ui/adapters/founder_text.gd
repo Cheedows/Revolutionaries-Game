@@ -105,3 +105,44 @@ static func answer(index: int, option: int) -> String:
 	if index >= ANSWERS.size() or option >= ANSWERS[index].size():
 		return ""
 	return ANSWERS[index][option]
+
+
+## What answer [param option] to question [param index] is worth, in words.
+##
+## A deliberate departure, and the only one on this screen. The original knows
+## exactly what each answer gives — it is written down the side of
+## makecharacter() in newgame.cpp — and it writes it in a C++ comment:
+##
+##     addstr("A - the Polish priest Popieluszko was kidnapped...");
+##     //ATTRIBUTE_AGILITY 2
+##
+## So the numbers exist and the player has never been allowed to see them. That
+## is a terminal-era choice about screen space as much as about mystery, and
+## ten questions answered blind is ten questions answered at random the first
+## time and from a wiki every time after.
+##
+## Only attributes and skills. The eighth question hands out a car, a rifle, a
+## thousand dollars, a lawyer or a set of maps, and its own answers already say
+## so — "I got my hands on a sports car" needs no footnote.
+static func bonus(index: int, option: int) -> String:
+	if index >= FounderBackgrounds.TABLE.size():
+		return ""
+	var answers: Array = FounderBackgrounds.TABLE[index]
+	if option >= answers.size():
+		return ""
+	var worth: Dictionary = answers[option]
+	var said := PackedStringArray()
+	for names: Array in [Ids.ATTRIBUTES, Ids.SKILLS]:
+		var key: StringName = &"attributes" if names == Ids.ATTRIBUTES \
+				else &"skills"
+		var given: Dictionary = worth.get(key, {})
+		# In the game's own order rather than the dictionary's, so the same
+		# answer reads the same way every time it is drawn.
+		for name: StringName in names:
+			if not given.has(name):
+				continue
+			var called := StatText.attribute(name) if key == &"attributes" \
+					else StatText.skill(name)
+			said.append("%s%d %s" % ["+" if int(given[name]) > 0 else "",
+					int(given[name]), called])
+	return ", ".join(said)

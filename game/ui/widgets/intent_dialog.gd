@@ -133,7 +133,8 @@ func ask(intent: Intent, state: GameState) -> void:
 			_bar.add(action)
 			continue
 		_add(label, IntentText.note(entry), enabled, entry.get("id"),
-				bool(entry.get("toggle", false)), bool(entry.get("on", false)))
+				bool(entry.get("toggle", false)), bool(entry.get("on", false)),
+				bool(entry.get("under", false)))
 
 	_refuse.visible = intent.cancellable
 	_refuse.text = IntentText.refusal(intent)
@@ -193,7 +194,7 @@ func _answer(id: Variant) -> void:
 
 
 func _add(label: String, note: String, enabled: bool, id: Variant,
-		toggle: bool, on: bool) -> void:
+		toggle: bool, on: bool, under: bool = false) -> void:
 	_listed += 1
 	# The number is only drawn where there is a keyboard to type it. On a phone
 	# it is a number nobody can enter, in front of every line in the game.
@@ -208,7 +209,7 @@ func _add(label: String, note: String, enabled: bool, id: Variant,
 		switch.set_on(on)
 		button = switch
 	else:
-		button = OptionRow.new(label, note, place, _touch)
+		button = OptionRow.new(label, note, place, _touch, under)
 	button.disabled = not enabled
 	button.pressed.connect(_answer.bind(id))
 	_ids[button] = id

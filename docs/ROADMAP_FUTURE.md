@@ -209,6 +209,28 @@ rather than a description of it.
   — a touchscreen has no hover, so until the game reacts there is nothing at
   all to say a tap landed.
 
+  **Two departures from the original on the new-game screens**, both
+  deliberate, both reported as bugs by somebody playing it.
+
+  The two Conservative Crime Squad switches cancel each other *both ways* now.
+  The original greys "We Didn't Start The Fire" while Classic Mode is on and
+  stops there — turn the strong one on first and Classic Mode stays bright, and
+  pressing it then silently wins, because `newgame.cpp` reads `classicmode`
+  first and only reaches `strongccs` when it is off. No outcome is lost: the
+  fourth state, both flags set, plays out exactly as Classic Mode alone, so all
+  that has gone is a way of asking for one thing and getting another.
+
+  Every founder answer now says what it is worth. The original knows — the
+  numbers are written down the side of `makecharacter()` — and keeps them in a
+  C++ comment, so ten questions are answered blind the first time and from a
+  wiki every time after. Showing them turned up a second thing: the port had
+  been naming attributes and skills by capitalising the id, which reads
+  "Handtohand" where the original says "Martial Arts", "Streetsense" for
+  "Street Sense" and "Smg" for "SMG". `StatText` carries both of the original's
+  tables. Nothing had caught it because those names are computed rather than
+  written, and `audit_voice.py` reads written ones — a blind spot worth
+  remembering.
+
   The scale learned something too. It was four steps that doubled — 4, 8, 16,
   24 — until that pushed every 12px gap up to 16 and grew the safehouse past
   the bottom of the window. It is five steps of four now. A scale has to fit

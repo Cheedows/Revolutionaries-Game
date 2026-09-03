@@ -24,12 +24,16 @@ const NOTE_COLUMN := 72
 ## Builds an answer called [param said], with [param explained] beside or under
 ## it, numbered [param place] where there is a keyboard to type the number.
 func _init(said: String = "", explained: String = "", place: int = 0,
-		touch: bool = false) -> void:
+		touch: bool = false, under: bool = false) -> void:
 	if touch:
 		stand_at_least(Metrics.TOUCH_TARGET)
 
 	var row := Atoms.row(Metrics.SNUG)
-	var aside := explained.length() > NOTE_IS_PROSE
+	# [param under] overrules the length rule. A price belongs in the column
+	# where the eye runs down it; what an answer is worth belongs under the
+	# answer, and putting some of them in the column because they happened to
+	# be short reads as an accident rather than as a rule.
+	var aside := under or explained.length() > NOTE_IS_PROSE
 
 	var stack := Atoms.column(0)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -42,9 +46,9 @@ func _init(said: String = "", explained: String = "", place: int = 0,
 	stack.add_child(label)
 
 	if aside:
-		var under := Atoms.wrapped(Atoms.dim(explained))
-		under.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stack.add_child(under)
+		var beneath := Atoms.wrapped(Atoms.dim(explained))
+		beneath.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stack.add_child(beneath)
 	elif not explained.is_empty():
 		var cost := Atoms.dim(explained)
 		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE

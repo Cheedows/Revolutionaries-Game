@@ -27,16 +27,23 @@ const SWITCHES: Array[Dictionary] = [
 			&"note": "Enable Stalinist Comrade Squad (not fully implemented)."},
 ]
 
-## Which switches cancel which. A switch named here is refused for as long as
-## the switch it points at is on.
+## Which switches cancel which, both ways round.
 ##
-## The original does this to exactly one pair, and does it by drawing the row
-## black on black: turn Classic Mode on and "We Didn't Start The Fire" goes
-## dark, because a game with no Conservative Crime Squad cannot also have a
-## strong one. It is not only presentation — newgame.cpp sets the endgame from
-## classicmode first and only falls through to strongccs when classicmode is
-## off, so the switch genuinely does nothing while the other is on.
-const CANCELLED_BY := {
+## One pair: a game with no Conservative Crime Squad cannot also have a strong
+## one. The original greys "We Didn't Start The Fire" when Classic Mode is on
+## and stops there — turning the strong one on first leaves Classic Mode
+## bright, and pressing it then silently wins, because newgame.cpp sets the
+## endgame from classicmode and only falls through to strongccs when classicmode
+## is off.
+##
+## A deliberate departure, and a small one: this refuses each of them while the
+## other is on, so the contradiction cannot be entered from either side. No
+## outcome is lost. The original's fourth state — both flags set — plays out
+## exactly as Classic Mode alone does, because that is the branch that wins, so
+## the only thing that has gone is a way of asking for one thing and getting
+## another.
+const CANCELS := {
+	&"classic": &"strong_ccs",
 	&"strong_ccs": &"classic",
 }
 
@@ -106,7 +113,7 @@ func _ask_switches() -> void:
 		# Marked as switches rather than drawn as "[x] " and "[ ] " in front of
 		# the label. The brackets are what the original has to draw a checkbox
 		# with; a screen that can draw one should draw one. See [ToggleRow].
-		var cancelled_by: Variant = CANCELLED_BY.get(switch[&"id"])
+		var cancelled_by: Variant = CANCELS.get(switch[&"id"])
 		var refused := cancelled_by != null \
 				and bool(_chosen.get(cancelled_by, false))
 		options.append({
@@ -178,7 +185,11 @@ func _ask_background() -> void:
 	var options: Array[Dictionary] = []
 	for index in FounderBackgrounds.OPTIONS:
 		options.append({"id": index,
-				"label": FounderText.answer(_question, index)})
+				"label": FounderText.answer(_question, index),
+				# What the answer is worth, which the original knows and keeps
+				# to itself. See FounderText.bonus().
+				"note": FounderText.bonus(_question, index),
+				"under": true})
 	_show(FounderText.question(_question),
 			Intent.new(Intent.CHOOSE_FOUNDER_BACKGROUND, options, {}, false))
 

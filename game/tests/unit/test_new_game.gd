@@ -187,3 +187,77 @@ func _mapped_sites(state: GameState) -> int:
 		if site.mapped:
 			count += 1
 	return count
+
+
+## A game with no Conservative Crime Squad cannot also have a strong one, and
+## the screen has to say so whichever of the two is switched on first.
+##
+## The original greys "We Didn't Start The Fire" while Classic Mode is on and
+## stops there — turn the strong one on first and Classic Mode stays bright,
+## and pressing it then silently wins, because newgame.cpp reads classicmode
+## first and only reaches strongccs when classicmode is off. The port refuses
+## each of them while the other is on, so the contradiction cannot be entered
+## from either side.
+func test_the_two_ccs_switches_cancel_each_other_both_ways() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	for first: StringName in [&"classic", &"strong_ccs"]:
+		var screen: Control = (load("res://ui/screens/new_game_screen.tscn")
+				as PackedScene).instantiate()
+		screen.size = Vector2(400, 800)
+		tree.root.add_child(screen)
+		screen.call("begin", 4242)
+		var dialog: IntentDialog = screen.get("_dialog")
+
+		var other: StringName = &"strong_ccs" if first == &"classic" \
+				else &"classic"
+		check(dialog.offered().get(other, false),
+				"%s can be switched on to begin with" % other)
+		screen.call("_on_chosen", first)
+		check(not dialog.offered().get(other, true),
+				"and is refused once %s is on" % first)
+		check(dialog.offered().get(first, false),
+				"while %s stays available to switch back off" % first)
+
+		screen.call("_on_chosen", first)
+		check(dialog.offered().get(other, false),
+				"which lets %s be reached again" % other)
+		tree.root.remove_child(screen)
+		screen.free()
+
+
+## Every answer says what it is worth, in the original's own names for things.
+##
+## The numbers are the original's; what it does with them is keep them in a C++
+## comment beside the line that prints the answer, so the player has never been
+## shown them. This port shows them.
+##
+## The names matter as much as the numbers. The original abbreviates attributes
+## and spells skills out — Attribute::get_name() and Skill::get_name() in
+## src/creature/creature.cpp — and the port had been building both by
+## capitalising the id, which reads "Handtohand" where the original says
+## "Martial Arts". Nothing caught it because those names are computed rather
+## than written, and the voice audit reads written ones.
+func test_every_answer_says_what_it_is_worth() -> void:
+	equal(FounderText.bonus(0, 0), "+2 AGI",
+			"the day you were born is worth two points of one attribute")
+	equal(FounderText.bonus(0, 3), "+2 HRT", "and the abbreviation is theirs")
+
+	# A question that gives an attribute and a skill together.
+	equal(FounderText.bonus(1, 1), "+1 HLTH, +1 Martial Arts",
+			"skills come after attributes, in the original's own words")
+
+	# The one answer that takes something away.
+	check(FounderText.bonus(7, 3).contains("-1 HRT"),
+			"and something that costs you heart says so: %s"
+			% FounderText.bonus(7, 3))
+
+	# The eighth question hands out a car, a rifle, money, a lawyer or maps,
+	# and its own answers already say which — a bonus line would repeat them.
+	for option in FounderBackgrounds.OPTIONS:
+		equal(FounderText.bonus(8, option), "",
+				"what you have to show for it needs no footnote")
+
+	equal(StatText.skill(&"streetsense"), "Street Sense",
+			"a two-word skill is two words")
+	equal(StatText.skill(&"firstaid"), "First Aid", "and so is this one")
+	equal(StatText.skill(&"smg"), "SMG", "and an initialism stays one")
