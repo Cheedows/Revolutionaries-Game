@@ -75,6 +75,58 @@ func _prints(panel: NewspaperPanel, view: StringName, good: bool) -> bool:
 	return true
 
 
+func test_the_page_says_which_paper_it_is_and_which_page() -> void:
+	var panel := NewspaperPanel.new()
+	var state := _country(7)
+	state.calendar.month = 3
+	state.calendar.day = 14
+
+	# A mainstream story on page four, and a Liberal Guardian story after it.
+	var mainstream := Event.new(Event.NEWS_PUBLISHED, {
+		"story": &"squad_site", "page": 4, "guardian": false,
+		"guardian_page": 1, "slots": {}, "advertisements": [],
+	})
+	var guardian := Event.new(Event.NEWS_PUBLISHED, {
+		"story": &"squad_site", "page": 9, "guardian": true,
+		"guardian_page": 2, "slots": {}, "advertisements": [],
+	})
+	var events: Array[Event] = [mainstream, guardian]
+	panel.show_paper(state, events)
+	var words := _words_on(panel)
+
+	# The masthead is the date, which is what the original prints across the
+	# front page.
+	check(words.contains(state.calendar.to_display()),
+			"the paper is dated, got %s" % words.replace("\n", " / "))
+	# The Guardian is named, because otherwise its story reads as though the
+	# mainstream press had run it.
+	check(words.contains("Liberal Guardian"),
+			"and the Guardian's own story says so")
+	# Page numbers are the paper in hand's, and bare — the original prints the
+	# number in the corner and nothing else. Never the story's internal type.
+	check(words.contains("4") and words.contains("2"),
+			"and each story carries its own paper's page number")
+	check(not words.contains("squad site") and not words.contains("squad_site"),
+			"and the story's internal name is not printed at the player")
+	panel.free()
+
+
+func test_an_empty_paper_says_so() -> void:
+	var panel := NewspaperPanel.new()
+	var nothing: Array[Event] = []
+	panel.show_paper(_country(3), nothing)
+	var words := _words_on(panel)
+	# Not "Unfortunately, nobody seems interested." — that is printnews() in
+	# src/monthly/lcsmonthly.cpp talking about the readership of the squad's
+	# own monthly newsletter, which is a different publication entirely.
+	check(not words.contains("nobody seems interested"),
+			"the monthly newsletter's line stays in the monthly newsletter")
+	check(words.contains("Nothing in today's paper."),
+			"and an empty paper says it is empty, got %s"
+			% words.replace("\n", " / "))
+	panel.free()
+
+
 ## Everything the panel put on the page, as one string.
 func _words_on(panel: NewspaperPanel) -> String:
 	var found := ""

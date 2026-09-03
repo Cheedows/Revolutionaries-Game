@@ -186,6 +186,14 @@ func _settle() -> void:
 		_running = false
 		_run_button.button_pressed = false
 		_dialog.ask(_session.pending().intent, _session.state)
+	elif BaseOrders.worth_reading(morning) and not _panels.is_open():
+		# The paper comes to the front on its own and holds the days while it
+		# is there, the way the original's page does. BaseOrders.worth_reading()
+		# says why.
+		_dialog.dismiss()
+		_running = false
+		_run_button.button_pressed = false
+		_open_panel(PanelStack.PAPER)
 	else:
 		_dialog.dismiss()
 

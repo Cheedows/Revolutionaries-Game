@@ -28,19 +28,43 @@ func show_paper(state: GameState, events: Array[Event]) -> void:
 	for event: Event in events:
 		match event.type:
 			Event.HEADLINE_RUN:
+				_masthead(event)
 				_headline(state, event)
 				printed += 1
 			Event.NEWS_PUBLISHED:
+				_masthead(event)
 				_story(state, event)
 				printed += 1
 			Event.NEWS_SEGMENT:
 				_segment(event)
 				printed += 1
-	# The original names the paper "the monthly Liberal Guardian newspaper";
-	# a phone has room for the paper's name and no more.
-	_head.set_title("Liberal Guardian")
+	# The date, which is what the original's masthead carries: preparepage()
+	# in src/news/layout.cpp prints the month, the day and the year across the
+	# top of every front page. The papers themselves have no names to print —
+	# their mastheads are block letters in art/newstops.cpc and the letters do
+	# not spell anything.
+	_head.set_title(state.calendar.to_display())
 	if printed == 0:
-		_line("Unfortunately, nobody seems interested.", Palette.TEXT_FAINT)
+		says_nothing("Nothing in today's paper.")
+
+
+## Names the Liberal Guardian over its own stories.
+##
+## Every printed story belongs to one of two papers and the original draws it
+## under that paper's masthead — five mainstream ones it picks between, and the
+## Liberal Guardian, which the squad only gets once somebody can write. The two
+## alternate through a morning, since a major event always runs in the
+## mainstream press however good the squad's writers are. Laid out as text with
+## no mastheads they run together, and a Guardian story reads as though the
+## mainstream press had said it, which inverts the joke the whole system exists
+## for.
+##
+## Every Guardian story is named rather than only the first of a run: the
+## mainstream papers have no name to print in the other direction, so an
+## unnamed story has to be the one that means "not the Guardian".
+func _masthead(event: Event) -> void:
+	if bool(event.data.get("guardian", false)):
+		_line("Liberal Guardian", Palette.ACCENT)
 
 
 func _headline(state: GameState, event: Event) -> void:
@@ -69,10 +93,19 @@ func _headline(state: GameState, event: Event) -> void:
 		_line(caption, Palette.TEXT)
 
 
+## One printed story, under its page number.
+##
+## The number and nothing else, which is all the original puts there:
+## preparepage() prints the date across the front page and a bare page number
+## in the corner of every page after it. The port used to print "Page 1 —
+## majorevent" — the story's own internal type, in front of the player, where
+## the original prints no such thing.
 func _story(state: GameState, event: Event) -> void:
-	var kind := String(event.data.get("story", &"")).replace("_", " ")
-	_line("Page %d — %s" % [int(event.data.get("page", 0)), kind],
-			Palette.TEXT_DIM)
+	var page := int(event.data.get("guardian_page", 0)) \
+			if bool(event.data.get("guardian", false)) \
+			else int(event.data.get("page", 0))
+	if page > 1:
+		_line(str(page), Palette.TEXT_FAINT)
 	var slogan := String(event.data.get("slogan", &""))
 	if slogan != "" and state.slogan != "":
 		_line("The slogan, \"%s\" was found painted on the walls."

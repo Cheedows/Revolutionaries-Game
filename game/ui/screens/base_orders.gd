@@ -117,6 +117,25 @@ static func finish_up(session: Session, won: bool, log: LogView,
 	day.pressed.connect(func() -> void: done.call())
 
 
+## Whether the morning printed anything, and so whether the paper goes up on
+## its own.
+##
+## The original does not wait to be asked. majornewspaper() runs inside the
+## day, calls display_newspaper(), and that draws a page per story and holds
+## each one until a key is pressed, so the paper is the one thing in this game
+## a player cannot walk past. The port had it behind a button, on the
+## reasoning that somebody who wants to read it wants to read it when they
+## choose. What that produced was a log saying opinion had moved and the other
+## side was getting stronger, with nothing anywhere saying why — the paper is
+## where this game explains itself.
+##
+## The screen puts it up and stops the days running while it is there, for the
+## same reason the original's page holds: a paper with the next day happening
+## behind it would sit showing one morning's stories while the week went past.
+static func worth_reading(morning: Array[Event]) -> bool:
+	return not morning.is_empty()
+
+
 ## Empties the session's events into the log, and hands back the morning's
 ## paper.
 ##

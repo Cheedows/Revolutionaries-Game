@@ -63,6 +63,25 @@ func _initialize() -> void:
 			for _settle in 12:
 				await process_frame
 			continue
+		# "days" runs days by until a morning prints something, which is the
+		# only way to see the paper as a player meets it: it comes up on its
+		# own, out of a day that had news in it.
+		if press == "days":
+			for day in 40:
+				screen.call("_advance_one_day")
+				var asked := 0
+				while (screen.get("_session") as Session).is_waiting() \
+						and asked < 200:
+					asked += 1
+					var dialog := _find(screen, "IntentDialog")
+					var live: Array = dialog.call("answerable")
+					screen.call("_on_answer",
+							live[0] if not live.is_empty() else null)
+				if not (screen.get("_news") as Array).is_empty():
+					break
+			for _settle in 12:
+				await process_frame
+			continue
 		if press == "menu":
 			(screen.get("_parts")["more"] as Button).pressed.emit()
 			for _settle in 12:

@@ -154,6 +154,7 @@
   "Not with the squad, so there is nothing to hand them.": "the original's equip screen only ever lists the squad, so it never has to say why somebody cannot be handed anything; the port's record is opened from the roster, where they may not be in the squad at all",
   "Nothing has been built into it.": "the original's compound menu simply offers everything when nothing has been built; it does not say so",
   "Nothing here.": "the original draws an empty item list as empty space; a phone needs a word where the list would be",
+  "Nothing in today's paper.": "the original never draws an empty paper — display_newspaper() in src/news/news.cpp loops over the stories and shows nothing at all when there are none; the port's paper is also reachable from a button, so it has to say why it is empty",
   "Opinion on %s moved %s%d.": "public opinion in the original is the mood bar and the issue screen, never a sentence",
   "Pick the lock?": "the original offers lock-picking as a menu item rather than a question",
   "Pull out?": "the original offers 'X - Live to fight EVIL another day' as a menu item",

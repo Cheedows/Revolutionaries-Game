@@ -278,8 +278,43 @@ rather than a description of it.
     `ListRow` has a 160-pixel text floor, because a wrapping label in a flow
     otherwise collapses to its longest word and draws one letter per line.
 
-  The newspaper was investigated and is not broken: it shows the original's own
-  "Unfortunately, nobody seems interested." because busking generates no story.
+  **The paper comes to the front on its own**, which is the fourth departure
+  reversed. I first reported the newspaper as working and not broken. It was
+  reachable and it printed, but the original does not wait to be asked:
+  `majornewspaper()` runs inside the day, calls `display_newspaper()`, and that
+  draws a page per story and holds each one until a key is pressed. It is the
+  one thing in this game a player cannot walk past. The port had it behind a
+  button, on the reasoning that somebody who wants to read it wants to read it
+  when they choose — and what that produced was a log saying opinion had moved
+  and the other side was getting stronger, with nothing anywhere saying why.
+  The paper is where this game explains itself. It now opens on any morning
+  that printed something and stops the days running while it is up, for the
+  same reason the original's page holds.
+
+  Three things it was printing wrongly, all found by rendering a frame and
+  looking at it rather than by any check:
+
+  - **"Unfortunately, nobody seems interested."** is `printnews()` in
+    `src/monthly/lcsmonthly.cpp` talking about the readership of the squad's
+    own monthly newsletter. It was being used as the daily paper's empty
+    state, so it passed `audit_voice.py` — the line is genuinely the
+    original's, carried from the wrong publication. Carried is not the same as
+    correct, and the audit cannot tell the difference.
+  - **"Page 1 — majorevent"** printed the story's internal type at the player,
+    with an em dash. `preparepage()` in `src/news/layout.cpp` prints the date
+    across the front page and a bare page number in the corner of every page
+    after it, and nothing else.
+  - **The two papers were indistinguishable.** Every story belongs either to
+    the mainstream press or to the Liberal Guardian, and the original draws it
+    under that paper's masthead. Laid out as text with no mastheads a Guardian
+    story read as though the mainstream press had run it, which inverts the
+    joke the whole system exists for. The Guardian is now named over its own
+    stories, and each carries its own paper's page number — `guardian_page`
+    joins the event payload for it.
+
+  The panel head is the date, because the papers have no names to print: their
+  mastheads are block letters in `art/newstops.cpc` and the letters do not
+  spell anything.
 
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in

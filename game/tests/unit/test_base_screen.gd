@@ -237,6 +237,38 @@ func test_the_safehouse_can_be_built_up() -> void:
 			"and the pantry is on the record")
 
 
+func test_the_paper_comes_up_on_its_own() -> void:
+	# The original never asks whether you want to read it: display_newspaper()
+	# runs inside the day and holds each page until a key is pressed. A morning
+	# that printed something has to arrive in front of the player, or the log
+	# reports that opinion moved and nothing says why.
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(60613)
+	screen.call("setup", session)
+	var panels: PanelStack = screen.get("_panels")
+
+	var printed := false
+	for day in 40:
+		_play_a_day(screen, session)
+		if not (screen.get("_news") as Array).is_empty():
+			printed = true
+			break
+
+	check(printed, "something was printed inside forty days")
+	if printed:
+		check(panels.is_open(), "and the paper came up without being asked")
+		var paper: NewspaperPanel = panels.get("_paper")
+		check(paper.visible, "and it is the paper that is up")
+		# It also stops the days going by underneath it.
+		check(not bool(screen.get("_running")), "and the days stopped")
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
 func test_the_paper_can_be_read() -> void:
 	var scene: PackedScene = load(SCREEN)
 	var screen: Control = scene.instantiate()

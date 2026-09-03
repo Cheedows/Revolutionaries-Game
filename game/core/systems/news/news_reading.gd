@@ -151,6 +151,7 @@ static func _print(state: GameState, rng: Rng, story: NewsStory,
 	if PLAIN.has(story.type):
 		events.append(Event.new(Event.NEWS_PUBLISHED, {
 			"story": story.type, "page": story.page, "guardian": guardian,
+			"guardian_page": story.guardian_page,
 			"filler": StoryFiller.run(rng),
 			"advertisements": advertisements,
 		}))
@@ -172,6 +173,7 @@ static func _print(state: GameState, rng: Rng, story: NewsStory,
 	var slogan := SquadStory.slogan(rng, story)
 	events.append(Event.new(Event.NEWS_PUBLISHED, {
 		"story": story.type, "page": story.page, "guardian": guardian,
+		"guardian_page": story.guardian_page,
 		"slogan": slogan, "slots": slots, "filler": StoryFiller.run(rng),
 		"advertisements": advertisements,
 	}))
