@@ -31,6 +31,8 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "new_game_screen", "press": ["c"]},
 	{"screen": "new_game_screen", "press": ["c", "1", "1", "c"]},
 	{"screen": "base_screen", "press": []},
+	{"screen": "base_screen", "press": ["dossier"]},
+	{"screen": "base_screen", "press": ["menu"]},
 	{"screen": "base_screen", "press": ["p:house"]},
 	{"screen": "base_screen", "press": ["p:squad"]},
 	{"screen": "base_screen", "press": ["p:dossier"]},
@@ -225,6 +227,11 @@ func _a_session() -> Session:
 ## Answers whatever is being asked: a number takes that option from the list,
 ## "c" takes the first action in the bar.
 func _press(screen: Control, said: String) -> void:
+	if said == "dossier":
+		var who: Array = (screen.get("_session") as Session).state.members()
+		if not who.is_empty():
+			screen.call("_open_dossier", who[0])
+		return
 	if said == "menu":
 		(screen.get("_parts")["more"] as Button).pressed.emit()
 		return

@@ -339,9 +339,13 @@ func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 	equal(moving.size(), 1, "one scroller on a phone, found %d: %s"
 			% [moving.size(), _names(moving)])
 	if moving.size() == 1:
+		# It shows its bar. A bar is not only a handle, it is the only thing on
+		# screen saying there is more below; without one a page that scrolls
+		# perfectly well looks like a page that ends where the screen does, and
+		# that is exactly what got reported about the newsfeed.
 		check(moving[0].vertical_scroll_mode
-				== ScrollContainer.SCROLL_MODE_SHOW_NEVER,
-				"and it has no bar to grab")
+				== ScrollContainer.SCROLL_MODE_AUTO,
+				"and it says so with a bar")
 
 	# Opening a panel must not bring a second one back with it.
 	for entry: Array in BaseNav.PANEL_BUTTONS:

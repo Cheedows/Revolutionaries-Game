@@ -209,13 +209,19 @@ static func unscroll(root: Control, on: bool) -> void:
 				else ScrollContainer.SCROLL_MODE_AUTO
 
 
-## Marks [param scroll] as the one scroller a screen keeps, and takes its bars
-## away: a scrollbar is a thing to grab, and there is nothing to grab it with.
-## It still scrolls — dragging the page is how a phone has always done it.
+## Marks [param scroll] as the one scroller a screen keeps.
+##
+## The bar stays. An earlier version of this took it away, on the reasoning
+## that a scrollbar is a thing to grab and a finger has nothing to grab it
+## with — which is true and beside the point. A bar is not only a handle, it is
+## the only thing on screen saying there is more below; without it a page that
+## scrolls perfectly well is a page that looks like it ends where the screen
+## does, and that is exactly what got reported. Auto, so it appears when there
+## is somewhere to go and not otherwise.
 static func page_scroller(scroll: ScrollContainer) -> void:
 	scroll.set_meta(&"page_scroller", true)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 
 
 static func _scrollers(control: Control) -> Array[ScrollContainer]:

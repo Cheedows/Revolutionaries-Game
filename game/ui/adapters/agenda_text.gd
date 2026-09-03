@@ -85,8 +85,7 @@ static func issues(state: GameState) -> Array[String]:
 		var view: StringName = Ids.VIEWS[index]
 		var attitude: int = state.opinion.attitude[index]
 		var line := "%s: %s agrees (%d%%)" % [
-				EventText.LAW_NAMES.get(view,
-						String(view).capitalize()), _mood(attitude), attitude]
+				ViewText.heading(view), _mood(attitude), attitude]
 		var law := Ids.LAWS.find(view)
 		if law != -1:
 			line += ", and the law is %s" \

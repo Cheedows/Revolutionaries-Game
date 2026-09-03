@@ -169,6 +169,9 @@ func _name_chosen(id: Variant) -> void:
 		&"gender":
 			Founder.cycle_gender(_choosing)
 		_:
+			# A blank code name is not an error — see NewGame.begin(), which
+			# falls back to the founder's own name the way the original's
+			# enter_name() does.
 			var typed := _typed.text.strip_edges()
 			if typed != "":
 				var founder: Creature = _choosing["creature"]

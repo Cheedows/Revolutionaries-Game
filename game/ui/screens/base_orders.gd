@@ -59,8 +59,12 @@ static func assign(session: Session, creature: Creature,
 		activity: StringName) -> PackedStringArray:
 	var said := PackedStringArray()
 	for event in Commands.assign_activity(session, creature, activity):
-		said.append("%s will %s." % [creature.name,
-				ActivityText.of(activity).to_lower()])
+		# "will be", not "will": every activity name in this game is a gerund
+		# — Selling Music, Laying Low, Community Service — so "Scruffy will
+		# selling music" is what the other shape produces. This is the same
+		# wording the sleeper orders already use.
+		said.append("%s will be %s." % [creature.name,
+				ActivityText.of(activity)])
 	# Tending is the one job that needs somebody named as well. The original
 	# picks for you when there is only one prisoner in the house, and asks
 	# otherwise; the roster's picker is the asking.

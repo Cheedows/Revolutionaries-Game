@@ -105,7 +105,19 @@ static func begin(state: GameState, rng: Rng, choosing: Dictionary,
 		outcome: Dictionary, catalog: Catalog) -> Array[Event]:
 	var founder: Creature = choosing["creature"]
 	founder.proper_name = Founder.chosen_name(choosing)
-	if founder.name.is_empty():
+	# A player who typed no code name keeps their own name, which is what the
+	# original does:
+	#
+	#     if((defname!=NULL)&&(strncmp(name,"",len-1)==0))
+	#        strncpy(name,defname,len-1);
+	#
+	# — enter_name() in src/common/getnames.cpp, where defname is propername.
+	# This used to ask whether the name was empty, and it never is: every
+	# Creature is constructed carrying "Scruffy", which is the original's
+	# placeholder for one that has not been named yet. So the fallback never
+	# fired, and a founder whose record read "Jesus Murrell" was called Scruffy
+	# by the roster, the squad, the log and every line of news about them.
+	if not founder.named:
 		founder.name = founder.proper_name
 
 	# The log names the President the founder is going to bring down.

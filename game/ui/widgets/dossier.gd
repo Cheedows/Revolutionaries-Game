@@ -93,9 +93,11 @@ func _home_row() -> Control:
 	var row := Atoms.row(Metrics.SNUG)
 	var refused := BaseAssignment.refused(_session.state, _creature)
 	if refused != "":
-		var label := Atoms.wrapped(Atoms.tinted(refused, Palette.TEXT_FAINT))
-		row.add_child(label)
-		return row
+		# A row of its own rather than a bare label in an [HBoxContainer],
+		# which gives a wrapping label exactly its longest word and no more.
+		var said := ListRow.new(refused)
+		said.out_of_reach(true)
+		return said
 
 	var picker := OptionButton.new()
 	var homes := BaseAssignment.homes(_session.state)
@@ -113,34 +115,34 @@ func _home_row() -> Control:
 
 ## The one thing that can be done about somebody's place in the chain.
 func _promote_row() -> Control:
-	var row := Atoms.row(Metrics.SNUG)
 	var refused := Promotion.refused(_session.state, _creature)
-	var label := Atoms.tinted(refused if refused != "" else "Promote Liberals", Palette.TEXT_FAINT)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
+	var row := ListRow.new(refused if refused != "" else "Promote Liberals")
+	row.out_of_reach(true)
 	var promote := Atoms.button("Promote", false)
 	promote.disabled = refused != ""
 	promote.pressed.connect(func() -> void:
 		Commands.promote(_session, _creature)
 		changed.emit()
 		_refresh())
-	row.add_child(promote)
+	row.act(promote)
 	return row
 
 
 ## Leaving the LCS, either way. Both are irreversible, so both are asked twice.
+##
+## A [ListRow] rather than a row: two buttons that between them say "Remove
+## member" and "Kill member", beside a sentence explaining why neither is
+## possible, is wider than a phone. In a row the sentence was squeezed to
+## nothing and wrapped one letter per line down the side of the panel.
 func _discharge_row() -> Control:
-	var row := Atoms.row(Metrics.SNUG)
 	var refused := Discharge.refused(_session.state, _creature)
-	var label := Atoms.wrapped(Atoms.tinted(refused, Palette.TEXT_FAINT))
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.visible = refused != ""
-	row.add_child(label)
+	var row := ListRow.new(refused)
+	row.out_of_reach(true)
 	var boss: Creature = _session.state.creatures.get(_creature.hire_id)
-	row.add_child(_confirming("Remove member", refused,
+	row.act(_confirming("Remove member", refused,
 			DossierText.release_warning(), func() -> void:
 		Commands.release(_session, _creature)))
-	row.add_child(_confirming("Kill member", refused,
+	row.act(_confirming("Kill member", refused,
 			DossierText.execution_warning(boss.name if boss != null
 			else "the LCS"), func() -> void:
 		Commands.execute(_session, _creature)))
@@ -180,6 +182,8 @@ func _surgery_row() -> Control:
 	operate.pressed.connect(func() -> void: surgery_wanted.emit(_creature))
 	row.add_child(operate)
 	return row
+
+
 ## The row of things that can be done to what they are carrying.
 func _kit_buttons() -> Control:
 	var buttons := KitButtons.new()

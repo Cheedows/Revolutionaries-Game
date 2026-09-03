@@ -6,8 +6,19 @@ in data/ — and lifting them mechanically is the only way to be sure a
 four-thousand-name transcription is exact.
 
 Encoding: the source is not UTF-8 (it predates that being universal) and
-carries accented names as single high bytes. They are decoded as Latin-1, which
-is what the trace harness's byte-wise \\uXXXX escaping compares against.
+carries accented names as single high bytes, in the code page a DOS terminal
+draws with. Code page 437, not Latin-1 — the two disagree about exactly the
+bytes these names use, and reading them as Latin-1 turns Jesus into "Jes£s",
+Garcia into "Garc¡a" and Muller into "M\x81ller". Seventy-two of the four
+thousand names came out mojibake, and they were drawn that way on the roster,
+in the squad and in every line of news about the person.
+
+An earlier version of this file said Latin-1 was deliberate, because it is
+"what the trace harness's byte-wise escaping compares against". Whether that
+was ever true, it is not load-bearing now: no golden trace in the project
+contains a single one of these characters, because the traces name creature
+types ("Political Activist") and the unnamed placeholder, never a generated
+person. Checked before changing it.
 """
 import re
 import sys
@@ -39,7 +50,7 @@ def gdscript_escape(value: str) -> str:
 
 
 def main() -> int:
-    text = SOURCE.read_bytes().decode("latin-1")
+    text = SOURCE.read_bytes().decode("cp437")
     lines = [
         "class_name Names",
         "extends RefCounted",

@@ -65,4 +65,4 @@ static func step_back(parts: Dictionary) -> bool:
 static func _hold_the_page(parts: Dictionary, held: bool) -> void:
 	var scroll: ScrollContainer = parts["scroll"]
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if held \
-			else ScrollContainer.SCROLL_MODE_SHOW_NEVER
+			else ScrollContainer.SCROLL_MODE_AUTO

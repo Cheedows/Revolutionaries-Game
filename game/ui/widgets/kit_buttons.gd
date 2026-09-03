@@ -1,10 +1,12 @@
 class_name KitButtons
-extends HFlowContainer
+extends VBoxContainer
 ## The four things that can be done to what somebody is carrying.
 ##
-## A flow rather than a row: four buttons with real sentences on them do not
-## fit across a phone, and wrapping onto a second line is the only answer that
-## keeps all four reachable.
+## A column, because all four are whole sentences — the original writes them as
+## lettered lines down the equip screen and they are that long. Side by side
+## they are wider than a phone put together; wrapped inside a row they collapse
+## to the width of their longest word. One under another, each as wide as the
+## panel, is the shape the original already has.
 ##
 ## Taking a weapon back, taking the clothes back, handing over ammunition that
 ## fits, and handing one clip back — the equip screen's own keys, from
@@ -23,8 +25,7 @@ func show_member(session: Session, member: Creature) -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	add_theme_constant_override(&"h_separation", Metrics.SNUG)
-	add_theme_constant_override(&"v_separation", Metrics.SNUG)
+	add_theme_constant_override(&"separation", Metrics.TIGHT)
 
 	_add("Drop that Squad member's Conservative weapon", member.weapon == null,
 			func() -> String:
@@ -42,7 +43,7 @@ func show_member(session: Session, member: Creature) -> void:
 
 ## One button, and what it says when it will not do it.
 func _add(text: String, disabled: bool, act: Callable) -> void:
-	var button := Atoms.button(text, false)
+	var button := Atoms.wrapped_button(Atoms.button(text))
 	button.disabled = disabled
 	button.pressed.connect(func() -> void:
 		var why: String = act.call()

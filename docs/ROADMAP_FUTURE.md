@@ -236,6 +236,45 @@ rather than a description of it.
   the bottom of the window. It is five steps of four now. A scale has to fit
   the thing it is describing.
 
+  **A third departure: the page shows its scroll bar.** A phone had exactly one
+  scroller and it was set to `SCROLL_MODE_SHOW_NEVER`, which the mobile-layout
+  test asserted, because a bar was read as chrome. It is not: a bar is the only
+  thing on screen saying there is more below. The newsfeed was reported as "cut
+  off with no way to scroll vertically" when it scrolled perfectly well and had
+  1,185 pixels of content — nothing told the player so. `Metrics.page_scroller`
+  and `BaseFront` are `SCROLL_MODE_AUTO` now and the test asserts that instead.
+
+  Four things the same report turned up, all real:
+
+  - **"Who is Scruffy?"** — `NewGame.begin` fell back to the proper name only
+    `if founder.name.is_empty()`, and it never is: every `Creature` is
+    constructed carrying "Scruffy", the original's placeholder for a creature
+    that has not been named. So the founder's record read "Jesus Murrell" while
+    the roster, the squad, the log and every line of news called them Scruffy.
+    The condition is `if not founder.named` now, which is the question the
+    original's `enter_name()` actually asks.
+  - **Mojibake in four thousand names.** `tools/extract_names.py` decoded
+    `creaturenames.cpp` as Latin-1 on the strength of a comment claiming the
+    trace harness compared against it. It does not — no golden trace contains
+    one of these characters, checked before changing it — and the source is
+    code page 437, which disagrees with Latin-1 about exactly the bytes these
+    names use. Seventy-two names were drawn as "Jes£s", "Garc¡a", "M\x81ller".
+  - **Issues named by their ids.** The opinion log and the agenda printed
+    enum-ish ids where `getview()` in `src/common/getnames.cpp` has both a
+    short and a long name for every view. `ui/adapters/view_text.gd` carries
+    both tables, so the log says "the CCS" and the agenda "Barbaric
+    Executions". Same blind spot as `StatText`: names computed from ids are
+    invisible to `audit_voice.py`.
+  - **Cut off on the right.** A `KitButtons` row was 474 pixels wide on a
+    400-pixel screen; it is a column of wrapping buttons now. A card opened in
+    a `Sheet` sat at its own 320-pixel minimum inside a 658-pixel sheet, so
+    `PanelStack.open` gives whichever panel is showing `SIZE_EXPAND_FILL`. And
+    `ListRow` has a 160-pixel text floor, because a wrapping label in a flow
+    otherwise collapses to its longest word and draws one letter per line.
+
+  The newspaper was investigated and is not broken: it shows the original's own
+  "Unfortunately, nobody seems interested." because busking generates no story.
+
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in
   `tools/voice_exceptions.json` with what the original does instead. The

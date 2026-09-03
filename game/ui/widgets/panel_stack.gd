@@ -82,6 +82,14 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 		SURGERY:
 			_surgery.show_surgeon(session, subject as Creature)
 	visible = is_open()
+	# Whichever one is showing takes the height it has been given rather than
+	# the height it happens to want. Without this the stack fills the sheet and
+	# the panel sits at its own minimum inside it — a card cut off at the
+	# bottom, with a scroller that never has anything to scroll.
+	for panel in get_children():
+		var control := panel as Control
+		if control != null:
+			control.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
 ## Whether anything is up.

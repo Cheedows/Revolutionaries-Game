@@ -83,6 +83,20 @@ static func wrapped(label: Label) -> Label:
 	return label
 
 
+## The same for a button, whose label is sometimes a whole sentence.
+##
+## The original writes some of its choices out in full — "Drop that Squad
+## member's Conservative weapon" — and a button that cannot wrap one of those
+## is 474 pixels wide on a 400 pixel screen, which drags the whole panel off
+## the side. A wrapping button has to be told how wide to be, because otherwise
+## its smallest size is its longest word and a container will happily give it
+## exactly that.
+static func wrapped_button(control: Button) -> Button:
+	control.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return control
+
+
 ## Text in a fixed column, cut off with an ellipsis rather than wrapped.
 ##
 ## The other way a line of text can be too long for the room it has, and the

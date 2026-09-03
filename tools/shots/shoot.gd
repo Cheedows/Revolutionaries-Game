@@ -56,6 +56,13 @@ func _initialize() -> void:
 	# being used rather than only as it opens.
 	for press: String in presses:
 		# "p:<name>" opens one of the safehouse panels.
+		if press == "dossier":
+			var who: Array = (screen.get("_session") as Session).state.members()
+			if not who.is_empty():
+				screen.call("_open_dossier", who[0])
+			for _settle in 12:
+				await process_frame
+			continue
 		if press == "menu":
 			(screen.get("_parts")["more"] as Button).pressed.emit()
 			for _settle in 12:

@@ -152,7 +152,7 @@ static func describe(event: Event, state: GameState) -> String:
 			if amount == 0:
 				return ""
 			return "Opinion on %s moved %s%d." % [
-				String(data.get("view", &"")).replace("_", " "),
+				ViewText.of(data.get("view", &"")),
 				"+" if amount > 0 else "", amount,
 			]
 		Event.MAJOR_EVENT:

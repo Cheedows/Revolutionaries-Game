@@ -17,6 +17,16 @@ extends HFlowContainer
 ## you press on it, and making the whole row a target would mean a thumb aimed
 ## at Give hitting the row instead.
 
+## The narrowest a row's text may be squeezed before the flow gives up and
+## puts what is beside it on the next line.
+##
+## Without a floor, a wrapping label's smallest size is its longest word, and a
+## flow will happily hand it exactly that: "They are out with the squad." came
+## out one letter per line, twenty-four lines tall, down the side of a panel
+## with two buttons sitting next to it. A floor turns that into a wrap, which
+## is what a flow is for.
+const MIN_TEXT := 160
+
 var _label: Label
 var _aside: Label
 
@@ -29,6 +39,7 @@ func _init(said: String = "") -> void:
 	_label = Atoms.wrapped(Atoms.body(said))
 	_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_label.custom_minimum_size.x = MIN_TEXT
 	add_child(_label)
 
 
