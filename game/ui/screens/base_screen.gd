@@ -63,6 +63,11 @@ func setup(session: Session) -> void:
 	_session = session
 	_build()
 	_adapt()
+	# Whatever was in the log belongs to a different game. A screen given a
+	# session after it has already rolled one of its own to look at — which is
+	# what happens whenever a frame passes between the two — otherwise opens
+	# its history with two first days.
+	_log.clear()
 	_log.append_heading("%s. The %s begins." % [
 			_session.state.calendar.to_display(), Branding.ORG_NAME])
 	_refresh()
@@ -106,19 +111,13 @@ func _build() -> void:
 		return
 	var parts := BaseLayout.build(self)
 	_parts = parts
-	_status = parts["status"]
-	_laws = parts["laws"]
-	_roster = parts["roster"]
-	_panels = parts["panels"]
-	_map = parts["map"]
-	_fight = parts["fight"]
-	_squad = parts["squad"]
-	_log = parts["log"]
-	_dialog = parts["dialog"]
+	# A straight unpack: every widget BaseLayout built is kept under the name
+	# it was built with, so the two lists cannot drift apart.
+	for named in ["status", "laws", "roster", "panels", "map", "fight",
+			"squad", "log", "dialog", "buttons", "sheet"]:
+		set("_" + named, parts[named])
 	_wait_button = parts["wait"]
 	_run_button = parts["run"]
-	_buttons = parts["buttons"]
-	_sheet = parts["sheet"]
 	_connect()
 
 
@@ -135,15 +134,22 @@ func _connect() -> void:
 	_roster.recruit_chosen.connect(
 			func(who: Creature, kind: StringName) -> void:
 		_say(BaseOrders.recruit(_session, who, kind)))
-	_panels.surgery_wanted.connect(func(surgeon: Creature) -> void:
-		BaseFront.panel(_parts, _session, PanelStack.SURGERY, surgeon,
-				_narrow)
-		_refresh())
+	_roster.activity_wanted.connect(func(who: Creature) -> void:
+		_open_panel(PanelStack.ACTIVITY, who))
+	_panels.activity_chosen.connect(
+			func(who: Creature, doing: StringName) -> void:
+		_say(BaseOrders.assign(_session, who, doing)))
+	_panels.surgery_wanted.connect(func(who: Creature) -> void:
+		_open_panel(PanelStack.SURGERY, who))
 	# Tapping the darkened page, or pressing escape, is the way back.
 	_sheet.dismissed.connect(func() -> void:
 		_panels.open(PanelStack.NONE, null)
 		_refresh())
-	_panels.changed.connect(_refresh)
+	# Closing a panel from its own Close button puts the sheet away too. It did
+	# not, and what was left was the page greyed out over nothing.
+	_panels.changed.connect(func() -> void:
+		BaseFront.settle(_parts, _narrow)
+		_refresh())
 	_panels.reported.connect(func(message: String) -> void:
 		_log.append(message, Palette.TEXT_DIM))
 	_map.step_wanted.connect(_on_step)
@@ -267,28 +273,7 @@ func _say(lines: PackedStringArray) -> void:
 
 
 func _refresh() -> void:
-	_status.refresh(_session.state)
-	_laws.refresh(_session.state)
-	_roster.offer_garments(AssignmentChoice.garments(_session.state,
-			_session.catalog))
-	_roster.offer_recruits(Recruiting.recruitable(_session.state))
-	_roster.refresh(_session.state)
-	_squad.refresh(_session.state)
-	# The plan is only worth the room it takes while the squad is inside one.
-	var inside := _session.state.mode == &"site" \
-			and _session.state.site.location != -1
-	if inside:
-		_map.refresh(_session.state)
-	_fight.refresh(_session.state)
-	BaseLayout.focus(_parts, inside, _panels.is_open(), _narrow, _country)
-	# Whatever was just rebuilt — a roster row, an open panel, a question —
-	# has to be big enough to hit, and must not have brought its own scroller
-	# back with it, before the player sees it. Both are cheap and idempotent,
-	# and here rather than in reflow() because a panel builds itself the first
-	# time it is opened, long after the screen was laid out.
-	Metrics.enlarge(self, Metrics.touch(self))
-	PressFeel.teach(self)
-	Metrics.unscroll(_parts["columns"], _narrow)
+	BaseLayout.paint(self, _parts, _session, _narrow, _country)
 
 
 ## Asks where the squad is going, through the same dialog as everything else.

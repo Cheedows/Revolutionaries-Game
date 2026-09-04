@@ -51,7 +51,12 @@ func says(said: String) -> void:
 ## A second, quieter line under the name — a price, a place, a condition.
 func aside(said: String) -> void:
 	if _aside == null:
-		_aside = Atoms.wrapped(Atoms.dim(""))
+		# Not wrapped. An aside is a short status beside a longer sentence —
+		# "Laying Low", "$3000" — and a wrapping label in a flow is given its
+		# longest word, so wrapping one drew "Laying Low" down the side of the
+		# row a letter at a time. Too long for the room left, it goes on the
+		# next line instead, which is what a flow is for.
+		_aside = Atoms.dim("")
 		_aside.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		add_child(_aside)
 		move_child(_aside, 1)

@@ -8,11 +8,6 @@ extends PanelContainer
 ## How wide the law names line up in.
 const NAME_WIDTH := 150
 
-const SCALE_LABELS := {
-	-2: "Arch-Cons.", -1: "Conservative", 0: "Moderate",
-	1: "Liberal", 2: "Elite Liberal",
-}
-
 var _rows: Dictionary = {}
 
 ## The law names, so the column they line up in can be narrowed when there is
@@ -45,18 +40,21 @@ func _build() -> void:
 	scroll.add_child(column)
 
 	for law: StringName in Ids.LAWS:
-		var row := Atoms.row(Metrics.SNUG)
+		var group := Atoms.column(0)
 		var name_label := Atoms.cell(
 				EventText.LAW_NAMES.get(law, String(law).capitalize()),
 				NAME_WIDTH)
-		name_label.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
+		name_label.add_theme_color_override(&"font_color", Palette.TEXT_FAINT)
 		_names.append(name_label)
-		row.add_child(name_label)
+		group.add_child(name_label)
 
-		var value_label := Atoms.body("")
-		row.add_child(value_label)
-		column.add_child(row)
-		_rows[law] = value_label
+		# The sentence under the name rather than beside it: the original's
+		# lines run to eleven words and a phone has room for one column of
+		# them, not two.
+		var said := Atoms.wrapped(Atoms.body(""))
+		group.add_child(said)
+		column.add_child(group)
+		_rows[law] = said
 
 
 ## Redraws from [param state].
@@ -68,7 +66,11 @@ func refresh(state: GameState) -> void:
 	for law: StringName in _rows:
 		var value := state.law.get_value(law)
 		var label: Label = _rows[law]
-		label.text = SCALE_LABELS.get(value, "?")
+		# What the country is actually like on this issue, in the original's
+		# own words, coloured by which way it has gone. The port used to print
+		# the rung's name — "Moderate" — which is the number with a word on it
+		# and none of the politics. [LawText] says why that matters.
+		label.text = LawText.of(state, law)
 		label.add_theme_color_override("font_color", Palette.for_alignment(value))
 
 

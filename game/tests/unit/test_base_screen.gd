@@ -85,6 +85,80 @@ func test_events_become_readable_lines() -> void:
 			"the date is not worth a line — it is already on screen")
 
 
+func test_an_activity_is_chosen_in_two_presses() -> void:
+	# The original asks twice — a kind of work, then the job — and so does
+	# this. Driven the way a player drives it: press what is on the roster,
+	# press a category, press a job, and the order has been given.
+	var scene: PackedScene = load(SCREEN)
+	var screen: Control = scene.instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(screen)
+	var session := _a_game(4242)
+	screen.call("setup", session)
+	var founder: Creature = session.state.members()[0]
+
+	var roster: Roster = screen.get("_roster")
+	roster.activity_wanted.emit(founder)
+	var panels: PanelStack = screen.get("_panels")
+	check(panels.is_open(), "the picker came up")
+	var picker: ActivityPicker = panels.get("_activity")
+	check(picker.visible, "and it is the picker")
+
+	# Nine categories, not forty-two jobs.
+	var rows := _rows_of(picker)
+	equal(rows.size(), ActivityMenu.GROUPS.size(),
+			"the first question is the categories, got %d" % rows.size())
+
+	# Legal Fundraising, then Soliciting Donations.
+	_press_in(picker, "Choose", 1)
+	var jobs := _buttons_of(picker)
+	check(jobs.size() > 1, "the second question lists the jobs in it")
+	var wanted := ActivityText.of(&"donations")
+	var found := false
+	for button: Button in jobs:
+		if button.text == wanted:
+			button.pressed.emit()
+			found = true
+			break
+	check(found, "the job is offered by its own name")
+	equal(founder.activity, &"donations", "and pressing it gave the order")
+	check(not panels.is_open(), "and the picker put itself away")
+
+	tree.root.remove_child(screen)
+	screen.queue_free()
+
+
+## Every row of the picker, which is one per category.
+func _rows_of(picker: ActivityPicker) -> Array:
+	var found: Array = []
+	for child in (picker.get("_body") as Node).get_children():
+		if child is ListRow:
+			found.append(child)
+	return found
+
+
+## Every button in the picker's body, however deep.
+func _buttons_of(node: Node) -> Array:
+	var found: Array = []
+	for child in node.get_children():
+		if child is Button:
+			found.append(child)
+		found.append_array(_buttons_of(child))
+	return found
+
+
+## Presses the [param nth] button labelled [param said].
+func _press_in(picker: ActivityPicker, said: String, nth: int) -> void:
+	var seen := 0
+	for button: Button in _buttons_of(picker.get("_body") as Node):
+		if button.text != said:
+			continue
+		if seen == nth:
+			button.pressed.emit()
+			return
+		seen += 1
+
+
 func test_a_member_can_be_put_to_work_and_earns() -> void:
 	var scene: PackedScene = load(SCREEN)
 	var screen: Control = scene.instantiate()

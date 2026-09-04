@@ -3,7 +3,10 @@ extends RefCounted
 ## Where the keyboard sits in a question, and which option a key answers.
 ##
 ## Split out of intent_dialog.gd because it is one subject and the dialog had
-## grown past what one file should hold. Everything here works on a list of
+## grown past what one file should hold. It lives in adapters/ rather than
+## widgets/ because it is not a widget: it has no node, and the two tests that
+## build every widget in the folder to see whether it fits on a phone tried to
+## build this one as a [Control] and hit a runtime error. Everything here works on a list of
 ## buttons and the ids they stand for, so it can be reasoned about — and
 ## tested — without a dialog, a tree or a screen.
 

@@ -77,10 +77,17 @@ static func _discussed(state: GameState, data: Dictionary) -> String:
 
 ## How the meeting went, and whether there will be another.
 static func _persuaded(state: GameState, data: Dictionary) -> String:
+	# Two names, not one twice: the recruit is the one who found the recruiter
+	# insightful. Both lines had a single argument for two holes, so neither
+	# ever formatted — GDScript raises on that and the log printed nothing at
+	# all for the one thing a recruiter does all day.
 	var who := _who(state, data.get("recruit", 0))
+	var asking := _who(state, data.get("creature", 0))
 	if bool(data.get("warmly", false)):
-		return "%s found %s's views to be insightful. They'll definitely meet again tomorrow." % who
-	return "%s is skeptical about some of %s's arguments. They'll meet again tomorrow." % who
+		return "%s found %s's views to be insightful. They'll definitely meet again tomorrow." \
+				% [who, asking]
+	return "%s is skeptical about some of %s's arguments. They'll meet again tomorrow." \
+			% [who, asking]
 
 
 ## The end of it, one way or another.

@@ -61,7 +61,11 @@ func card() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 
-	_body = Atoms.column(0)
+	# Room between whatever goes in. It was nothing, which is right for two
+	# lines of a printed story and wrong for everything else: a list of things
+	# to buy, each a wrapping sentence with a price beside it, came out as one
+	# block of text with no seam between one purchase and the next.
+	_body = Atoms.column(Metrics.SNUG)
 	scroll.add_child(_body)
 
 	_actions = ActionBar.new()

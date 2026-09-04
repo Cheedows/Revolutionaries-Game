@@ -111,6 +111,41 @@ static func build(screen: Control) -> Dictionary:
 	return parts
 
 
+## Puts what the game says onto the widgets that say it.
+##
+## Every screen refresh runs this: each widget is handed the state and asked to
+## redraw, then the layout decides what is worth room and the whole thing is
+## measured again for touch. It lives here rather than on the screen because it
+## is the same subject as the rest of this file — what is on show and how big —
+## and because the screen kept running into its line limit on the part of it
+## that is not about deciding anything.
+static func paint(root: Control, parts: Dictionary, session: Session,
+		narrow: bool, country: bool) -> void:
+	var state := session.state
+	(parts["status"] as StatusBar).refresh(state)
+	(parts["laws"] as LawList).refresh(state)
+	var roster: Roster = parts["roster"]
+	roster.offer_garments(AssignmentChoice.garments(state, session.catalog))
+	roster.offer_recruits(Recruiting.recruitable(state))
+	roster.refresh(state)
+	(parts["squad"] as SquadPanel).refresh(state)
+	# The plan is only worth the room it takes while the squad is inside one.
+	var inside := state.mode == &"site" and state.site.location != -1
+	if inside:
+		(parts["map"] as SiteMapView).refresh(state)
+	(parts["fight"] as FightPanel).refresh(state)
+	focus(parts, inside, (parts["panels"] as PanelStack).is_open(), narrow,
+			country)
+	# Whatever was just rebuilt — a roster row, an open panel, a question —
+	# has to be big enough to hit, and must not have brought its own scroller
+	# back with it, before the player sees it. Both are cheap and idempotent,
+	# and here rather than in reflow() because a panel builds itself the first
+	# time it is opened, long after the screen was laid out.
+	Metrics.enlarge(root, Metrics.touch(root))
+	PressFeel.teach(root)
+	Metrics.unscroll(parts["columns"], narrow)
+
+
 ## Lays the parts out for the room there is.
 ##
 ## Called whenever the window changes size, so this has to be safe to run over

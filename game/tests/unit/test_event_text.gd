@@ -33,7 +33,9 @@ var _kinds := {}
 const SILENT := {
 	"game_started": "there is nothing to say about a game beginning",
 	"day_advanced": "the date is already on screen",
-	"headline_run": "the paper is a panel; the log would only repeat it",
+	"major_event:": "a world story with no kind is rolled before the paper "
+			+ "writes it, so there is nothing to say here yet; the headline "
+			+ "the paper ran says it, and says it in the original's words",
 	"news_published": "as above",
 	"news_segment": "as above — the television is read in the paper panel",
 	"opinion_shifted:0": "opinion did not move",

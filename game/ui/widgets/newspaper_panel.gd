@@ -10,6 +10,21 @@ extends Card
 ## What the padding is drawn as, since it is only tildes in the original.
 const FILLER_MARK := "~"
 
+## Which of the six mastheads is the Liberal Guardian's. The other five are the
+## mainstream papers, and preparepage() picks between them at random.
+const GUARDIAN_MASTHEAD := 5
+
+## How tall a story's picture is drawn. It is eighteen cells of art.
+const PICTURE_HEIGHT := 160
+
+## Which papers have had their masthead drawn on this page already.
+var _shown := {}
+
+## How tall the masthead is drawn. It is five cells of art, and a cell wants to
+## be about twice as tall as it is wide.
+const MASTHEAD_HEIGHT := 44
+
+
 
 
 func _ready() -> void:
@@ -25,6 +40,7 @@ func show_paper(state: GameState, events: Array[Event]) -> void:
 		child.queue_free()
 
 	var printed := 0
+	_shown.clear()
 	for event: Event in events:
 		match event.type:
 			Event.HEADLINE_RUN:
@@ -63,14 +79,36 @@ func show_paper(state: GameState, events: Array[Event]) -> void:
 ## mainstream papers have no name to print in the other direction, so an
 ## unnamed story has to be the one that means "not the Guardian".
 func _masthead(event: Event) -> void:
-	if bool(event.data.get("guardian", false)):
+	var guardian := bool(event.data.get("guardian", false))
+	# Once per paper, not once per story: the original draws a masthead across
+	# the front page and page numbers on the ones after it.
+	if _shown.has(guardian):
+		return
+	_shown[guardian] = true
+	# The masthead itself, out of the original's own art, and drawn in its own
+	# colours rather than the interface's. It is black block letters on white,
+	# because it is a newspaper — a strip of paper across the top of the card
+	# is the whole point of it.
+	var art := CharArtView.new()
+	art.show_art(CharArt.MASTHEADS,
+			GUARDIAN_MASTHEAD if guardian
+			else int(event.data.get("masthead", 0)) % GUARDIAN_MASTHEAD)
+	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	art.custom_minimum_size.y = MASTHEAD_HEIGHT
+	_body.add_child(art)
+	if guardian:
 		_line("Liberal Guardian", Palette.ACCENT)
 
 
 func _headline(state: GameState, event: Event) -> void:
 	var lines := HeadlineText.lines(state, event.data.get("headline", &""))
 	for line: String in lines:
-		_line(line, Palette.ACCENT)
+		# Set in the original's own block capitals, which is what a headline in
+		# this game looks like. displaycenterednewsfont() in src/news/news.cpp
+		# draws it a letter at a time out of art/largecap.cpc; so does this.
+		# Black block capitals on white, which is what they are: the same
+		# sheet of paper the masthead is printed on, not a coloured caption.
+		_body.add_child(CharArtView.headline(line))
 	var major: Dictionary = event.data.get("major", {})
 	if major.is_empty():
 		return
@@ -85,10 +123,16 @@ func _headline(state: GameState, event: Event) -> void:
 		return
 	var caption := MajorEventPageText.caption(state,
 			major.get("headline", &""), major)
-	var picture := MajorEventPageText.picture(major.get("headline", &""))
-	if picture != &"":
-		_line("[%s]" % String(picture).replace("_", " "),
-				Palette.TEXT_FAINT)
+	# The picture that runs beside the story, which is a picture: the original
+	# draws it with displaynewspicture() out of art/newspic.cpc, and the port
+	# used to print the name of the file in square brackets.
+	var at := MajorEventPageText.picture_at(major.get("headline", &""))
+	if at != -1:
+		var drawn := CharArtView.new()
+		drawn.show_art(CharArt.PICTURES, at)
+		drawn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		drawn.custom_minimum_size.y = PICTURE_HEIGHT
+		_body.add_child(drawn)
 	if caption != "":
 		_line(caption, Palette.TEXT)
 

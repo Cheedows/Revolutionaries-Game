@@ -105,6 +105,40 @@ func _initialize() -> void:
 			for _settle in 12:
 				await process_frame
 			continue
+		# "activity" asks the first member what they will be doing, and
+		# "activity:N" goes on to press the Nth category.
+		if press.begins_with("activity"):
+			var who: Array = (screen.get("_session") as Session).state.members()
+			if not who.is_empty():
+				(screen.get("_roster") as Roster).activity_wanted.emit(who[0])
+			for _settle in 12:
+				await process_frame
+			if press.contains(":"):
+				var picker: Control = (screen.get("_panels")
+						as PanelStack).get("_activity")
+				var rows: Array = []
+				for child in (picker.get("_body") as Node).get_children():
+					if child is ListRow:
+						rows.append(child)
+				var at := int(press.split(":")[1])
+				if at < rows.size():
+					for button in rows[at].get_children():
+						if button is Button:
+							(button as Button).pressed.emit()
+							break
+				for _settle in 12:
+					await process_frame
+			continue
+		if press == "close":
+			(screen.get("_sheet") as Sheet).dismiss()
+			for _settle in 12:
+				await process_frame
+			continue
+		if press == "country":
+			(screen.get("_parts")["country"] as Button).button_pressed = true
+			for _settle in 12:
+				await process_frame
+			continue
 		if press == "menu":
 			(screen.get("_parts")["more"] as Button).pressed.emit()
 			for _settle in 12:

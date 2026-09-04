@@ -23,7 +23,7 @@ const EMPTY_UNTIL_ASKED: Array[String] = [
 	"safehouse_panel.gd", "newspaper_panel.gd", "stores_panel.gd",
 	"settings_panel.gd", "justice_panel.gd", "sleeper_panel.gd",
 	"surgery_panel.gd", "kit_buttons.gd",
-	"marshalling_panel.gd",
+	"marshalling_panel.gd", "activity_picker.gd", "char_art_view.gd",
 ]
 
 

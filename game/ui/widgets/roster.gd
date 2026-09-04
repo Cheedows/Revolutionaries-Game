@@ -8,6 +8,9 @@ extends PanelContainer
 ## Emitted when the player puts someone on a different activity.
 signal activity_chosen(creature: Creature, activity: StringName)
 
+## Emitted when somebody should be asked what this Liberal will be doing.
+signal activity_wanted(creature: Creature)
+
 ## Emitted when the player wants to look at somebody properly.
 signal dossier_wanted(creature: Creature)
 
@@ -121,16 +124,15 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 			Palette.TEXT_DIM if creature.body.blood > 50 else Palette.CONSERVATIVE)
 	row.add_child(condition)
 
-	# What they are doing is a choice, so it is a control rather than a label.
-	var activities := OptionButton.new()
+	# What they are doing is a choice, so it is a control rather than a label —
+	# but not a drop-down. Forty-two jobs in an [OptionButton] is a list taller
+	# than a phone, inside a popup with a scrollbar a thumb cannot catch, and
+	# it flattens the original's own grouping into one run of names. Pressing
+	# this asks the way the original asks: kind of work first, then the job.
+	var activities := Atoms.button(ActivityText.of(creature.activity), false)
 	activities.custom_minimum_size = Vector2(_wide(190), 0)
-	for index in ActivityAssignment.AVAILABLE.size():
-		var activity: StringName = ActivityAssignment.AVAILABLE[index]
-		activities.add_item(ActivityText.of(activity), index)
-		if creature.activity == activity:
-			activities.select(index)
-	activities.item_selected.connect(func(index: int):
-		activity_chosen.emit(creature, ActivityAssignment.AVAILABLE[index]))
+	activities.pressed.connect(func() -> void:
+		activity_wanted.emit(creature))
 	row.add_child(activities)
 
 	# Sewing needs to be told what to sew, which the original asks on a screen

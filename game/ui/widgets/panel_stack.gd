@@ -16,6 +16,9 @@ signal reported(message: String)
 ## so cannot be opened from inside one.
 signal surgery_wanted(surgeon: Creature)
 
+## Emitted when a Liberal has been given something to do.
+signal activity_chosen(who: Creature, activity: StringName)
+
 ## Nothing open.
 const NONE := &"none"
 const DOSSIER := &"dossier"
@@ -28,6 +31,7 @@ const JUSTICE := &"justice"
 const SLEEPERS := &"sleepers"
 const SQUAD := &"squad"
 const SURGERY := &"surgery"
+const ACTIVITY := &"activity"
 
 var _dossier: Dossier
 var _agenda: AgendaPanel
@@ -39,6 +43,7 @@ var _justice: JusticePanel
 var _sleepers: SleeperPanel
 var _squad: MarshallingPanel
 var _surgery: SurgeryPanel
+var _activity: ActivityPicker
 
 
 func _ready() -> void:
@@ -58,6 +63,7 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 	_sleepers.visible = false
 	_squad.visible = false
 	_surgery.show_surgeon(session, null)
+	_activity.show_creature(session, null)
 	_dossier.show_creature(session, null)
 	match which:
 		DOSSIER:
@@ -81,6 +87,8 @@ func open(which: StringName, session: Session, subject: Variant = null) -> void:
 			_squad.show_squad(session)
 		SURGERY:
 			_surgery.show_surgeon(session, subject as Creature)
+		ACTIVITY:
+			_activity.show_creature(session, subject as Creature)
 	visible = is_open()
 	# Whichever one is showing takes the height it has been given rather than
 	# the height it happens to want. Without this the stack fills the sheet and
@@ -98,7 +106,7 @@ func is_open() -> bool:
 	return _dossier.visible or _agenda.visible or _house.visible \
 			or _paper.visible or _stores.visible or _settings.visible \
 			or _justice.visible or _sleepers.visible or _squad.visible \
-			or _surgery.visible
+			or _surgery.visible or _activity.visible
 
 
 func _build() -> void:
@@ -115,8 +123,9 @@ func _build() -> void:
 	_sleepers = SleeperPanel.new()
 	_squad = MarshallingPanel.new()
 	_surgery = SurgeryPanel.new()
+	_activity = ActivityPicker.new()
 	for panel: Control in [_dossier, _agenda, _house, _paper, _stores,
-			_settings, _justice, _sleepers, _squad, _surgery]:
+			_settings, _justice, _sleepers, _squad, _surgery, _activity]:
 		panel.custom_minimum_size = Vector2(0, 320)
 		panel.visible = false
 		panel.connect(&"closed", func() -> void:
@@ -126,6 +135,10 @@ func _build() -> void:
 		if panel.has_signal(&"surgery_wanted"):
 			panel.connect(&"surgery_wanted", func(surgeon: Creature) -> void:
 				surgery_wanted.emit(surgeon))
+		if panel.has_signal(&"chosen"):
+			panel.connect(&"chosen",
+					func(who: Creature, doing: StringName) -> void:
+				activity_chosen.emit(who, doing))
 		if panel.has_signal(&"changed"):
 			panel.connect(&"changed", func() -> void: changed.emit())
 		if panel.has_signal(&"saved"):

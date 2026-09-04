@@ -367,6 +367,62 @@ rather than a description of it.
     `DialogKeys.same()`, split out with the rest of the keyboard bookkeeping
     because the dialog had grown past the file cap.
 
+  **Six things reported from playing it, and what each turned out to be.**
+
+  *The paper had no paper.* `art/*.cpc` has been in this repository the whole
+  time: three files of terminal cells, four bytes each — a character, two
+  colours and a bold flag — which is exactly what `loadgraphics()` in
+  `src/news/news.cpp` reads. They hold the five mainstream mastheads and the
+  Liberal Guardian's, the twenty-seven block capitals a headline is set in, and
+  thirteen story pictures. `tools/extract_art.py` lifts them and `CharArtView`
+  draws them, as rectangles rather than as text: every character the art uses
+  is a block, a half block or a dither, so the shapes are the original's shapes
+  at any size and nothing depends on the player having a code page 437 font.
+  The paper now runs its masthead, sets its headline in block capitals, and
+  prints the picture beside a major event instead of the words "[oil]".
+
+  Two things the art taught, both found by looking at a frame: the letters are
+  drawn as *background* colours with space characters, so tinting them to the
+  interface palette turned the mastheads into grey bars and the headlines
+  inside out; and a masthead is eighty cells wide, so asking for its natural
+  width dragged the whole page off the side of a phone. It asks for a height
+  and takes whatever width it is given.
+
+  *The Liberal Agenda had no politics in it.* The original's agenda screen
+  prints a sentence per law saying what the country is actually like —
+  "Abortion is limited to the first trimester, and is very expensive.",
+  "Slavery has been reintroduced, along with an apartheid system." — coloured
+  by which way that law has gone, and it rewrites all of them at the two lost
+  endings and at the Elite Liberal win. That is a hundred and seventy-six
+  sentences of the game's actual argument, and the port printed the name of the
+  rung: "Abortion Rights: Moderate". `tools/extract_agenda.py` lifts them and
+  `LawText` picks between them. Nothing had caught this because every audit
+  asks whether what the port says is the original's; none asked what the
+  original says that the port never got to.
+
+  *Forty-two jobs in one drop-down.* The original asks twice — a column of
+  categories, then the jobs in the one chosen — and `ActivityMenu` carries both
+  sets of its names. A flat list of forty-two is longer than a phone, sits in a
+  popup whose scrollbar a thumb cannot catch, and makes choosing between
+  Prostituting and Public Policy look like the same kind of decision as
+  choosing between two classes. The grouping is the original saying what sort
+  of thing each job is.
+
+  *The page greyed out over nothing.* Closing a panel from its own Close button
+  hid the panel and said so; nothing was listening for what that meant, so the
+  sheet stayed up holding a stack with nothing visible in it.
+
+  *Everything in a card touched everything else.* The card's body had no space
+  between its children, which is right for two lines of a printed story and
+  wrong for a list of things to buy.
+
+  *"Something happened about Ceosalary, and it went our way."* The simulation
+  rolls a major event and the paper writes it later, so the log line was
+  written before the story existed — the id, capitalised, and a shrug, for the
+  biggest thing that happened that day. The log prints the paper's own headline
+  now. This is the failure mode the voice skill names as the recurring one:
+  roll the thing, throw away what was rolled, print a summary.
+
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in
   `tools/voice_exceptions.json` with what the original does instead. The

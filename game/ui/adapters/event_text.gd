@@ -155,6 +155,12 @@ static func describe(event: Event, state: GameState) -> String:
 				ViewText.of(data.get("view", &"")),
 				"+" if amount > 0 else "", amount,
 			]
+		Event.HEADLINE_RUN:
+			# The paper's own headline, in the log, because the log is what a
+			# player scrolls back through and the headline is the original's
+			# words for what happened. The story itself is on the page.
+			return " ".join(HeadlineText.lines(state,
+					data.get("headline", &"")))
 		Event.MAJOR_EVENT:
 			return _major_line(data)
 		Event.GAME_WON:
@@ -177,6 +183,9 @@ static func colour_of(event: Event) -> Color:
 			return Palette.CONSERVATIVE
 		Event.GAME_WON:
 			return Palette.LIBERAL
+		Event.HEADLINE_RUN:
+			# A headline is a headline, and reads as one in the log.
+			return Palette.ACCENT
 		Event.LAW_CHANGED:
 			var moved := int(event.data.get("to", 0)) - int(event.data.get("from", 0))
 			if moved > 0:
@@ -228,14 +237,15 @@ static func _major_line(data: Dictionary) -> String:
 			return "The police subdue and arrest the squad."
 		&"special_edition":
 			return " ".join(SpecialEditionText.lines(data))
-	# A major event with no kind is one of the world's own stories: it has a
-	# view and a side and nothing else, because the paper carries the rest.
+	# A major event with no kind is one of the world's own stories, and the
+	# story is not written yet: the simulation rolls the event here and the
+	# paper writes it when it goes to press. So this said "Something happened
+	# about Ceosalary, and it went our way." — the id, capitalised, and a
+	# shrug, for the biggest thing that happened that day. The headline the
+	# paper ran says it instead, and says it in the original's words; see
+	# HEADLINE_RUN above. Nothing is printed here.
 	if data.has("view"):
-		var subject: String = LAW_NAMES.get(data["view"],
-				str(data["view"]).capitalize())
-		return "Something happened about %s, and it went %s way." % [subject,
-				"our" if bool(data.get("positive", false))
-						else "the other"]
+		return ""
 	# An event of a kind nothing here has words for still gets a line: the
 	# alternative is the simulation reporting into silence.
 	return "Something happened: %s." % str(data.get("kind", "")) \

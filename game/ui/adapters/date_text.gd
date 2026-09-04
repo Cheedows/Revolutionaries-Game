@@ -18,9 +18,10 @@ static func describe(event: Event, state: GameState) -> String:
 	var data := event.data
 	match event.type:
 		Event.DATE_CONTINUES:
-			return "They'll meet again tomorrow." % [
-				_who(state, data.get("creature", 0)),
-				_who(state, data.get("date", 0))]
+			# No names in it: the original prints the bare sentence at the end
+			# of a date that went well. Two arguments were being handed to a
+			# string with no holes, which raises rather than being ignored.
+			return "They'll meet again tomorrow."
 		Event.DATE_JOINED:
 			return "In fact, %s is %s's totally unconditional love-slave!" % [
 				_who(state, data.get("date", 0)),

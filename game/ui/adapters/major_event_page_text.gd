@@ -8,6 +8,15 @@ extends RefCounted
 ## a modern presentation can find its own.
 
 ## The picture each caption runs above.
+## Where each picture sits in art/newspic.cpc, from the #defines above
+## displaymajoreventstory() in src/news/majorevent.cpp. The file holds thirteen
+## and the original names twelve of them.
+const PICTURE_AT := {
+	&"mutant_beast": 0, &"ceo": 1, &"book": 2, &"meltdown": 3,
+	&"genetics": 4, &"riverfire": 5, &"dollars": 6, &"tinkywinky": 7,
+	&"oil": 8, &"terrorists": 9, &"kkk": 10, &"tshirt": 11,
+}
+
 const PICTURES := {
 	&"meltdown": &"meltdown", &"hell_on_earth": &"mutant_beast",
 	&"killer_food": &"genetics", &"childs_plea": &"tshirt",
@@ -59,6 +68,11 @@ const AUTUMN_LAST := 11
 ## The picture [param headline] runs above, or &"" for a story with words.
 static func picture(headline: StringName) -> StringName:
 	return PICTURES.get(headline, &"")
+
+
+## Which picture in [constant CharArt.PICTURES] that is, or -1 for none.
+static func picture_at(headline: StringName) -> int:
+	return int(PICTURE_AT.get(picture(headline), -1))
 
 
 ## The sentence under it.
