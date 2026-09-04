@@ -82,7 +82,7 @@ func _kit_row(item: Item) -> Control:
 	var label := Atoms.dim(DossierText.item_title(item, _session.catalog))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
-	var give := Atoms.button("Give", false)
+	var give := Icons.on(Atoms.button("Give", false), &"give")
 	give.pressed.connect(func() -> void: _give(item))
 	row.add_child(give)
 	return row
@@ -118,7 +118,7 @@ func _promote_row() -> Control:
 	var refused := Promotion.refused(_session.state, _creature)
 	var row := ListRow.new(refused if refused != "" else "Promote Liberals")
 	row.out_of_reach(true)
-	var promote := Atoms.button("Promote", false)
+	var promote := Icons.on(Atoms.button("Promote", false), &"promote")
 	promote.disabled = refused != ""
 	promote.pressed.connect(func() -> void:
 		Commands.promote(_session, _creature)
@@ -158,6 +158,8 @@ func _discharge_row() -> Control:
 func _confirming(text: String, refused: String, warning: String,
 		act: Callable) -> Button:
 	var button := ConfirmButton.new(text, warning)
+	Icons.on(button, &"kill" if text.begins_with("Kill") else &"remove",
+			Palette.CONSERVATIVE)
 	button.disabled = refused != ""
 	button.warned.connect(func(said: String) -> void:
 		refuse(said))
@@ -178,7 +180,7 @@ func _surgery_row() -> Control:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
 	row.add_child(label)
-	var operate := Atoms.button("Augmentation", false)
+	var operate := Icons.on(Atoms.button("Augmentation", false), &"surgery")
 	operate.pressed.connect(func() -> void: surgery_wanted.emit(_creature))
 	row.add_child(operate)
 	return row

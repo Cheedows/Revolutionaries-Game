@@ -54,30 +54,52 @@ func test_the_block_capitals_are_all_there() -> void:
 
 
 func test_a_headline_is_set_in_them() -> void:
-	var set_in := CharArtView.headline("LET'S FRY", Palette.TEXT)
-	# Eight letters and an apostrophe are drawn; the space is a gap.
-	var drawn := 0
-	for child in set_in.get_children():
-		if child is CharArtView:
-			drawn += 1
-	# Seven letters and an apostrophe. The space between the words is a gap,
-	# not a letter, which is what the original does with it too.
-	equal(drawn, 8, "every letter of the headline is set, got %d" % drawn)
-	set_in.free()
+	# Seven letters, an apostrophe and a space, and the picture is as wide as
+	# the sum of them: a letter that failed to set would come out narrower and
+	# nothing else would say so.
+	var one := PixelArt.from_cells(CharArt.CAPITALS, 0)
+	var apostrophe := PixelArt.from_cells(CharArt.CAPITALS,
+			BlockCapitals.APOSTROPHE, Color.TRANSPARENT,
+			BlockCapitals.APOSTROPHE_WIDE)
+	var set_in := BlockCapitals.of("LET'S FRY")
+	var wanted := one.get_width() * 7 + apostrophe.get_width() \
+			+ BlockCapitals.SPACE + BlockCapitals.KERN * 8
+	equal(set_in.get_width(), wanted,
+			"the whole line is set, got %d" % set_in.get_width())
+	equal(set_in.get_height(), one.get_height(), "and stands one line high")
+
+
+func test_a_written_grid_becomes_pixels() -> void:
+	# The other way art gets made here: rows of characters, one to a pixel.
+	var drawn := PixelArt.from_rows(["#.#", ".+.", "#.#"], Color.WHITE)
+	equal(drawn.get_size(), Vector2i(3, 3), "as big as the grid")
+	equal(drawn.get_pixel(0, 0).a, 1.0, "ink is solid")
+	equal(drawn.get_pixel(1, 0).a, 0.0, "a dot is nothing")
+	check(drawn.get_pixel(1, 1).a > 0.0 and drawn.get_pixel(1, 1).a < 1.0,
+			"and a plus is half")
+
+
+func test_a_ragged_grid_is_still_a_rectangle() -> void:
+	var drawn := PixelArt.from_rows(["####", "#"], Color.WHITE)
+	equal(drawn.get_size(), Vector2i(4, 2), "short rows are padded out")
+	equal(drawn.get_pixel(3, 1).a, 0.0, "with nothing")
 
 
 func test_a_masthead_asks_for_no_width_of_its_own() -> void:
 	# Eighty cells at their natural width is wider than a phone, and a control
 	# that insists on that drags the whole page out from under itself.
-	var view := CharArtView.new()
-	view.show_art(CharArt.MASTHEADS, 0)
+	var view := PixelArtRect.new()
+	view.show_art(CharArt.MASTHEADS, 0, 44)
 	equal(view.custom_minimum_size.x, 0.0, "it fits whatever it is given")
-	check(view.custom_minimum_size.y > 0.0, "and stands its own height")
+	equal(view.custom_minimum_size.y, 44.0, "and stands the height it was told")
+	check(view.texture != null, "and has a picture in it")
 	view.free()
 
 
 func test_asking_for_a_picture_that_is_not_there_draws_nothing() -> void:
-	var view := CharArtView.new()
-	view.show_art(CharArt.PICTURES, 99)
-	equal(view.custom_minimum_size.y, 0.0, "and does not crash asking")
+	equal(PixelArt.from_cells(CharArt.PICTURES, 99), null,
+			"there is no ninety-ninth picture")
+	var view := PixelArtRect.new()
+	view.show_art(CharArt.PICTURES, 99, 44)
+	equal(view.texture, null, "and asking for it does not crash")
 	view.free()

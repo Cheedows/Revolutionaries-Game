@@ -94,7 +94,7 @@ func _seat_row(squad: Squad, member: Creature) -> Control:
 	for car: Vehicle in _session.state.vehicles.values():
 		row.add_child(_board(squad, member, car, true))
 		row.add_child(_board(squad, member, car, false))
-	var out := Atoms.button("On foot", false)
+	var out := Icons.on(Atoms.button("On foot", false), &"squad")
 	out.disabled = member.preferred_car_id == -1
 	out.pressed.connect(func() -> void:
 		Commands.disembark(_session, member)

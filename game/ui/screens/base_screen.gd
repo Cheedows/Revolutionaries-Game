@@ -163,7 +163,8 @@ func _connect() -> void:
 		_refresh())
 	_run_button.toggled.connect(func(pressed: bool) -> void:
 		_running = pressed
-		_run_button.text = "Stop waiting" if pressed else "Keep waiting")
+		_run_button.text = "Stop waiting" if pressed else "Keep waiting"
+		Icons.on(_run_button, &"stop" if pressed else &"run"))
 	for which: StringName in _buttons:
 		var button: Button = _buttons[which]
 		button.pressed.connect(func() -> void: _open_panel(which))

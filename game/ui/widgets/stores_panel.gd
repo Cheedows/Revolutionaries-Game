@@ -60,7 +60,8 @@ func _fill(column: VBoxContainer, heading: String, pile: Array,
 func _row(item: Item, index: int, stashing: bool) -> Control:
 	var row := ListRow.new(DossierText.item_title(item, _session.catalog))
 
-	var one := Atoms.button("Stash" if stashing else "Take", false)
+	var one := Icons.on(Atoms.button("Stash" if stashing else "Take", false),
+			&"drop" if stashing else &"give")
 	one.pressed.connect(func() -> void: _move(index, 1, stashing))
 	row.act(one)
 

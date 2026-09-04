@@ -61,7 +61,8 @@ func _row(creature: Creature, inside: bool) -> Control:
 	var where := Atoms.tinted("%d blood" % creature.body.blood, Palette.TEXT_FAINT)
 	row.add_child(where)
 
-	var button := Atoms.button("Drop" if inside else "Take", false)
+	var button := Icons.on(Atoms.button("Drop" if inside else "Take", false),
+			&"drop" if inside else &"give")
 	button.pressed.connect(func() -> void: _toggle(creature, inside))
 	row.add_child(button)
 	return row
@@ -118,13 +119,19 @@ func _build() -> void:
 	_rows = Atoms.column(Metrics.SNUG)
 	scroll.add_child(_rows)
 
+	# The button wraps: its label is a whole sentence and it now carries a
+	# picture as well, which together are wider than a phone, and a button that
+	# cannot wrap simply runs off the side. Both children of the row expand, so
+	# they split the width between them.
 	var footer := Atoms.row(Metrics.SNUG)
 	column.add_child(footer)
 
 	_going = Atoms.dim("")
 	_going.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_going.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	footer.add_child(_going)
 
-	var pick := Atoms.button("Travel to a Different City", false)
+	var pick := Icons.on(Atoms.wrapped_button(
+			Atoms.button("Travel to a Different City")), &"travel")
 	pick.pressed.connect(func() -> void: destination_wanted.emit())
 	footer.add_child(pick)

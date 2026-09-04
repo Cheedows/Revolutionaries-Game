@@ -43,7 +43,7 @@ func _refresh() -> void:
 	_body.add_child(_name)
 
 	var row := Atoms.row(Metrics.SNUG)
-	var save := Atoms.button("Save", false)
+	var save := Icons.on(Atoms.button("Save", false), &"save")
 	save.pressed.connect(_save)
 	row.add_child(save)
 	_body.add_child(row)

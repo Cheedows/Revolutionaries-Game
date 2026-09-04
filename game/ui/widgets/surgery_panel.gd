@@ -62,7 +62,7 @@ func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
 	var risk := Atoms.tinted("difficulty %d" % type.difficulty, Palette.TEXT_FAINT)
 	row.add_child(risk)
 
-	var go := Atoms.button("Operate", false)
+	var go := Icons.on(Atoms.button("Operate", false), &"surgery")
 	go.pressed.connect(func() -> void:
 		var refused := Commands.operate(_session, _surgeon, patient, type)
 		if refused != "":

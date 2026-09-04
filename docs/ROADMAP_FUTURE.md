@@ -423,6 +423,50 @@ rather than a description of it.
   now. This is the failure mode the voice skill names as the recurring one:
   roll the thing, throw away what was rolled, print a summary.
 
+  **The art pipeline, made reusable, and icons on the buttons.**
+
+  The first shape of the newspaper art was a control that painted itself, which
+  could only ever be a panel on a page. It is two pieces now: [PixelArt] takes
+  a grid and hands back an [Image] — the original's cells out of `art/*.cpc`,
+  or art written here as rows of text where "#" is ink and one character is one
+  pixel — and [PixelArtRect] is the thin wrapper that puts one on screen. A
+  picture can then be a button's icon, which is what the icons are.
+
+  Twenty-six of them, in `data/icon_art.gd`, written as nine-by-nine grids with
+  a comment saying what each is *of*. They sit beside the labels rather than
+  replacing them: a row of eight unlabelled glyphs is a puzzle, and this game
+  asks enough of the player already. `.claude/skills/pixel-art/` is the skill
+  that carries the format, the rules that came from getting it wrong, and a
+  script that draws every grid at eight times so the shapes can be judged
+  before they ship — nine rows of hashes do not look like anything until they
+  are pixels.
+
+  Four things the icons broke, each found by a check or a frame rather than by
+  reasoning:
+
+  - A test asks that every icon is used somewhere, and found one that was not:
+    the run button changed its label between "Keep waiting" and "Stop waiting"
+    without changing its picture.
+  - "Travel to a Different City" with a picture on it is wider than a phone,
+    and a button that cannot wrap runs off the side rather than wrapping.
+  - Fixing that with a flow containing a wrapping, expanding button crashed the
+    engine outright — a size cycle, signal 11. Two expanding children in a row
+    do the same job without one.
+  - The page behind an open sheet was held by disabling its scroller, and a
+    disabled [ScrollContainer] reports its content's height as its own. With
+    the controls row a line taller, the page grew past the window and its
+    bottom went out of reach. Held now means show-never, which keeps it the
+    size of the window; the sheet is what eats the drag.
+
+  And one older bug the harness turned up while doing it: the log waits a frame
+  before following its tail, and a screen built, written to and thrown away
+  inside one test is freed during that frame. Carrying on afterwards crashed.
+
+  The 300-line rule now exempts `data/` as well as generated files, for the
+  same reason both are exempt: their length is content, not complexity. `data/`
+  may hold no behaviour at all — the layer checker already enforces that — so a
+  long one is a long list, and splitting it at an arbitrary entry helps nobody.
+
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in
   `tools/voice_exceptions.json` with what the original does instead. The

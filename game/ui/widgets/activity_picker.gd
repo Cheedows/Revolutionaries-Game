@@ -61,7 +61,7 @@ func _ask_which_kind() -> void:
 		# list answers "what is this person up to" without being opened twice.
 		if key == doing:
 			row.aside(ActivityText.of(_creature.activity))
-		var button := Atoms.button("Choose", false)
+		var button := Icons.on(Atoms.button("Choose", false), &"choose")
 		button.pressed.connect(func() -> void: _went_for(key))
 		row.act(button)
 		_body.add_child(row)
@@ -70,7 +70,7 @@ func _ask_which_kind() -> void:
 ## The second question: which of them.
 func _ask_which_job() -> void:
 	_head.set_title(ActivityMenu.name_of(_group))
-	var back := Atoms.quiet("Back")
+	var back := Icons.on(Atoms.quiet("Back"), &"back", Palette.TEXT_DIM)
 	back.pressed.connect(func() -> void:
 		_group = &""
 		_refresh())

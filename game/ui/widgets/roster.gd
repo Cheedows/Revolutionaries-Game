@@ -148,7 +148,7 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 	if creature.activity == &"recruiting" and not _recruit_choices.is_empty():
 		row.add_child(_recruits(creature))
 
-	var look := Atoms.button("Look", false)
+	var look := Icons.on(Atoms.button("Look", false), &"look")
 	look.tooltip_text = "View Status  %s" % creature.name
 	look.pressed.connect(func() -> void: dossier_wanted.emit(creature))
 	row.add_child(look)

@@ -391,8 +391,12 @@ func _only_the_page_and_the_log(screen: Control, where: String) -> bool:
 func _scrollers(control: Control, moving: bool = false) -> Array[Control]:
 	var found: Array[Control] = []
 	var scroll := control as ScrollContainer
+	# A scroller with no bar, behind a modal that takes every press, is not a
+	# thing that moves — which is how the page is held while a sheet is up.
+	var still := [ScrollContainer.SCROLL_MODE_DISABLED,
+			ScrollContainer.SCROLL_MODE_SHOW_NEVER]
 	if scroll != null and (not moving
-			or scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED):
+			or not still.has(scroll.vertical_scroll_mode)):
 		found.append(scroll)
 	for child in control.get_children():
 		var inner := child as Control

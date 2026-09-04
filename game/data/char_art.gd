@@ -7,8 +7,8 @@ extends RefCounted
 ## Each picture is [code]wide * tall[/code] cells in column-major
 ## order, four bytes to a cell: the code page 437 character, the
 ## foreground colour, the background colour, and whether it is bold.
-## The colours are the sixteen a DOS terminal had; [CharArtView]
-## turns them into the palette's own and draws the result.
+## The colours are the sixteen a DOS terminal had. [PixelArt] turns
+## a picture from here into an image.
 
 ## The block capitals a headline is set in, A to Z and the apostrophe.
 const CAPITALS := {

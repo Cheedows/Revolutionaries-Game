@@ -12,15 +12,18 @@ extends RefCounted
 ## 90, and the content goes from 374 pixels to 611.
 
 ## What the row offers, in the original's own order and words.
+## Each panel, what its button says, and the picture on it. The picture is a
+## second way of saying the same thing, not a replacement: a row of eight
+## unlabelled glyphs is a puzzle.
 const PANEL_BUTTONS: Array = [
-	[PanelStack.AGENDA, "Liberal Agenda"],
-	[PanelStack.HOUSE, "Safehouse"],
-	[PanelStack.PAPER, "The paper"],
-	[PanelStack.STORES, "Assets"],
-	[PanelStack.JUSTICE, "Justice System"],
-	[PanelStack.SQUAD, "The squad"],
-	[PanelStack.SLEEPERS, "Sleepers"],
-	[PanelStack.SETTINGS, "Save File"],
+	[PanelStack.AGENDA, "Liberal Agenda", &"agenda"],
+	[PanelStack.HOUSE, "Safehouse", &"house"],
+	[PanelStack.PAPER, "The paper", &"paper"],
+	[PanelStack.STORES, "Assets", &"assets"],
+	[PanelStack.JUSTICE, "Justice System", &"justice"],
+	[PanelStack.SQUAD, "The squad", &"squad"],
+	[PanelStack.SLEEPERS, "Sleepers", &"sleepers"],
+	[PanelStack.SETTINGS, "Save File", &"save"],
 ]
 
 
@@ -29,33 +32,33 @@ static func controls(parts: Dictionary) -> Control:
 	var row := Atoms.flow(Metrics.SNUG)
 	parts["controls"] = row
 
-	var wait := Atoms.button("Wait a day", false)
+	var wait := Icons.on(Atoms.button("Wait a day", false), &"wait")
 	parts["wait"] = wait
 	row.add_child(wait)
 
 	# Not "Wait a day" a second time, which is what both of these said. One
 	# waits a day; this one keeps waiting until something happens, and a player
 	# looking at two identical buttons has no way to know which is which.
-	var run := Atoms.button("Keep waiting", false)
+	var run := Icons.on(Atoms.button("Keep waiting", false), &"run")
 	run.toggle_mode = true
 	parts["run"] = run
 	row.add_child(run)
 
 	# On a wide screen the law column is simply there. On a narrow one there is
 	# no room beside anything, so it becomes another thing to open.
-	var country := Atoms.button("The country", false)
+	var country := Icons.on(Atoms.button("The country", false), &"country")
 	country.toggle_mode = true
 	parts["country"] = country
 	row.add_child(country)
 
 	var buttons := {}
 	for entry: Array in PANEL_BUTTONS:
-		var button := Atoms.button(str(entry[1]), false)
+		var button := Icons.on(Atoms.button(str(entry[1]), false), entry[2])
 		buttons[entry[0]] = button
 		row.add_child(button)
 	parts["buttons"] = buttons
 
-	var more := Atoms.button("More", false)
+	var more := Icons.on(Atoms.button("More", false), &"more")
 	parts["more"] = more
 	row.add_child(more)
 

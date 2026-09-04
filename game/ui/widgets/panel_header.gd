@@ -29,7 +29,7 @@ func _init(said: String = "") -> void:
 	_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	add_child(_title)
 
-	var close := Atoms.button("Close", false)
+	var close := Icons.on(Atoms.button("Close", false), &"close")
 	close.pressed.connect(func() -> void: closed.emit())
 	add_child(close)
 

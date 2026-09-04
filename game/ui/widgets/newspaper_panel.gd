@@ -20,9 +20,9 @@ const PICTURE_HEIGHT := 160
 ## Which papers have had their masthead drawn on this page already.
 var _shown := {}
 
-## How tall the masthead is drawn. It is five cells of art, and a cell wants to
-## be about twice as tall as it is wide.
+## How tall each piece of the paper's own art stands.
 const MASTHEAD_HEIGHT := 44
+const HEADLINE_HEIGHT := 34
 
 
 
@@ -89,12 +89,11 @@ func _masthead(event: Event) -> void:
 	# colours rather than the interface's. It is black block letters on white,
 	# because it is a newspaper — a strip of paper across the top of the card
 	# is the whole point of it.
-	var art := CharArtView.new()
+	var art := PixelArtRect.new()
 	art.show_art(CharArt.MASTHEADS,
 			GUARDIAN_MASTHEAD if guardian
-			else int(event.data.get("masthead", 0)) % GUARDIAN_MASTHEAD)
-	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	art.custom_minimum_size.y = MASTHEAD_HEIGHT
+			else int(event.data.get("masthead", 0)) % GUARDIAN_MASTHEAD,
+			MASTHEAD_HEIGHT)
 	_body.add_child(art)
 	if guardian:
 		_line("Liberal Guardian", Palette.ACCENT)
@@ -108,7 +107,9 @@ func _headline(state: GameState, event: Event) -> void:
 		# draws it a letter at a time out of art/largecap.cpc; so does this.
 		# Black block capitals on white, which is what they are: the same
 		# sheet of paper the masthead is printed on, not a coloured caption.
-		_body.add_child(CharArtView.headline(line))
+		var set_in := PixelArtRect.new()
+		set_in.show_image(BlockCapitals.of(line), HEADLINE_HEIGHT)
+		_body.add_child(set_in)
 	var major: Dictionary = event.data.get("major", {})
 	if major.is_empty():
 		return
@@ -128,10 +129,8 @@ func _headline(state: GameState, event: Event) -> void:
 	# used to print the name of the file in square brackets.
 	var at := MajorEventPageText.picture_at(major.get("headline", &""))
 	if at != -1:
-		var drawn := CharArtView.new()
-		drawn.show_art(CharArt.PICTURES, at)
-		drawn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		drawn.custom_minimum_size.y = PICTURE_HEIGHT
+		var drawn := PixelArtRect.new()
+		drawn.show_art(CharArt.PICTURES, at, PICTURE_HEIGHT)
 		_body.add_child(drawn)
 	if caption != "":
 		_line(caption, Palette.TEXT)

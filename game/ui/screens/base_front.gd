@@ -64,5 +64,11 @@ static func step_back(parts: Dictionary) -> bool:
 ## scroller — while a sheet is up, the sheet is the one.
 static func _hold_the_page(parts: Dictionary, held: bool) -> void:
 	var scroll: ScrollContainer = parts["scroll"]
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if held \
-			else ScrollContainer.SCROLL_MODE_AUTO
+	# Held means "no bar and nothing to drag", not "disabled". A disabled
+	# [ScrollContainer] reports its content's height as its own, so the page
+	# behind the sheet grows to whatever it holds and its bottom ends up past
+	# the window — where it stays until something scrolls, which it now cannot.
+	# Show-never keeps it the size of the window, and the sheet is what eats
+	# the drag, being a full-screen control that stops input.
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER \
+			if held else ScrollContainer.SCROLL_MODE_AUTO

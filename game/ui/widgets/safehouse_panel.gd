@@ -77,7 +77,7 @@ func _upgrade_row(here: Location, upgrade: StringName) -> Control:
 			SafehouseText.upgrade_line(_session.state, here, upgrade))
 
 	var cost := SafehouseUpgrades.price(_session.state, upgrade)
-	var buy := Atoms.button("$%d" % cost, false)
+	var buy := Icons.on(Atoms.button("$%d" % cost, false), &"build")
 	var possible := SafehouseUpgrades.can_have(here, upgrade)
 	buy.disabled = not possible or _session.state.ledger.funds < cost
 	row.out_of_reach(not possible)

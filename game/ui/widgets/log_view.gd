@@ -106,6 +106,12 @@ func _settle(follow: bool) -> void:
 	if not is_inside_tree():
 		return
 	await get_tree().process_frame
+	# The frame that just passed is a frame in which anything could have
+	# happened, this widget being freed among them — a screen that is built,
+	# written to and thrown away inside one test does exactly that. Carrying on
+	# and touching the scroller then is a crash, and it was one.
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 	if follow:
 		_scroll.scroll_vertical = int(_scroll.get_v_scroll_bar().max_value)
 
