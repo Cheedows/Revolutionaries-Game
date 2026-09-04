@@ -100,6 +100,32 @@ func _initialize() -> void:
 			continue
 		# "close" puts away whatever is in front, the way the back gesture
 		# does, so a shot can be taken of the page underneath it.
+		# "skills" opens the first member's record with four skills doctored
+		# into the four states the table draws differently, and scrolls to it.
+		if press == "skills":
+			var session := screen.get("_session") as Session
+			var who: Array = session.state.members()
+			if not who.is_empty():
+				var them: Creature = who[0]
+				them.attributes.set_value(&"agility", 4)
+				them.attributes.set_value(&"intelligence", 9)
+				_set_skill(them, &"handtohand", 4, 0)
+				_set_skill(them, &"law", 3, 140)
+				_set_skill(them, &"persuasion", 2, 55)
+				screen.call("_open_dossier", them)
+			for _settle in 12:
+				await process_frame
+			var card: Control = (screen.get("_panels")
+					as PanelStack).get("_dossier")
+			var scroll := _scroller(card) as ScrollContainer
+			if scroll != null:
+				# Partway down, which is where the table is: the record above
+				# it and the kit below it are not what this shot is of.
+				scroll.scroll_vertical = int(
+						scroll.get_v_scroll_bar().max_value * 0.45)
+			for _settle in 8:
+				await process_frame
+			continue
 		if press == "close":
 			screen.call("_step_back")
 			for _settle in 12:
@@ -194,3 +220,22 @@ func _a_session() -> Session:
 		Founder.answer(session.state, choosing, question, 0, outcome)
 	NewGame.begin(session.state, session.rng, choosing, outcome, session.catalog)
 	return session
+
+
+## Puts a skill somewhere in particular, for a screenshot that needs one.
+func _set_skill(who: Creature, skill: StringName, level: int,
+		banked: int) -> void:
+	var index := Ids.SKILLS.find(skill)
+	who.skills.values[index] = level
+	who.skills.experience[index] = banked
+
+
+## The first scroller under [param node].
+func _scroller(node: Node) -> Node:
+	if node is ScrollContainer:
+		return node
+	for child in node.get_children():
+		var found := _scroller(child)
+		if found != null:
+			return found
+	return null

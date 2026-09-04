@@ -7,6 +7,12 @@ extends PanelContainer
 ## that says what the squad is and offers the same three things.
 
 ## Emitted when the player changes who is in the squad or where it is going.
+## What is put after the name of somebody about to get better at something.
+##
+## A mark as well as a colour: colour alone is not a signal for a player who
+## cannot see the difference, and this one carries real information.
+const READY_MARK := " +"
+
 signal changed
 signal destination_wanted
 
@@ -56,6 +62,12 @@ func _row(creature: Creature, inside: bool) -> Control:
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name.add_theme_color_override("font_color",
 			Palette.LIBERAL if inside else Palette.TEXT_DIM)
+	# The original brightens this line when somebody on it has a skill banked
+	# past the line, so a screen with no room for thirty skills still answers
+	# "who is about to get better at something". Their record has the table.
+	if SkillText.any_ready([creature]):
+		name.text += READY_MARK
+		name.add_theme_color_override("font_color", Palette.ACCENT)
 	row.add_child(name)
 
 	var where := Atoms.tinted("%d blood" % creature.body.blood, Palette.TEXT_FAINT)

@@ -12,6 +12,10 @@ signal changed
 ## Emitted when this person should be put to work operating on somebody.
 signal surgery_wanted(surgeon: Creature)
 
+## How wide the skill table's columns stand.
+const NAME_WIDTH := 150
+const NUMBER_WIDTH := 60
+
 var _session: Session
 var _creature: Creature
 
@@ -59,6 +63,8 @@ func _refresh() -> void:
 	if not Augmentation.patients(state, _creature).is_empty():
 		_body.add_child(_surgery_row())
 
+	_skills()
+
 	_heading("Carrying")
 	for line in DossierText.carrying(_creature, _session.catalog):
 		_line(line)
@@ -74,6 +80,61 @@ func _refresh() -> void:
 	for item: Item in squad.haul:
 		_body.add_child(_kit_row(item))
 	_body.add_child(_kit_buttons())
+
+
+## The skill table: what they are at, and what they could ever be at.
+##
+## Three columns, as the original draws them — the skill, where it stands as a
+## level and a fraction, and the cap the governing attribute puts on it. The
+## colours are the original's four: at the cap, about to go up, known, and not
+## started. [SkillText] says which is which and why it matters.
+func _skills() -> void:
+	_heading("SKILL")
+	var head := Atoms.row(Metrics.SNUG)
+	for at in SkillText.HEADINGS.size():
+		var label := Atoms.column_header(String(SkillText.HEADINGS[at]))
+		label.custom_minimum_size.x = NAME_WIDTH if at == 0 else NUMBER_WIDTH
+		head.add_child(label)
+	_body.add_child(head)
+	for skill: Dictionary in SkillText.rows(_creature):
+		_body.add_child(_skill_row(skill))
+
+
+## One skill, in the colour its state earns it.
+func _skill_row(skill: Dictionary) -> Control:
+	var ink := _skill_colour(skill["state"])
+	var row := Atoms.row(Metrics.SNUG)
+	row.add_child(_cell(String(skill["name"]), NAME_WIDTH, ink))
+	row.add_child(_cell(String(skill["now"]), NUMBER_WIDTH, ink))
+	# The cap is only worth reading when it is the thing stopping them, which
+	# is what the original says by greying it everywhere else.
+	row.add_child(_cell(String(skill["cap"]), NUMBER_WIDTH,
+			ink if bool(skill["at_cap"]) else Palette.TEXT_FAINT))
+	return row
+
+
+## What each state of a skill is drawn in, standing for the original's own
+## four: cyan for one at its cap, bright white for one about to go up, light
+## grey for one that has been started, dark grey for one that has not.
+##
+## A function rather than a table, because the palette can be swapped while the
+## game is running and a table would keep the colours it was built with.
+func _skill_colour(state: StringName) -> Color:
+	match state:
+		SkillText.MAXED:
+			return Palette.ACCENT
+		SkillText.READY:
+			return Palette.LIBERAL
+		SkillText.KNOWN:
+			return Palette.TEXT
+	return Palette.TEXT_FAINT
+
+
+## One cell of the table, in a colour.
+func _cell(said: String, wide: int, ink: Color) -> Label:
+	var label := Atoms.cell(said, wide)
+	label.add_theme_color_override(&"font_color", ink)
+	return label
 
 
 ## One line of the squad's kit, with the button that hands it over.

@@ -467,6 +467,31 @@ rather than a description of it.
   may hold no behaviour at all — the layer checker already enforces that — so a
   long one is a long list, and splitting it at an arbitrary entry helps nobody.
 
+  **The skill readout.** The original's skill screen prints three things the
+  port was not, all of them already in the state:
+
+  - **The decimal.** A skill is a level and a bank of experience toward the
+    next one, and the original prints both as one number — "Martial Arts:
+    3.42". The fraction is how far the bank has got, `(ip * 100) / (100 + 10 *
+    level)` with integer division, and "99+" once it is over the line and
+    waiting for the day to turn. The port printed the 3 and dropped the 42,
+    which is the only part that moves day to day.
+  - **Which ones are about to go up**, in the original's four colours: at its
+    cap, banked past the line, under way, not started. The squad line carries
+    the same signal — the original brightens it when anybody on it has a skill
+    ready — with a mark beside the name as well as a colour, because colour
+    alone is not a signal for everyone.
+  - **The cap.** Every skill is capped by the attribute that governs it, so a
+    Liberal with Agility 4 will never be better than 4 at anything physical
+    however long they train. Without the MAX column there is no way to know
+    why training stopped working.
+
+  `TrainRules.skill_cap()` and `skills.experience` were both there and both
+  unread by anything a player could see. Worth remembering as a class of gap:
+  the audits ask whether what the port draws is the original's, and whether
+  everything drawn can be reached — neither asks whether something the
+  simulation knows is drawn at all.
+
   **The backlog is empty.** Of the 2,331 strings a player can see, 2,072 are
   the original's own words and the remaining 259 are explained one by one in
   `tools/voice_exceptions.json` with what the original does instead. The
