@@ -47,8 +47,11 @@ func test_a_gun_store_trip_opens_the_shop_and_returns_home() -> void:
 	if members.is_empty():
 		return
 	var home: int = members[0].base
-	var gun_store := _location_of_type(state, &"business_armsdealer")
-	check(gun_store != null, "the city has a gun store")
+	# The classic world does not instantiate the dormant Black Market
+	# business_armsdealer type. Its player-facing gun shop is the pawn shop,
+	# named "<surname> Pawn & Gun" under the starting gun-control law.
+	var gun_store := _location_of_type(state, &"business_pawnshop")
+	check(gun_store != null, "the city has its Pawn & Gun")
 	if gun_store == null:
 		return
 
@@ -65,7 +68,7 @@ func test_a_gun_store_trip_opens_the_shop_and_returns_home() -> void:
 	# Walk into a department first so the regression covers a shop that asks
 	# more than one question before the player leaves.
 	var first: Variant = _answer_beginning(session.pending().intent, "in:")
-	check(first != null, "the arms dealer offers a department")
+	check(first != null, "the Pawn & Gun offers a department")
 	if first != null:
 		session.answer(first)
 		check(session.is_waiting(), "the department remains interactive")
@@ -79,10 +82,11 @@ func test_a_gun_store_trip_opens_the_shop_and_returns_home() -> void:
 				"%s came back to the safehouse" % member.name)
 
 
-## The exact player path: press Travel, drill down to the gun store, press Wait,
-## see the named store, enter a counter, buy something, leave, and finish the
-## day back at home. The older regression jumped straight to travel_destination
-## and therefore could pass while the visible flow was broken.
+## The exact player path: press Travel, drill down to the Pawn & Gun, press
+## Wait, see the named store, enter its weapon counter, buy something, leave,
+## and finish the day back at home. The older regression jumped straight to
+## travel_destination and therefore could pass while the visible flow was
+## broken.
 func test_the_visible_gun_store_flow_works_end_to_end() -> void:
 	var scene: PackedScene = load(SCREEN)
 	var screen: Control = scene.instantiate()
@@ -103,8 +107,8 @@ func test_the_visible_gun_store_flow_works_end_to_end() -> void:
 		_finish_screen(tree, screen)
 		return
 	var home: int = members[0].base
-	var gun_store: Location = _location_of_type(state, &"business_armsdealer")
-	check(gun_store != null, "the visible world contains an arms dealer")
+	var gun_store: Location = _location_of_type(state, &"business_pawnshop")
+	check(gun_store != null, "the visible world contains the Pawn & Gun")
 	if gun_store == null:
 		_finish_screen(tree, screen)
 		return
@@ -158,7 +162,7 @@ func test_the_visible_gun_store_flow_works_end_to_end() -> void:
 
 	if session.is_waiting():
 		var department: Variant = _answer_beginning(session.pending().intent, "in:")
-		check(department != null, "the arms dealer visibly offers a counter")
+		check(department != null, "the Pawn & Gun visibly offers a counter")
 		if department != null:
 			_press_answer(dialog, department)
 
