@@ -28,6 +28,29 @@ static func menu(parts: Dictionary, narrow: bool) -> void:
 	_hold_the_page(parts, true)
 
 
+## Shows the decision that stopped a day and puts it where the player is
+## looking. On a phone the question lives at the top of the long page; merely
+## making it visible leaves it above a player who pressed Travel or Wait lower
+## down the page. Reset now and deferred so the following container sort cannot
+## restore the old offset.
+static func question(parts: Dictionary, session: Session, narrow: bool) -> void:
+	(parts["country"] as Button).button_pressed = false
+	(parts["dialog"] as IntentDialog).ask(session.pending().intent, session.state)
+	if not narrow:
+		return
+	var scroll: ScrollContainer = parts["scroll"]
+	scroll.scroll_vertical = 0
+	scroll.set_deferred("scroll_vertical", 0)
+
+
+## Returns the automatic-wait button to its resting state. The screen owns the
+## timer flag; this owns what the button says and looks like.
+static func rest_wait_button(button: Button) -> void:
+	button.button_pressed = false
+	button.text = "Keep waiting"
+	Icons.on(button, &"run")
+
+
 ## Puts whatever should be in front in front, and the page back when nothing
 ## should be.
 ##
