@@ -211,7 +211,7 @@ func _location_of_type(state: GameState, type: StringName) -> Location:
 func _answer_beginning(intent: Intent, prefix: String) -> Variant:
 	for option: Dictionary in intent.options:
 		var id: Variant = option.get("id")
-		if String(id).begins_with(prefix) and bool(option.get("enabled", true)):
+		if str(id).begins_with(prefix) and bool(option.get("enabled", true)):
 			return id
 	return null
 
@@ -234,11 +234,23 @@ func _path_to(state: GameState, site: Location) -> PackedInt32Array:
 ## Presses the actual button IntentDialog mapped to this answer id.
 func _press_answer(dialog: IntentDialog, wanted: Variant) -> void:
 	var ids: Dictionary = dialog.get("_ids")
-	for button: Button in ids:
-		if String(ids[button]) == String(wanted):
+	for key: Variant in ids:
+		var button := key as Button
+		var candidate: Variant = ids.get(key)
+		if button != null and _same_answer(candidate, wanted):
 			button.pressed.emit()
 			return
-	fail("no visible button carried answer %s" % String(wanted))
+	fail("no visible button carried answer %s" % str(wanted))
+
+
+## Intent ids are heterogeneous: location choices are ints while shop choices
+## are strings/StringNames. Never compare unlike Variants directly; GDScript can
+## throw instead of returning false. Equal types can use ==, and unlike scalar
+## ids can safely compare their text forms for this UI lookup.
+func _same_answer(left: Variant, right: Variant) -> bool:
+	if typeof(left) == typeof(right):
+		return left == right
+	return str(left) == str(right)
 
 
 func _button_named(node: Node, said: String) -> Button:
