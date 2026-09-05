@@ -2,7 +2,7 @@ class_name IntentText
 extends RefCounted
 ## Turns a question the simulation is asking into words.
 ##
-## The counterpart to [EventText]: an [Intent] carries a type, a context and a
+## The counterpart to [EventText]: an [Intent] carries a type, some context and a
 ## list of options, and no prose at all. This is the only place that knows what
 ## each of them should say.
 
@@ -75,7 +75,14 @@ static func detail(intent: Intent, state: GameState) -> String:
 	if context.has("location"):
 		var site: Location = state.locations.get(int(context["location"]))
 		if site != null:
-			lines.append(site.name)
+			# While choosing a destination this is the folder/district the
+			# player is browsing. Everywhere else, a location in the context
+			# means the squad has actually reached it, so say that explicitly.
+			# On a phone the question is the first thing on screen and used to
+			# show only a bare place name, which looked like the travel picker
+			# had simply stayed open after Wait a day.
+			lines.append(site.name if intent.type == Intent.CHOOSE_DESTINATION \
+					else "At %s" % site.name)
 	if context.has("attacker"):
 		lines.append("%s outside" % String(context["attacker"]).capitalize())
 	if context.has("chasers"):
