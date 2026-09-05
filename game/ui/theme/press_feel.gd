@@ -59,7 +59,11 @@ static func _tween(control: BaseButton, to: float, over: float) -> void:
 	# From the middle, so it shrinks towards the thumb rather than towards its
 	# top-left corner.
 	control.pivot_offset = control.size / 2.0
-	var running: Variant = control.get_meta(&"press_tween", null)
+	# Godot reports a missing-meta error even when null is supplied as the
+	# fallback. The first press has no tween yet, so ask whether it exists
+	# before reading it instead of logging an engine error on every new button.
+	var running: Variant = control.get_meta(&"press_tween") \
+			if control.has_meta(&"press_tween") else null
 	if running is Tween and (running as Tween).is_valid():
 		(running as Tween).kill()
 	var tween := control.create_tween()
