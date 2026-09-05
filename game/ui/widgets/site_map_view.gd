@@ -31,6 +31,7 @@ signal step_wanted(direction: int)
 
 var _grid: Control
 var _state: GameState
+var _heading: Label
 var _here: Label
 
 ## The size the plan is currently drawn at. Held rather than looked up so the
@@ -48,6 +49,9 @@ func _ready() -> void:
 func refresh(state: GameState) -> void:
 	_build()
 	_state = state
+	var location: Location = state.locations.get(state.site.location)
+	_heading.text = "On Site — %s" % location.name if location != null \
+			else "On Site"
 	_here.text = SiteText.underfoot(state)
 	# Asking for a redraw of something nothing is looking at is not free, and
 	# headless there is no drawing phase to answer it in.
@@ -73,8 +77,8 @@ func _build() -> void:
 	var column := Atoms.column(Metrics.SNUG)
 	add_child(column)
 
-	var heading := Atoms.wrapped(Atoms.heading("Current Location"))
-	column.add_child(heading)
+	_heading = Atoms.wrapped(Atoms.heading("On Site"))
+	column.add_child(_heading)
 
 	_grid = Control.new()
 	_grid.custom_minimum_size = Vector2(_across * _tile, _down * _tile)
