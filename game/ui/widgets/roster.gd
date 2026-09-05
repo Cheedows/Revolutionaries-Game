@@ -14,6 +14,9 @@ signal activity_wanted(creature: Creature)
 ## Emitted when the player wants to look at somebody properly.
 signal dossier_wanted(creature: Creature)
 
+## Emitted when the code name field is committed.
+signal code_name_changed(creature: Creature, code_name: String)
+
 ## Emitted when a guard has been put on a particular prisoner.
 signal hostage_chosen(keeper: Creature, hostage: Creature)
 
@@ -107,12 +110,22 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 	row.add_theme_constant_override(&"h_separation", Metrics.SNUG)
 	row.add_theme_constant_override(&"v_separation", Metrics.TIGHT)
 
-	var name_label := Atoms.body(creature.name)
-	name_label.custom_minimum_size = Vector2(_wide(180), 0)
-	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name_label.add_theme_color_override("font_color",
+	# `name` is the code name, while `proper_name` stays the person's legal
+	# name. The original review screen lets N replace this field directly. A
+	# LineEdit keeps that action reachable on a phone too: tapping the name opens
+	# the soft keyboard, and Done commits it.
+	var name_field := Atoms.field("What is the new code name?")
+	name_field.text = creature.name
+	name_field.max_length = 39
+	name_field.custom_minimum_size = Vector2(_wide(180), 0)
+	name_field.add_theme_color_override("font_color",
 			Palette.for_alignment(Alignment.value_of(creature.alignment)))
-	row.add_child(name_label)
+	name_field.text_submitted.connect(func(code_name: String) -> void:
+		code_name_changed.emit(creature, code_name))
+	name_field.focus_exited.connect(func() -> void:
+		if name_field.text != creature.name:
+			code_name_changed.emit(creature, name_field.text))
+	row.add_child(name_field)
 
 	var juice := Atoms.dim("%d juice" % creature.juice)
 	juice.custom_minimum_size = Vector2(_wide(90), 0)
