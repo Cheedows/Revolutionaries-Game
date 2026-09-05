@@ -178,8 +178,13 @@ func _connect() -> void:
 		_sheet.dismiss()
 		_refresh())
 
+
 func _advance_one_day() -> void:
+	# A second press while the day is already waiting is not a no-op. On a
+	# phone the question can have appeared above the current scroll position;
+	# pressing Wait again means "show me what stopped the day", not silence.
 	if _session.is_waiting():
+		_show_pending()
 		return
 	Commands.advance_day(_session)
 	_settle()
@@ -196,16 +201,13 @@ func _settle() -> void:
 	_refresh()
 
 	if _session.is_waiting():
-		_running = false
-		_run_button.button_pressed = false
-		_dialog.ask(_session.pending().intent, _session.state)
+		_show_pending()
 	elif BaseOrders.worth_reading(morning) and not _panels.is_open():
 		# The paper comes to the front on its own and holds the days while it
 		# is there, the way the original's page does. BaseOrders.worth_reading()
 		# says why.
 		_dialog.dismiss()
-		_running = false
-		_run_button.button_pressed = false
+		_stop_running()
 		_open_panel(PanelStack.PAPER)
 	else:
 		_dialog.dismiss()
@@ -215,14 +217,48 @@ func _settle() -> void:
 		_end(over)
 
 
+## Shows the decision that stopped the day and, on a phone, actually brings it
+## into the viewport. Moving the dialog to the top of a long scrollable column
+## is not enough: ScrollContainer keeps its old offset, so a player who pressed
+## Travel near the bottom can otherwise be left looking below a purchase/site
+## question that is correctly open but completely off-screen.
+func _show_pending() -> void:
+	if not _session.is_waiting():
+		return
+	_stop_running()
+	if _narrow and _country:
+		_country = false
+		var country: Button = _parts["country"]
+		country.button_pressed = false
+	_dialog.ask(_session.pending().intent, _session.state)
+	_refresh()
+	if _narrow:
+		var scroll: ScrollContainer = _parts["scroll"]
+		scroll.scroll_vertical = 0
+		# Containers finish sorting after this call. Repeat on the deferred
+		# property write so the new dialog's height cannot restore the old
+		# offset on the next layout pass.
+		scroll.set_deferred("scroll_vertical", 0)
+
+
+## Stops automatic waiting and leaves the button saying what pressing it will
+## do next. Setting button_pressed alone is not relied on to emit toggled: this
+## also keeps device builds and tests in the same visible state.
+func _stop_running() -> void:
+	_running = false
+	_elapsed = 0.0
+	_run_button.button_pressed = false
+	_run_button.text = "Keep waiting"
+	Icons.on(_run_button, &"run")
+
+
 ## The game is over: the score goes in the book, the autosave is thrown away,
 ## and the only thing left to do is go back to the title.
 func _end(how: StringName) -> void:
 	if _ended:
 		return
 	_ended = true
-	_running = false
-	_run_button.button_pressed = false
+	_stop_running()
 	BaseOrders.finish_up(_session, how == &"won", _log, _wait_button,
 			func() -> void: finished.emit())
 
@@ -284,6 +320,7 @@ func _refresh() -> void:
 ## Asks where the squad is going, through the same dialog as everything else.
 func _choose_destination() -> void:
 	if _session.is_waiting():
+		_show_pending()
 		return
 	Commands.choose_destination(_session)
 	_settle()
