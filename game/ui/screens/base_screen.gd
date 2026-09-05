@@ -1,20 +1,11 @@
 extends Control
 ## The safehouse: where a day is spent and the state of the country is read.
-##
-## The original's base mode is a single terminal screen with the squad at the
-## top, a menu of single-letter commands at the bottom, and everything else
-## reached by pressing a key. This lays the same information out at once —
-## the agenda, the roster, and the log — because it no longer has to choose.
-##
-## The screen owns no game state. It reads a [Session], sends it decisions, and
+## The screen owns no game state. It reads a [Session], sends decisions, and
 ## renders the events that come back.
 
-## Emitted when the game is over and the player is done reading about it.
 signal finished
 
 const AUTO_ADVANCE_SECONDS := 0.35
-
-
 
 var _session: Session
 var _status: StatusBar
@@ -39,12 +30,6 @@ var _ended := false
 var _elapsed := 0.0
 
 
-## Nothing to show until a game has been started; main.gd hands one over. A
-## screen opened on its own rolls one so it can be looked at — deferred,
-## because main.gd calls setup() immediately *after* adding the screen, which
-## is after _ready(). Rolling one here rolled a whole throwaway game every time
-## a real one was about to arrive, and wrote its opening line to the log, so
-## every game began by announcing itself twice.
 func _ready() -> void:
 	if _session == null:
 		_roll_a_game.call_deferred()
@@ -56,26 +41,18 @@ func _roll_a_game() -> void:
 				int(Time.get_unix_time_from_system()) & 0xffffffff))
 
 
-## Builds the screen around a game that has already been started.
 func setup(session: Session) -> void:
 	if _session == session:
 		return
 	_session = session
 	_build()
 	_adapt()
-	# Whatever was in the log belongs to a different game. A screen given a
-	# session after it has already rolled one of its own to look at — which is
-	# what happens whenever a frame passes between the two — otherwise opens
-	# its history with two first days.
 	_log.clear()
 	_log.append_heading("%s. The %s begins." % [
 			_session.state.calendar.to_display(), Branding.ORG_NAME])
 	_refresh()
 
 
-## Resizing, and Android's back button. Responsive rather than detected: the
-## layout follows the room it is given, so a window dragged narrow becomes the
-## phone layout and back, and a test asks for a phone by drawing into one.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and _parts.has("page"):
 		_adapt()
@@ -83,8 +60,6 @@ func _notification(what: int) -> void:
 		_step_back()
 
 
-## Back means "shut the thing I opened", or "never mind" to a question that
-## allows it. quit_on_go_back is off in the project settings so it can.
 func _step_back() -> void:
 	if BaseLayout.step_back(_parts):
 		_refresh()
@@ -104,15 +79,11 @@ func _process(delta: float) -> void:
 	_advance_one_day()
 
 
-## Builds the screen once. Called from setup(), and a second call is a no-op
-## rather than a second screen underneath the first.
 func _build() -> void:
 	if not _parts.is_empty():
 		return
 	var parts := BaseLayout.build(self)
 	_parts = parts
-	# A straight unpack: every widget BaseLayout built is kept under the name
-	# it was built with, so the two lists cannot drift apart.
 	for named in ["status", "laws", "roster", "panels", "map", "fight",
 			"squad", "log", "dialog", "buttons", "sheet"]:
 		set("_" + named, parts[named])
@@ -121,8 +92,6 @@ func _build() -> void:
 	_connect()
 
 
-## Wires the widgets to the screen. Split from building them so that the shape
-## of the screen and what it does with it stay separate things.
 func _connect() -> void:
 	_roster.activity_chosen.connect(
 			func(who: Creature, doing: StringName) -> void:
@@ -145,12 +114,9 @@ func _connect() -> void:
 		_say(BaseOrders.assign(_session, who, doing)))
 	_panels.surgery_wanted.connect(func(who: Creature) -> void:
 		_open_panel(PanelStack.SURGERY, who))
-	# Tapping the darkened page, or pressing escape, is the way back.
 	_sheet.dismissed.connect(func() -> void:
 		_panels.open(PanelStack.NONE, null)
 		_refresh())
-	# Closing a panel from its own Close button puts the sheet away too. It did
-	# not, and what was left was the page greyed out over nothing.
 	_panels.changed.connect(func() -> void:
 		BaseFront.settle(_parts, _narrow)
 		_refresh())
@@ -180,9 +146,8 @@ func _connect() -> void:
 
 
 func _advance_one_day() -> void:
-	# A second press while the day is already waiting is not a no-op. On a
-	# phone the question can have appeared above the current scroll position;
-	# pressing Wait again means "show me what stopped the day", not silence.
+	# A stopped day already has something to answer. On a phone that question
+	# may be above the current scroll position, so a second press reveals it.
 	if _session.is_waiting():
 		_show_pending()
 		return
@@ -190,10 +155,6 @@ func _advance_one_day() -> void:
 	_settle()
 
 
-## Drains what has happened, and puts up whatever the day stopped to ask.
-##
-## The simulation never blocks: it hands back a question and waits, so the
-## screen's whole job here is to show it and hand the answer back.
 func _settle() -> void:
 	var morning := BaseOrders.drain(_session, _log)
 	if not morning.is_empty():
@@ -203,9 +164,6 @@ func _settle() -> void:
 	if _session.is_waiting():
 		_show_pending()
 	elif BaseOrders.worth_reading(morning) and not _panels.is_open():
-		# The paper comes to the front on its own and holds the days while it
-		# is there, the way the original's page does. BaseOrders.worth_reading()
-		# says why.
 		_dialog.dismiss()
 		_stop_running()
 		_open_panel(PanelStack.PAPER)
@@ -217,43 +175,21 @@ func _settle() -> void:
 		_end(over)
 
 
-## Shows the decision that stopped the day and, on a phone, actually brings it
-## into the viewport. Moving the dialog to the top of a long scrollable column
-## is not enough: ScrollContainer keeps its old offset, so a player who pressed
-## Travel near the bottom can otherwise be left looking below a purchase/site
-## question that is correctly open but completely off-screen.
 func _show_pending() -> void:
 	if not _session.is_waiting():
 		return
 	_stop_running()
-	if _narrow and _country:
-		_country = false
-		var country: Button = _parts["country"]
-		country.button_pressed = false
-	_dialog.ask(_session.pending().intent, _session.state)
+	_country = false
+	BaseFront.question(_parts, _session, _narrow)
 	_refresh()
-	if _narrow:
-		var scroll: ScrollContainer = _parts["scroll"]
-		scroll.scroll_vertical = 0
-		# Containers finish sorting after this call. Repeat on the deferred
-		# property write so the new dialog's height cannot restore the old
-		# offset on the next layout pass.
-		scroll.set_deferred("scroll_vertical", 0)
 
 
-## Stops automatic waiting and leaves the button saying what pressing it will
-## do next. Setting button_pressed alone is not relied on to emit toggled: this
-## also keeps device builds and tests in the same visible state.
 func _stop_running() -> void:
 	_running = false
 	_elapsed = 0.0
-	_run_button.button_pressed = false
-	_run_button.text = "Keep waiting"
-	Icons.on(_run_button, &"run")
+	BaseFront.rest_wait_button(_run_button)
 
 
-## The game is over: the score goes in the book, the autosave is thrown away,
-## and the only thing left to do is go back to the title.
 func _end(how: StringName) -> void:
 	if _ended:
 		return
@@ -263,10 +199,6 @@ func _end(how: StringName) -> void:
 			func() -> void: finished.emit())
 
 
-## Re-reads how much room there is and lays the screen out for it.
-##
-## Cheap enough to run on every resize: it sets sizes and flags on widgets that
-## already exist, and never rebuilds anything.
 func _adapt() -> void:
 	_narrow = Metrics.narrow(self)
 	theme = UiTheme.build(Metrics.touch(self))
@@ -282,31 +214,23 @@ func _on_answer(id: Variant) -> void:
 	_settle()
 
 
-## Brings one of the panels to the front, or closes them when given NONE.
 func _open_panel(which: StringName, subject: Variant = null) -> void:
 	BaseFront.panel(_parts, _session, which,
 			_news if which == PanelStack.PAPER else subject, _narrow)
-	# A panel builds itself the first time it is opened, long after the screen
-	# was laid out, so nothing in it has been made big enough to hit or given
-	# the press until this runs.
 	_refresh()
 
 
-## Opens somebody's record, or closes it when given nobody.
 func _open_dossier(creature: Creature) -> void:
 	_open_panel(PanelStack.DOSSIER if creature != null else PanelStack.NONE,
 			creature)
 
 
-## A square next to the squad was clicked: walk that way, if the site loop is
-## the thing waiting for an answer.
 func _on_step(direction: int) -> void:
 	if _session.is_waiting() \
 			and _session.pending().intent.type == Intent.CHOOSE_SITE_MOVE:
 		_on_answer(direction)
 
 
-## Writes what an order came to in the log, and redraws.
 func _say(lines: PackedStringArray) -> void:
 	for line in lines:
 		_log.append(line, Palette.TEXT_DIM)
@@ -317,7 +241,6 @@ func _refresh() -> void:
 	BaseLayout.paint(self, _parts, _session, _narrow, _country)
 
 
-## Asks where the squad is going, through the same dialog as everything else.
 func _choose_destination() -> void:
 	if _session.is_waiting():
 		_show_pending()
