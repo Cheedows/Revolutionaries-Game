@@ -37,6 +37,21 @@ jobs:
           python3 tools/extract_data.py
           git diff --exit-code -- game/data
 
+  playtest:
+    name: Playtest regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6
+        run: |
+          curl -sSL -o godot.zip \
+            https://github.com/godotengine/godot-builds/releases/download/4.6-stable/Godot_v4.6-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.6-stable_linux.x86_64
+          sudo mv Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Run player-reported regressions
+        run: tools/run_tests.sh playtest_regressions
+
   tests:
     name: Headless tests
     runs-on: ubuntu-latest
