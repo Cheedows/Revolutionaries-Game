@@ -128,6 +128,10 @@ func _connect() -> void:
 			func(who: Creature, doing: StringName) -> void:
 		_say(BaseOrders.assign(_session, who, doing)))
 	_roster.dossier_wanted.connect(_open_dossier)
+	_roster.code_name_changed.connect(
+			func(who: Creature, code_name: String) -> void:
+		MemberNames.set_code_name(_session.state, who, code_name)
+		_refresh())
 	_roster.hostage_chosen.connect(
 			func(keeper: Creature, held: Creature) -> void:
 		_say(BaseOrders.watch(_session, keeper, held)))
