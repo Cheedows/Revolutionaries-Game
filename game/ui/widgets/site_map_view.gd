@@ -50,8 +50,8 @@ func refresh(state: GameState) -> void:
 	_build()
 	_state = state
 	var location: Location = state.locations.get(state.site.location)
-	_heading.text = "On Site: %s" % location.name if location != null \
-			else "On Site"
+	_heading.text = "The squad is inside %s." % location.name if location != null \
+			else "Current Location"
 	_here.text = SiteText.underfoot(state)
 	# Asking for a redraw of something nothing is looking at is not free, and
 	# headless there is no drawing phase to answer it in.
@@ -77,7 +77,7 @@ func _build() -> void:
 	var column := Atoms.column(Metrics.SNUG)
 	add_child(column)
 
-	_heading = Atoms.wrapped(Atoms.heading("On Site"))
+	_heading = Atoms.wrapped(Atoms.heading("Current Location"))
 	column.add_child(_heading)
 
 	_grid = Control.new()
