@@ -169,18 +169,19 @@ func _location_of_type(state: GameState, type: StringName) -> Location:
 	return null
 
 
-## Android's emulate_mouse_from_touch converts a finger tap to the ordinary GUI
-## mouse path before Controls see it. Input.parse_input_event(ScreenTouch) does
-## not perform that platform conversion, so inject the resulting left click and
-## let the viewport do real coordinate hit-testing.
+## Route through Viewport.push_input rather than Input.parse_input_event. The
+## former is the engine's GUI dispatcher and performs Control hit-testing in a
+## headless test; the latter feeds the global input singleton but does not
+## deliver a synthetic pointer event to GUI controls in this runner.
 func _tap(tree: SceneTree, control: Control) -> void:
 	var center := control.get_global_rect().get_center()
+	var viewport := control.get_viewport()
 	var down := InputEventMouseButton.new()
 	down.button_index = MOUSE_BUTTON_LEFT
 	down.position = center
 	down.global_position = center
 	down.pressed = true
-	Input.parse_input_event(down)
+	viewport.push_input(down, true)
 	await tree.process_frame
 
 	var up := InputEventMouseButton.new()
@@ -188,7 +189,7 @@ func _tap(tree: SceneTree, control: Control) -> void:
 	up.position = center
 	up.global_position = center
 	up.pressed = false
-	Input.parse_input_event(up)
+	viewport.push_input(up, true)
 	await tree.process_frame
 
 
