@@ -1,6 +1,8 @@
 extends TestCase
-## Regression for the Android playtest: visible wait controls must react to an
-## actual screen touch, not merely to a test emitting their signals directly.
+## Regression for the Android playtest: visible wait controls must react through
+## normal GUI hit-testing, not merely to a test emitting their signals directly.
+## Android turns a finger press into this mouse path because
+## pointing/emulate_mouse_from_touch is enabled in project.godot.
 
 const SCREEN := "res://ui/screens/base_screen.tscn"
 
@@ -21,10 +23,10 @@ func test_wait_a_day_reacts_to_a_real_screen_touch() -> void:
 	check(wait.get_global_rect().size.x > 0.0 and wait.get_global_rect().size.y > 0.0,
 			"Wait a day has a real hit rectangle")
 	var day_before: int = session.state.calendar.day
-	await _touch(tree, wait)
+	await _tap(tree, wait)
 
 	check(session.state.calendar.day != day_before or session.is_waiting(),
-			"a touchscreen press on Wait a day advances or reaches a decision")
+			"a phone-style tap on Wait a day advances or reaches a decision")
 	_finish_screen(tree, screen)
 
 
@@ -44,8 +46,8 @@ func test_keep_waiting_reacts_to_a_real_screen_touch_and_runs() -> void:
 	check(run.get_global_rect().size.x > 0.0 and run.get_global_rect().size.y > 0.0,
 			"Keep waiting has a real hit rectangle")
 	var day_before: int = session.state.calendar.day
-	await _touch(tree, run)
-	check(run.button_pressed, "the touchscreen press switches Keep waiting on")
+	await _tap(tree, run)
+	check(run.button_pressed, "the phone-style tap switches Keep waiting on")
 	check(run.text == "Stop waiting", "the running state is visible immediately")
 
 	await tree.create_timer(0.50).timeout
@@ -53,7 +55,7 @@ func test_keep_waiting_reacts_to_a_real_screen_touch_and_runs() -> void:
 			"Keep waiting actually advances time or reaches a decision")
 
 	if run.button_pressed:
-		await _touch(tree, run)
+		await _tap(tree, run)
 	_finish_screen(tree, screen)
 
 
@@ -87,7 +89,7 @@ func test_wait_reveals_a_shop_question_even_when_the_phone_is_scrolled_down() ->
 	check(scroll.scroll_vertical > 0, "the phone page can really be below its top")
 
 	var wait: Button = screen.get("_wait_button")
-	await _touch(tree, wait)
+	await _tap(tree, wait)
 	await tree.process_frame
 	check(session.is_waiting(), "the day stopped at the shop")
 	if session.is_waiting():
@@ -108,7 +110,7 @@ func test_wait_reveals_a_shop_question_even_when_the_phone_is_scrolled_down() ->
 	scroll.scroll_vertical = 100000
 	await tree.process_frame
 	check(scroll.scroll_vertical > 0, "the stopped question can be scrolled away")
-	await _touch(tree, wait)
+	await _tap(tree, wait)
 	await tree.process_frame
 	equal(scroll.scroll_vertical, 0,
 			"pressing Wait while stopped brings the pending question back")
@@ -142,7 +144,7 @@ func test_keep_waiting_stops_on_and_reveals_the_shop_question() -> void:
 	scroll.scroll_vertical = 100000
 	await tree.process_frame
 	var run: Button = screen.get("_run_button")
-	await _touch(tree, run)
+	await _tap(tree, run)
 	check(run.button_pressed, "Keep waiting starts before the shop is reached")
 	await tree.create_timer(0.50).timeout
 	await tree.process_frame
@@ -167,18 +169,24 @@ func _location_of_type(state: GameState, type: StringName) -> Location:
 	return null
 
 
-func _touch(tree: SceneTree, control: Control) -> void:
+## Android's emulate_mouse_from_touch converts a finger tap to the ordinary GUI
+## mouse path before Controls see it. Input.parse_input_event(ScreenTouch) does
+## not perform that platform conversion, so inject the resulting left click and
+## let the viewport do real coordinate hit-testing.
+func _tap(tree: SceneTree, control: Control) -> void:
 	var center := control.get_global_rect().get_center()
-	var down := InputEventScreenTouch.new()
-	down.index = 0
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
 	down.position = center
+	down.global_position = center
 	down.pressed = true
 	Input.parse_input_event(down)
 	await tree.process_frame
 
-	var up := InputEventScreenTouch.new()
-	up.index = 0
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
 	up.position = center
+	up.global_position = center
 	up.pressed = false
 	Input.parse_input_event(up)
 	await tree.process_frame
