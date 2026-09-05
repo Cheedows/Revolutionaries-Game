@@ -75,11 +75,12 @@ static func detail(intent: Intent, state: GameState) -> String:
 	if context.has("location"):
 		var site: Location = state.locations.get(int(context["location"]))
 		if site != null:
-			# A site-turn question is only possible after the squad has actually
-			# walked inside. Say so explicitly: on a phone this question is the
-			# first thing on screen, while the floor plan follows below it.
-			lines.append("At %s" % site.name if intent.type == Intent.CHOOSE_SITE_MOVE \
-					else site.name)
+			# A location while browsing is the folder/district currently open.
+			# A location on every other question means the squad has reached it.
+			# Make that distinction explicit, especially on a phone where the
+			# question is moved to the top of the page.
+			lines.append(site.name if intent.type == Intent.CHOOSE_DESTINATION \
+					else "At %s" % site.name)
 	if context.has("attacker"):
 		lines.append("%s outside" % String(context["attacker"]).capitalize())
 	if context.has("chasers"):
