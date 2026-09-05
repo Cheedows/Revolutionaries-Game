@@ -63,14 +63,28 @@ static func _next(state: GameState, rng: Rng, catalog: Catalog, index: int,
 			var next := at
 			return PendingIntent.new(asked.intent,
 					func(answer: Variant) -> Variant:
-						var after: Variant = asked.resume.call(answer)
-						if after is PendingIntent:
-							return after
-						return _next(state, rng, catalog, next, claimed,
-								events + (after as Array[Event])),
+						return _resume_next(state, rng, catalog, next, claimed,
+								events, asked.resume.call(answer)),
 					asked.events)
 		events.append_array(result as Array[Event])
 	return events
+
+
+## Keeps the rest of the squads attached while one outing asks several
+## questions. Shops can move through departments and purchases before leaving;
+## returning a nested question directly used to drop the continuation here.
+static func _resume_next(state: GameState, rng: Rng, catalog: Catalog,
+		index: int, claimed: PackedInt32Array, events: Array[Event],
+		carried: Variant) -> Variant:
+	if carried is PendingIntent:
+		var asked: PendingIntent = carried
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					return _resume_next(state, rng, catalog, index, claimed,
+							events, asked.resume.call(answer)),
+				events + asked.events)
+	return _next(state, rng, catalog, index, claimed,
+			events + (carried as Array[Event]))
 
 
 ## One squad's day out.
@@ -138,8 +152,8 @@ static func _arrive(state: GameState, rng: Rng, catalog: Catalog,
 
 	if ShopVisit.SHOPS.has(site.type):
 		_stand(state, squad, site)
-		var shopping: Variant = ShopVisit.open(state, rng, squad, site, catalog)
-		return _joined(events, shopping)
+		return _after_shop(state, squad,
+				ShopVisit.open(state, rng, squad, site, catalog), events)
 
 	if site.type == &"hospital_clinic" or site.type == &"hospital_university":
 		_stand(state, squad, site)
@@ -155,6 +169,32 @@ static func _arrive(state: GameState, rng: Rng, catalog: Catalog,
 	if ours and site.id != state.squad_members(squad)[0].base:
 		return _ask_what_for(state, rng, catalog, squad, site, events)
 	return _joined(events, _visit(state, rng, catalog, squad, site))
+
+
+## A shop is an outing, not a new address. The original calls locatesquad()
+## with the first member's base after the shop loop closes. The port moved the
+## squad into the shop and never made that call, leaving them stranded there.
+## Keep the return attached through however many shop questions are asked.
+static func _after_shop(state: GameState, squad: Squad, result: Variant,
+		prefix: Array[Event] = [] as Array[Event]) -> Variant:
+	if result is PendingIntent:
+		var asked: PendingIntent = result
+		return PendingIntent.new(asked.intent,
+				func(answer: Variant) -> Variant:
+					return _after_shop(state, squad, asked.resume.call(answer)),
+				prefix + asked.events)
+	_return_squad_home(state, squad)
+	return prefix + (result as Array[Event])
+
+
+## Puts the whole squad where its first member lives, matching locatesquad().
+static func _return_squad_home(state: GameState, squad: Squad) -> void:
+	var members := state.squad_members(squad)
+	if members.is_empty():
+		return
+	var home := members[0].base
+	for member: Creature in members:
+		member.location = home
 
 
 ## Moving in, taking a look, or both.
