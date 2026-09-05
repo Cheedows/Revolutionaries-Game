@@ -75,14 +75,11 @@ static func detail(intent: Intent, state: GameState) -> String:
 	if context.has("location"):
 		var site: Location = state.locations.get(int(context["location"]))
 		if site != null:
-			# While choosing a destination this is the folder/district the
-			# player is browsing. Everywhere else, a location in the context
-			# means the squad has actually reached it, so say that explicitly.
-			# On a phone the question is the first thing on screen and used to
-			# show only a bare place name, which looked like the travel picker
-			# had simply stayed open after Wait a day.
-			lines.append(site.name if intent.type == Intent.CHOOSE_DESTINATION \
-					else "At %s" % site.name)
+			# A site-turn question is only possible after the squad has actually
+			# walked inside. Say so explicitly: on a phone this question is the
+			# first thing on screen, while the floor plan follows below it.
+			lines.append("At %s" % site.name if intent.type == Intent.CHOOSE_SITE_MOVE \
+					else site.name)
 	if context.has("attacker"):
 		lines.append("%s outside" % String(context["attacker"]).capitalize())
 	if context.has("chasers"):
