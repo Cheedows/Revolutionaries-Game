@@ -76,10 +76,8 @@ func test_wait_a_day_visibly_enters_an_ordinary_location() -> void:
 	var heading: Label = map.get("_heading")
 	check(heading != null, "the site has an arrival heading")
 	if heading != null:
-		check(heading.text.contains(destination.name),
-				"the floor plan names %s" % destination.name)
-		check(heading.text.begins_with("On Site"),
-				"the floor plan explicitly says the squad is on site")
+		equal(heading.text, "The squad is inside %s." % destination.name,
+				"the floor plan explicitly states the named arrival")
 	var roster: Roster = screen.get("_roster")
 	check(not roster.visible, "the safehouse roster is no longer the active view")
 	check(not squad_panel.visible, "the safehouse squad card is no longer the active view")
