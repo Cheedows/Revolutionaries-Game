@@ -50,7 +50,7 @@ jobs:
           chmod +x Godot_v4.6-stable_linux.x86_64
           sudo mv Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
       - name: Run player-reported regressions
-        run: tools/run_tests.sh playtest_regressions
+        run: tools/run_tests.sh playtest_
 
   tests:
     name: Headless tests
