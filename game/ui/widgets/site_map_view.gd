@@ -50,7 +50,7 @@ func refresh(state: GameState) -> void:
 	_build()
 	_state = state
 	var location: Location = state.locations.get(state.site.location)
-	_heading.text = "On Site — %s" % location.name if location != null \
+	_heading.text = "On Site: %s" % location.name if location != null \
 			else "On Site"
 	_here.text = SiteText.underfoot(state)
 	# Asking for a redraw of something nothing is looking at is not free, and
