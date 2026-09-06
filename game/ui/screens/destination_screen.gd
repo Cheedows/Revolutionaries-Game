@@ -1,10 +1,6 @@
 class_name DestinationScreen
 extends Control
 ## Choosing where the active squad will go.
-##
-## Destination is a gameplay mode of its own in the original. This screen keeps
-## the safehouse out of the way while the CHOOSE_DESTINATION Intent drills from
-## city to district to building.
 
 signal finished
 
@@ -37,7 +33,6 @@ func _build() -> void:
 	background.color = Palette.BACKGROUND
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
-
 	_page = Atoms.column(Metrics.ROOM)
 	_page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_page.offset_left = 16
@@ -45,12 +40,8 @@ func _build() -> void:
 	_page.offset_right = -16
 	_page.offset_bottom = -16
 	add_child(_page)
-
 	_status = StatusBar.new()
 	_page.add_child(_status)
-	_page.add_child(Atoms.heading("Choose a Destination"))
-	_page.add_child(Atoms.dim("Pick a city, district, then the place the squad should visit."))
-
 	_dialog = IntentDialog.new()
 	_dialog.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_dialog.pin(true)
