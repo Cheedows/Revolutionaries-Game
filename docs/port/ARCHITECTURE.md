@@ -81,6 +81,11 @@ Six rules, each of which exists because breaking it shipped:
 9. **Presentation survives routing.** The play router retains the recent log
    and latest newspaper independently of disposable screens. It connects screen
    signals before setup, because setup may immediately drain events or finish.
+10. **Site encounters remain visible.** Ordinary people stay on the exploration
+    screen; their presence alone is not combat. Adjacent map tiles own movement,
+    with keyboard equivalents. People, conversation and other available actions
+    remain visible beside the map. Shopping shows prices and affordability, and
+    disabled custom rows use the same disabled text colour as ordinary buttons.
 
 The components, in the order a screen reaches for them: `Sheet` (what is in
 front), `Card` (a panel: head, notice, scrolling body, action bar),
