@@ -19,6 +19,8 @@ static func enter(state: GameState, squad: Squad, location: Location,
 		catalog: Catalog, rng: Rng) -> Array[Event]:
 	var site := state.site
 	state.mode = &"site"
+	site.encounter_ids.clear()
+	site.ground_loot.clear()
 	site.location = location.id
 	site.type = location.type
 	site.alarm = false
@@ -83,6 +85,8 @@ static func leave(state: GameState) -> Array[Event]:
 	var site := state.site
 	var left := site.location
 	state.mode = &"base"
+	site.encounter_ids.clear()
+	site.ground_loot.clear()
 	site.location = -1
 	site.type = &""
 	site.map = null

@@ -148,6 +148,7 @@ func ask(intent: Intent, state: GameState) -> void:
 	NameColours.paint_choices(_options, _ids, state)
 	visible = true
 	_restore()
+	PressFeel.teach(self)
 
 
 ## The ids a player could take right now, in the order they would reach them:

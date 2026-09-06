@@ -88,3 +88,37 @@ func _mouse(viewport: Viewport, at: Vector2, down: bool, relative: Vector2) -> v
 	event.relative = relative
 	event.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
 	viewport.push_input(event, true)
+
+
+func test_character_creation_rebuilt_buttons_allow_thumb_scrolling() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(360, 640)
+	tree.root.add_child(viewport)
+	var screen := (load("res://ui/screens/new_game_screen.tscn") as PackedScene).instantiate()
+	viewport.add_child(screen)
+	screen.begin(6161)
+	var previous := Input.emulate_touch_from_mouse
+	Input.emulate_touch_from_mouse = true
+	await UiDriver.settle(tree)
+	for rebuilt in 2:
+		var dialog: IntentDialog = screen._dialog
+		var scroll: ScrollContainer = dialog._scroll
+		scroll.scroll_vertical = 0
+		await UiDriver.settle(tree)
+		var point := scroll.get_global_rect().get_center()
+		_mouse(viewport, point, false, Vector2.ZERO)
+		_press(viewport, point, true)
+		for i in 12:
+			point.y -= 10
+			_mouse(viewport, point, true, Vector2(0, -10))
+			await tree.process_frame
+		_press(viewport, point, false)
+		await UiDriver.settle(tree)
+		check(scroll.scroll_vertical > 0, "creation choices scroll under a thumb")
+		check(screen._chosen.is_empty(), "a swipe never toggles a creation option")
+		screen._ask_switches()
+	Input.emulate_touch_from_mouse = previous
+	tree.root.remove_child(viewport)
+	viewport.queue_free()
+	await UiDriver.settle(tree)

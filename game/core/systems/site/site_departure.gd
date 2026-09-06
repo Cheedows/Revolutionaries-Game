@@ -50,6 +50,11 @@ static func _finish(state: GameState, rng: Rng, squad: Squad, location: int,
 	var events: Array[Event] = []
 	if not state.squad_members(squad).is_empty():
 		events.append_array(SiteExit.got_away(state, rng, squad, catalog))
+		# Return before the daily continuation runs the evening appointments.
+		var home := state.squad_members(squad)[0].base
+		for member: Creature in state.squad_members(squad):
+			member.location = home
+		squad.location = home
 	events.append_array(SiteExit.resolve(state, rng, squad))
 	state.site.alarm = false
 	events.append_array(SiteEntry.leave(state))

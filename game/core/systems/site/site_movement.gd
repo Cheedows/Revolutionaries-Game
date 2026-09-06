@@ -97,3 +97,26 @@ static func on_the_way_out(state: GameState) -> bool:
 static func _track_blood(site: SiteState, from: Vector2i) -> void:
 	if site.map.get_flag(from.x, from.y, site.z) & Tables.SITE_BLOCKS[&"bloody2"]:
 		site.map.add_flag(site.x, site.y, site.z, Tables.SITE_BLOCKS[&"bloody"])
+
+
+## Original mode_site() drops the old room after the new-encounter check.
+## Restore unchallenged landlords/tellers so returning can meet them again.
+static func leave_encounter(state: GameState, previous: PackedInt32Array,
+		from: Vector3i) -> void:
+	for id in previous:
+		var person: Creature = state.creatures.get(id)
+		if person == null:
+			var index := state.site.encounter_ids.find(id)
+			if index >= 0:
+				state.site.encounter_ids.remove_at(index)
+			continue
+		if person.cannot_bluff == 0:
+			var special := &""
+			if person.type_key() == &"landlord":
+				special = &"apartment_landlord"
+			elif person.type_key() == &"bank_teller":
+				special = &"bank_teller"
+			if special != &"":
+				state.site.map.set_special(from.x, from.y, from.z,
+						Ids.SITE_SPECIALS.find(special))
+		Encounters.remove(state, person)

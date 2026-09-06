@@ -654,6 +654,10 @@ Acceptance checks for this work:
 - [x] Keep site combat on the exploration page, preserving the map, compact
   actions and log through combat rounds; show encounter health and equipment
   in the same people list.
+- [x] Reapply touch scrolling to rebuilt character-creation choices, release
+  old encounters when walking away, and return site visitors home before
+  evening recruitment appointments. Cover swipes and two booked meetings
+  through actual screen controls.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather

@@ -168,9 +168,16 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 	if moved and SiteMovement.on_the_way_out(state):
 		return SiteDeparture.leave(state, rng, squad, tail, catalog)
 
+	var previous := state.site.encounter_ids.duplicate()
+	var siege: Siege = state.sieges.get(state.site.location)
+	var special := SiteStepSpecials.triggers(state) or (siege != null and siege.active)
 	var result: Variant = _meet_somebody(state, rng, squad, choice, moved,
 			catalog)
 	var joined: Variant = PendingIntent.chain(result, func(more: Array[Event]) -> Variant:
+		if moved:
+			if not special:
+				SiteMovement.leave_encounter(state, previous, from)
+			state.site.ground_loot.clear()
 		return more + SiteRound.tick(state, rng))
 	if joined is PendingIntent:
 		return PendingIntent.new(joined.intent, joined.resume, tail + joined.events)
