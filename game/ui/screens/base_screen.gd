@@ -5,6 +5,7 @@ extends Control
 
 signal finished
 signal newspaper_ready(events: Array[Event])
+signal route_changed
 
 const AUTO_ADVANCE_SECONDS := 0.35
 
@@ -170,9 +171,6 @@ func _settle() -> void:
 		_end(over)
 		return
 
-	# Under PlayScreen the paper is a real screen transition. When this screen
-	# is instantiated alone it keeps the old embedded-paper fallback so widget
-	# tests and editor previews remain useful.
 	if routed and BaseOrders.worth_reading(morning):
 		_dialog.dismiss()
 		_stop_running()
@@ -187,6 +185,8 @@ func _settle() -> void:
 		_open_panel(PanelStack.PAPER)
 	else:
 		_dialog.dismiss()
+	if routed:
+		route_changed.emit()
 
 
 func _show_pending() -> void:
