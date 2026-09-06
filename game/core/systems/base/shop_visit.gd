@@ -24,6 +24,7 @@ const LEAVE := &"leave"
 const SELL := &"sell:"
 const BUY := &"buy:"
 const DEPARTMENT := &"in:"
+const BACK := &"back"
 
 ## Picking through the stores one thing at a time, rather than selling a whole
 ## kind at once.
@@ -44,7 +45,7 @@ static func open(state: GameState, rng: Rng, squad: Squad, site: Location,
 
 ## One page of a shop: its departments, its goods, and what it will buy.
 static func _counter(state: GameState, rng: Rng, squad: Squad, site: Location,
-		shop: ShopDef, catalog: Catalog) -> Variant:
+		shop: ShopDef, catalog: Catalog, parents: Array[ShopDef] = []) -> Variant:
 	var options: Array[Dictionary] = []
 	for index in shop.departments.size():
 		var department: ShopDef = shop.departments[index]
@@ -61,6 +62,7 @@ static func _counter(state: GameState, rng: Rng, squad: Squad, site: Location,
 				"label": item.description if not item.description.is_empty()
 						else String(item.type),
 				"price": Shopping.price(state, shop, item, catalog),
+				"unaffordable": Shopping.price(state, shop, item, catalog) > state.ledger.funds,
 				"enabled": Shopping.can_buy(state, shop, item, catalog)})
 	if shop.allow_selling:
 		for kind: StringName in [Shopping.SELL_WEAPONS, Shopping.SELL_AMMO,
@@ -69,28 +71,36 @@ static func _counter(state: GameState, rng: Rng, squad: Squad, site: Location,
 					"label": "Sell the %s" % String(kind), "enabled": true})
 		options.append({"id": PICK, "label": "Go through the stores",
 				"enabled": not _stores(state, squad).is_empty()})
-	options.append({"id": LEAVE, "label": "Leave", "enabled": true})
+	if not parents.is_empty():
+		options.append({"id": BACK, "label": "Back", "enabled": true, "footer": true})
+	options.append({"id": LEAVE, "label": "Leave", "enabled": true, "footer": true})
 
 	return PendingIntent.new(
 			Intent.new(Intent.CHOOSE_PURCHASE, options,
 					{"location": site.id, "shop": String(shop.name)}, false),
 			func(answer: Variant) -> Variant:
 				return _chose(state, rng, squad, site, shop, catalog,
-						String(answer)),
+						String(answer), parents),
 			[] as Array[Event])
 
 
 ## What the answer was, and then back to the counter.
 static func _chose(state: GameState, rng: Rng, squad: Squad, site: Location,
-		shop: ShopDef, catalog: Catalog, answer: String) -> Variant:
+		shop: ShopDef, catalog: Catalog, answer: String, parents: Array[ShopDef] = []) -> Variant:
 	if answer == String(LEAVE):
 		return [] as Array[Event]
 
 	var events: Array[Event] = []
+	if answer == String(BACK) and not parents.is_empty():
+		var up: Array[ShopDef] = parents.duplicate()
+		var parent: ShopDef = up.pop_back()
+		return _counter(state, rng, squad, site, parent, catalog, up)
 	if answer.begins_with(String(DEPARTMENT)):
 		var index := int(answer.substr(String(DEPARTMENT).length()))
+		var up: Array[ShopDef] = parents.duplicate()
+		up.append(shop)
 		return _counter(state, rng, squad, site,
-				shop.departments[index], catalog)
+				shop.departments[index], catalog, up)
 	if answer.begins_with(String(BUY)):
 		var index := int(answer.substr(String(BUY).length()))
 		var members := state.squad_members(squad)
@@ -104,7 +114,7 @@ static func _chose(state: GameState, rng: Rng, squad: Squad, site: Location,
 		var sold := Shopping.sell_all(state, kind, catalog)
 		events.append_array(sold["events"] as Array[Event])
 
-	var again: Variant = _counter(state, rng, squad, site, shop, catalog)
+	var again: Variant = _counter(state, rng, squad, site, shop, catalog, parents)
 	var asked: PendingIntent = again
 	return PendingIntent.new(asked.intent, asked.resume, events + asked.events)
 

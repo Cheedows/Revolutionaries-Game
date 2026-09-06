@@ -154,7 +154,9 @@ func _hospital_waiting() -> bool:
 
 
 func _combat_active() -> bool:
-	if FightPanel.has_a_fight(_session.state):
+	if not _session.state.chase.enemy_cars.is_empty():
+		return true
+	if _session.state.site.alarm and SiteFight.available(_session.state):
 		return true
 	if not _session.is_waiting():
 		return false

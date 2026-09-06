@@ -28,3 +28,12 @@ func _init(asked: Intent, resume_with: Callable,
 	intent = asked
 	resume = resume_with
 	events = so_far
+
+
+## Keep a continuation attached through every nested question, not just one.
+static func chain(result: Variant, after: Callable) -> Variant:
+	if result is PendingIntent:
+		var asked: PendingIntent = result
+		return PendingIntent.new(asked.intent, func(answer: Variant) -> Variant:
+			return chain(asked.resume.call(answer), after), asked.events)
+	return after.call(result)

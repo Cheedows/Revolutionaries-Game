@@ -105,22 +105,10 @@ static func _act(state: GameState, rng: Rng, squad: Squad, choice: int,
 		catalog: Catalog) -> Variant:
 	var from := Vector3i(state.site.x, state.site.y, state.site.z)
 	var result: Variant = _action(state, rng, squad, choice, catalog)
-	if result is PendingIntent:
-		# A question inside the action: the building's turn waits for it.
-		var asked: PendingIntent = result
-		return PendingIntent.new(asked.intent,
-				func(answer: Variant) -> Variant:
-					var after: Variant = asked.resume.call(answer)
-					if after is PendingIntent:
-						return after
-					return _settle(state, rng, squad, choice, from,
-							after as Array[Event], catalog),
-				asked.events)
-	if state.site.location == -1:
-		# The squad walked out; the visit is over.
-		return result
-	return _settle(state, rng, squad, choice, from, result as Array[Event],
-			catalog)
+	return PendingIntent.chain(result, func(events: Array[Event]) -> Variant:
+		if state.site.location == -1:
+			return events
+		return _settle(state, rng, squad, choice, from, events, catalog))
 
 
 static func _action(state: GameState, rng: Rng, squad: Squad, choice: int,
@@ -150,13 +138,7 @@ static func _action(state: GameState, rng: Rng, squad: Squad, choice: int,
 ## The squad speaks to whoever is at the front of the room.
 static func _talk(state: GameState, rng: Rng, squad: Squad,
 		catalog: Catalog) -> Variant:
-	if state.site.encounter_ids.is_empty():
-		return [] as Array[Event]
-	var listener: Creature = state.creatures.get(state.site.encounter_ids[0])
-	var members := state.squad_members(squad)
-	if listener == null or members.is_empty():
-		return [] as Array[Event]
-	return SiteTalk.talk(state, rng, squad, members[0], listener, catalog)
+	return SiteConversation.choose(state, rng, squad, catalog)
 
 
 static func _reload(state: GameState, squad: Squad,
@@ -188,16 +170,11 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 
 	var result: Variant = _meet_somebody(state, rng, squad, choice, moved,
 			catalog)
-	if result is PendingIntent:
-		var asked: PendingIntent = result
-		return PendingIntent.new(asked.intent,
-				func(answer: Variant) -> Variant:
-					var after: Variant = asked.resume.call(answer)
-					var more: Array[Event] = after if after is Array \
-							else [] as Array[Event]
-					return tail + more + SiteRound.tick(state, rng),
-				tail + asked.events)
-	return tail + (result as Array[Event]) + SiteRound.tick(state, rng)
+	var joined: Variant = PendingIntent.chain(result, func(more: Array[Event]) -> Variant:
+		return more + SiteRound.tick(state, rng))
+	if joined is PendingIntent:
+		return PendingIntent.new(joined.intent, joined.resume, tail + joined.events)
+	return tail + (joined as Array[Event])
 
 
 ## What the other side does when the building being walked is one of the

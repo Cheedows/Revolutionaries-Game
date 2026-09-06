@@ -24,7 +24,7 @@ func test_a_site_action_keeps_the_visit_and_daily_continuation_alive() -> void:
 				var dialog: IntentDialog = screen.get("_dialog")
 				# First reload in place (cannot leave), then head toward the exit.
 				var action := SiteLoop.RELOAD if turns == 0 else SiteLoop.MOVE_UP
-				await UiDriver.tap(tree, walk.answer(dialog, action))
+				await UiDriver.tap(tree, screen._map._steps[action] if SiteLoop.STEPS.has(action) else walk.answer(dialog, action))
 				if turns == 0:
 					check(session.is_waiting(), "the next site action is still offered")
 					equal(session.state.calendar.to_display(), day,

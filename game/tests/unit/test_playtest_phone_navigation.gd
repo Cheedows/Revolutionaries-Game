@@ -49,7 +49,7 @@ func test_cancelling_each_door_prompt_keeps_movement_controls() -> void:
 		flags |= Tables.SITE_BLOCKS[&"alarmed"] if kind == 2 else Tables.SITE_BLOCKS[&"locked"]
 		state.site.map.set_flag(state.site.x, state.site.y + 1, state.site.z, flags)
 		var screen: SiteScreen = play.get_child(0)
-		await UiDriver.tap(tree, Walk.answer(screen._dialog, SiteLoop.MOVE_DOWN))
+		await UiDriver.tap(tree, screen._map._steps[SiteLoop.MOVE_DOWN])
 		check(session.pending().intent.type in [Intent.CONFIRM_FORCE_DOOR,
 				Intent.CONFIRM_PICK_LOCK, Intent.CONFIRM_NOISY_DOOR], "the door asks before opening")
 		await UiDriver.tap(tree, UiDriver.button(play, "Never mind"))

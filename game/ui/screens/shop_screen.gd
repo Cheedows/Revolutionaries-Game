@@ -30,7 +30,7 @@ func _build() -> void:
 	frame()
 	_heading = Atoms.heading("Shop")
 	_page.add_child(_heading)
-	_where = Atoms.dim("")
+	_where = Atoms.wrapped(Atoms.dim(""))
 	_page.add_child(_where)
 	_log = LogView.new()
 	_log.custom_minimum_size = Vector2(0, 96)
@@ -70,7 +70,7 @@ func _refresh() -> void:
 	var location_id := int(intent.context.get("location", -1))
 	var site: Location = _session.state.locations.get(location_id)
 	_heading.text = site.name if site != null else "Shop"
-	_where.text = "Shopping" if site == null else "At %s" % site.name
+	_where.text = "Available: $%d" % _session.state.ledger.funds
 	_dialog.ask(intent, _session.state)
 	adapt()
 
@@ -98,6 +98,10 @@ func back() -> void:
 	if intent.cancellable:
 		_on_answer(null)
 	else:
+		for entry: Dictionary in intent.options:
+			if str(entry.get("id")) == str(ShopVisit.BACK):
+				_on_answer(entry["id"])
+				return
 		for entry: Dictionary in intent.options:
 			if str(entry.get("id")) == str(ShopVisit.LEAVE):
 				_on_answer(entry["id"])

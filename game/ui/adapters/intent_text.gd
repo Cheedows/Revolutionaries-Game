@@ -18,7 +18,7 @@ const QUESTIONS := {
 	Intent.APPROACH_CAR: "Try this one?",
 	Intent.FORCE_CAR_DOOR: "Force the door?",
 	Intent.START_CAR: "Get it started?",
-	Intent.CHOOSE_SITE_MOVE: "Which way?",
+	Intent.CHOOSE_SITE_MOVE: "Actions",
 	Intent.CHOOSE_ENCOUNTER_RESPONSE: "They are right there.",
 	Intent.CHOOSE_ATTACK_TARGET: "Who first?",
 	Intent.CHOOSE_CHASE_ACTION: "They are still behind you.",
@@ -59,6 +59,8 @@ const REFUSALS := {
 
 ## The question itself.
 static func question(intent: Intent, state: GameState) -> String:
+	if intent.context.get("select_listener", false):
+		return "Who will they talk to?"
 	var asked := String(QUESTIONS.get(intent.type,
 			String(intent.type).capitalize() + "?"))
 	if intent.type == Intent.ASSIGN_ACTIVITY or intent.type == Intent.CHOOSE_DIALOGUE:
@@ -72,6 +74,8 @@ static func question(intent: Intent, state: GameState) -> String:
 static func detail(intent: Intent, state: GameState) -> String:
 	var context := intent.context
 	var lines := PackedStringArray()
+	if context.has("target"):
+		lines.append("Talking to %s. Discuss politics to try recruiting them." % _who(state, int(context.target)))
 	if intent.type == Intent.CHOOSE_DESTINATION:
 		lines.append("Choose a place, then press Travel now at the safehouse.")
 	if context.has("location"):
@@ -118,7 +122,8 @@ static func enabled(entry: Dictionary) -> bool:
 ## What the option costs or is worth, shown beside it.
 static func note(entry: Dictionary) -> String:
 	if entry.has("price"):
-		return "$%d" % int(entry["price"])
+		return "$%d%s" % [int(entry["price"]),
+				" - Not enough money" if not enabled(entry) and entry.get("unaffordable", false) else ""]
 	if entry.has("note"):
 		return String(entry["note"])
 	return ""

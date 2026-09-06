@@ -5,6 +5,18 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"people":
+			for i in 8:
+				if not session.state.site.encounter_ids.is_empty():
+					break
+				await UiDriver.tap(tree, answer(play.get_child(0)._dialog, SiteLoop.WAIT))
+			return
+		"conversation":
+			await UiDriver.tap(tree, play.get_child(0)._people._list.get_child(0))
+			return
+		"goods":
+			await UiDriver.tap(tree, answer(play.get_child(0)._dialog, "in:0"))
+			return
 		"travel":
 			button = UiDriver.button(play, "Choose destination")
 		"dossier":
@@ -15,7 +27,7 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 			button = UiDriver.button(play, ActivityText.of(session.state.members()[0].activity))
 		"vehicles":
 			button = UiDriver.button(play, "Choosing the Right Liberal Vehicle")
-		"pawn", "site", "hospital":
+		"pawn", "department", "site", "hospital":
 			await _visit(tree, play, said)
 			return
 		"decision":
@@ -94,6 +106,8 @@ static func answer(dialog: IntentDialog, id: Variant) -> Button:
 static func _site(session: Session, kind: String) -> Location:
 	var squad := session.state.active_squad()
 	for site: Location in session.state.locations.values():
+		if kind == "department" and site.type == &"business_deptstore":
+			return site
 		if kind == "pawn" and site.type == &"business_pawnshop":
 			return site
 		if kind == "hospital" and site.type == &"hospital_clinic":

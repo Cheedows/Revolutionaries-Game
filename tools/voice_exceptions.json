@@ -266,5 +266,12 @@
   "Choose destination": "the focused safehouse picker includes local destinations; the original separates local outings from its travel-to-another-city action",
   "Travel now": "the focused safehouse makes executing a chosen travel order explicit; the original executes it through the next-day control",
   "@ Squad  D Door  W Wall  E Exit\\nBlank: unexplored. Tap an adjacent tile to move.": "the tile map needs a visible legend and touch instruction; the original renders terminal glyphs and uses keyboard movement",
-  "Choose a place, then press Travel now at the safehouse.": "the focused destination page must explain that choosing sets an order; the original keeps the next-day control on its base screen"
+  "Choose a place, then press Travel now at the safehouse.": "the focused destination page must explain that choosing sets an order; the original keeps the next-day control on its base screen",
+  "Who will they talk to?": "the original lists encounter slots to choose a listener; the touch list needs a heading",
+  "Talking to %s. Discuss politics to try recruiting them.": "the original keeps the conversation target on its terminal and uses its disturbing-information dialogue to recruit; this explains that existing action in the focused view",
+  " - Not enough money": "the original greys unaffordable shop purchases; the mobile view also explains why an item cannot be bought",
+  "Available: $%d": "the original prints squad funds beside its shop menu; the focused shop labels the same balance",
+  "@ You  D Door  W Wall  E Exit": "the clickable tile map needs a persistent legend for its markers",
+  "Talk / Recruit": "the original starts its talk menu from an encounter slot and recruiting follows through political persuasion; the encounter row makes the action explicit",
+  "No one nearby. Move or wait to meet people.": "the original leaves its encounter rows empty; the phone view explains this state and the existing movement/wait actions"
 }

@@ -638,6 +638,10 @@ Acceptance checks for this work:
   departure action, map tiles have a visible legend, and cancelling a door prompt
   restores movement. Focused regressions cover phone pawn-shop entry and all
   three door cancellations.
+- [x] Shopping/site follow-up: show affordability consistently on custom rows,
+  return between shop departments, keep ordinary encounters on the site screen,
+  list actual people with Talk/Recruit actions, and use highlighted adjacent tiles
+  for movement. Conversations retain the site continuation through nested choices.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather

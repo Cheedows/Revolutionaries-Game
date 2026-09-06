@@ -38,6 +38,31 @@ var _face: MarginContainer
 ## phone. Kept apart from [member Control.custom_minimum_size] because that is
 ## now written to on every rewrap and would otherwise lose it.
 var _floor := 0.0
+var _was_disabled := false
+
+
+func _process(_delta: float) -> void:
+	if disabled != _was_disabled:
+		_disabled_face()
+
+
+func _disabled_face() -> void:
+	_was_disabled = disabled
+	if _face != null:
+		_tint_labels(_face)
+
+
+func _tint_labels(node: Node) -> void:
+	if node is Label:
+		if disabled:
+			if not node.has_meta(&"enabled_ink"):
+				node.set_meta(&"enabled_ink", node.get_theme_color(&"font_color"))
+			node.add_theme_color_override(&"font_color", Palette.TEXT_FAINT)
+		elif node.has_meta(&"enabled_ink"):
+			node.add_theme_color_override(&"font_color", node.get_meta(&"enabled_ink"))
+			node.remove_meta(&"enabled_ink")
+	for child in node.get_children():
+		_tint_labels(child)
 
 
 ## Builds the face, once.
@@ -77,6 +102,7 @@ func hold(content: Control) -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_face.add_child(content)
 	_fit()
+	_disabled_face()
 
 
 ## Takes the height the face now needs.
