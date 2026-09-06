@@ -2,6 +2,7 @@ class_name FocusPage
 extends Control
 ## Shared frame for one full-page task, with fixed status and Back controls.
 
+var name_state: GameState
 var _page: VBoxContainer
 var _status: StatusBar
 var _back_button: Button
@@ -49,6 +50,7 @@ func adapt() -> void:
 	_page.add_theme_constant_override(&"separation", gap)
 	Metrics.enlarge(self, touch)
 	PressFeel.teach(self)
+	NameColours.paint_tree(self, name_state)
 	_fit_page.call_deferred()
 
 

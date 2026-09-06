@@ -26,11 +26,17 @@ func refresh(state: GameState) -> void:
 		var person: Creature = state.creatures.get(id)
 		if person == null or not person.alive or not person.exists:
 			continue
-		var row := OptionRow.new(person.name, "Talk / Recruit", 0, Metrics.touch(self))
-		row.disabled = not can_talk
+		var note := ("Neutral" if person.alignment == &"moderate" else String(person.alignment).capitalize()) + " - Talk / Recruit"
+		if TalkRules.receptive(person):
+			note += " (receptive)"
+		if not SiteConversation.available(state, person):
+			note = "Won't talk to you"
+		var row := OptionRow.new(person.name, note, 0, Metrics.touch(self))
+		row.disabled = not can_talk or not SiteConversation.available(state, person)
 		row.pressed.connect(func() -> void: talk_wanted.emit(id))
 		_list.add_child(row)
 	if _list.get_child_count() == 0:
 		_list.add_child(Atoms.wrapped(Atoms.dim("No one nearby. Move or wait to meet people.")))
 	custom_minimum_size.y = 96 if not state.site.encounter_ids.is_empty() else 56
+	NameColours.paint_tree(self, state)
 	PressFeel.teach(self)

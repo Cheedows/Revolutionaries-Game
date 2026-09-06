@@ -49,6 +49,7 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "play_screen", "press": ["site", "inventory"]},
 	{"screen": "play_screen", "press": ["site", "people"]},
 	{"screen": "play_screen", "press": ["site", "people", "conversation"]},
+	{"screen": "play_screen", "press": ["site", "people", "conversation", "response"]},
 	{"screen": "play_screen", "press": ["hospital"]},
 	{"screen": "play_screen", "press": ["combat"]},
 	{"screen": "play_screen", "press": ["decision"]},
@@ -139,7 +140,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 	if screen is PlayScreen:
 		var last := "base" if walk["press"].is_empty() else str(walk["press"].back())
 		var expected: String = {"pawn": "shop", "travel": "destination",
-				"department": "shop", "goods": "shop", "people": "site", "conversation": "site", "inventory": "site",
+				"department": "shop", "goods": "shop", "people": "site", "conversation": "site", "response": "site", "inventory": "site",
 				"paper": "newspaper", "vehicles": "squad"}.get(last, last)
 		if str(screen.get("_kind")) != expected:
 			_wrong.append("%s: expected %s screen, got %s" % [walk, expected, screen.get("_kind")])

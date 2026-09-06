@@ -22,7 +22,7 @@ signal declined
 const SHORTCUTS := 9
 
 var _title: Label
-var _detail: Label
+var _detail: NameText
 var _options: Container
 var _scroll: ScrollContainer
 var _bar: ActionBar
@@ -101,12 +101,11 @@ func pin(on: bool) -> void:
 	elif _scroll.has_meta(&"page_scroller"):
 		_scroll.remove_meta(&"page_scroller")
 
-
 ## Shows [param intent]. The dialog stays up until an option is taken.
 func ask(intent: Intent, state: GameState) -> void:
 	_title.text = IntentText.question(intent, state)
 	_title.visible = not _title.text.is_empty()
-	_detail.text = IntentText.detail(intent, state)
+	_detail.show_text(IntentText.detail(intent, state), state, Palette.TEXT_DIM)
 	_detail.visible = not _detail.text.is_empty()
 
 	_ids.clear()
@@ -145,6 +144,7 @@ func ask(intent: Intent, state: GameState) -> void:
 		add_child(_refuse)
 	_bar.visible = _bar.filled()
 	_bar.adapt(_touch)
+	NameColours.paint_tree(_options, state)
 	visible = true
 	_restore()
 
@@ -277,7 +277,7 @@ func _build() -> void:
 	_title = Atoms.wrapped(Atoms.heading(""))
 	box.add_child(_title)
 
-	_detail = Atoms.wrapped(Atoms.dim(""))
+	_detail = NameText.new()
 	box.add_child(_detail)
 
 	_scroll = ScrollContainer.new()

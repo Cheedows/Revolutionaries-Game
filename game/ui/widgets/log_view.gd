@@ -25,6 +25,9 @@ const NARROW_HEIGHT := 200
 ## About a line, so a log resting a hair off the end still follows the tail.
 const AT_THE_END := 24
 
+signal conversation(said: String)
+
+var context: GameState
 var _lines: VBoxContainer
 var _scroll: ScrollContainer
 
@@ -70,7 +73,9 @@ func append(text: String, colour: Color = Palette.TEXT) -> void:
 	_build()
 	# Asked before the line is added, because adding it is what moves the end.
 	var follow := _at_the_end()
-	_lines.add_child(Atoms.wrapped(Atoms.tinted(text, colour)))
+	var line := NameText.new()
+	line.show_text(text, context, colour)
+	_lines.add_child(line)
 	await _settle(follow)
 
 
@@ -142,12 +147,28 @@ func clear() -> void:
 func snapshot() -> Array[Dictionary]:
 	_build()
 	var lines: Array[Dictionary] = []
-	for label: Label in _lines.get_children():
-		lines.append({"text": label.text, "colour": label.get_theme_color(&"font_color")})
+	for label in _lines.get_children():
+		if label is NameText:
+			lines.append(label.record.duplicate(true))
+		else:
+			lines.append({"text": label.text, "colour": label.get_theme_color(&"font_color")})
 	return lines
 
 
 func restore(lines: Array[Dictionary]) -> void:
 	clear()
 	for line: Dictionary in lines:
-		append(str(line["text"]), line["colour"])
+		var label := NameText.new()
+		label.show_record(line)
+		_lines.add_child(label)
+	_settle(true)
+
+
+func append_event(event: Event, state: GameState) -> void:
+	context = state
+	var said := EventText.describe(event, state)
+	if said.is_empty():
+		return
+	append(said, EventText.colour_of(event))
+	if event.type in [Event.RECRUIT_INTERESTED, Event.RECRUIT_REFUSED, Event.FLIRTED]:
+		conversation.emit(said)

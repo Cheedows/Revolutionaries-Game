@@ -23,14 +23,8 @@ static func describe(event: Event, state: GameState) -> String:
 	match event.type:
 		Event.RECRUIT_FOUND:
 			return _found(state, data)
-		Event.RECRUIT_INTERESTED:
-			return "%s managed to set up a meeting with %s." % [
-				_who(state, data.get("by", 0)),
-				_who(state, data.get("creature", 0))]
-		Event.RECRUIT_REFUSED:
-			return "%s would not hear %s out." % [
-				_who(state, data.get("creature", 0)),
-				_who(state, data.get("by", 0))]
+		Event.RECRUIT_INTERESTED, Event.RECRUIT_REFUSED:
+			return SiteDialogueText.recruitment(event, state)
 		Event.RECRUIT_MET:
 			return "%s meets %s." % [_who(state, data.get("creature", 0)),
 					_who(state, data.get("recruit", 0))]

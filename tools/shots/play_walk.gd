@@ -5,6 +5,9 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"response":
+			await UiDriver.tap(tree, answer(play.get_child(0)._dialog, SiteTalk.DISTURBING))
+			return
 		"inventory":
 			await UiDriver.tap(tree, answer(play.get_child(0)._dialog, SiteActionDialog.INVENTORY))
 			return

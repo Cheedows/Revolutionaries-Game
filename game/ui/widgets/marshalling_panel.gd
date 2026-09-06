@@ -65,6 +65,7 @@ func _row() -> HFlowContainer:
 func _order_row(squad: Squad, members: Array[Creature], index: int) -> Control:
 	var row := _row()
 	var label := Atoms.dim("%d. %s" % [index + 1, members[index].name])
+	label.add_theme_color_override(&"font_color", NameColours.of(members[index]))
 	label.custom_minimum_size = Vector2(NAME_WIDTH, 0)
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	row.add_child(label)
@@ -88,7 +89,7 @@ func _seat_row(squad: Squad, member: Creature) -> Control:
 	var row := _row()
 	var label := Atoms.cell("%s - %s" % [member.name, MarshallingText.seat(
 			member, _session.state, _session.catalog)], NAME_WIDTH)
-	label.add_theme_color_override(&"font_color", Palette.TEXT_DIM)
+	label.add_theme_color_override(&"font_color", NameColours.of(member))
 	row.add_child(label)
 
 	for car: Vehicle in _session.state.vehicles.values():

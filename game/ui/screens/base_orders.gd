@@ -142,6 +142,7 @@ static func worth_reading(morning: Array[Event]) -> bool:
 ## The paper is kept aside rather than only scrolling past in the log, because
 ## a player who wants to read it wants to read it when they choose.
 static func drain(session: Session, log: LogView) -> Array[Event]:
+	log.context = session.state
 	var drained := session.drain_events()
 	var morning: Array[Event] = []
 	for event: Event in drained:
@@ -150,7 +151,5 @@ static func drain(session: Session, log: LogView) -> Array[Event]:
 				or event.type == Event.NEWS_SEGMENT:
 			morning.append(event)
 	for event in drained:
-		var line := EventText.describe(event, session.state)
-		if not line.is_empty():
-			log.append(line, EventText.colour_of(event))
+		log.append_event(event, session.state)
 	return morning

@@ -117,16 +117,7 @@ static func _changed(state: GameState, data: Dictionary) -> String:
 
 ## Somebody trying it on at a site: what they said, and how it went.
 static func _flirted(state: GameState, data: Dictionary) -> String:
-	var by: Creature = state.creatures.get(data.get("by", 0))
-	var who := by.name if by != null and by.name != "" else "Someone"
-	var said := "%s says, %s" % [who, FlirtText.said(data)]
-	match data.get("outcome", &""):
-		&"agreed":
-			return said + " " + IS_QUITE_TAKEN % [
-					_who(state, data), who]
-		&"wrong_species", &"wrong_uniform", &"refused":
-			return said
-	return said
+	return SiteDialogueText.flirting(state, data)
 
 
 ## What was fitted, where.

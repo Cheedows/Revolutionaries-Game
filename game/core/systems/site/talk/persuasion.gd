@@ -53,11 +53,13 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 			and listener.alignment != &"liberal") \
 			or listener.animal_gloss == &"tank":
 		return {"listened": false, "recruited": false,
-				"events": [] as Array[Event]}
+				"events": [Event.new(Event.RECRUIT_REFUSED,
+				{"creature": listener.id, "by": speaker.id, "opening_only": true})] as Array[Event]}
 	if listener.name != PRISONER and interested:
 		return about_issues(state, rng, speaker, listener)
 	return {"listened": false, "recruited": false,
-			"events": [] as Array[Event]}
+			"events": [Event.new(Event.RECRUIT_REFUSED,
+				{"creature": listener.id, "by": speaker.id, "opening_only": true})] as Array[Event]}
 
 
 ## The pitch itself.
@@ -92,39 +94,41 @@ static func about_issues(state: GameState, rng: Rng, speaker: Creature,
 			and AttributeRules.effective(listener, &"intelligence", true) \
 					< DIM_INTELLIGENCE
 
+	var detail := {"creature": listener.id, "by": speaker.id, "issue": law,
+			"fumbled": fumbled, "too_liberal": too_liberal, "dim": dim}
 	if convinced and listener.name != PRISONER:
 		if not dim:
 			# Which of ten ways they agree.
-			rng.below(REPLIES)
+			detail["reply"] = rng.below(REPLIES)
 		_sign_up(state, rng, speaker, listener)
 		Encounters.remove(state, listener)
 		events.append(Event.new(Event.RECRUIT_INTERESTED,
-				{"creature": listener.id, "by": speaker.id, "issue": law}))
+				detail))
 		return {"listened": true, "recruited": true, "events": events}
 
-	_rebuff(state, rng, speaker, listener, fumbled, dim)
+	detail.merge(_rebuff(state, rng, speaker, listener, fumbled, dim))
 	listener.cannot_bluff = 1
 	events.append(Event.new(Event.RECRUIT_REFUSED,
-			{"creature": listener.id, "by": speaker.id, "issue": law}))
+			detail))
 	return {"listened": true, "recruited": false, "events": events}
 
 
 ## What they say when they are not having it. Only the shape matters here: two
 ## of the three branches roll for a line and the third does not.
 static func _rebuff(state: GameState, rng: Rng, speaker: Creature,
-		listener: Creature, fumbled: bool, dim: bool) -> void:
+		listener: Creature, fumbled: bool, dim: bool) -> Dictionary:
 	if dim:
-		return
+		return {}
 	if listener.alignment == &"conservative" and fumbled:
 		if listener.type == &"CREATURE_GANGUNIT" \
 				or listener.type == &"CREATURE_DEATHSQUAD":
-			return
-		rng.below(REPLIES)
-		return
+			return {}
+		return {"reply": rng.below(REPLIES)}
 	# Anybody who is not already a Liberal gets a chance to have an answer of
 	# their own, and the roll is made whether or not they find one.
 	if listener.alignment != &"liberal":
-		CheckRules.attribute_check(rng, listener, &"wisdom", Difficulty.AVERAGE)
+		return {"counterargument": CheckRules.attribute_check(rng, listener, &"wisdom", Difficulty.AVERAGE)}
+	return {}
 
 
 ## The recruit is copied out of the room and onto the recruiter's list. The

@@ -111,6 +111,8 @@ func _route() -> void:
 		management.kind = wanted
 		management.subject = _pages.back().get("subject")
 		management.history = _history.duplicate()
+	if _screen is FocusPage:
+		_screen.name_state = _session.state
 	add_child(_screen)
 	if wanted == &"newspaper":
 		_screen.call(&"setup", _session, _news_events)

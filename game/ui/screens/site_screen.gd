@@ -11,6 +11,8 @@ var _log: LogView
 var _dialog: IntentDialog
 var _people: SitePeople
 var _inventory: SiteInventory
+var _transcript: SiteTranscript
+var _exchange := ""
 
 
 func setup(session: Session) -> void:
@@ -33,6 +35,7 @@ func _build() -> void:
 	_people.talk_wanted.connect(_on_talk_to)
 	_page.add_child(_people)
 	_log = LogView.new()
+	_log.conversation.connect(func(said: String) -> void: _exchange = said)
 	_log.custom_minimum_size = Vector2(0, 120)
 	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_page.add_child(_log)
@@ -47,6 +50,12 @@ func _build() -> void:
 		_inventory.hide()
 		_page.show())
 	add_child(_inventory)
+	_transcript = SiteTranscript.new()
+	_transcript.hide()
+	_transcript.closed.connect(func() -> void:
+		_transcript.hide()
+		_page.show())
+	add_child(_transcript)
 
 
 func _settle() -> void:
@@ -58,6 +67,10 @@ func _settle() -> void:
 		finished.emit()
 		return
 	_refresh()
+	if not _exchange.is_empty():
+		_transcript.show_exchange(_exchange, _session.state)
+		_exchange = ""
+		_page.hide()
 
 
 func _refresh() -> void:
@@ -91,12 +104,19 @@ func _refresh() -> void:
 func _on_talk_to(id: int) -> void:
 	if not _session.is_waiting() or _session.pending().intent.type != Intent.CHOOSE_SITE_MOVE:
 		return
+	if not SiteConversation.available(_session.state, _session.state.creatures.get(id)):
+		return
 	_on_answer(SiteLoop.TALK)
 	if _session.is_waiting() and _session.pending().intent.context.get("select_listener", false):
 		_on_answer(id)
 
 
 func _input(event: InputEvent) -> void:
+	if _transcript != null and _transcript.visible:
+		if event.is_action_pressed(&"ui_cancel"):
+			back()
+			get_viewport().set_input_as_handled()
+		return
 	if _inventory != null and _inventory.visible:
 		if event.is_action_pressed(&"ui_cancel"):
 			_inventory.closed.emit()
@@ -144,3 +164,12 @@ func adapt() -> void:
 	_dialog.compact(touch)
 	Metrics.enlarge(self, touch)
 	PressFeel.teach(self)
+
+
+func back() -> void:
+	if _transcript.visible:
+		_transcript.closed.emit()
+	elif _inventory.visible:
+		_inventory.closed.emit()
+	elif _session.is_waiting() and _session.pending().intent.cancellable:
+		_on_answer(null)

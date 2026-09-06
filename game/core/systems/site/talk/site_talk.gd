@@ -29,6 +29,8 @@ const POLICE_UNIFORMS: Array[StringName] = [
 ## conversation that needs no input, or a [PendingIntent].
 static func talk(state: GameState, rng: Rng, squad: Squad, speaker: Creature,
 		listener: Creature, catalog: Catalog) -> Variant:
+	if not SiteConversation.available(state, listener):
+		return [] as Array[Event]
 	if listener.type == &"CREATURE_GUARDDOG" \
 			and listener.alignment != &"liberal":
 		return AnimalTalk.to_dog(state, rng, squad, listener)

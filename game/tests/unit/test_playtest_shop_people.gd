@@ -56,6 +56,13 @@ func test_people_appear_and_can_be_approached_without_switching_to_combat() -> v
 	await UiDriver.tap(tree, Walk.answer(screen._dialog, SiteTalk.DISTURBING))
 	check(session.is_waiting(), "the recruiting attempt preserves the site continuation")
 	equal(session.pending().intent.type, Intent.CHOOSE_SITE_MOVE, "movement resumes after the conversation")
+	check(screen._transcript.visible, "the complete exchange remains readable")
+	var waiting := session.pending()
+	var draws := session.rng.draws
+	await UiDriver.tap(tree, UiDriver.button(screen._transcript, "Continue"))
+	check(screen._page.visible, "Continue restores exploration")
+	check(session.pending() == waiting, "reading the response preserves the pending turn")
+	equal(session.rng.draws, draws, "Continue consumes no simulation rolls")
 	_drop(tree, held.viewport)
 	await UiDriver.settle(tree)
 

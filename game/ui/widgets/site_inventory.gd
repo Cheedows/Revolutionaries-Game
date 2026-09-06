@@ -36,6 +36,7 @@ func show_inventory(session: Session) -> void:
 			_list.add_child(Atoms.dim("Nothing carried in the squad haul."))
 		for item: Item in squad.haul:
 			_list.add_child(Atoms.wrapped(Atoms.body(DossierText.item_title(item, session.catalog))))
+	NameColours.paint_tree(self, session.state)
 	show()
 	Metrics.enlarge(self, Metrics.touch(self))
 	PressFeel.teach(self)

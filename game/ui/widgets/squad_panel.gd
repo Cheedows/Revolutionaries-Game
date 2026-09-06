@@ -61,13 +61,12 @@ func _row(creature: Creature, inside: bool) -> Control:
 	var name := Atoms.body(creature.name)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name.add_theme_color_override("font_color",
-			Palette.LIBERAL if inside else Palette.TEXT_DIM)
+			NameColours.of(creature))
 	# The original brightens this line when somebody on it has a skill banked
 	# past the line, so a screen with no room for thirty skills still answers
 	# "who is about to get better at something". Their record has the table.
 	if SkillText.any_ready([creature]):
 		name.text += READY_MARK
-		name.add_theme_color_override("font_color", Palette.ACCENT)
 	row.add_child(name)
 
 	var where := Atoms.tinted("%d blood" % creature.body.blood, Palette.TEXT_FAINT)

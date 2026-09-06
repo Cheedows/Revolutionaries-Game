@@ -71,10 +71,10 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 			and state.law.get_value(&"animalresearch") != 2 \
 			and speaker.animal_gloss != &"animal"
 	if beast or listener.animal_gloss == &"tank":
-		_rebuffed_by_animal(rng, listener)
+		var reply := _rebuffed_by_animal(rng, listener)
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
-				"outcome": &"wrong_species", "line": line,
+				"outcome": &"wrong_species", "line": line, "reply": reply,
 				"censored": censored}))
 		return {"agreed": false, "events": events}
 
@@ -117,15 +117,17 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 
 ## What the dog or the thing in the tank says, and what it thinks of the squad
 ## afterwards.
-static func _rebuffed_by_animal(rng: Rng, listener: Creature) -> void:
+static func _rebuffed_by_animal(rng: Rng, listener: Creature) -> int:
+	var reply := -1
 	if listener.type == &"CREATURE_GUARDDOG":
-		rng.below(DOG_REPLIES)
+		reply = rng.below(DOG_REPLIES)
 	elif listener.type == &"CREATURE_GENETIC":
-		rng.below(MONSTER_REPLIES)
+		reply = rng.below(MONSTER_REPLIES)
 	else:
-		return
+		return reply
 	listener.alignment = &"conservative"
 	listener.cannot_bluff = 1
+	return reply
 
 
 ## The date goes on the Liberal's own list, or starts one. As with a recruit,

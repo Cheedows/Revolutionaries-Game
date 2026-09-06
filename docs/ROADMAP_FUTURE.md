@@ -647,6 +647,10 @@ Acceptance checks for this work:
   publishing. Compact site actions with ASCII-grid pixel icons, retain a larger
   log with item quantities, and expose carried equipment and haul without taking
   a turn.
+- [x] Restore original recruitment arguments and matching flirt replies, retain
+  their existing RNG rolls, show readable exchanges and coloured names in log
+  history, and enforce original refusal rules in the encounter list. Audit name
+  colours across choices, roster, squad, inventory and management views.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather
