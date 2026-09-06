@@ -11,7 +11,7 @@ var _paper: NewspaperPanel
 var _page: VBoxContainer
 
 
-func setup(session: Session, events: Array[Event]) -> void:
+func setup(session: Session, events: Array[Event] = []) -> void:
 	_session = session
 	_events = events
 	_build()
