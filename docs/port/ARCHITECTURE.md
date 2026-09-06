@@ -70,11 +70,17 @@ Six rules, each of which exists because breaking it shipped:
    first press and act on the second — the shape the original uses (`C -
    Confirm`).
 
-8. **One thing at a time, and the page stays behind it.** A panel comes to the
-   front in a `Sheet` — over a scrim, edge to edge on a phone and centred on a
-   desk — rather than taking a share of the page. Tapping the scrim or pressing
-   escape is the way back, and the page underneath stops scrolling while it is
-   up, so the only thing that moves is the thing being read.
+8. **One task per screen.** `PlayScreen` owns the session and routes gameplay
+   decisions to destination, shop, site, combat, hospital and decision screens.
+   The safehouse is a navigation hub; roster, squad, country, history and each
+   management panel open as full pages. Back returns to the previous page,
+   including nested dossier/activity/surgery pages. Only the active page is in
+   the input tree. Simulation decisions take precedence over management pages;
+   navigation itself never advances time. `Sheet` remains available for local
+   modal interactions and the standalone legacy safehouse preview.
+9. **Presentation survives routing.** The play router retains the recent log
+   and latest newspaper independently of disposable screens. It connects screen
+   signals before setup, because setup may immediately drain events or finish.
 
 The components, in the order a screen reaches for them: `Sheet` (what is in
 front), `Card` (a panel: head, notice, scrolling body, action bar),

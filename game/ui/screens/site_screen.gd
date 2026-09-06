@@ -1,48 +1,28 @@
 class_name SiteScreen
-extends Control
+extends FocusPage
 ## The squad inside a location. The safehouse is not part of this screen.
 
 signal finished
 signal newspaper_ready(events: Array[Event])
 
 var _session: Session
-var _status: StatusBar
 var _map: SiteMapView
 var _log: LogView
 var _dialog: IntentDialog
-var _page: VBoxContainer
 
 
 func setup(session: Session) -> void:
 	_session = session
 	_build()
-	_adapt()
+	adapt()
 	_log.clear()
 	_settle()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED and _page != null:
-		_adapt()
 
 
 func _build() -> void:
 	if _page != null:
 		return
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = Palette.BACKGROUND
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	_page = Atoms.column(Metrics.ROOM)
-	_page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_page.offset_left = 16
-	_page.offset_top = 16
-	_page.offset_right = -16
-	_page.offset_bottom = -16
-	add_child(_page)
-	_status = StatusBar.new()
-	_page.add_child(_status)
+	frame()
 	_map = SiteMapView.new()
 	_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_map.step_wanted.connect(_on_step)
@@ -75,7 +55,7 @@ func _refresh() -> void:
 		_dialog.ask(_session.pending().intent, _session.state)
 	else:
 		_dialog.dismiss()
-	_adapt()
+	adapt()
 
 
 func _on_answer(id: Variant) -> void:
@@ -96,13 +76,11 @@ func _inside() -> bool:
 			and _session.state.site.location != -1
 
 
-func _adapt() -> void:
+func adapt() -> void:
 	if _page == null:
 		return
+	super.adapt()
 	var touch := Metrics.touch(self)
-	theme = UiTheme.build(touch)
-	_page.add_theme_constant_override(&"separation",
-			Metrics.TOUCH_GAP if touch else Metrics.BASE_GAP)
 	_map.compact(touch)
 	_dialog.compact(touch)
 	Metrics.enlarge(self, touch)

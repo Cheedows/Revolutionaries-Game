@@ -9,7 +9,7 @@ func test_travel_opens_destination_screen() -> void:
 	var play: PlayScreen = pair["play"]
 	var tree: SceneTree = pair["tree"]
 	var base: Control = play.get_child(0)
-	var squad_panel: SquadPanel = base.get("_squad")
+	var squad_panel: Control = base
 	var travel: Button = _button_named(squad_panel, "Travel to a Different City")
 	check(travel != null, "the safehouse has its travel control")
 	if travel != null:

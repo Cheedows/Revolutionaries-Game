@@ -1,48 +1,28 @@
 class_name CombatScreen
-extends Control
+extends FocusPage
 ## Combat and chases get the whole screen while they are asking for action.
 
 signal finished
 signal newspaper_ready(events: Array[Event])
 
 var _session: Session
-var _status: StatusBar
 var _fight: FightPanel
 var _log: LogView
 var _dialog: IntentDialog
-var _page: VBoxContainer
 
 
 func setup(session: Session) -> void:
 	_session = session
 	_build()
-	_adapt()
+	adapt()
 	_log.clear()
 	_settle()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED and _page != null:
-		_adapt()
 
 
 func _build() -> void:
 	if _page != null:
 		return
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = Palette.BACKGROUND
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	_page = Atoms.column(Metrics.ROOM)
-	_page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_page.offset_left = 16
-	_page.offset_top = 16
-	_page.offset_right = -16
-	_page.offset_bottom = -16
-	add_child(_page)
-	_status = StatusBar.new()
-	_page.add_child(_status)
+	frame()
 	_fight = FightPanel.new()
 	_fight.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_page.add_child(_fight)
@@ -74,7 +54,7 @@ func _refresh() -> void:
 		_dialog.ask(_session.pending().intent, _session.state)
 	else:
 		_dialog.dismiss()
-	_adapt()
+	adapt()
 
 
 func _on_answer(id: Variant) -> void:
@@ -99,13 +79,12 @@ func _combat_active() -> bool:
 	]
 
 
-func _adapt() -> void:
+func adapt() -> void:
 	if _page == null:
 		return
+	super.adapt()
 	var touch := Metrics.touch(self)
-	theme = UiTheme.build(touch)
-	_page.add_theme_constant_override(&"separation",
-			Metrics.TOUCH_GAP if touch else Metrics.BASE_GAP)
+	_fight.compact(touch)
 	_dialog.compact(touch)
 	Metrics.enlarge(self, touch)
 	PressFeel.teach(self)

@@ -1,0 +1,47 @@
+class_name DecisionScreen
+extends FocusPage
+## Daily decisions and reports that do not belong to a location or a fight.
+
+signal finished
+signal newspaper_ready(events: Array[Event])
+
+var _session: Session
+var _dialog: IntentDialog
+var _log: LogView
+
+
+func setup(session: Session) -> void:
+	_session = session
+	if _page != null:
+		_settle()
+		return
+	var page := frame()
+	_log = LogView.new()
+	_log.custom_minimum_size.y = 96
+	page.add_child(_log)
+	_dialog = IntentDialog.new()
+	_dialog.pin(true)
+	_dialog.chosen.connect(_on_answer)
+	_dialog.declined.connect(func() -> void: _on_answer(null))
+	page.add_child(_dialog)
+	_settle()
+
+
+func _on_answer(id: Variant) -> void:
+	if _session.is_waiting():
+		_session.answer(id)
+	_settle()
+
+
+func _settle() -> void:
+	var news := BaseOrders.drain(_session, _log)
+	if not news.is_empty():
+		newspaper_ready.emit(news)
+	_status.refresh(_session.state)
+	if _session.is_waiting():
+		_dialog.compact(Metrics.touch(self))
+		_dialog.ask(_session.pending().intent, _session.state)
+	else:
+		_dialog.dismiss()
+	adapt()
+	finished.emit()
