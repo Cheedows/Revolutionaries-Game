@@ -77,7 +77,7 @@ static func detail(intent: Intent, state: GameState) -> String:
 	var context := intent.context
 	if context.get("recruit_missed", false):
 		return RecruitText.describe(Event.new(Event.RECRUIT_MISSED, context), state)
-	var lines := PackedStringArray()
+	var lines := PackedStringArray(DecisionText.detail(intent, state))
 	if context.has("target"):
 		lines.append("Talking to %s. Discuss politics to try recruiting them." % _who(state, int(context.target)))
 	if intent.type == Intent.CHOOSE_DESTINATION:
@@ -97,7 +97,7 @@ static func detail(intent: Intent, state: GameState) -> String:
 		lines.append("%d after you" % int(context["chasers"]))
 	if bool(context.get("in_cars", false)):
 		lines.append("in the car")
-	return ", ".join(lines)
+	return "\n".join(lines)
 
 
 ## What one option's button should say.
@@ -128,6 +128,8 @@ static func note(entry: Dictionary) -> String:
 	if entry.has("price"):
 		return "$%d%s" % [int(entry["price"]),
 				" - Not enough money" if not enabled(entry) and entry.get("unaffordable", false) else ""]
+	if entry.has("cost"):
+		return "$%d" % int(entry["cost"])
 	if entry.has("note"):
 		return String(entry["note"])
 	return ""

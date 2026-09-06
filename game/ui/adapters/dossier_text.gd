@@ -98,6 +98,7 @@ static func record(creature: Creature, state: GameState,
 	lines.append("Juice: %d  $%d  %s" % [creature.juice, creature.money,
 			ConditionText.of(creature)])
 	lines.append(ActivityText.of(creature.activity))
+	lines.append_array(appointments(creature, state))
 
 	var attributes: Array[String] = []
 	for index in Ids.ATTRIBUTES.size():
@@ -122,7 +123,7 @@ static func record(creature: Creature, state: GameState,
 
 ## What is wrong with them, part by part.
 static func wounds(creature: Creature) -> Array[String]:
-	var hurt: Array[String] = []
+	var hurt: Array[String] = OrganText.wounds(creature.body)
 	for index in Ids.BODY_PARTS.size():
 		var flags := creature.body.wounds[index]
 		if flags == 0:
@@ -248,3 +249,21 @@ static func release_warning() -> String:
 static func execution_warning(boss: String) -> String:
 	return "Confirm you want to have %s kill this squad member? " % boss \
 			+ "Killing your squad members is Not a Liberal Act."
+
+
+## Original scheduledmeetings()/scheduleddates() counts on the full record.
+static func appointments(creature: Creature, state: GameState) -> Array[String]:
+	var meetings := 0
+	var dates := 0
+	for meeting: RecruitState in state.recruit_meetings:
+		if meeting.recruiter_id == creature.id:
+			meetings += 1
+	for plan: DatePlan in state.dates:
+		if plan.dater_id == creature.id:
+			dates += plan.date_ids.size()
+	var lines: Array[String] = []
+	if meetings > 0:
+		lines.append("Scheduled Meetings: " + str(meetings))
+	if dates > 0:
+		lines.append("Scheduled Dates:    " + str(dates))
+	return lines

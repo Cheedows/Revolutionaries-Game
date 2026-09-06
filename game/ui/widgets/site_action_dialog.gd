@@ -20,7 +20,8 @@ var _grid := false
 func ask(intent: Intent, state: GameState) -> void:
 	_grid = intent.type == Intent.CHOOSE_SITE_MOVE
 	var old := _options
-	_scroll.remove_child(old)
+	var content := old.get_parent()
+	content.remove_child(old)
 	old.queue_free()
 	if _grid:
 		var grid := GridContainer.new()
@@ -29,7 +30,7 @@ func ask(intent: Intent, state: GameState) -> void:
 	else:
 		_options = Atoms.column(Metrics.TIGHT)
 	_options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_scroll.add_child(_options)
+	content.add_child(_options)
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if _grid else ScrollContainer.SCROLL_MODE_AUTO
 	pin(not _grid)
 	super.ask(intent, state)

@@ -37,6 +37,7 @@ static func _next(state: GameState, rng: Rng, catalog: Catalog, index: int,
 			index -= 1
 			continue
 
+		var profession := catalog.get_entry(&"creature", recruit.type) as CreatureType
 		var can_offer := Recruiting.subordinates_left(state, recruiter) > 0 \
 				and Recruiting.eagerness(recruit, meeting.eagerness) \
 						>= Recruiting.READY_TO_JOIN
@@ -46,6 +47,7 @@ static func _next(state: GameState, rng: Rng, catalog: Catalog, index: int,
 						_approaches(can_offer, can_afford), {
 					"creature": recruiter.id,
 					"recruit": recruit.id,
+					"profession": profession.type_name if profession != null else "",
 					"eagerness": Recruiting.eagerness(recruit, meeting.eagerness),
 					"can_offer": can_offer,
 					"can_afford_props": can_afford,

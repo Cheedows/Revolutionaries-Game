@@ -250,8 +250,6 @@ func keyboard_lands_on() -> Variant:
 	return DialogKeys.lands_on(_reachable(), _ids, _last)
 
 
-## Every button a key could answer, in the order a player walks them: down the
-## list, then along the ways out under it.
 func _reachable() -> Array[Button]:
 	var reachable := _listed_buttons()
 	reachable.append_array(_bar.buttons())
@@ -279,7 +277,6 @@ func _build() -> void:
 	box.add_child(_title)
 
 	_detail = NameText.new()
-	box.add_child(_detail)
 
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -288,7 +285,10 @@ func _build() -> void:
 
 	_options = Atoms.column(Metrics.TIGHT)
 	_options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_scroll.add_child(_options)
+	var content := Atoms.column(Metrics.TIGHT)
+	_scroll.add_child(content)
+	content.add_child(_detail)
+	content.add_child(_options)
 
 	_bar = ActionBar.new()
 	_bar.visible = false

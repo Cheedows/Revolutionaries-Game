@@ -75,7 +75,7 @@ static func _paint(node: Node, names: Dictionary, disabled: bool) -> void:
 
 static func referents(data: Dictionary) -> Array[int]:
 	var ids: Array[int] = []
-	for key in ["by", "attacker", "defender", "killer", "victim", "hostage", "recruit", "creature", "target"]:
+	for key in ["by", "attacker", "defender", "killer", "victim", "hostage", "recruit", "creature", "target", "date", "interrogator"]:
 		if data.get(key) is int:
 			ids.append(data[key])
 	return ids

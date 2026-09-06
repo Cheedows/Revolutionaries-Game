@@ -18,11 +18,11 @@ The audit document records evidence; this checklist tracks repairs.
 - [ ] A6: Bulk activities and roster sorting
 - [ ] A7: In-site equipment changes
 - [ ] A8: Site squad health/status
-- [ ] A9: Organ injury detail
-- [ ] A10: Appointment workload overview
-- [ ] A11: Recruitment appointment context and overbooking timing
-- [ ] A12: Date/interrogation context
-- [ ] A13: Trial context and attorney fee
+- [x] A9: Organ injury detail
+- [x] A10: Scheduled meeting/date counts in character records and recruitment decisions
+- [ ] A11: Recruitment appointment context restored; overbooking timing still pending
+- [x] A12: Date/interrogation context
+- [x] A13: Trial context and attorney fee
 - [ ] A14: Polling results
 - [ ] A15: Full-site map and siege overlays
 - [ ] A16: Later dating narrative

@@ -36,6 +36,23 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 		"pawn", "department", "site", "hospital":
 			await _visit(tree, play, said)
 			return
+		"trial", "appointment":
+			var person := session.state.members()[0]
+			var candidate := session.state.add_creature(Creature.new())
+			candidate.name = "Morgan"
+			candidate.alignment = &"liberal"
+			candidate.location = person.base
+			person.crimes_suspected.fill(2)
+			var intent := Intent.new(Intent.CHOOSE_DEFENSE, Trial._options(session.state, null),
+					{"creature": person.id}, false)
+			if said == "appointment":
+				intent = Intent.new(Intent.CONFIRM_RECRUIT, RecruitQueue._approaches(true, true),
+						{"creature": person.id, "recruit": candidate.id,
+						"profession": "Teacher", "eagerness": 4}, false)
+			session.ask(PendingIntent.new(intent, func(_id: Variant) -> Variant:
+				return [] as Array[Event]))
+			await UiDriver.settle(tree)
+			return
 		"decision":
 			var intent := Intent.new(Intent.CHOOSE_BASE_ACTION,
 					[{"id": &"visit", "label": "Take a look inside"}] as Array[Dictionary], {}, true)

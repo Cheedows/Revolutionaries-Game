@@ -54,6 +54,8 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "play_screen", "press": ["combat"]},
 	{"screen": "play_screen", "press": ["site", "site_fight"]},
 	{"screen": "play_screen", "press": ["decision"]},
+	{"screen": "play_screen", "press": ["trial"]},
+	{"screen": "play_screen", "press": ["appointment"]},
 	{"screen": "play_screen", "press": ["ending"]},
 	{"screen": "title_screen", "press": []},
 	{"screen": "new_game_screen", "press": []},
