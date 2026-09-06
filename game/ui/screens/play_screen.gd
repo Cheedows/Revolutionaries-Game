@@ -64,6 +64,8 @@ func _notification(what: int) -> void:
 func back() -> void:
 	if _reading_news:
 		_close_newspaper()
+	elif _screen != null and _screen.has_method(&"back"):
+		_screen.call(&"back")
 	elif _session != null and _session.is_waiting():
 		if _session.pending().intent.cancellable and _screen.has_method(&"_on_answer"):
 			_screen.call(&"_on_answer", null)

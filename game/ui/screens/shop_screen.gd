@@ -89,3 +89,16 @@ func _shop_waiting() -> bool:
 	return type == Intent.CHOOSE_PURCHASE \
 			or type == Intent.CHOOSE_ITEMS_TO_FENCE \
 			or type == Intent.CHOOSE_SHOP_DEPARTMENT
+
+
+func back() -> void:
+	if not _shop_waiting():
+		return
+	var intent := _session.pending().intent
+	if intent.cancellable:
+		_on_answer(null)
+	else:
+		for entry: Dictionary in intent.options:
+			if str(entry.get("id")) == str(ShopVisit.LEAVE):
+				_on_answer(entry["id"])
+				return

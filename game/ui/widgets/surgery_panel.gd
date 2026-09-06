@@ -54,13 +54,8 @@ func _refresh() -> void:
 
 ## One thing that could be fitted, and the button that fits it.
 func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
-	var row := Atoms.row(Metrics.SNUG)
-	var label := Atoms.dim("  %s - %s" % [String(slot).capitalize(), type.name])
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-
-	var risk := Atoms.tinted("difficulty %d" % type.difficulty, Palette.TEXT_FAINT)
-	row.add_child(risk)
+	var row := ListRow.new("%s - %s" % [String(slot).capitalize(), type.name])
+	row.aside("difficulty %d" % type.difficulty)
 
 	var go := Icons.on(Atoms.button("Operate", false), &"surgery")
 	go.pressed.connect(func() -> void:
@@ -70,7 +65,7 @@ func _row(patient: Creature, slot: StringName, type: AugmentType) -> Control:
 			return
 		changed.emit()
 		_refresh())
-	row.add_child(go)
+	row.act(go)
 	return row
 
 

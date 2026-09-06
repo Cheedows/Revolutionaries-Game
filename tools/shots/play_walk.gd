@@ -9,12 +9,25 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 			button = UiDriver.button(play, "Travel to a Different City")
 		"dossier":
 			button = UiDriver.button(play, "Look")
+		"surgery":
+			button = UiDriver.button(play, "Augmentation")
 		"activity":
 			button = UiDriver.button(play, ActivityText.of(session.state.members()[0].activity))
 		"vehicles":
 			button = UiDriver.button(play, "Choosing the Right Liberal Vehicle")
 		"pawn", "site", "hospital":
 			await _visit(tree, play, said)
+			return
+		"decision":
+			var intent := Intent.new(Intent.CHOOSE_BASE_ACTION,
+					[{"id": &"visit", "label": "Take a look inside"}] as Array[Dictionary], {}, true)
+			session.ask(PendingIntent.new(intent, func(_id: Variant) -> Variant:
+				return [] as Array[Event]))
+			await UiDriver.settle(tree)
+			return
+		"ending":
+			session.state.endgame_state = &"won"
+			await UiDriver.settle(tree)
 			return
 		"combat":
 			var enemy := session.state.add_creature(Creature.new())
@@ -96,3 +109,14 @@ static func _site(session: Session, kind: String) -> Location:
 		if Destination.can_go(session.state, squad, site):
 			return site
 	return null
+
+
+static func add_patient(session: Session) -> void:
+	var surgeon: Creature = session.state.members()[0]
+	var patient := session.state.add_creature(Creature.new())
+	patient.name = "A second member"
+	patient.enlisted = true
+	patient.alignment = &"liberal"
+	patient.age = 30
+	patient.location = surgeon.location
+	patient.base = surgeon.base

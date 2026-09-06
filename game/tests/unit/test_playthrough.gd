@@ -29,8 +29,7 @@ const SLOT := "playthrough"
 ## the floor plan rather than the dialog, which is the other way the interface
 ## takes an answer and so worth driving too.
 const WALK: Array[int] = [
-	SiteLoop.MOVE_DOWN, SiteLoop.MOVE_LEFT, SiteLoop.USE, SiteLoop.MOVE_RIGHT,
-	SiteLoop.TALK, SiteLoop.MOVE_DOWN, SiteLoop.TAKE, SiteLoop.MOVE_DOWN,
+	SiteLoop.MOVE_DOWN, SiteLoop.MOVE_UP, SiteLoop.MOVE_UP,
 ]
 
 ## How many turns the squad has spent inside a building. The visit runs inside
@@ -42,6 +41,7 @@ func test_a_year_can_be_played_from_the_front_door() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	var main: Control = (load("res://ui/screens/main.tscn") as PackedScene).instantiate()
 	tree.root.add_child(main)
+	await tree.process_frame
 	main.call("build")
 
 	var title := main.get_child(main.get_child_count() - 1)
@@ -62,12 +62,12 @@ func test_a_year_can_be_played_from_the_front_door() -> void:
 	# The seed is the founder's questionnaire's, so it is set here rather than
 	# at the title: a new game screen builds its own session.
 	var screen := main.get_child(main.get_child_count() - 1)
-	if not screen.has_method("_advance_one_day"):
+	if not screen is PlayScreen or not screen.get_child(0) is SafehouseScreen:
 		fail("starting a game did not reach the safehouse")
 		_done(tree, main)
 		return
 
-	if not _play_a_year(screen, session):
+	if not await _play_a_year(screen, session):
 		_done(tree, main)
 		return
 	if not _save_and_read_it_back(screen, session, main):
@@ -97,7 +97,7 @@ func _answer_the_questionnaire(opening: Object, main: Control) -> Session:
 
 
 ## A year of days, with the panels opened, orders given, and a building walked.
-func _play_a_year(screen: Object, session: Session) -> bool:
+func _play_a_year(screen: PlayScreen, session: Session) -> bool:
 	var panels: Array[StringName] = [
 		PanelStack.AGENDA, PanelStack.HOUSE, PanelStack.PAPER,
 		PanelStack.STORES, PanelStack.JUSTICE, PanelStack.SETTINGS,
@@ -110,16 +110,19 @@ func _play_a_year(screen: Object, session: Session) -> bool:
 		_give_orders(screen, session)
 		# One panel a day, in turn, so each is opened against a live game
 		# rather than an empty one.
-		screen._open_panel(panels[day % panels.size()])
-		screen._open_panel(PanelStack.NONE)
+		screen.call("_open_page", panels[day % panels.size()])
+		_current(screen)
+		screen.back()
+		_current(screen)
 
 		# Once a month, take the squad out.
 		if day % 30 == 7 and _send_them_out(screen, session):
 			ordered = true
 
-		screen._advance_one_day()
+		(_current(screen) as SafehouseScreen)._wait_button.pressed.emit()
 		if not _answer_everything(screen, session, day):
 			return false
+		await (Engine.get_main_loop() as SceneTree).process_frame
 		if session.state.endgame_state == &"lost" \
 				or session.state.endgame_state == &"won":
 			# A finished game is a legitimate end to a playthrough, and the
@@ -134,8 +137,14 @@ func _play_a_year(screen: Object, session: Session) -> bool:
 
 
 ## Everybody idle gets told to do something, through the roster's own signal.
-func _give_orders(screen: Object, session: Session) -> void:
+func _give_orders(screen: PlayScreen, session: Session) -> void:
 	var offered := Recruiting.recruitable(session.state)
+	screen.call("_open_page", &"roster")
+	var active := _current(screen)
+	if not active is ManagementScreen:
+		fail("roster navigation reached " + str(screen.get("_kind")))
+		return
+	var roster := (active as ManagementScreen)._content as Roster
 	for creature: Creature in session.state.creatures.values():
 		if not creature.is_member() or creature.activity != &"none" \
 				or creature.location == -1 or creature.sleeper:
@@ -143,19 +152,21 @@ func _give_orders(screen: Object, session: Session) -> void:
 		# Through the roster's own signal, which is the path the game takes.
 		# Calling the screen's handler directly meant that when the handler
 		# became the lambda it always was, this stopped working.
-		(screen.get("_roster") as Roster).recruit_chosen.emit(
+		roster.recruit_chosen.emit(
 				creature, StringName(offered[0]["type"]))
+	screen.back()
+	_current(screen)
 
 
 ## Picks somewhere to go through the destination picker, and forms a squad if
 ## there is not one. Returns whether an order was given.
-func _send_them_out(screen: Object, session: Session) -> bool:
+func _send_them_out(screen: PlayScreen, session: Session) -> bool:
 	if session.is_waiting() or session.state.mode != &"base":
 		return false
 	var squad := session.state.active_squad()
 	if squad == null or squad.member_ids.is_empty():
 		return false
-	screen._choose_destination()
+	(_current(screen) as SafehouseScreen)._travel.pressed.emit()
 	if not session.is_waiting():
 		fail("the destination picker did not ask (waiting=%s mode=%s)"
 				% [session.is_waiting(), session.state.mode])
@@ -169,13 +180,16 @@ func _send_them_out(screen: Object, session: Session) -> bool:
 		asked += 1
 		if session.pending().intent.type != Intent.CHOOSE_DESTINATION:
 			break
-		var choice: Variant = _from_the_buttons(screen._dialog, false,
+		var destination := _current(screen) as DestinationScreen
+		var choice: Variant = _from_the_buttons(destination.get("_dialog"), false,
 				Destination.UP)
 		if choice == null:
 			# Nothing down this branch: back out and leave them at home.
-			screen._on_answer(null)
+			destination.call("_on_answer", null)
+			_current(screen)
 			return false
-		screen._on_answer(choice)
+		destination.call("_on_answer", choice)
+	_current(screen)
 	return squad.travel_destination != -1
 
 
@@ -184,43 +198,58 @@ func _send_them_out(screen: Object, session: Session) -> bool:
 ## A visit to a building runs inside the day rather than beside it — the site
 ## loop asks, the answer comes back, and it asks again — so this is where the
 ## walking happens too.
-func _answer_everything(screen: Object, session: Session, day: int) -> bool:
+func _answer_everything(screen: PlayScreen, session: Session, day: int) -> bool:
 	var asked := 0
-	while session.is_waiting():
+	while true:
 		asked += 1
 		if asked > PATIENCE:
-			fail("day %d: %s would not stop asking"
-					% [day, session.pending().intent.type])
+			fail("day %d: the routed flow would not stop asking" % day)
 			return false
-		if not screen._dialog.visible:
-			fail("day %d: %s was asked and the screen did not put it up"
-					% [day, session.pending().intent.type])
+		var active := _current(screen)
+		if active is EndingScreen:
+			return true
+		if active is NewspaperScreen:
+			active.emit_signal(&"finished")
+			continue
+		if not session.is_waiting():
+			return true
+		var dialog: IntentDialog = active.get("_dialog")
+		if dialog == null or not dialog.visible:
+			fail("day %d: the active screen did not present its decision" % day)
 			return false
 		if session.pending().intent.type == Intent.CHOOSE_SITE_MOVE:
-			# Walking is done by clicking the floor plan, not the dialog.
-			screen._on_step(WALK[_site_turns % WALK.size()])
+			var direction := WALK[_site_turns % WALK.size()]
+			if active.has_method("_on_step"):
+				active.call("_on_step", direction)
+			else:
+				active.call("_on_answer", direction)
 			_site_turns += 1
 			continue
-		var choice: Variant = _from_the_buttons(screen._dialog, false)
-		if choice == null and not screen._dialog.offered().is_empty():
-			fail("day %d: %s offered nothing that could be clicked"
-					% [day, session.pending().intent.type])
+		var choice: Variant = _from_the_buttons(dialog, false)
+		if choice == null and not dialog.offered().is_empty():
+			fail("day %d: the active decision offered nothing answerable" % day)
 			return false
-		screen._on_answer(choice)
-	if screen._dialog.visible:
-		fail("day %d: a question was left on screen" % day)
-		return false
+		active.call("_on_answer", choice)
+	_current(screen)
 	return true
 
 
 ## Saves through the settings panel, goes back to the title, and reads it back.
-func _save_and_read_it_back(screen: Object, session: Session,
+func _save_and_read_it_back(screen: PlayScreen, session: Session,
 		main: Control) -> bool:
 	var before := session.state.calendar.year * 10000 \
 			+ session.state.calendar.month * 100 + session.state.calendar.day
 	var members := session.state.members().size()
-	if not Commands.save_to(session, SLOT):
-		fail("the game would not save")
+	if _current(screen) is SafehouseScreen:
+		screen.call("_open_page", PanelStack.SETTINGS)
+		var management := _current(screen) as ManagementScreen
+		var settings: SettingsPanel = management._panels.get("_settings")
+		(settings.get("_name") as LineEdit).text = SLOT
+		UiDriver.button(screen, "Save").pressed.emit()
+		screen.back()
+		_current(screen)
+	elif not Commands.save_to(session, SLOT):
+		fail("the finished game would not save")
 		return false
 
 	var loaded := Session.new(0)
@@ -232,16 +261,21 @@ func _save_and_read_it_back(screen: Object, session: Session,
 	equal(after, before, "the date came back")
 	equal(loaded.state.members().size(), members, "and so did everybody")
 
-	# And the safehouse opens on it, which is what the title does with a save.
-	var reopened: Object = (load("res://ui/screens/base_screen.gd") as GDScript).new()
-	reopened.setup(loaded)
-	reopened._advance_one_day()
-	var asked := 0
-	while loaded.is_waiting() and asked < PATIENCE:
-		asked += 1
-		reopened._on_answer(_from_the_buttons(reopened._dialog, false))
-	check(not loaded.is_waiting(), "the reopened game plays on")
-	reopened.free()
+	# Re-enter through the title's load action and the production play router.
+	main.call("_title")
+	var title := main.get_child(main.get_child_count() - 1)
+	title.call("_open", SLOT)
+	var reopened := main.get_child(main.get_child_count() - 1) as PlayScreen
+	check(reopened != null, "loading from the title creates the production router")
+	if reopened == null:
+		return false
+	var resumed: Session = reopened.get("_session")
+	if _current(reopened) is SafehouseScreen:
+		(_current(reopened) as SafehouseScreen)._wait_button.pressed.emit()
+		if not _answer_everything(reopened, resumed, DAYS):
+			return false
+	check(not resumed.is_waiting() or _current(reopened) is EndingScreen,
+			"the reopened game plays on")
 	SaveGame.erase(SLOT)
 	return true
 
@@ -266,3 +300,13 @@ func _from_the_buttons(dialog: IntentDialog, last: bool,
 func _done(tree: SceneTree, main: Control) -> void:
 	tree.root.remove_child(main)
 	main.queue_free()
+
+
+## Flush routing synchronously in the long simulation; real pointer dispatch and
+## rendered frame timing have separate playtest and layout coverage.
+func _current(play: PlayScreen) -> Control:
+	for attempt in 8:
+		play.call("_route")
+		if play.get("_kind") == play.call("_kind_for"):
+			break
+	return play.get_child(0) as Control

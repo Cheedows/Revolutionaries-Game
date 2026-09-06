@@ -618,6 +618,24 @@ behavior was broken rather than meaningfully quirky:
 
 ## 2. Full UI / UX modernization
 
+**Owner-approved multi-screen flow (September 2026).** The production route is
+Title → new game/load → safehouse hub. Management opens as full pages (roster,
+squad, vehicles, country, agenda, safehouse, assets, justice, sleepers, save,
+history, dossier, activity and surgery), with nested Back navigation. Gameplay
+uses destination, shop, site, combat, hospital, daily decision, newspaper and
+ending screens. The legacy `base_screen` remains a standalone test/preview.
+
+Acceptance checks for this work:
+
+- [x] One active input surface, reachable Travel/Wait controls, and viewport-click
+  regressions for the pawn-shop flow and management navigation.
+- [x] Back returns through nested pages; history and the latest paper survive
+  routing; initialization cannot lose a screen's emitted events.
+- [x] Site visits continue taking actions until departure, keeping the daily
+  continuation attached instead of stranding a site after its first action.
+- [ ] Full suite, rendered production walks at four sizes, and mainline integration.
+
+
 The simulation is no longer welded to terminal rendering. Exploit that rather
 than building a prettier curses emulator.
 

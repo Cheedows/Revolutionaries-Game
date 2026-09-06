@@ -230,7 +230,7 @@ static func _visit(state: GameState, rng: Rng, catalog: Catalog, squad: Squad,
 	if state.current_story != null:
 		state.current_story.positive = 1
 	var entered := SiteEntry.enter(state, squad, site, catalog, rng)
-	var loop: Variant = SiteLoop.turn(state, rng, squad, catalog)
+	var loop: Variant = SiteVisit.run(state, rng, squad, catalog)
 	return _joined(entered, loop)
 
 

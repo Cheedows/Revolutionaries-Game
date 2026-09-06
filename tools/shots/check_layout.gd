@@ -29,6 +29,7 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "play_screen", "press": ["roster"]},
 	{"screen": "play_screen", "press": ["roster", "dossier"]},
 	{"screen": "play_screen", "press": ["roster", "activity"]},
+	{"screen": "play_screen", "press": ["roster", "dossier", "surgery"]},
 	{"screen": "play_screen", "press": ["members"]},
 	{"screen": "play_screen", "press": ["members", "vehicles"]},
 	{"screen": "play_screen", "press": ["country"]},
@@ -45,6 +46,8 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "play_screen", "press": ["site"]},
 	{"screen": "play_screen", "press": ["hospital"]},
 	{"screen": "play_screen", "press": ["combat"]},
+	{"screen": "play_screen", "press": ["decision"]},
+	{"screen": "play_screen", "press": ["ending"]},
 	{"screen": "title_screen", "press": []},
 	{"screen": "new_game_screen", "press": []},
 	{"screen": "new_game_screen", "press": ["1"]},
@@ -109,7 +112,10 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 	root.add_child(screen)
 	await process_frame
 	if screen.has_method("setup"):
-		screen.call("setup", _a_session())
+		var session := _a_session()
+		if walk["press"].has("surgery"):
+			(load("res://../tools/shots/play_walk.gd") as GDScript).add_patient(session)
+		screen.call("setup", session)
 	elif screen.has_method("begin"):
 		screen.call("begin", 4242)
 	elif screen.has_method("build"):

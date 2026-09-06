@@ -23,7 +23,7 @@ func _build() -> void:
 	_dialog.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_dialog.pin(true)
 	_dialog.chosen.connect(_on_answer)
-	_dialog.declined.connect(func() -> void: _on_answer(null))
+	_dialog.declined.connect(back)
 	_page.add_child(_dialog)
 
 
@@ -56,3 +56,10 @@ func adapt() -> void:
 	_dialog.compact(touch)
 	Metrics.enlarge(self, touch)
 	PressFeel.teach(self)
+
+
+func back() -> void:
+	if not _is_destination():
+		return
+	var under := int(_session.pending().intent.context.get("location", -1))
+	_on_answer(Destination.UP if under != -1 else null)

@@ -107,3 +107,52 @@ func _finish(tree: SceneTree, play: Control) -> void:
 	tree.root.remove_child(play)
 	play.queue_free()
 	await UiDriver.settle(tree)
+
+
+func test_surgery_returns_to_the_dossier_then_the_roster() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var session := Commands.roll_a_game(8185)
+	var walk := load("res://../tools/shots/play_walk.gd") as GDScript
+	walk.add_patient(session)
+	var play := (load(PLAY) as PackedScene).instantiate() as PlayScreen
+	tree.root.add_child(play)
+	play.setup(session)
+	await UiDriver.settle(tree)
+	for step in ["roster", "dossier", "surgery"]:
+		await walk.press(tree, play, step)
+	equal(play.get("_kind"), &"surgery", "surgery is a full page")
+	await UiDriver.tap(tree, UiDriver.button(play, "Back"))
+	equal(play.get("_kind"), &"dossier", "Back keeps the selected surgeon")
+	var screen := play.get_child(0) as ManagementScreen
+	check(screen.subject == session.state.members()[0], "the surgeon is still selected")
+	await UiDriver.tap(tree, UiDriver.button(play, "Back"))
+	equal(play.get("_kind"), &"roster", "the next Back returns to the roster")
+	await _finish(tree, play)
+
+
+func test_escape_walks_up_destinations_and_leaves_a_shop() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var session := Commands.roll_a_game(6161)
+	var play := (load(PLAY) as PackedScene).instantiate() as PlayScreen
+	tree.root.add_child(play)
+	play.setup(session)
+	await UiDriver.settle(tree)
+	var walk := load("res://../tools/shots/play_walk.gd") as GDScript
+	await walk.press(tree, play, "travel")
+	var destination := play.get_child(0) as DestinationScreen
+	var dialog: IntentDialog = destination.get("_dialog")
+	var district: int = dialog.answerable()[0]
+	await UiDriver.tap(tree, walk.answer(dialog, district))
+	equal(int(session.pending().intent.context.get("location", -1)), district,
+			"the destination picker entered a district")
+	await UiDriver.key(tree, KEY_ESCAPE)
+	check(session.is_waiting(), "Back goes up one level, keeping the picker open")
+	equal(int(session.pending().intent.context.get("location", -1)), -1,
+			"Back returned to the top level")
+	await UiDriver.key(tree, KEY_ESCAPE)
+	equal(play.get("_kind"), &"base", "Back from the top returns home")
+	await walk.press(tree, play, "pawn")
+	await UiDriver.key(tree, KEY_ESCAPE)
+	equal(play.get("_kind"), &"base", "Escape takes the shop's Leave action")
+	check(not session.is_waiting(), "leaving a shop releases its pending decision")
+	await _finish(tree, play)

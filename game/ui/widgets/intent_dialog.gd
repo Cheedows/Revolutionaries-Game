@@ -37,9 +37,7 @@ var _ids: Dictionary = {}
 ## are in there too and are not numbered.
 var _listed := 0
 
-## What the player last answered. A screen that rebuilds its list after every
-## answer — the switches on the new-game screen do exactly this — puts the
-## keyboard back where it was rather than at the top. See [method _restore].
+## Last answer, so rebuilt choices restore keyboard focus.
 var _last: Variant = null
 
 ## Whether the options are being sized for a fingertip.
@@ -116,6 +114,9 @@ func ask(intent: Intent, state: GameState) -> void:
 	for child in _options.get_children():
 		_options.remove_child(child)
 		child.queue_free()
+	# Keep the persistent Back/Cancel control out of the disposable action list.
+	if _refuse.get_parent() != null:
+		_refuse.get_parent().remove_child(_refuse)
 	_bar.clear()
 
 	var entries := intent.options
@@ -140,6 +141,8 @@ func ask(intent: Intent, state: GameState) -> void:
 	_refuse.text = IntentText.refusal(intent)
 	if _refuse.visible:
 		_bar.add(_refuse)
+	else:
+		add_child(_refuse)
 	_bar.visible = _bar.filled()
 	_bar.adapt(_touch)
 	visible = true
@@ -291,4 +294,6 @@ func _build() -> void:
 	box.add_child(_bar)
 
 	_refuse = Atoms.button("")
+	_refuse.visible = false
+	add_child(_refuse)
 	_refuse.pressed.connect(func() -> void: declined.emit())
