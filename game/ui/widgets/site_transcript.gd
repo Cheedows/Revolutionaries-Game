@@ -7,7 +7,7 @@ var _words: NameText
 var _scroll: ScrollContainer
 
 
-func show_exchange(said: String, state: GameState) -> void:
+func show_exchange(line: Dictionary) -> void:
 	if _words == null:
 		set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_theme_stylebox_override(&"panel", UiTheme.panel())
@@ -23,7 +23,11 @@ func show_exchange(said: String, state: GameState) -> void:
 		var done := Atoms.primary("Continue")
 		done.pressed.connect(func() -> void: closed.emit())
 		column.add_child(done)
-	_words.show_text(said.replace("\n", "\n\n"), state, Palette.TEXT)
+	var spaced := line.duplicate(true)
+	spaced.text = String(spaced.text).replace("\n", "\n\n")
+	for run: Dictionary in spaced.get("runs", []):
+		run.text = String(run.text).replace("\n", "\n\n")
+	_words.show_record(spaced)
 	_scroll.scroll_vertical = 0
 	show()
 	Metrics.enlarge(self, Metrics.touch(self))

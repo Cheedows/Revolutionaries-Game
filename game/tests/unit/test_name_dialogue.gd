@@ -77,3 +77,34 @@ func test_rejected_people_are_disabled_and_cannot_start_a_conversation() -> void
 	person.animal_gloss = &"animal"
 	check(not SiteConversation.available(state, person), "animals do not get the alarm exception")
 	people.free()
+
+
+func test_duplicate_profession_names_keep_the_selected_person_alignment() -> void:
+	var state := GameState.new()
+	var speaker := _person(state, "Alex", &"liberal")
+	var first := _person(state, "Clerk", &"liberal")
+	var second := _person(state, "Clerk", &"conservative")
+	state.site.encounter_ids.append(first.id)
+	state.site.encounter_ids.append(second.id)
+	var people := SitePeople.new()
+	people.can_talk = true
+	people.refresh(state)
+	NameColours.paint_tree(people, state)
+	equal(_inks(people._list.get_child(0), "Clerk"), [Palette.LIBERAL], "first clerk keeps their own alignment")
+	equal(_inks(people._list.get_child(1), "Clerk"), [Palette.CONSERVATIVE], "second clerk keeps their own alignment")
+	var log := LogView.new()
+	log.append_event(Event.new(Event.RECRUIT_REFUSED, {"by": speaker.id, "creature": first.id, "opening_only": true}), state)
+	for run: Dictionary in log.snapshot()[0].runs:
+		if run.text == "Clerk":
+			equal(run.colour, Palette.LIBERAL, "receipt identifies the actual listener, not the last clerk spawned")
+	people.free()
+	log.free()
+
+
+func _inks(node: Node, name: String) -> Array:
+	var result := []
+	if node is Label and node.text == name:
+		result.append(node.get_theme_color(&"font_color"))
+	for child in node.get_children():
+		result.append_array(_inks(child, name))
+	return result

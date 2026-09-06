@@ -6,13 +6,17 @@ static func of(person: Creature) -> Color:
 	return Palette.for_alignment(Alignment.value_of(person.alignment))
 
 
-static func spans(text: String, state: GameState, ink: Color) -> Array[Dictionary]:
+static func spans(text: String, state: GameState, ink: Color, referents: Array[int]) -> Array[Dictionary]:
 	var runs: Array[Dictionary] = []
 	if state == null:
 		return [{"text": text, "colour": ink}]
 	var names := {}
 	for person: Creature in state.creatures.values():
 		if not person.name.is_empty():
+			names[person.name] = of(person)
+	for id in referents:
+		var person: Creature = state.creatures.get(id)
+		if person != null:
 			names[person.name] = of(person)
 	var ordered := names.keys()
 	ordered.sort_custom(func(a: String, b: String) -> bool: return a.length() > b.length())
@@ -48,6 +52,9 @@ static func paint_tree(node: Node, state: GameState) -> void:
 
 
 static func _paint(node: Node, names: Dictionary, disabled: bool) -> void:
+	if node.has_meta(&"person_name"):
+		names = names.duplicate()
+		names[node.get_meta(&"person_name")] = Palette.for_alignment(Alignment.value_of(node.get_meta(&"person_alignment")))
 	if node is BaseButton:
 		disabled = disabled or node.disabled
 	if node is Label:
@@ -63,3 +70,24 @@ static func _paint(node: Node, names: Dictionary, disabled: bool) -> void:
 				break
 	for child in node.get_children():
 		_paint(child, names, disabled)
+
+
+static func referents(data: Dictionary) -> Array[int]:
+	var ids: Array[int] = []
+	for key in ["by", "attacker", "defender", "killer", "victim", "hostage", "recruit", "creature", "target"]:
+		if data.get(key) is int:
+			ids.append(data[key])
+	return ids
+
+
+static func paint_person(node: Node, person: Creature) -> void:
+	node.set_meta(&"person_name", person.name)
+	node.set_meta(&"person_alignment", person.alignment)
+	_paint(node, {person.name: of(person)}, false)
+
+
+static func paint_choices(node: Node, ids: Dictionary, state: GameState) -> void:
+	paint_tree(node, state)
+	for button: Button in ids:
+		if ids[button] is int and state.creatures.has(ids[button]):
+			paint_person(button, state.creatures[ids[button]])

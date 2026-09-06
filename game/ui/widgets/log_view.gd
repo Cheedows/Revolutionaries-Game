@@ -25,9 +25,10 @@ const NARROW_HEIGHT := 200
 ## About a line, so a log resting a hair off the end still follows the tail.
 const AT_THE_END := 24
 
-signal conversation(said: String)
+signal conversation(line: Dictionary)
 
 var context: GameState
+var _referents: Array[int] = []
 var _lines: VBoxContainer
 var _scroll: ScrollContainer
 
@@ -74,6 +75,7 @@ func append(text: String, colour: Color = Palette.TEXT) -> void:
 	# Asked before the line is added, because adding it is what moves the end.
 	var follow := _at_the_end()
 	var line := NameText.new()
+	line.referents = _referents
 	line.show_text(text, context, colour)
 	_lines.add_child(line)
 	await _settle(follow)
@@ -169,6 +171,8 @@ func append_event(event: Event, state: GameState) -> void:
 	var said := EventText.describe(event, state)
 	if said.is_empty():
 		return
+	_referents = NameColours.referents(event.data)
 	append(said, EventText.colour_of(event))
+	_referents = []
 	if event.type in [Event.RECRUIT_INTERESTED, Event.RECRUIT_REFUSED, Event.FLIRTED]:
-		conversation.emit(said)
+		conversation.emit((_lines.get_child(_lines.get_child_count() - 1) as NameText).record)

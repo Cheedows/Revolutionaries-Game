@@ -12,7 +12,7 @@ var _dialog: IntentDialog
 var _people: SitePeople
 var _inventory: SiteInventory
 var _transcript: SiteTranscript
-var _exchange := ""
+var _exchange: Dictionary = {}
 
 
 func setup(session: Session) -> void:
@@ -35,7 +35,7 @@ func _build() -> void:
 	_people.talk_wanted.connect(_on_talk_to)
 	_page.add_child(_people)
 	_log = LogView.new()
-	_log.conversation.connect(func(said: String) -> void: _exchange = said)
+	_log.conversation.connect(func(line: Dictionary) -> void: _exchange = line)
 	_log.custom_minimum_size = Vector2(0, 120)
 	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_page.add_child(_log)
@@ -68,8 +68,8 @@ func _settle() -> void:
 		return
 	_refresh()
 	if not _exchange.is_empty():
-		_transcript.show_exchange(_exchange, _session.state)
-		_exchange = ""
+		_transcript.show_exchange(_exchange)
+		_exchange = {}
 		_page.hide()
 
 

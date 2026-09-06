@@ -3,6 +3,7 @@ extends RichTextLabel
 ## Wrapped prose with literal text and coloured name spans, never injected BBCode.
 
 var record: Dictionary = {}
+var referents: Array[int] = []
 
 
 func _init() -> void:
@@ -14,7 +15,7 @@ func _init() -> void:
 
 
 func show_text(said: String, state: GameState, ink: Color) -> void:
-	show_record({"text": said, "colour": ink, "runs": NameColours.spans(said, state, ink)})
+	show_record({"text": said, "colour": ink, "runs": NameColours.spans(said, state, ink, referents)})
 
 
 func show_record(line: Dictionary) -> void:

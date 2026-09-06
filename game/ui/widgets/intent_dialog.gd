@@ -105,6 +105,7 @@ func pin(on: bool) -> void:
 func ask(intent: Intent, state: GameState) -> void:
 	_title.text = IntentText.question(intent, state)
 	_title.visible = not _title.text.is_empty()
+	_detail.referents = NameColours.referents(intent.context)
 	_detail.show_text(IntentText.detail(intent, state), state, Palette.TEXT_DIM)
 	_detail.visible = not _detail.text.is_empty()
 
@@ -144,7 +145,7 @@ func ask(intent: Intent, state: GameState) -> void:
 		add_child(_refuse)
 	_bar.visible = _bar.filled()
 	_bar.adapt(_touch)
-	NameColours.paint_tree(_options, state)
+	NameColours.paint_choices(_options, _ids, state)
 	visible = true
 	_restore()
 
@@ -165,7 +166,6 @@ func answerable() -> Array:
 		if not button.disabled and button != _refuse:
 			ids.append(_ids.get(button))
 	return ids
-
 
 ## Every option the question put up, and whether it can be taken.
 ##
