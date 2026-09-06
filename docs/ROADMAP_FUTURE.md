@@ -1,5 +1,12 @@
 # Revolutionaries — Future Roadmap
 
+> Current correction (2026-09-06): playable parity is incomplete. See
+> `docs/port/PARITY-AUDIT.md` and the repair checklist in
+> `docs/ROADMAP_PORT_COMPLETION.md`. The user authorized working through those
+> repairs. Historical completion claims below are superseded by this correction;
+> green static gates do not establish behavioral or UI parity.
+
+
 **Status:** the active roadmap. The parity conversion is finished;
 `docs/ROADMAP_PORT_COMPLETION.md` is now the record of how, and why the code
 is shaped the way it is, rather than a plan to work from.

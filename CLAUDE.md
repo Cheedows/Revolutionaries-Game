@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+> Current correction (2026-09-06): playable parity is incomplete. See
+> `docs/port/PARITY-AUDIT.md` and the repair checklist in
+> `docs/ROADMAP_PORT_COMPLETION.md`. The user authorized working through those
+> repairs. Historical completion claims below are superseded by this correction;
+> green static gates do not establish behavioral or UI parity.
+
+
 ## Current project goal
 
 The Liberal Crime Squad → Godot 4.6 conversion is finished: `game/` is the

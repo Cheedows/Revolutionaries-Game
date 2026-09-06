@@ -1,33 +1,33 @@
 # Revolutionaries — Port Completion Roadmap
 
-**Status:** the conversion is complete. Gates A through J are green and
-section 8 — what to do with the scaffolding now that it is — is what remains.  
-**Goal:** complete the Liberal Crime Squad → Godot 4.6 conversion to mechanical parity, without introducing new mechanics until parity is closed. Done.  
-**Mainline:** the repository's default/canonical branch is currently `master` (there is no `main` branch).  
-**Architecture:** `docs/port/ARCHITECTURE.md` is binding.
+**Status:** parity reopened after the [2026-09-06 audit](port/PARITY-AUDIT.md).
+The historical green gates below do not prove complete playable parity.
+**Mainline:** `master`. **Architecture:** `docs/port/ARCHITECTURE.md`.
 
-This document is the single source of truth for conversion progress. Do not create phase-status documents, handoff documents, conversion plans, or per-system roadmaps. Update this file instead.
+## 1. Audit repairs authorized by the user
 
-## 1. How much is left?
+The prior 100% completion table is withdrawn. Static accounting remains useful,
+but confirmed runtime failures and missing UI flows require direct verification.
+The audit document records evidence; this checklist tracks repairs.
 
-**Nothing.** Gates A through J are all green: the conversion is complete, and
-`game/` is the whole playable implementation.
-
-| Area | Complete | Notes |
-|---|---:|---|
-| Port architecture / deterministic harness | 100% | `data -> core -> app -> ui`, RNG parity including the side-stream swaps, 71 probes, 12 golden traces, save format, six checks in CI. |
-| Data/state model | 100% | Every global the original mutates is mapped onto the port by `tools/audit_state.py`, which CI runs. |
-| Mechanical parity overall | 100% | Every function in the original's own sources is accounted for by `tools/audit_parity.py`, and every decision it stops for by `tools/audit_choices.py`; every piece of its content by `tools/audit_content.py`; and everything in the port is reachable by `tools/audit_reach.py`. All run in CI. |
-| Godot UI parity shell | 100% | Every original mode is reachable without a terminal, and every Intent carries options a player can pick — which `test_long_run` proves by playing three years at three seeds with nobody at the keyboard. |
-| **Whole Godot parity port** | **100%** | |
-
-What that claim rests on is in the tree rather than in this paragraph. Six
-things fail the build if the port drifts from the original: the layer rules,
-the function audit, the state audit, the decision audit, the content audit and
-the reachability audit — the last of which asks the opposite question, whether
-anything in the port can be reached by nothing. 310 tests pass, of which the
-probe and trace tests diff the port against an instrumented build of the
-original draw for draw.
+- [ ] A1: Siege defense continuation
+- [ ] A2: Single enemy retaliation per Attack
+- [ ] A3: Body progression on ordinary site turns
+- [ ] A4: Hospital return and duration units
+- [ ] A5: Multiple squad management
+- [ ] A6: Bulk activities and roster sorting
+- [ ] A7: In-site equipment changes
+- [ ] A8: Site squad health/status
+- [ ] A9: Organ injury detail
+- [ ] A10: Appointment workload overview
+- [ ] A11: Recruitment appointment context and overbooking timing
+- [ ] A12: Date/interrogation context
+- [ ] A13: Trial context and attorney fee
+- [ ] A14: Polling results
+- [ ] A15: Full-site map and siege overlays
+- [ ] A16: Later dating narrative
+- [ ] A17: Month-end financial report
+- [ ] A18: Contextual audio
 
 ## 2. Baseline already established
 
