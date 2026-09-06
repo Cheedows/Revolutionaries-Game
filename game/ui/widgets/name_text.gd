@@ -4,6 +4,7 @@ extends RichTextLabel
 
 var record: Dictionary = {}
 var referents: Array[int] = []
+var identities: Array[Dictionary] = []
 
 
 func _init() -> void:
@@ -15,7 +16,7 @@ func _init() -> void:
 
 
 func show_text(said: String, state: GameState, ink: Color) -> void:
-	show_record({"text": said, "colour": ink, "runs": NameColours.spans(said, state, ink, referents)})
+	show_record({"text": said, "colour": ink, "runs": NameColours.spans(said, state, ink, referents, identities)})
 
 
 func show_record(line: Dictionary) -> void:

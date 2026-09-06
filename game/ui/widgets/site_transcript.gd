@@ -9,7 +9,7 @@ var _scroll: ScrollContainer
 
 func show_exchange(line: Dictionary) -> void:
 	if _words == null:
-		set_anchors_preset(Control.PRESET_FULL_RECT)
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		add_theme_stylebox_override(&"panel", UiTheme.panel())
 		var column := Atoms.column(Metrics.SNUG)
 		add_child(column)

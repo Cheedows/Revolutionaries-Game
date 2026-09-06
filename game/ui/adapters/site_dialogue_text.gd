@@ -4,10 +4,8 @@ extends RefCounted
 
 static func recruitment(event: Event, state: GameState) -> String:
 	var data := event.data
-	var speaker: Creature = state.creatures.get(data.get("by", -1))
-	var listener: Creature = state.creatures.get(data.get("creature", -1))
-	if speaker == null or listener == null:
-		return ""
+	var speaker := _person(state, data.get("by", -1), data.get("speaker", {}))
+	var listener := _person(state, data.get("creature", -1), data.get("listener", {}))
 	var lines: Array[String] = [speaker.name + " says, \"Do you want to hear something disturbing?\""]
 	if data.get("opening_only", false):
 		var response := "\"No.\" <turns away>"
@@ -49,7 +47,7 @@ static func recruitment(event: Event, state: GameState) -> String:
 	return "\n".join(lines)
 
 
-static func _argument(data: Dictionary, state: GameState, listener: Creature) -> String:
+static func _argument(data: Dictionary, state: GameState, listener: Dictionary) -> String:
 	var issue := String(data.get("issue", ""))
 	var table: Dictionary = SiteDialogueTables.ARGUMENT
 	if data.get("fumbled", false):
@@ -58,7 +56,7 @@ static func _argument(data: Dictionary, state: GameState, listener: Creature) ->
 		table = SiteDialogueTables.WON_ISSUE
 	var parts: Array = table.get(issue, [])
 	if data.get("fumbled", false) and issue == "policebehavior":
-		return parts[0 if state.law.get_value(&"freespeech") == -2 else 1]
+		return parts[0 if data.get("censored", state.law.get_value(&"freespeech") == -2) else 1]
 	if not data.get("fumbled", false) and not data.get("too_liberal", false) and issue == "pollution":
 		return parts[0] + parts[1 if listener.animal_gloss == &"animal" else 2]
 	var words: Array[String] = []
@@ -68,10 +66,8 @@ static func _argument(data: Dictionary, state: GameState, listener: Creature) ->
 
 
 static func flirting(state: GameState, data: Dictionary) -> String:
-	var speaker: Creature = state.creatures.get(data.get("by", -1))
-	var listener: Creature = state.creatures.get(data.get("creature", -1))
-	if speaker == null or listener == null:
-		return ""
+	var speaker := _person(state, data.get("by", -1), data.get("speaker", {}))
+	var listener := _person(state, data.get("creature", -1), data.get("listener", {}))
 	var lines: Array[String] = [speaker.name + " says, " + FlirtText.said(data)]
 	var outcome: StringName = data.get("outcome", &"")
 	var response := ""
@@ -97,3 +93,13 @@ static func flirting(state: GameState, data: Dictionary) -> String:
 	if outcome == &"agreed":
 		lines.append(speaker.name + " and " + listener.name + " make plans for tonight" + (", and " + listener.name + " breaks for the exit" if listener.name == "Prisoner" else "") + ".")
 	return "\n".join(lines)
+
+
+static func _person(state: GameState, id: int, snapshot: Dictionary) -> Dictionary:
+	if not snapshot.is_empty():
+		return snapshot
+	var person: Creature = state.creatures.get(id)
+	if person != null:
+		return TalkSnapshot.of(person)
+	return {"name": "Someone", "type": &"", "alignment": &"moderate",
+			"animal_gloss": &"none", "gender_liberal": &"neutral"}

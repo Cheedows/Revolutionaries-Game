@@ -154,8 +154,8 @@ func test_the_visible_gun_store_flow_works_end_to_end() -> void:
 		equal(session.pending().intent.type, Intent.CHOOSE_PURCHASE,
 				"the visible question is a purchase")
 	check(dialog.visible, "the shop question is visible")
-	var detail: Label = dialog.get("_detail")
-	equal(detail.text, "At %s" % gun_store.name,
+	var detail: NameText = dialog.get("_detail")
+	equal(detail.get_parsed_text(), "At %s" % gun_store.name,
 			"the player is explicitly shown that they reached the store")
 	var title: Label = dialog.get("_title")
 	equal(title.text, "What will they buy?", "the counter asks for a purchase")

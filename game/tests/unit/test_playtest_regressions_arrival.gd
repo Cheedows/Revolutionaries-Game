@@ -82,8 +82,8 @@ func test_wait_a_day_visibly_enters_an_ordinary_location() -> void:
 	check(not roster.visible, "the safehouse roster is no longer the active view")
 	check(not squad_panel.visible, "the safehouse squad card is no longer the active view")
 	check(dialog.visible, "site controls are visible")
-	var detail: Label = dialog.get("_detail")
-	equal(detail.text, "At %s" % destination.name,
+	var detail: NameText = dialog.get("_detail")
+	equal(detail.get_parsed_text(), "At %s" % destination.name,
 			"the first phone-visible question explicitly states the arrival")
 
 	_finish_screen(tree, screen)

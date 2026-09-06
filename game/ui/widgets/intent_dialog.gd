@@ -107,7 +107,7 @@ func ask(intent: Intent, state: GameState) -> void:
 	_title.visible = not _title.text.is_empty()
 	_detail.referents = NameColours.referents(intent.context)
 	_detail.show_text(IntentText.detail(intent, state), state, Palette.TEXT_DIM)
-	_detail.visible = not _detail.text.is_empty()
+	_detail.visible = not _detail.get_parsed_text().is_empty()
 
 	_ids.clear()
 	_listed = 0

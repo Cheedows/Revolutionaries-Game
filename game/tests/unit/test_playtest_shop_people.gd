@@ -57,6 +57,9 @@ func test_people_appear_and_can_be_approached_without_switching_to_combat() -> v
 	check(session.is_waiting(), "the recruiting attempt preserves the site continuation")
 	equal(session.pending().intent.type, Intent.CHOOSE_SITE_MOVE, "movement resumes after the conversation")
 	check(screen._transcript.visible, "the complete exchange remains readable")
+	check(screen._transcript.size.y >= screen.size.y - 1, "the exchange fills the screen")
+	check(screen._transcript._scroll.size.y > 200, "the dialogue has a readable viewport")
+	check(not screen._transcript._words.get_parsed_text().is_empty(), "the exchange has actual rendered text")
 	var waiting := session.pending()
 	var draws := session.rng.draws
 	await UiDriver.tap(tree, UiDriver.button(screen._transcript, "Continue"))
@@ -128,6 +131,7 @@ func test_pickup_log_and_inventory_preserve_the_pending_turn() -> void:
 	var random := session.rng.export_state()
 	await UiDriver.tap(tree, Walk.answer(screen._dialog, SiteActionDialog.INVENTORY))
 	check(screen._inventory.visible, "inventory is reachable during exploration")
+	check(screen._inventory.size.y >= screen.size.y - 1, "the inventory fills the screen")
 	var text := ""
 	for label: Label in _labels(screen._inventory):
 		text += label.text

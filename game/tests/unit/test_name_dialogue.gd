@@ -108,3 +108,22 @@ func _inks(node: Node, name: String) -> Array:
 	for child in node.get_children():
 		result.append_array(_inks(child, name))
 	return result
+
+
+func test_dialogue_survives_participants_leaving_the_world() -> void:
+	var state := GameState.new()
+	var speaker := _person(state, "Alex", &"liberal")
+	var listener := _person(state, "Morgan", &"conservative")
+	var event := Event.new(Event.RECRUIT_REFUSED, {"by": speaker.id, "creature": listener.id,
+			"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener), "opening_only": true})
+	state.creatures.clear()
+	var log := LogView.new()
+	log.append_event(event, state)
+	var line := log.snapshot()[0]
+	check(line.text.contains('Morgan responds, "No."'), "cleanup cannot erase the conversation")
+	for run: Dictionary in line.runs:
+		if run.text == "Morgan":
+			equal(run.colour, Palette.CONSERVATIVE, "departed listener retains their alignment")
+		if run.text == "Alex":
+			equal(run.colour, Palette.LIBERAL, "departed speaker retains their alignment")
+	log.free()

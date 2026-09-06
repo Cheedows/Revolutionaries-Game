@@ -54,12 +54,14 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 			or listener.animal_gloss == &"tank":
 		return {"listened": false, "recruited": false,
 				"events": [Event.new(Event.RECRUIT_REFUSED,
-				{"creature": listener.id, "by": speaker.id, "opening_only": true})] as Array[Event]}
+				{"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener), "opening_only": true})] as Array[Event]}
 	if listener.name != PRISONER and interested:
 		return about_issues(state, rng, speaker, listener)
 	return {"listened": false, "recruited": false,
 			"events": [Event.new(Event.RECRUIT_REFUSED,
-				{"creature": listener.id, "by": speaker.id, "opening_only": true})] as Array[Event]}
+				{"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener), "opening_only": true})] as Array[Event]}
 
 
 ## The pitch itself.
@@ -94,8 +96,10 @@ static func about_issues(state: GameState, rng: Rng, speaker: Creature,
 			and AttributeRules.effective(listener, &"intelligence", true) \
 					< DIM_INTELLIGENCE
 
-	var detail := {"creature": listener.id, "by": speaker.id, "issue": law,
-			"fumbled": fumbled, "too_liberal": too_liberal, "dim": dim}
+	var detail := {"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener), "issue": law,
+			"fumbled": fumbled, "too_liberal": too_liberal, "dim": dim,
+			"censored": state.law.get_value(&"freespeech") == -2}
 	if convinced and listener.name != PRISONER:
 		if not dim:
 			# Which of ten ways they agree.

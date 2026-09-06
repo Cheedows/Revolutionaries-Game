@@ -8,7 +8,7 @@ var _list: VBoxContainer
 
 func show_inventory(session: Session) -> void:
 	if _list == null:
-		set_anchors_preset(Control.PRESET_FULL_RECT)
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		add_theme_stylebox_override(&"panel", UiTheme.panel())
 		var column := Atoms.column(Metrics.SNUG)
 		add_child(column)

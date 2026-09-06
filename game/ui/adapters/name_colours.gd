@@ -6,18 +6,19 @@ static func of(person: Creature) -> Color:
 	return Palette.for_alignment(Alignment.value_of(person.alignment))
 
 
-static func spans(text: String, state: GameState, ink: Color, referents: Array[int]) -> Array[Dictionary]:
+static func spans(text: String, state: GameState, ink: Color, referents: Array[int], identities: Array[Dictionary]) -> Array[Dictionary]:
 	var runs: Array[Dictionary] = []
-	if state == null:
-		return [{"text": text, "colour": ink}]
 	var names := {}
-	for person: Creature in state.creatures.values():
+	for person: Creature in state.creatures.values() if state != null else []:
 		if not person.name.is_empty():
 			names[person.name] = of(person)
 	for id in referents:
-		var person: Creature = state.creatures.get(id)
+		var person: Creature = state.creatures.get(id) if state != null else null
 		if person != null:
 			names[person.name] = of(person)
+	for person: Dictionary in identities:
+		if person.has("name") and person.has("alignment"):
+			names[person.name] = Palette.for_alignment(Alignment.value_of(person.alignment))
 	var ordered := names.keys()
 	ordered.sort_custom(func(a: String, b: String) -> bool: return a.length() > b.length())
 	var escaped: Array[String] = []

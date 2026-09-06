@@ -74,6 +74,7 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 		var reply := _rebuffed_by_animal(rng, listener)
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener),
 				"outcome": &"wrong_species", "line": line, "reply": reply,
 				"censored": censored}))
 		return {"agreed": false, "events": events}
@@ -91,6 +92,7 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 		listener.cannot_bluff = 1
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener),
 				"outcome": &"wrong_uniform", "line": line,
 				"censored": censored}))
 		return {"agreed": false, "events": events}
@@ -99,6 +101,7 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 		listener.cannot_bluff = 1
 		events.append(Event.new(Event.FLIRTED,
 				{"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener),
 				"outcome": &"refused", "line": line,
 				"censored": censored}))
 		return {"agreed": false, "events": events}
@@ -110,6 +113,7 @@ static func approach(state: GameState, rng: Rng, speaker: Creature,
 	Encounters.remove(state, listener)
 	events.append(Event.new(Event.FLIRTED,
 			{"creature": listener.id, "by": speaker.id,
+				"speaker": TalkSnapshot.of(speaker), "listener": TalkSnapshot.of(listener),
 			"outcome": &"agreed", "line": line,
 			"censored": censored}))
 	return {"agreed": true, "events": events}
