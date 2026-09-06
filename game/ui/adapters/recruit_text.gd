@@ -29,9 +29,10 @@ static func describe(event: Event, state: GameState) -> String:
 			return "%s meets %s." % [_who(state, data.get("creature", 0)),
 					_who(state, data.get("recruit", 0))]
 		Event.RECRUIT_MISSED:
-			return "%s accidentally missed the meeting with %s due to multiple booking of recruitment sessions." % [
+			return "%s accidentally missed the meeting with %s due to multiple booking of recruitment sessions.\n\nGet it together, %s!" % [
 				_who(state, data.get("creature", 0)),
-				_who(state, data.get("recruit", 0))]
+				_who(state, data.get("recruit", 0)),
+				_who(state, data.get("creature", 0))]
 		Event.RECRUIT_DISCUSSED:
 			return _discussed(state, data)
 		Event.RECRUIT_PERSUADED:

@@ -98,6 +98,14 @@ static func _hold(state: GameState, rng: Rng, catalog: Catalog, index: int,
 		recruit.squad_id = 0
 		return _in_what_capacity(state, rng, catalog, index, recruiter,
 				recruit, events)
+	if String(result["outcome"]) == RecruitMeeting.MISSED:
+		return PendingIntent.new(
+				Intent.new(Intent.ACKNOWLEDGE_REPORT, [] as Array[Dictionary],
+						{"recruit_missed": true, "creature": recruiter.id,
+						"recruit": recruit.id}, false),
+				func(_answer: Variant) -> Variant:
+					return _next(state, rng, catalog, index - 1, [] as Array[Event]),
+				events)
 	return _next(state, rng, catalog, index - 1, events)
 
 

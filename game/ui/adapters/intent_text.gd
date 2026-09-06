@@ -75,6 +75,8 @@ static func question(intent: Intent, state: GameState) -> String:
 ## A line under the question, when the context has something worth saying.
 static func detail(intent: Intent, state: GameState) -> String:
 	var context := intent.context
+	if context.get("recruit_missed", false):
+		return RecruitText.describe(Event.new(Event.RECRUIT_MISSED, context), state)
 	var lines := PackedStringArray()
 	if context.has("target"):
 		lines.append("Talking to %s. Discuss politics to try recruiting them." % _who(state, int(context.target)))

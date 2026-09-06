@@ -169,3 +169,46 @@ func _a_location_in_another_city(state: GameState, base: Location) -> int:
 		if place.city != base.city:
 			return place.id
 	return -1
+
+
+func test_overbooking_pauses_for_a_visible_missed_appointment_notice() -> void:
+	var fixture := _fixture()
+	var session: Session = fixture.session
+	var state: GameState = fixture.state
+	var recruiter: Creature = fixture.recruiter
+	recruiter.name = "Alex"
+	for i in 12:
+		var meeting := _add_meeting(state, recruiter, 0, int(fixture.base.id))
+		state.creatures[meeting.recruit_id].name = "Candidate %d" % i
+	session.submit(RecruitQueue.advance(state, session.rng, _catalog))
+	var notices := 0
+	var steps := 0
+	while session.is_waiting() and steps < 30:
+		steps += 1
+		var intent := session.pending().intent
+		if intent.type == Intent.ACKNOWLEDGE_REPORT:
+			notices += 1
+			var detail := IntentText.detail(intent, state)
+			check(detail.contains("Alex accidentally missed the meeting with Candidate"), "the notice names both people")
+			check(detail.contains("multiple booking of recruitment sessions"), "the notice explains overbooking")
+			check(detail.contains("Get it together, Alex!"), "the original response is retained")
+			check(not intent.cancellable, "the report needs acknowledgement")
+			var tree := Engine.get_main_loop() as SceneTree
+			var viewport := SubViewport.new()
+			viewport.size = Vector2i(400, 800)
+			tree.root.add_child(viewport)
+			var screen := (load("res://ui/screens/decision_screen.tscn") as PackedScene).instantiate() as DecisionScreen
+			viewport.add_child(screen)
+			screen.setup(session)
+			await UiDriver.settle(tree)
+			check(screen._dialog._detail.get_parsed_text() == detail, "the report is actually rendered")
+			var draws := session.rng.draws
+			await UiDriver.tap(tree, screen._dialog._options.get_child(0) as Button)
+			tree.root.remove_child(viewport)
+			viewport.queue_free()
+			equal(session.rng.draws, draws, "acknowledging does not roll or spend a turn")
+		else:
+			equal(intent.type, Intent.CONFIRM_RECRUIT, "the next meeting remains reachable")
+			session.answer(RecruitMeeting.BREAK_IT_OFF)
+	check(notices > 0, "the overbooked evening produced a visible notice")
+	equal(state.recruit_meetings.size(), 0, "all meetings finish after acknowledging notices")

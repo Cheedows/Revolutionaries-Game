@@ -658,6 +658,9 @@ Acceptance checks for this work:
   old encounters when walking away, and return site visitors home before
   evening recruitment appointments. Cover swipes and two booked meetings
   through actual screen controls.
+- [x] Pause on overbooked recruitment appointments with the original missed
+  meeting notification, keeping it in the log and resuming the appointment
+  queue after acknowledgement without extra simulation rolls.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather
