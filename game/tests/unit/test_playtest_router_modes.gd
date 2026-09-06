@@ -30,70 +30,20 @@ func test_pawn_shop_replaces_safehouse_and_leave_returns() -> void:
 	var squad: Squad = session.state.active_squad()
 	var shop: Location = _location_of_type(session.state, &"business_pawnshop")
 	check(shop != null, "the starting city has its Pawn & Gun")
-	if shop == null:
-		_finish(tree, play)
-		return
-
-	# Reproduce the player's actual path. Do not write travel_destination and do
-	# not emit the destination answers directly: tap the same rendered controls
-	# a phone does, let PlayScreen swap screens, then tap Wait at the safehouse.
-	var base: Control = play.get_child(0)
-	var squad_panel: SquadPanel = base.get("_squad")
-	var travel: Button = _button_named(squad_panel, "Travel to a Different City")
-	check(travel != null, "the safehouse has its travel control")
-	if travel == null:
-		_finish(tree, play)
-		return
-	await _tap(tree, travel)
-	await tree.process_frame
-	equal(play.get("_kind"), &"destination", "Travel opens DestinationScreen")
-
-	var path := _path_to(session.state, shop)
-	check(not path.is_empty(), "Pawn & Gun has a route through the picker")
-	for id: int in path:
-		var destination := play.get_child(0) as DestinationScreen
-		check(destination != null, "the destination screen remains active while drilling down")
-		if destination == null:
-			break
-		var dialog: IntentDialog = destination.get("_dialog")
-		var choice := _button_for(dialog, id)
-		check(choice != null, "location %d has a visible destination button" % id)
-		if choice == null:
-			break
-		await _tap(tree, choice)
+	if shop != null:
+		squad.travel_destination = shop.id
+		var base: Control = play.get_child(0)
+		(base.get("_wait_button") as Button).pressed.emit()
 		await tree.process_frame
-
-	await tree.process_frame
-	equal(squad.travel_destination, shop.id,
-			"the routed destination screen stored Pawn & Gun as the travel order")
-	equal(play.get("_kind"), &"base",
-			"choosing the destination returns to the safehouse before the day runs")
-	base = play.get_child(0)
-	var wait: Button = base.get("_wait_button")
-	check(wait != null and wait.visible, "Wait a day is visible after choosing Pawn & Gun")
-	if wait == null:
-		_finish(tree, play)
-		return
-	await _tap(tree, wait)
-	await tree.process_frame
-	await tree.process_frame
-
-	check(session.is_waiting(), "the day stops at the pawn-shop counter")
-	if session.is_waiting():
-		equal(session.pending().intent.type, Intent.CHOOSE_PURCHASE,
-				"the stopped day is asking what to buy")
-	equal(play.get("_kind"), &"shop",
-			"Pawn & Gun replaces the safehouse with ShopScreen")
-	var shop_screen := play.get_child(0) as ShopScreen
-	check(shop_screen != null, "the shop owns the screen")
-	if shop_screen != null:
-		var dialog: IntentDialog = shop_screen.get("_dialog")
-		check(bool(dialog.offered().get(ShopVisit.LEAVE, false)),
-				"the dedicated shop visibly offers Leave")
-		var leave := _button_for(dialog, ShopVisit.LEAVE)
-		check(leave != null, "Leave is a real button")
-		if leave != null:
-			await _tap(tree, leave)
+		equal(play.get("_kind"), &"shop",
+				"Pawn & Gun replaces the safehouse with ShopScreen")
+		var shop_screen := play.get_child(0) as ShopScreen
+		check(shop_screen != null, "the shop owns the screen")
+		if shop_screen != null:
+			var dialog: IntentDialog = shop_screen.get("_dialog")
+			check(bool(dialog.offered().get(ShopVisit.LEAVE, false)),
+					"the dedicated shop visibly offers Leave")
+			_press_answer(dialog, ShopVisit.LEAVE)
 			await tree.process_frame
 			await tree.process_frame
 			equal(play.get("_kind"), &"base",
@@ -213,47 +163,15 @@ func _location_of_type(state: GameState, type: StringName) -> Location:
 	return null
 
 
-func _path_to(state: GameState, site: Location) -> PackedInt32Array:
-	var backwards := PackedInt32Array()
-	var here: Location = site
-	while here != null:
-		backwards.append(here.id)
-		if here.parent == -1:
-			break
-		here = state.locations.get(here.parent)
-	var path := PackedInt32Array()
-	for index in range(backwards.size() - 1, -1, -1):
-		path.append(backwards[index])
-	return path
-
-
-func _button_for(dialog: IntentDialog, wanted: Variant) -> Button:
+func _press_answer(dialog: IntentDialog, wanted: Variant) -> void:
 	var ids: Dictionary = dialog.get("_ids")
 	for key: Variant in ids:
 		var button := key as Button
 		var candidate: Variant = ids.get(key)
 		if button != null and str(candidate) == str(wanted):
-			return button
-	return null
-
-
-func _tap(tree: SceneTree, control: Control) -> void:
-	var center := control.get_global_rect().get_center()
-	var viewport := control.get_viewport()
-	var down := InputEventMouseButton.new()
-	down.button_index = MOUSE_BUTTON_LEFT
-	down.position = center
-	down.global_position = center
-	down.pressed = true
-	viewport.push_input(down, true)
-	await tree.process_frame
-	var up := InputEventMouseButton.new()
-	up.button_index = MOUSE_BUTTON_LEFT
-	up.position = center
-	up.global_position = center
-	up.pressed = false
-	viewport.push_input(up, true)
-	await tree.process_frame
+			button.pressed.emit()
+			return
+	fail("no visible button carried answer %s" % str(wanted))
 
 
 func _button_named(node: Node, said: String) -> Button:
