@@ -43,7 +43,6 @@ func _build() -> void:
 	add_child(_page)
 	_status = StatusBar.new()
 	_page.add_child(_status)
-	_page.add_child(Atoms.heading("Action"))
 	_fight = FightPanel.new()
 	_fight.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_page.add_child(_fight)
