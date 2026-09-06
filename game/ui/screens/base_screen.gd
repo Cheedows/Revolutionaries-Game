@@ -4,8 +4,14 @@ extends Control
 ## renders the events that come back.
 
 signal finished
+signal newspaper_ready(events: Array[Event])
 
 const AUTO_ADVANCE_SECONDS := 0.35
+
+## True when this screen lives under PlayScreen. Standalone tests and previews
+## retain the old all-purpose fallback; the real game promotes focused modes to
+## their own screens.
+var routed := false
 
 var _session: Session
 var _status: StatusBar
@@ -146,8 +152,6 @@ func _connect() -> void:
 
 
 func _advance_one_day() -> void:
-	# A stopped day already has something to answer. On a phone that question
-	# may be above the current scroll position, so a second press reveals it.
 	if _session.is_waiting():
 		_show_pending()
 		return
@@ -156,10 +160,24 @@ func _advance_one_day() -> void:
 
 
 func _settle() -> void:
-	var morning := BaseOrders.drain(_session, _log)
+	var morning: Array[Event] = BaseOrders.drain(_session, _log)
 	if not morning.is_empty():
 		_news = morning
 	_refresh()
+
+	var over := _session.state.endgame_state
+	if over == &"won" or over == &"lost":
+		_end(over)
+		return
+
+	# Under PlayScreen the paper is a real screen transition. When this screen
+	# is instantiated alone it keeps the old embedded-paper fallback so widget
+	# tests and editor previews remain useful.
+	if routed and BaseOrders.worth_reading(morning):
+		_dialog.dismiss()
+		_stop_running()
+		newspaper_ready.emit(morning)
+		return
 
 	if _session.is_waiting():
 		_show_pending()
@@ -169,10 +187,6 @@ func _settle() -> void:
 		_open_panel(PanelStack.PAPER)
 	else:
 		_dialog.dismiss()
-
-	var over := _session.state.endgame_state
-	if over == &"won" or over == &"lost":
-		_end(over)
 
 
 func _show_pending() -> void:
@@ -215,6 +229,9 @@ func _on_answer(id: Variant) -> void:
 
 
 func _open_panel(which: StringName, subject: Variant = null) -> void:
+	if routed and which == PanelStack.PAPER and not _news.is_empty():
+		newspaper_ready.emit(_news)
+		return
 	BaseFront.panel(_parts, _session, which,
 			_news if which == PanelStack.PAPER else subject, _narrow)
 	_refresh()
