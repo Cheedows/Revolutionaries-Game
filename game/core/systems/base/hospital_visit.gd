@@ -15,7 +15,7 @@ static func open(state: GameState, squad: Squad, site: Location) -> Variant:
 		if member.clinic > 0 or Treatment.clinic_time(member) <= 0:
 			continue
 		options.append({"id": member.id, "label": member.name,
-				"note": "%d days" % Treatment.clinic_time(member),
+				"note": "%d months" % Treatment.clinic_time(member),
 				"enabled": true})
 	if options.is_empty():
 		return [] as Array[Event]

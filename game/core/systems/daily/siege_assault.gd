@@ -121,7 +121,8 @@ static func engage(state: GameState, rng: Rng, site: Location, siege: Siege,
 	# The traps the compound laid, the units massing at the front of the map,
 	# and the tank if the police have escalated far enough to bring one.
 	SiegeGround.prepare(state, rng, site, siege)
-	return events
+	var visit: PendingIntent = SiteVisit.run(state, rng, squad, catalog)
+	return PendingIntent.new(visit.intent, visit.resume, events + visit.events)
 
 
 ## What both answers do before anybody swings: the warehouse changes hands,

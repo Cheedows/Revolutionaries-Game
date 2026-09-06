@@ -158,7 +158,7 @@ static func _arrive(state: GameState, rng: Rng, catalog: Catalog,
 	if site.type == &"hospital_clinic" or site.type == &"hospital_university":
 		_stand(state, squad, site)
 		var admitting: Variant = HospitalVisit.open(state, squad, site)
-		return _joined(events, admitting)
+		return _after_shop(state, squad, admitting, events)
 
 	# Somewhere the squad could move into. The warehouse it takes outright;
 	# anywhere else it owns and is not already living in, it is asked about.
@@ -193,6 +193,7 @@ static func _return_squad_home(state: GameState, squad: Squad) -> void:
 	if members.is_empty():
 		return
 	var home := members[0].base
+	squad.location = home
 	for member: Creature in members:
 		member.location = home
 

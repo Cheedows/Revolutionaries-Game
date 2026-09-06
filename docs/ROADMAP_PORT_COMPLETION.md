@@ -10,10 +10,10 @@ The prior 100% completion table is withdrawn. Static accounting remains useful,
 but confirmed runtime failures and missing UI flows require direct verification.
 The audit document records evidence; this checklist tracks repairs.
 
-- [ ] A1: Siege defense continuation
-- [ ] A2: Single enemy retaliation per Attack
-- [ ] A3: Body progression on ordinary site turns
-- [ ] A4: Hospital return and duration units
+- [x] A1: Siege defense continuation
+- [x] A2: Single enemy retaliation per Attack
+- [x] A3: Body progression on movement, Wait, pickup and reload (conversation/door turn semantics still require a separate review)
+- [x] A4: Hospital return and duration units
 - [ ] A5: Multiple squad management
 - [ ] A6: Bulk activities and roster sorting
 - [ ] A7: In-site equipment changes

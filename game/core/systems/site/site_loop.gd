@@ -159,10 +159,15 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 	var moved := from != Vector3i(state.site.x, state.site.y, state.site.z)
 	if state.site.encounter_ids.is_empty():
 		state.site.encounter_timer = 0
-	else:
+	elif choice != FIGHT:
 		state.site.encounter_timer += 1
-	var tail := events + _under_siege(state, rng, moved, catalog) \
-			+ _react(state, rng, squad, catalog)
+	var tail := events + _under_siege(state, rng, moved, catalog)
+	# Attack owns its retaliation and body tick. Reload has no enemy reaction.
+	if choice != FIGHT and choice != RELOAD:
+		tail.append_array(_react(state, rng, squad, catalog))
+	if moved or choice in [WAIT, TAKE, RELOAD]:
+		tail.append_array(CombatAdvance.everyone(state, rng, squad,
+				{&"mode": &"site", &"catalog": catalog, &"squad": squad}))
 	# The way out is only taken by walking onto it: the squad comes in through
 	# the same square and standing still on it does not end the visit.
 	if moved and SiteMovement.on_the_way_out(state):
