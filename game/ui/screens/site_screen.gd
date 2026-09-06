@@ -10,6 +10,7 @@ var _map: SiteMapView
 var _log: LogView
 var _dialog: IntentDialog
 var _people: SitePeople
+var _inventory: SiteInventory
 
 
 func setup(session: Session) -> void:
@@ -32,13 +33,20 @@ func _build() -> void:
 	_people.talk_wanted.connect(_on_talk_to)
 	_page.add_child(_people)
 	_log = LogView.new()
-	_log.custom_minimum_size = Vector2(0, 48)
+	_log.custom_minimum_size = Vector2(0, 120)
+	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_page.add_child(_log)
-	_dialog = IntentDialog.new()
+	_dialog = SiteActionDialog.new()
 	_dialog.pin(true)
 	_dialog.chosen.connect(_on_answer)
 	_dialog.declined.connect(func() -> void: _on_answer(null))
 	_page.add_child(_dialog)
+	_inventory = SiteInventory.new()
+	_inventory.hide()
+	_inventory.closed.connect(func() -> void:
+		_inventory.hide()
+		_page.show())
+	add_child(_inventory)
 
 
 func _settle() -> void:
@@ -60,7 +68,9 @@ func _refresh() -> void:
 	_map.visible = moving
 	_people.can_talk = moving
 	_people.refresh(_session.state)
-	_log.visible = not _log.snapshot().is_empty()
+	_log.show()
+	_log.custom_minimum_size.y = 120 if moving else 72
+	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL if moving else Control.SIZE_FILL
 	if _session.is_waiting():
 		var intent := _session.pending().intent
 		if moving:
@@ -87,6 +97,11 @@ func _on_talk_to(id: int) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _inventory != null and _inventory.visible:
+		if event.is_action_pressed(&"ui_cancel"):
+			_inventory.closed.emit()
+			get_viewport().set_input_as_handled()
+		return
 	if _session == null or not _session.is_waiting() or _session.pending().intent.type != Intent.CHOOSE_SITE_MOVE:
 		return
 	if not event.is_pressed() or event.is_echo():
@@ -99,6 +114,10 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_answer(id: Variant) -> void:
+	if id is StringName and id == SiteActionDialog.INVENTORY:
+		_inventory.show_inventory(_session)
+		_page.hide()
+		return
 	if not _session.is_waiting():
 		return
 	_session.answer(id)

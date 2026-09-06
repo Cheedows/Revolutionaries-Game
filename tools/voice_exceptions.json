@@ -273,5 +273,10 @@
   "Available: $%d": "the original prints squad funds beside its shop menu; the focused shop labels the same balance",
   "@ You  D Door  W Wall  E Exit": "the clickable tile map needs a persistent legend for its markers",
   "Talk / Recruit": "the original starts its talk menu from an encounter slot and recruiting follows through political persuasion; the encounter row makes the action explicit",
-  "No one nearby. Move or wait to meet people.": "the original leaves its encounter rows empty; the phone view explains this state and the existing movement/wait actions"
+  "No one nearby. Move or wait to meet people.": "the original leaves its encounter rows empty; the phone view explains this state and the existing movement/wait actions",
+  "Taken: %s.": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead.",
+  "The squad finds nothing to take.": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead.",
+  "Squad inventory": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead.",
+  "Squad haul": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead.",
+  "Nothing carried in the squad haul.": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead."
 }

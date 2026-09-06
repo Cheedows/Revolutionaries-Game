@@ -38,6 +38,7 @@ static func pick_up(state: GameState, rng: Rng, squad: Squad,
 		catalog: Catalog) -> Array[Event]:
 	var events: Array[Event] = []
 	var site := state.site
+	var before := squad.haul.size()
 	var marked := site.map.get_flag(site.x, site.y, site.z) \
 			& int(Tables.SITE_BLOCKS[&"loot"]) != 0
 	if not marked and site.ground_loot.is_empty():
@@ -70,7 +71,10 @@ static func pick_up(state: GameState, rng: Rng, squad: Squad,
 			# The whole squad's theft is booked against whoever is in the first
 			# slot, which the original picks with a variable it never sets.
 			events.append(CrimeRules.charge(state, members[0], &"theft"))
-		events.append(Event.new(Event.LOOT_TAKEN, {"square": marked}))
+	var items: Array[Dictionary] = []
+	for item: Item in squad.haul.slice(before):
+		items.append({"type": item.type, "count": item.count})
+	events.append(Event.new(Event.LOOT_TAKEN, {"square": marked, "items": items}))
 	return events
 
 

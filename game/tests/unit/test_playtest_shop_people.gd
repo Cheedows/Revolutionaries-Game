@@ -98,3 +98,36 @@ func _phone(tree: SceneTree) -> Dictionary:
 func _drop(tree: SceneTree, viewport: SubViewport) -> void:
 	tree.root.remove_child(viewport)
 	viewport.queue_free()
+
+
+func test_pickup_log_and_inventory_preserve_the_pending_turn() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var held := _phone(tree)
+	var play: PlayScreen = held.play
+	var session: Session = play.get("_session")
+	await UiDriver.settle(tree)
+	await Walk.press(tree, play, "site")
+	var screen := play.get_child(0) as SiteScreen
+	var item := Loot.new(&"LOOT_CELLPHONE")
+	item.count = 3
+	session.state.site.ground_loot.append(item)
+	for option: Dictionary in session.pending().intent.options:
+		if option.id == SiteLoop.TAKE:
+			option.enabled = true
+	screen._refresh()
+	await UiDriver.tap(tree, Walk.answer(screen._dialog, SiteLoop.TAKE))
+	check(str(screen._log.snapshot()).contains("Cellphone x3"), "pickup names the item and quantity in the log")
+	var waiting := session.pending()
+	var random := session.rng.export_state()
+	await UiDriver.tap(tree, Walk.answer(screen._dialog, SiteActionDialog.INVENTORY))
+	check(screen._inventory.visible, "inventory is reachable during exploration")
+	var text := ""
+	for label: Label in _labels(screen._inventory):
+		text += label.text
+	check(text.contains(DossierText.item_title(item, session.catalog)), "inventory lists the actual haul")
+	await UiDriver.tap(tree, UiDriver.button(screen._inventory, "Back"))
+	check(screen._page.visible, "Back restores the exploration page")
+	check(session.pending() == waiting, "viewing inventory preserves the exact pending turn")
+	equal(session.rng.export_state(), random, "viewing inventory consumes no simulation rolls")
+	_drop(tree, held.viewport)
+	await UiDriver.settle(tree)

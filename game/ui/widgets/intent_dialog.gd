@@ -23,7 +23,7 @@ const SHORTCUTS := 9
 
 var _title: Label
 var _detail: Label
-var _options: VBoxContainer
+var _options: Container
 var _scroll: ScrollContainer
 var _bar: ActionBar
 var _refuse: Button

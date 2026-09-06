@@ -29,12 +29,13 @@ static var _made := {}
 ## rasterising the same nine by nine grid on every one of those is work nobody
 ## asked for.
 static func of(name: StringName, ink: Color = Palette.TEXT) -> Texture2D:
-	if not IconArt.ROWS.has(name):
+	var rows: Dictionary = SiteIconArt.ROWS if SiteIconArt.ROWS.has(name) else IconArt.ROWS
+	if not rows.has(name):
 		return null
 	var key := "%s:%s" % [name, ink.to_html()]
 	if not _made.has(key):
 		_made[key] = PixelArt.texture(PixelArt.enlarged(
-				PixelArt.from_rows(IconArt.ROWS[name], ink), SCALE))
+				PixelArt.from_rows(rows[name], ink), SCALE))
 	return _made[key]
 
 

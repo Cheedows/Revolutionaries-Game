@@ -144,6 +144,9 @@ jobs:
           godot --headless --path game --export-debug Android \
             "$PWD/build/revolutionaries-debug.apk"
 
+      - name: Check shops and encounters in the exported content
+        run: python3 tools/android/check_content.py build/revolutionaries-debug.apk
+
       - name: Check that it comes up the right way round
         # Not a duplicate of the test that reads the project setting: that one
         # passed for months while every APK went out locked landscape, because

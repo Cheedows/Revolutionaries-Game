@@ -67,7 +67,9 @@ func _loot_matches(sample: Dictionary) -> bool:
 	var events := SiteLoot.pick_up(state, rng, squad, _catalog)
 	var took := false
 	for event: Event in events:
-		if event.type == Event.LOOT_TAKEN:
+		# The original flag reports a searched square; floor pickups now also
+		# emit a presentation receipt, without changing the simulation.
+		if event.type == Event.LOOT_TAKEN and event.data.get("square", false):
 			took = true
 
 	if rng.draws != int(sample["draws"]):

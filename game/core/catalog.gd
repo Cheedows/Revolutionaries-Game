@@ -54,10 +54,9 @@ func idnames(kind: StringName) -> Array:
 
 func _load_kind(directory: String) -> Dictionary:
 	var entries := {}
-	var dir := DirAccess.open(directory)
-	if dir == null:
-		return entries
-	var files := dir.get_files()
+	# ResourceLoader resolves exported .tres.remap files to their logical
+	# resource names. DirAccess sees only remaps in an APK and loads nothing.
+	var files := ResourceLoader.list_directory(directory)
 	files.sort()
 	for file in files:
 		if not file.ends_with(".tres"):

@@ -88,7 +88,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.TELLER_ROBBED:
 			return _teller(state, data)
 		Event.LOOT_TAKEN:
-			return "The squad takes what is here."
+			return _taken(data)
 		Event.LOOT_FENCED:
 			return "Sold: %s, for $%d." % [
 					String(data.get("kind", &"something")).trim_prefix("LOOT_")
@@ -151,3 +151,12 @@ static func _who(state: GameState, data: Dictionary) -> String:
 	var creature: Creature = state.creatures.get(data.get("creature", 0))
 	return creature.name if creature != null and creature.name != "" \
 			else "Someone"
+
+
+static func _taken(data: Dictionary) -> String:
+	var names: Array[String] = []
+	for item: Dictionary in data.get("items", []):
+		var name := String(item.type).trim_prefix("WEAPON_").trim_prefix("ARMOR_") \
+				.trim_prefix("CLIP_").trim_prefix("LOOT_").replace("_", " ").capitalize()
+		names.append("%s x%d" % [name, int(item.get("count", 1))])
+	return "Taken: %s." % ", ".join(names) if not names.is_empty() else "The squad finds nothing to take."

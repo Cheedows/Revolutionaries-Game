@@ -5,6 +5,9 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"inventory":
+			await UiDriver.tap(tree, answer(play.get_child(0)._dialog, SiteActionDialog.INVENTORY))
+			return
 		"people":
 			for i in 8:
 				if not session.state.site.encounter_ids.is_empty():
@@ -98,7 +101,7 @@ static func _visit(tree: SceneTree, play: PlayScreen, kind: String) -> void:
 static func answer(dialog: IntentDialog, id: Variant) -> Button:
 	var ids: Dictionary = dialog.get("_ids")
 	for button: Button in ids:
-		if ids[button] == id:
+		if DialogKeys.same(ids[button], id):
 			return button
 	return null
 

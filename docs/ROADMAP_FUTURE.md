@@ -642,6 +642,11 @@ Acceptance checks for this work:
   return between shop departments, keep ordinary encounters on the site screen,
   list actual people with Talk/Recruit actions, and use highlighted adjacent tiles
   for movement. Conversations retain the site continuation through nested choices.
+- [x] Fix exported resource discovery so Android loads shop stock, people and
+  maps. Validate all shops and an apartment encounter against APK assets before
+  publishing. Compact site actions with ASCII-grid pixel icons, retain a larger
+  log with item quantities, and expose carried equipment and haul without taking
+  a turn.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather
