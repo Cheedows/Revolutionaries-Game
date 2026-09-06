@@ -37,6 +37,12 @@ static func _next(state: GameState, rng: Rng, catalog: Catalog, index: int,
 			index -= 1
 			continue
 
+		if not RecruitMeeting.attend(recruiter, rng):
+			var missed := Event.new(Event.RECRUIT_MISSED,
+					{"creature": recruiter.id, "recruit": recruit.id})
+			return _resolved(state, rng, catalog, index, recruiter, recruit,
+					{"outcome": RecruitMeeting.MISSED, "events": [missed] as Array[Event]}, events)
+
 		var profession := catalog.get_entry(&"creature", recruit.type) as CreatureType
 		var can_offer := Recruiting.subordinates_left(state, recruiter) > 0 \
 				and Recruiting.eagerness(recruit, meeting.eagerness) \
@@ -83,7 +89,13 @@ static func _hold(state: GameState, rng: Rng, catalog: Catalog, index: int,
 		meeting: RecruitState, recruiter: Creature, recruit: Creature,
 		approach: StringName, events: Array[Event]) -> Variant:
 	var result := RecruitMeeting.hold(state, rng, recruiter, recruit, meeting,
-			approach, catalog)
+			approach, catalog, true)
+	return _resolved(state, rng, catalog, index, recruiter, recruit, result, events)
+
+
+static func _resolved(state: GameState, rng: Rng, catalog: Catalog, index: int,
+		recruiter: Creature, recruit: Creature, result: Dictionary,
+		events: Array[Event]) -> Variant:
 	events.append_array(result["events"] as Array[Event])
 
 	# Only a meeting that is going to happen again stays on the list.

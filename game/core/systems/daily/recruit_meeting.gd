@@ -25,14 +25,10 @@ const MISSED := &"missed"
 ## many sessions there have been, and how eager the recruit is.
 static func hold(state: GameState, rng: Rng, recruiter: Creature,
 		recruit: Creature, meeting: RecruitState, approach: StringName,
-		catalog: Catalog) -> Dictionary:
+		catalog: Catalog, attendance_checked: bool = false) -> Dictionary:
 	var events: Array[Event] = []
 
-	# Somebody who has booked too many sessions in one day starts forgetting
-	# them, and the more they have booked the likelier that is.
-	recruiter.meetings += 1
-	if recruiter.meetings > Recruiting.MEETINGS_BEFORE_MUDDLE \
-			and rng.below(recruiter.meetings - Recruiting.MEETINGS_BEFORE_MUDDLE) != 0:
+	if not attendance_checked and not attend(recruiter, rng):
 		events.append(Event.new(Event.RECRUIT_MISSED,
 				{"creature": recruiter.id, "recruit": recruit.id}))
 		return {"outcome": MISSED, "events": events}
@@ -153,3 +149,12 @@ static func _standing(recruit: Creature) -> int:
 		if recruit.juice >= int(tier[0]):
 			return int(int(tier[1]) + float(tier[2]) * wisdom)
 	return 0
+
+
+## Original post-increment: six meetings are guaranteed; the seventh rolls.
+## The queue checks before presenting choices; direct callers use hold().
+static func attend(recruiter: Creature, rng: Rng) -> bool:
+	var previous := recruiter.meetings
+	recruiter.meetings += 1
+	return previous <= Recruiting.MEETINGS_BEFORE_MUDDLE or \
+			rng.below(recruiter.meetings - Recruiting.MEETINGS_BEFORE_MUDDLE) == 0

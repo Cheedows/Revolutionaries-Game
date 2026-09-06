@@ -157,7 +157,7 @@ func test_the_days_bookings_reset_each_evening() -> void:
 	_add_meeting(state, recruiter, 0, int(fixture["base"].id))
 
 	session.submit(RecruitQueue.advance(state, session.rng, _catalog))
-	equal(recruiter.meetings, 0, "yesterday's bookings are cleared first")
+	equal(recruiter.meetings, 1, "today's first attendance is checked after clearing yesterday")
 	session.answer(RecruitMeeting.JUST_TALKING)
 	equal(recruiter.meetings, 1, "and today's are counted from there")
 
@@ -202,13 +202,48 @@ func test_overbooking_pauses_for_a_visible_missed_appointment_notice() -> void:
 			screen.setup(session)
 			await UiDriver.settle(tree)
 			check(screen._dialog._detail.get_parsed_text() == detail, "the report is actually rendered")
-			var draws := session.rng.draws
+			var funds := state.ledger.funds
 			await UiDriver.tap(tree, screen._dialog._options.get_child(0) as Button)
 			tree.root.remove_child(viewport)
 			viewport.queue_free()
-			equal(session.rng.draws, draws, "acknowledging does not roll or spend a turn")
+			equal(state.ledger.funds, funds, "acknowledging never purchases an approach")
 		else:
 			equal(intent.type, Intent.CONFIRM_RECRUIT, "the next meeting remains reachable")
 			session.answer(RecruitMeeting.BREAK_IT_OFF)
 	check(notices > 0, "the overbooked evening produced a visible notice")
 	equal(state.recruit_meetings.size(), 0, "all meetings finish after acknowledging notices")
+
+
+func test_six_meetings_need_no_attendance_roll_and_seventh_uses_two() -> void:
+	var recruiter := Creature.new()
+	var rng := Rng.new(4242)
+	rng.record_bounds = true
+	for i in 6:
+		check(RecruitMeeting.attend(recruiter, rng), "first six meetings are guaranteed")
+	equal(rng.draws, 0, "original post-increment does not roll for the sixth")
+	RecruitMeeting.attend(recruiter, rng)
+	equal(rng.bounds, PackedInt32Array([2]), "seventh meeting rolls out of two")
+
+func test_missed_candidates_never_receive_approach_choices() -> void:
+	var fixture := _fixture()
+	var session: Session = fixture.session
+	var recruiter: Creature = fixture.recruiter
+	for i in 12:
+		_add_meeting(session.state, recruiter, 0, int(fixture.base.id))
+	var offered: Array[int] = []
+	var missed := 0
+	session.submit(RecruitQueue.advance(session.state, session.rng, _catalog))
+	for i in 30:
+		if not session.is_waiting():
+			break
+		var intent := session.pending().intent
+		var id := int(intent.context.get("recruit", 0))
+		if intent.type == Intent.ACKNOWLEDGE_REPORT:
+			missed += 1
+			check(not offered.has(id), "missed candidate was never offered a conversation")
+			session.answer(null)
+		else:
+			offered.append(id)
+			session.answer(RecruitMeeting.BREAK_IT_OFF)
+	check(missed > 0, "fixture exercises overbooking")
+	check(not session.is_waiting(), "all notices and meetings finish")
