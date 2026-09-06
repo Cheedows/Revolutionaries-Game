@@ -5,6 +5,7 @@ extends PanelContainer
 signal talk_wanted(id: int)
 var _list: VBoxContainer
 var can_talk := false
+var in_combat := false
 
 
 func refresh(state: GameState) -> void:
@@ -31,6 +32,8 @@ func refresh(state: GameState) -> void:
 			note += " (receptive)"
 		if not SiteConversation.available(state, person):
 			note = "Won't talk to you"
+		if in_combat:
+			note = FightText.line(person, state).trim_prefix(person.name + ", ")
 		var row := OptionRow.new(person.name, note, 0, Metrics.touch(self))
 		row.disabled = not can_talk or not SiteConversation.available(state, person)
 		NameColours.paint_person(row, person)

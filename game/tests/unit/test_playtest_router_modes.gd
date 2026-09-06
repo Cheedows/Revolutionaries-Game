@@ -188,3 +188,40 @@ func _finish(tree: SceneTree, play: Control) -> void:
 	if play.get_parent() != null:
 		tree.root.remove_child(play)
 	play.queue_free()
+
+
+func test_site_combat_keeps_map_actions_and_log() -> void:
+	var pair := _play(6161)
+	var play: PlayScreen = pair.play
+	var tree: SceneTree = pair.tree
+	var session: Session = pair.session
+	var walk := load("res://../tools/shots/play_walk.gd") as GDScript
+	await walk.press(tree, play, "site")
+	var screen := play.get_child(0) as SiteScreen
+	check(screen != null, "arrival has the shared site screen")
+	if screen != null:
+		var log_view: LogView = screen._log
+		log_view.append("Before the fight")
+		var enemy := session.state.add_creature(Creature.new())
+		enemy.name = "Guard"
+		enemy.alignment = &"conservative"
+		session.state.site.encounter_ids.append(enemy.id)
+		session.state.site.alarm = true
+		await UiDriver.tap(tree, walk.answer(screen._dialog, SiteLoop.RELOAD))
+		check(play.get_child(0) == screen, "an alarm does not replace the site")
+		check(screen._map.visible, "the map remains visible in combat")
+		check(screen._people.in_combat, "the same people show combat condition")
+		var attack: Button = walk.answer(screen._dialog, SiteLoop.FIGHT)
+		check(attack != null and not attack.disabled, "the site grid still offers Attack")
+		if attack != null and not attack.disabled:
+			await UiDriver.tap(tree, attack)
+		check(play.get_child(0) == screen, "an actual combat round retains the screen")
+		check(screen._log == log_view, "combat retains the same log node")
+		check(str(log_view.snapshot()).contains("Before the fight"), "combat preserves previous log entries")
+		session.state.site.alarm = false
+		session.state.site.encounter_ids.clear()
+		screen._refresh()
+		await UiDriver.settle(tree)
+		check(play.get_child(0) == screen, "clearing the encounter retains the screen")
+		check(screen._map.visible, "exploration retains the same map")
+	_finish(tree, play)

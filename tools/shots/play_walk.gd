@@ -47,6 +47,12 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 			session.state.endgame_state = &"won"
 			await UiDriver.settle(tree)
 			return
+		"site_fight":
+			await press(tree, play, "people")
+			session.state.site.alarm = true
+			await UiDriver.tap(tree, answer((play.get_child(0) as SiteScreen)._dialog, SiteLoop.RELOAD))
+			await UiDriver.settle(tree)
+			return
 		"combat":
 			var enemy := session.state.add_creature(Creature.new())
 			enemy.name = "An armed guard"

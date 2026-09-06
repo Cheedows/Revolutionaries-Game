@@ -78,12 +78,16 @@ func _refresh() -> void:
 	_map.refresh(_session.state)
 	var moving := _session.is_waiting() and _session.pending().intent.type == Intent.CHOOSE_SITE_MOVE
 	_map.allow_steps(moving)
-	_map.visible = moving
+	var fighting := _session.state.site.alarm or (_session.is_waiting() and
+			_session.pending().intent.type in [Intent.CHOOSE_ATTACK_TARGET,
+			Intent.CHOOSE_ENCOUNTER_RESPONSE, Intent.CONFIRM_RETREAT])
+	_map.visible = moving or fighting
+	_people.in_combat = fighting
 	_people.can_talk = moving
 	_people.refresh(_session.state)
 	_log.show()
-	_log.custom_minimum_size.y = 120 if moving else 72
-	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL if moving else Control.SIZE_FILL
+	_log.custom_minimum_size.y = 120 if moving or fighting else 72
+	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL if moving or fighting else Control.SIZE_FILL
 	if _session.is_waiting():
 		var intent := _session.pending().intent
 		if moving:

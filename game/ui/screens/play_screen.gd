@@ -134,12 +134,10 @@ func _kind_for() -> StringName:
 			return &"shop"
 		if _hospital_waiting():
 			return &"hospital"
-		if _combat_active():
-			return &"combat"
-	if _combat_active():
-		return &"combat"
 	if _session.state.mode == &"site" and _session.state.site.location != -1:
 		return &"site"
+	if _combat_active():
+		return &"combat"
 	if _session.is_waiting():
 		return &"decision"
 	if not _pages.is_empty():

@@ -651,6 +651,9 @@ Acceptance checks for this work:
   their existing RNG rolls, show readable exchanges and coloured names in log
   history, and enforce original refusal rules in the encounter list. Audit name
   colours across choices, roster, squad, inventory and management views.
+- [x] Keep site combat on the exploration page, preserving the map, compact
+  actions and log through combat rounds; show encounter health and equipment
+  in the same people list.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather
