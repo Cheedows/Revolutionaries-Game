@@ -2,8 +2,8 @@ extends Control
 ## The entry point, and the only thing that knows what follows what.
 ##
 ## Title, then either the new-game questions or a game read off disk, then the
-## safehouse. Each screen only announces what happened; none of them knows
-## about any of the others, so any of them can be opened on its own.
+## persistent play router. Each screen only announces what happened; none of
+## them knows about any of the others, so any of them can be opened on its own.
 
 
 func _ready() -> void:
@@ -28,7 +28,7 @@ func _new_game() -> void:
 
 
 func _play(session: Session) -> void:
-	var screen: Control = _swap("res://ui/screens/base_screen.tscn")
+	var screen: Control = _swap("res://ui/screens/play_screen.tscn")
 	screen.setup(session)
 	screen.finished.connect(_title)
 
