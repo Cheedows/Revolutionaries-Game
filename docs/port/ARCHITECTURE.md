@@ -86,6 +86,8 @@ Six rules, each of which exists because breaking it shipped:
     with keyboard equivalents. People, conversation and other available actions
     remain visible beside the map. Shopping shows prices and affordability, and
     disabled custom rows use the same disabled text colour as ordinary buttons.
+    Exploration uses a compact action grid and a persistent, expanding log;
+    squad inventory opens locally without answering or losing the pending turn.
 
 The components, in the order a screen reaches for them: `Sheet` (what is in
 front), `Card` (a panel: head, notice, scrolling body, action bar),
