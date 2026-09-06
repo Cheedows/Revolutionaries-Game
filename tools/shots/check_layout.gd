@@ -144,7 +144,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 		var last := "base" if walk["press"].is_empty() else str(walk["press"].back())
 		var expected: String = {"pawn": "shop", "travel": "destination",
 				"department": "shop", "goods": "shop", "people": "site", "conversation": "site", "response": "site", "inventory": "site", "site_fight": "site",
-				"paper": "newspaper", "vehicles": "squad"}.get(last, last)
+				"paper": "newspaper", "vehicles": "squad", "trial": "decision", "appointment": "decision"}.get(last, last)
 		if str(screen.get("_kind")) != expected:
 			_wrong.append("%s: expected %s screen, got %s" % [walk, expected, screen.get("_kind")])
 	var where := "%s%s at %s" % [which,
