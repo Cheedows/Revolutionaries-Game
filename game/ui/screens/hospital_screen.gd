@@ -45,7 +45,6 @@ func _build() -> void:
 	_page.add_child(_status)
 	_heading = Atoms.heading("Hospital")
 	_page.add_child(_heading)
-	_page.add_child(Atoms.dim("Choose who should stay for treatment."))
 	_log = LogView.new()
 	_log.custom_minimum_size = Vector2(0, 96)
 	_page.add_child(_log)
