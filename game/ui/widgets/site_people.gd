@@ -31,5 +31,5 @@ func refresh(state: GameState, can_talk: bool) -> void:
 		_list.add_child(row)
 	if _list.get_child_count() == 0:
 		_list.add_child(Atoms.wrapped(Atoms.dim("No one nearby. Move or wait to meet people.")))
-	custom_minimum_size.y = 100
+	custom_minimum_size.y = 116
 	PressFeel.teach(self)

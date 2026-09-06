@@ -59,6 +59,8 @@ const REFUSALS := {
 
 ## The question itself.
 static func question(intent: Intent, state: GameState) -> String:
+	if intent.type == Intent.CHOOSE_DIALOGUE and intent.context.has("target"):
+		return "Conversation"
 	if intent.context.get("select_listener", false):
 		return "Who will they talk to?"
 	var asked := String(QUESTIONS.get(intent.type,

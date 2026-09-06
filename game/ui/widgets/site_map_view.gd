@@ -107,8 +107,8 @@ func _build() -> void:
 		var button := Atoms.quiet("")
 		var outline := StyleBoxFlat.new()
 		outline.draw_center = false
-		outline.border_color = Palette.ACCENT
-		outline.set_border_width_all(2)
+		outline.border_color = Palette.TEXT
+		outline.set_border_width_all(3)
 		button.add_theme_stylebox_override(&"normal", outline)
 		button.add_theme_stylebox_override(&"hover", outline)
 		button.add_theme_stylebox_override(&"pressed", outline)
@@ -160,8 +160,6 @@ func _draw_grid() -> void:
 			_tile - 1, _tile - 1)
 	_grid.draw_rect(middle, Palette.LIBERAL)
 	_mark(middle, "@")
-	if not _state.site.encounter_ids.is_empty():
-		_grid.draw_rect(middle.grow(-_tile / 4.0), Palette.CONSERVATIVE)
 
 
 func _mark(at: Rect2, symbol: String) -> void:

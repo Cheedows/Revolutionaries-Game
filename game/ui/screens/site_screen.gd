@@ -25,7 +25,7 @@ func _build() -> void:
 		return
 	frame()
 	_map = SiteMapView.new()
-	_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_map.size_flags_vertical = Control.SIZE_FILL
 	_map.step_wanted.connect(_on_step)
 	_page.add_child(_map)
 	_people = SitePeople.new()
@@ -59,6 +59,7 @@ func _refresh() -> void:
 	_map.allow_steps(moving)
 	_map.visible = moving
 	_people.refresh(_session.state, moving)
+	_log.visible = not _log.snapshot().is_empty()
 	if _session.is_waiting():
 		var intent := _session.pending().intent
 		if moving:

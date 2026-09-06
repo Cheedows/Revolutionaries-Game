@@ -71,6 +71,7 @@ func _refresh() -> void:
 	var site: Location = _session.state.locations.get(location_id)
 	_heading.text = site.name if site != null else "Shop"
 	_where.text = "Available: $%d" % _session.state.ledger.funds
+	_log.visible = not _log.snapshot().is_empty()
 	_dialog.ask(intent, _session.state)
 	adapt()
 
