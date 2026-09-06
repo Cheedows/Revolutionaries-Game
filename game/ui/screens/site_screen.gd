@@ -48,7 +48,10 @@ func _build() -> void:
 	_inventory.hide()
 	_inventory.closed.connect(func() -> void:
 		_inventory.hide()
-		_page.show())
+		_page.show()
+		if _session.is_waiting() and _session.pending().intent.type == Intent.EQUIP_SQUAD:
+			_on_answer(null))
+	_inventory.equipment_wanted.connect(func() -> void: _on_answer(SiteLoop.EQUIP))
 	add_child(_inventory)
 	_transcript = SiteTranscript.new()
 	_transcript.hide()
@@ -74,6 +77,10 @@ func _settle() -> void:
 
 
 func _refresh() -> void:
+	if _session.is_waiting() and _session.pending().intent.type == Intent.EQUIP_SQUAD:
+		_inventory.show_inventory(_session)
+		_page.hide()
+		return
 	_status.refresh(_session.state)
 	_map.refresh(_session.state)
 	var moving := _session.is_waiting() and _session.pending().intent.type == Intent.CHOOSE_SITE_MOVE

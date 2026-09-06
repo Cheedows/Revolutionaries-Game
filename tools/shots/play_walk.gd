@@ -5,6 +5,20 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"field_equipment":
+			var inventory: SiteInventory = play.get_child(0)._inventory
+			var equip := UiDriver.button(inventory, "Equip")
+			(inventory._list.get_parent() as ScrollContainer).ensure_control_visible(equip)
+			await UiDriver.settle(tree)
+			await UiDriver.tap(tree, equip)
+			return
+		"new_squad":
+			await UiDriver.tap(tree, UiDriver.button(play, "New Squad"))
+			var panel: SquadPanel = play.get_child(0)._content
+			await UiDriver.tap(tree, panel._rows.get_child(0) as Button)
+			panel._name.text_submitted.emit("Second Squad")
+			await UiDriver.settle(tree)
+			return
 		"response":
 			await UiDriver.tap(tree, answer(play.get_child(0)._dialog, SiteTalk.DISTURBING))
 			return

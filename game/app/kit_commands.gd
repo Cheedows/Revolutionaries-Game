@@ -15,6 +15,8 @@ static func equip(session: Session, member: Creature, item: Item) -> String:
 	var squad := session.state.active_squad()
 	if squad == null or not squad.member_ids.has(member.id):
 		return "They are not with the squad."
+	if not squad.haul.has(item):
+		return "There is nothing here that fits."
 	return Equipping.give(member, item, squad.haul, session.catalog)
 
 

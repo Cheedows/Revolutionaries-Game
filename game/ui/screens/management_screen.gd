@@ -37,6 +37,8 @@ func setup(session: Session) -> void:
 		&"members":
 			var squad := SquadPanel.new()
 			_content = squad
+			squad.requested.connect(func(action: StringName, value: Variant) -> void:
+				SquadCommands.run(_session, action, value))
 			squad.changed.connect(_refresh)
 			squad.destination_wanted.connect(_travel)
 			var arrange := Atoms.wrapped_button(Atoms.button("Choosing the Right Liberal Vehicle"))

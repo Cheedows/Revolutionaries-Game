@@ -24,6 +24,7 @@ const FREE := 9
 const RELOAD := 10
 const WAIT := 11
 const FIGHT := 12
+const EQUIP := 13
 
 ## The directions, by option.
 const STEPS := {
@@ -94,6 +95,7 @@ static func _options(state: GameState, squad: Squad,
 		{"id": FREE, "label": "Free the people here",
 				"enabled": quiet and _anybody_to_free(state)},
 		{"id": RELOAD, "label": "Reload", "enabled": quiet},
+		{"id": EQUIP, "label": "Equip", "enabled": true},
 		{"id": WAIT, "label": "Wait", "enabled": true},
 		{"id": FIGHT, "label": "Attack", "enabled": SiteFight.available(state)},
 	]
@@ -130,6 +132,10 @@ static func _action(state: GameState, rng: Rng, squad: Squad, choice: int,
 			return _reload(state, squad, catalog)
 		WAIT:
 			return [] as Array[Event]
+		EQUIP:
+			return PendingIntent.new(Intent.new(Intent.EQUIP_SQUAD,
+					[] as Array[Dictionary], {"squad": squad.id}, false),
+					func(_answer: Variant) -> Array[Event]: return [])
 		FIGHT:
 			return SiteFight.run(state, rng, squad, catalog)
 	return SiteMovement.step(state, squad, STEPS[choice], catalog, rng)
@@ -165,7 +171,7 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 	# Attack owns its retaliation and body tick. Reload has no enemy reaction.
 	if choice != FIGHT and choice != RELOAD:
 		tail.append_array(_react(state, rng, squad, catalog))
-	if moved or choice in [WAIT, TAKE, RELOAD]:
+	if moved or choice in [WAIT, TAKE, RELOAD, EQUIP]:
 		tail.append_array(CombatAdvance.everyone(state, rng, squad,
 				{&"mode": &"site", &"catalog": catalog, &"squad": squad}))
 	# The way out is only taken by walking onto it: the squad comes in through

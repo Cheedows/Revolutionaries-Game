@@ -14,10 +14,10 @@ The audit document records evidence; this checklist tracks repairs.
 - [x] A2: Single enemy retaliation per Attack
 - [x] A3: Body progression on movement, Wait, pickup and reload (conversation/door turn semantics still require a separate review)
 - [x] A4: Hospital return and duration units
-- [ ] A5: Multiple squad management
+- [x] A5: Form, name, switch and transfer between squads; preserve an emptied squad's haul
 - [ ] A6: Bulk activities and roster sorting
-- [ ] A7: In-site equipment changes
-- [ ] A8: Site squad health/status
+- [x] A7: In-site weapon, armor and ammunition changes; one equipment turn on closing
+- [ ] A8: Full records/injuries now available in site inventory; persistent squad health display still pending
 - [x] A9: Organ injury detail
 - [x] A10: Scheduled meeting/date counts in character records and recruitment decisions
 - [x] A11: Recruitment profile/eagerness and attendance checked before choices; original sixth/seventh-meeting RNG boundary restored

@@ -130,6 +130,8 @@ func _connect() -> void:
 	_panels.reported.connect(func(message: String) -> void:
 		_log.append(message, Palette.TEXT_DIM))
 	_map.step_wanted.connect(_on_step)
+	_squad.requested.connect(func(action: StringName, value: Variant) -> void:
+		SquadCommands.run(_session, action, value))
 	_squad.changed.connect(_refresh)
 	_squad.destination_wanted.connect(_choose_destination)
 	_dialog.chosen.connect(_on_answer)
