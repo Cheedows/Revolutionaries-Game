@@ -66,7 +66,7 @@ func _build() -> void:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
 	var scroll := ScrollContainer.new()
-	Metrics.page_scroller(scroll)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	var column := Atoms.column(Metrics.TIGHT)
 	scroll.add_child(column)
