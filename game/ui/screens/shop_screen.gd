@@ -7,6 +7,7 @@ extends Control
 ## deterministic core; this class only owns presentation and input.
 
 signal finished
+signal newspaper_ready(events: Array[Event])
 
 var _session: Session
 var _status: StatusBar
@@ -34,12 +35,10 @@ func _build() -> void:
 	if _page != null:
 		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-
 	var background := ColorRect.new()
 	background.color = Palette.BACKGROUND
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
-
 	_page = Atoms.column(Metrics.ROOM)
 	_page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_page.offset_left = 16
@@ -47,19 +46,15 @@ func _build() -> void:
 	_page.offset_right = -16
 	_page.offset_bottom = -16
 	add_child(_page)
-
 	_status = StatusBar.new()
 	_page.add_child(_status)
-
 	_heading = Atoms.heading("Shop")
 	_page.add_child(_heading)
 	_where = Atoms.dim("")
 	_page.add_child(_where)
-
 	_log = LogView.new()
 	_log.custom_minimum_size = Vector2(0, 96)
 	_page.add_child(_log)
-
 	_dialog = IntentDialog.new()
 	_dialog.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_dialog.pin(true)
@@ -81,7 +76,10 @@ func _adapt() -> void:
 
 
 func _settle() -> void:
-	BaseOrders.drain(_session, _log)
+	var morning: Array[Event] = BaseOrders.drain(_session, _log)
+	if not morning.is_empty():
+		newspaper_ready.emit(morning)
+		return
 	if not _shop_waiting():
 		finished.emit()
 		return
@@ -110,4 +108,6 @@ func _shop_waiting() -> bool:
 	if _session == null or not _session.is_waiting():
 		return false
 	var type := _session.pending().intent.type
-	return type == Intent.CHOOSE_PURCHASE or type == Intent.CHOOSE_ITEMS_TO_FENCE
+	return type == Intent.CHOOSE_PURCHASE \
+			or type == Intent.CHOOSE_ITEMS_TO_FENCE \
+			or type == Intent.CHOOSE_SHOP_DEPARTMENT
