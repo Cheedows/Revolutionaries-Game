@@ -88,6 +88,10 @@ Six rules, each of which exists because breaking it shipped:
     disabled custom rows use the same disabled text colour as ordinary buttons.
     Exploration uses a compact action grid and a persistent, expanding log;
     squad inventory opens locally without answering or losing the pending turn.
+11. **Names carry alignment consistently.** Logs retain coloured name spans in
+    routing history; dialogue preserves the original opening, argument and reply.
+    Presentation records existing reply rolls without drawing extra randomness.
+    Rejected contacts obey the original talk eligibility and use disabled ink.
 
 The components, in the order a screen reaches for them: `Sheet` (what is in
 front), `Card` (a panel: head, notice, scrolling body, action bar),
