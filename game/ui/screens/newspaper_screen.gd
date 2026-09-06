@@ -47,7 +47,7 @@ func _build() -> void:
 	_paper = NewspaperPanel.new()
 	_paper.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_page.add_child(_paper)
-	var carry := Atoms.primary("Continue")
+	var carry := Atoms.primary("Carry on")
 	carry.pressed.connect(func() -> void: finished.emit())
 	_page.add_child(carry)
 
