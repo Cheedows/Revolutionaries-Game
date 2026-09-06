@@ -31,6 +31,8 @@ func show_inventory(session: Session) -> void:
 		child.queue_free()
 	var squad := session.state.active_squad()
 	if squad != null:
+		if _editing and not squad.member_ids.has(_selected) and not squad.member_ids.is_empty():
+			_selected = squad.member_ids[0]
 		for person: Creature in session.state.squad_members(squad):
 			_list.add_child(Atoms.heading(person.name))
 			for line in DossierText.record(person, session.state, session.catalog):
