@@ -98,6 +98,7 @@ func _show_base() -> void:
 	screen.call(&"setup", _session)
 	screen.connect(&"finished", func() -> void: finished.emit())
 	screen.connect(&"newspaper_ready", _on_newspaper)
+	screen.connect(&"route_changed", _after_focus)
 
 
 func _show_focus(kind: StringName) -> void:
