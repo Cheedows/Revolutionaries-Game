@@ -11,12 +11,12 @@ extends PanelContainer
 ## How big one square is drawn, pointed at and poked at. A finger cannot hit a
 ## twelve-pixel square, so on a touchscreen the squares grow and fewer of them
 ## are shown — the plan is read closer in rather than smaller.
-const TILE := 32
+const TILE := 48
 const TOUCH_TILE := 48
 
 ## How much of the plan is shown around the squad, at each of those sizes.
-const ACROSS := 15
-const DOWN := 7
+const ACROSS := 11
+const DOWN := 5
 const TOUCH_ACROSS := 7
 const TOUCH_DOWN := 3
 
@@ -82,6 +82,7 @@ func compact(on: bool) -> void:
 	_grid.custom_minimum_size = Vector2(_across * _tile, _down * _tile)
 	for direction: int in _steps:
 		var delta: Vector2i = SiteLoop.STEPS[direction]
+		_steps[direction].custom_minimum_size = Vector2.ONE * _tile
 		_steps[direction].position = Vector2(Vector2i(_across / 2, _down / 2) + delta) * _tile
 		_steps[direction].size = Vector2.ONE * (_tile - 1)
 	if _grid.is_visible_in_tree():
@@ -105,6 +106,7 @@ func _build() -> void:
 	column.add_child(_grid)
 	for direction: int in SiteLoop.STEPS:
 		var button := Atoms.quiet("")
+		button.custom_minimum_size = Vector2.ONE * Metrics.TOUCH_TARGET
 		var outline := StyleBoxFlat.new()
 		outline.draw_center = false
 		outline.border_color = Palette.TEXT

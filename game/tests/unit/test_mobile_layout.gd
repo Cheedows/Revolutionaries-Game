@@ -320,7 +320,7 @@ func _fits_and_can_be_hit(screen: Control, where: String) -> bool:
 		return false
 	for control: Control in _pressable(screen):
 		if control.get_combined_minimum_size().y < float(Metrics.TOUCH_TARGET):
-			fail("%s: %s is too small to hit" % [where, _describe(control)])
+			fail("%s: %s is too small to hit (%s, minimum %s)" % [where, _describe(control), control.get_path(), control.get_combined_minimum_size()])
 			return false
 	return true
 

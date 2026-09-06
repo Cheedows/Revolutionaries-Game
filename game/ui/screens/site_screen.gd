@@ -58,7 +58,8 @@ func _refresh() -> void:
 	var moving := _session.is_waiting() and _session.pending().intent.type == Intent.CHOOSE_SITE_MOVE
 	_map.allow_steps(moving)
 	_map.visible = moving
-	_people.refresh(_session.state, moving)
+	_people.can_talk = moving
+	_people.refresh(_session.state)
 	_log.visible = not _log.snapshot().is_empty()
 	if _session.is_waiting():
 		var intent := _session.pending().intent

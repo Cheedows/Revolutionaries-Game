@@ -4,9 +4,10 @@ extends PanelContainer
 
 signal talk_wanted(id: int)
 var _list: VBoxContainer
+var can_talk := false
 
 
-func refresh(state: GameState, can_talk: bool) -> void:
+func refresh(state: GameState) -> void:
 	if _list == null:
 		add_theme_stylebox_override(&"panel", UiTheme.panel())
 		var column := Atoms.column(Metrics.TIGHT)
