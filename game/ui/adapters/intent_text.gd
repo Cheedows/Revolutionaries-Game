@@ -72,6 +72,8 @@ static func question(intent: Intent, state: GameState) -> String:
 static func detail(intent: Intent, state: GameState) -> String:
 	var context := intent.context
 	var lines := PackedStringArray()
+	if intent.type == Intent.CHOOSE_DESTINATION:
+		lines.append("Choose a place, then press Travel now at the safehouse.")
 	if context.has("location"):
 		var site: Location = state.locations.get(int(context["location"]))
 		if site != null:

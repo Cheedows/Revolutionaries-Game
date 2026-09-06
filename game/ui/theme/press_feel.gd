@@ -32,6 +32,7 @@ const UP := 0.10
 ## Idempotent and cheap: a control already given it is skipped, so this can be
 ## called again after any part of a screen is rebuilt.
 static func teach(root: Control) -> void:
+	_scroll_input(root)
 	for control in _pressable(root):
 		if control.has_meta(&"press_feel"):
 			continue
@@ -41,6 +42,17 @@ static func teach(root: Control) -> void:
 		# A control that is disabled mid-press, or taken off screen, never gets
 		# its button_up — so it is put back when it leaves the tree as well.
 		control.tree_exiting.connect(func() -> void: _put_back(control))
+
+
+## Let the native ScrollContainer receive drags begun over rows and panels.
+## It cancels button presses once a gesture crosses its drag deadzone.
+static func _scroll_input(control: Control, inside: bool = false) -> void:
+	if inside and control.mouse_filter == Control.MOUSE_FILTER_STOP \
+			and not control is ScrollContainer and not control is ScrollBar:
+		control.mouse_filter = Control.MOUSE_FILTER_PASS
+	for child in control.get_children():
+		if child is Control:
+			_scroll_input(child, inside or control is ScrollContainer)
 
 
 static func _sink(control: BaseButton) -> void:

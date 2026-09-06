@@ -6,7 +6,7 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var button: Button
 	match said:
 		"travel":
-			button = UiDriver.button(play, "Travel to a Different City")
+			button = UiDriver.button(play, "Choose destination")
 		"dossier":
 			button = UiDriver.button(play, "Look")
 		"surgery":

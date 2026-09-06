@@ -16,8 +16,7 @@ const GRACE_PICKED := 50
 const GRACE_CROWBAR := 20
 const GRACE_KICKED := 5
 
-## Every door question is the same question. The answers are the booleans the
-## resumes take, so a screen that offers them needs no translation.
+## Every door question takes yes/no, or null when its Cancel/Back is used.
 const YES_OR_NO: Array[Dictionary] = [
 	{"id": true, "label": "Go through", "enabled": true},
 	{"id": false, "label": "Leave it", "enabled": true},
@@ -49,7 +48,7 @@ static func bump(state: GameState, squad: Squad, at: Vector3i, from_secure: bool
 					"locked": (flags & Tables.SITE_BLOCKS[&"locked"]) != 0,
 					"emergency_exit": (flags & Tables.SITE_BLOCKS[&"locked"]) == 0,
 				}),
-				func(agreed: bool) -> Variant:
+				func(agreed: Variant) -> Variant:
 					if not agreed:
 						return [] as Array[Event]
 					return _past_the_warning(state, squad, at, from_secure,
@@ -97,7 +96,7 @@ static func _ask_to_pick(state: GameState, squad: Squad, at: Vector3i,
 	return PendingIntent.new(
 			Intent.new(Intent.CONFIRM_PICK_LOCK, YES_OR_NO,
 					{"x": at.x, "y": at.y, "z": at.z}),
-			func(agreed: bool) -> Variant:
+			func(agreed: Variant) -> Variant:
 				if not agreed:
 					return [] as Array[Event]
 				return _pick(state, squad, at, catalog, rng),
@@ -139,7 +138,7 @@ static func _ask_to_force(state: GameState, squad: Squad, at: Vector3i,
 			Intent.new(Intent.CONFIRM_FORCE_DOOR, YES_OR_NO, {
 				"x": at.x, "y": at.y, "z": at.z, "locked": locked,
 			}),
-			func(agreed: bool) -> Variant:
+			func(agreed: Variant) -> Variant:
 				if not agreed:
 					return [] as Array[Event]
 				return _force(state, squad, at, catalog, rng),

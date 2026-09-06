@@ -262,5 +262,9 @@
   "the way out": "the original draws the site as a character grid with no words for what is on a square (src/sitemode/sitedisplay.cpp prints no labels); a touchscreen has to read the square out loud instead",
   "under Conservative control": "the original prints a chamber as counts — '5Lib+, 12Lib, 40Mod, ...' — and the port says what the counts add up to, because a phone cannot show a table",
   "under Liberal control": "the same",
-  "will be Quitting Job to join the LCS.": "the original prints a confirming clause for every sleeper order except this one (activate_sleepers.cpp has no addstr for JOINLCS); the port says it in the original's own word for the activity, 'Quitting Job'"
+  "will be Quitting Job to join the LCS.": "the original prints a confirming clause for every sleeper order except this one (activate_sleepers.cpp has no addstr for JOINLCS); the port says it in the original's own word for the activity, 'Quitting Job'",
+  "Choose destination": "the focused safehouse picker includes local destinations; the original separates local outings from its travel-to-another-city action",
+  "Travel now": "the focused safehouse makes executing a chosen travel order explicit; the original executes it through the next-day control",
+  "@ Squad  D Door  W Wall  E Exit\\nBlank: unexplored. Tap an adjacent tile to move.": "the tile map needs a visible legend and touch instruction; the original renders terminal glyphs and uses keyboard movement",
+  "Choose a place, then press Travel now at the safehouse.": "the focused destination page must explain that choosing sets an order; the original keeps the next-day control on its base screen"
 }

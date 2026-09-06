@@ -32,7 +32,7 @@ func setup(session: Session) -> void:
 	_going = Atoms.wrapped(Atoms.dim(""))
 	page.add_child(_going)
 	_travel = Icons.on(Atoms.wrapped_button(
-			Atoms.primary("Travel to a Different City")), &"travel")
+			Atoms.primary("Choose destination")), &"travel")
 	_travel.pressed.connect(_choose_destination)
 	page.add_child(_travel)
 	var scroll := ScrollContainer.new()
@@ -114,10 +114,12 @@ func _refresh() -> void:
 	_summary.text = "%s (%d/%d)" % [squad.name, members.size(), Squad.MAX_SIZE] \
 			if squad != null else "No squad"
 	_going.text = "Staying in"
+	_wait_button.text = "Wait a day"
 	if squad != null and squad.travel_destination != -1:
 		var site: Location = _session.state.locations.get(squad.travel_destination)
 		if site != null:
 			_going.text = "Going to %s" % site.name
+			_wait_button.text = "Travel now"
 	_travel.disabled = members.is_empty()
 	adapt()
 

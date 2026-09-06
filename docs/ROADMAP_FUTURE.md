@@ -634,6 +634,10 @@ Acceptance checks for this work:
 - [x] Site visits continue taking actions until departure, keeping the daily
   continuation attached instead of stranding a site after its first action.
 - [x] Full suite, rendered production walks at four sizes, and mainline integration.
+- [x] Phone follow-up: thumb drags work over button lists, travel has an explicit
+  departure action, map tiles have a visible legend, and cancelling a door prompt
+  restores movement. Focused regressions cover phone pawn-shop entry and all
+  three door cancellations.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather

@@ -21,7 +21,7 @@ func test_routed_pawn_destination_then_wait_opens_shop() -> void:
 
 	var base: Control = play.get_child(0)
 	var squad_panel: Control = base
-	var travel := _button_named(squad_panel, "Travel to a Different City")
+	var travel := _button_named(squad_panel, "Choose destination")
 	check(travel != null, "Travel exists")
 	if travel == null:
 		_finish(tree, play)

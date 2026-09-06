@@ -18,7 +18,7 @@ const TOUCH_TILE := 26
 const ACROSS := 41
 const DOWN := 17
 const TOUCH_ACROSS := 13
-const TOUCH_DOWN := 9
+const TOUCH_DOWN := 7
 
 ## What a square that has not been seen looks like, and one that has.
 const ROCK := Color("22262e")
@@ -85,9 +85,11 @@ func _build() -> void:
 	_grid.draw.connect(_draw_grid)
 	_grid.gui_input.connect(_on_grid_input)
 	column.add_child(_grid)
+	column.add_child(Atoms.wrapped(Atoms.dim(
+			"@ Squad  D Door  W Wall  E Exit\nBlank: unexplored. Tap an adjacent tile to move.")))
 
 	# What is underfoot, which the original says in the message area.
-	_here = Atoms.dim("")
+	_here = Atoms.wrapped(Atoms.dim(""))
 	column.add_child(_here)
 
 
@@ -110,13 +112,32 @@ func _draw_grid() -> void:
 				continue
 			var at := Rect2(column * _tile, row * _tile, _tile - 1, _tile - 1)
 			_grid.draw_rect(at, _colour_of(map, x, y, z))
+			var flags := map.get_flag(x, y, z)
+			if flags & int(Tables.SITE_BLOCKS[&"known"]) != 0:
+				var symbol := ""
+				if flags & int(Tables.SITE_BLOCKS[&"block"]) != 0:
+					symbol = "W"
+				elif flags & int(Tables.SITE_BLOCKS[&"door"]) != 0:
+					symbol = "D"
+				elif flags & int(Tables.SITE_BLOCKS[&"exit"]) != 0:
+					symbol = "E"
+				_mark(at, symbol)
 
 	# The squad, and whoever is in the room with them.
 	var middle := Rect2((_across / 2) * _tile, (_down / 2) * _tile,
 			_tile - 1, _tile - 1)
 	_grid.draw_rect(middle, Palette.LIBERAL)
+	_mark(middle, "@")
 	if not _state.site.encounter_ids.is_empty():
 		_grid.draw_rect(middle.grow(-_tile / 4.0), Palette.CONSERVATIVE)
+
+
+func _mark(at: Rect2, symbol: String) -> void:
+	var font := get_theme_default_font()
+	var font_size := _tile - 6
+	_grid.draw_string(font, at.position + Vector2(0, font.get_ascent(font_size)),
+			symbol, HORIZONTAL_ALIGNMENT_CENTER, at.size.x, font_size,
+			Palette.TEXT if symbol == "W" else Palette.BACKGROUND)
 
 
 ## A click on a square next to the squad walks that way.
@@ -148,7 +169,7 @@ func _colour_of(map: LevelMap, x: int, y: int, z: int) -> Color:
 	if flags & int(Tables.SITE_BLOCKS[&"known"]) == 0:
 		return ROCK
 	if flags & int(Tables.SITE_BLOCKS[&"block"]) != 0:
-		return ROCK
+		return Palette.TEXT_DIM.darkened(0.6)
 	if flags & int(Tables.SITE_BLOCKS[&"exit"]) != 0:
 		return Palette.ACCENT
 	if flags & int(Tables.SITE_BLOCKS[&"door"]) != 0:
