@@ -22,6 +22,35 @@ func test_travel_opens_destination_screen() -> void:
 	_finish(tree, play)
 
 
+func test_pawn_shop_replaces_safehouse_and_leave_returns() -> void:
+	var pair := _play(6161)
+	var play: PlayScreen = pair["play"]
+	var tree: SceneTree = pair["tree"]
+	var session: Session = pair["session"]
+	var squad: Squad = session.state.active_squad()
+	var shop: Location = _location_of_type(session.state, &"business_pawnshop")
+	check(shop != null, "the starting city has its Pawn & Gun")
+	if shop != null:
+		squad.travel_destination = shop.id
+		var base: Control = play.get_child(0)
+		(base.get("_wait_button") as Button).pressed.emit()
+		await tree.process_frame
+		equal(play.get("_kind"), &"shop",
+				"Pawn & Gun replaces the safehouse with ShopScreen")
+		var shop_screen := play.get_child(0) as ShopScreen
+		check(shop_screen != null, "the shop owns the screen")
+		if shop_screen != null:
+			var dialog: IntentDialog = shop_screen.get("_dialog")
+			check(bool(dialog.offered().get(ShopVisit.LEAVE, false)),
+					"the dedicated shop visibly offers Leave")
+			_press_answer(dialog, ShopVisit.LEAVE)
+			await tree.process_frame
+			await tree.process_frame
+			equal(play.get("_kind"), &"base",
+					"leaving the shop returns to the safehouse")
+	_finish(tree, play)
+
+
 func test_waiting_for_an_ordinary_site_opens_site_screen() -> void:
 	var pair := _play(2222)
 	var play: PlayScreen = pair["play"]
@@ -132,6 +161,17 @@ func _location_of_type(state: GameState, type: StringName) -> Location:
 		if site.type == type:
 			return site
 	return null
+
+
+func _press_answer(dialog: IntentDialog, wanted: Variant) -> void:
+	var ids: Dictionary = dialog.get("_ids")
+	for key: Variant in ids:
+		var button := key as Button
+		var candidate: Variant = ids.get(key)
+		if button != null and str(candidate) == str(wanted):
+			button.pressed.emit()
+			return
+	fail("no visible button carried answer %s" % str(wanted))
 
 
 func _button_named(node: Node, said: String) -> Button:
