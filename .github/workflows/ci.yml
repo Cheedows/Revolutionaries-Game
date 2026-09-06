@@ -82,4 +82,13 @@ jobs:
           chmod +x Godot_v4.6-stable_linux.x86_64
           sudo mv Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
       - name: Nothing is drawn outside the thing that contains it
+        env:
+          LAYOUT_SHOTS: ${{ github.workspace }}/layout-shots
         run: tools/check_layout.sh
+      - name: Keep production screen captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-screen-layouts
+          path: layout-shots/
+          retention-days: 7

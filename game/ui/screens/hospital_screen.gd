@@ -1,48 +1,28 @@
 class_name HospitalScreen
-extends Control
+extends FocusPage
 ## Leaving injured squad members at a clinic or teaching hospital.
 
 signal finished
 signal newspaper_ready(events: Array[Event])
 
 var _session: Session
-var _status: StatusBar
 var _heading: Label
 var _log: LogView
 var _dialog: IntentDialog
-var _page: VBoxContainer
 
 
 func setup(session: Session) -> void:
 	_session = session
 	_build()
-	_adapt()
+	adapt()
 	_log.clear()
 	_settle()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED and _page != null:
-		_adapt()
 
 
 func _build() -> void:
 	if _page != null:
 		return
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = Palette.BACKGROUND
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	_page = Atoms.column(Metrics.ROOM)
-	_page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_page.offset_left = 16
-	_page.offset_top = 16
-	_page.offset_right = -16
-	_page.offset_bottom = -16
-	add_child(_page)
-	_status = StatusBar.new()
-	_page.add_child(_status)
+	frame()
 	_heading = Atoms.heading("Hospital")
 	_page.add_child(_heading)
 	_log = LogView.new()
@@ -73,7 +53,7 @@ func _refresh() -> void:
 	var site: Location = _session.state.locations.get(location_id)
 	_heading.text = site.name if site != null else "Hospital"
 	_dialog.ask(_session.pending().intent, _session.state)
-	_adapt()
+	adapt()
 
 
 func _on_answer(id: Variant) -> void:
@@ -92,13 +72,11 @@ func _hospital_waiting() -> bool:
 	return site != null and site.type in [&"hospital_clinic", &"hospital_university"]
 
 
-func _adapt() -> void:
+func adapt() -> void:
 	if _page == null:
 		return
+	super.adapt()
 	var touch := Metrics.touch(self)
-	theme = UiTheme.build(touch)
-	_page.add_theme_constant_override(&"separation",
-			Metrics.TOUCH_GAP if touch else Metrics.BASE_GAP)
 	_dialog.compact(touch)
 	Metrics.enlarge(self, touch)
 	PressFeel.teach(self)

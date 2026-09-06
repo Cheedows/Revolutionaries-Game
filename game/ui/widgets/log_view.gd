@@ -136,3 +136,18 @@ func clear() -> void:
 	for child in _lines.get_children():
 		_lines.remove_child(child)
 		child.queue_free()
+
+
+## Plain presentation data kept by PlayScreen when this widget is replaced.
+func snapshot() -> Array[Dictionary]:
+	_build()
+	var lines: Array[Dictionary] = []
+	for label: Label in _lines.get_children():
+		lines.append({"text": label.text, "colour": label.get_theme_color(&"font_color")})
+	return lines
+
+
+func restore(lines: Array[Dictionary]) -> void:
+	clear()
+	for line: Dictionary in lines:
+		append(str(line["text"]), line["colour"])

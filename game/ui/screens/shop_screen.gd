@@ -1,5 +1,5 @@
 class_name ShopScreen
-extends Control
+extends FocusPage
 ## A shop is a place, not a modal box in the safehouse.
 ##
 ## This screen presents the shop PendingIntent while the PlayScreen keeps the
@@ -10,44 +10,24 @@ signal finished
 signal newspaper_ready(events: Array[Event])
 
 var _session: Session
-var _status: StatusBar
 var _heading: Label
 var _where: Label
 var _log: LogView
 var _dialog: IntentDialog
-var _page: VBoxContainer
 
 
 func setup(session: Session) -> void:
 	_session = session
 	_build()
-	_adapt()
+	adapt()
 	_log.clear()
 	_settle()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED and _page != null:
-		_adapt()
 
 
 func _build() -> void:
 	if _page != null:
 		return
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = Palette.BACKGROUND
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	_page = Atoms.column(Metrics.ROOM)
-	_page.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_page.offset_left = 16
-	_page.offset_top = 16
-	_page.offset_right = -16
-	_page.offset_bottom = -16
-	add_child(_page)
-	_status = StatusBar.new()
-	_page.add_child(_status)
+	frame()
 	_heading = Atoms.heading("Shop")
 	_page.add_child(_heading)
 	_where = Atoms.dim("")
@@ -63,13 +43,11 @@ func _build() -> void:
 	_page.add_child(_dialog)
 
 
-func _adapt() -> void:
+func adapt() -> void:
 	if _page == null:
 		return
+	super.adapt()
 	var touch := Metrics.touch(self)
-	theme = UiTheme.build(touch)
-	_page.add_theme_constant_override(&"separation",
-			Metrics.TOUCH_GAP if touch else Metrics.BASE_GAP)
 	_dialog.compact(touch)
 	Metrics.enlarge(self, touch)
 	PressFeel.teach(self)
@@ -94,7 +72,7 @@ func _refresh() -> void:
 	_heading.text = site.name if site != null else "Shop"
 	_where.text = "Shopping" if site == null else "At %s" % site.name
 	_dialog.ask(intent, _session.state)
-	_adapt()
+	adapt()
 
 
 func _on_answer(id: Variant) -> void:

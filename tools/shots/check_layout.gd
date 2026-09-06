@@ -25,6 +25,26 @@ extends SceneTree
 ## The screens to look at, and how to walk into them. A number presses that
 ## option in the list; "c" presses the first action in the bar.
 const WALKS: Array[Dictionary] = [
+	{"screen": "play_screen", "press": []},
+	{"screen": "play_screen", "press": ["roster"]},
+	{"screen": "play_screen", "press": ["roster", "dossier"]},
+	{"screen": "play_screen", "press": ["roster", "activity"]},
+	{"screen": "play_screen", "press": ["members"]},
+	{"screen": "play_screen", "press": ["members", "vehicles"]},
+	{"screen": "play_screen", "press": ["country"]},
+	{"screen": "play_screen", "press": ["agenda"]},
+	{"screen": "play_screen", "press": ["house"]},
+	{"screen": "play_screen", "press": ["paper"]},
+	{"screen": "play_screen", "press": ["stores"]},
+	{"screen": "play_screen", "press": ["justice"]},
+	{"screen": "play_screen", "press": ["sleepers"]},
+	{"screen": "play_screen", "press": ["settings"]},
+	{"screen": "play_screen", "press": ["history"]},
+	{"screen": "play_screen", "press": ["travel"]},
+	{"screen": "play_screen", "press": ["pawn"]},
+	{"screen": "play_screen", "press": ["site"]},
+	{"screen": "play_screen", "press": ["hospital"]},
+	{"screen": "play_screen", "press": ["combat"]},
 	{"screen": "title_screen", "press": []},
 	{"screen": "new_game_screen", "press": []},
 	{"screen": "new_game_screen", "press": ["1"]},
@@ -97,14 +117,31 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 	for _settle in 4:
 		await process_frame
 	for press: String in walk["press"]:
-		_press(screen, press)
+		if screen is PlayScreen:
+			await (load("res://../tools/shots/play_walk.gd") as GDScript).press(self, screen, press)
+		else:
+			_press(screen, press)
 		# Long enough for anything that animates to have arrived.
 		for _settle in 12:
 			await process_frame
 
+	if screen is PlayScreen:
+		var last := "base" if walk["press"].is_empty() else str(walk["press"].back())
+		var expected: String = {"pawn": "shop", "travel": "destination",
+				"paper": "newspaper", "vehicles": "squad"}.get(last, last)
+		if str(screen.get("_kind")) != expected:
+			_wrong.append("%s: expected %s screen, got %s" % [walk, expected, screen.get("_kind")])
 	var where := "%s%s at %s" % [which,
 			"" if walk["press"].is_empty() else " after %s" % [walk["press"]],
 			size]
+	if screen is PlayScreen and OS.get_environment("LAYOUT_SHOTS") != "" \
+			and DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		var out := OS.get_environment("LAYOUT_SHOTS")
+		DirAccess.make_dir_recursive_absolute(out)
+		var file := "%s/play_%dx%d_%s.png" % [out, size.x, size.y,
+				"home" if walk["press"].is_empty() else "_".join(walk["press"])]
+		root.get_texture().get_image().save_png(file)
 	_rows_do_not_overlap(screen, where)
 	_nothing_spills_out_of_its_parent(screen, where)
 	_nothing_is_wrapped_to_a_sliver(screen, where)

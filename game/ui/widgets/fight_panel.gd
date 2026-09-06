@@ -10,6 +10,7 @@ extends PanelContainer
 var _left: VBoxContainer
 var _right: VBoxContainer
 var _title: Label
+var _columns: BoxContainer
 
 
 func _ready() -> void:
@@ -56,21 +57,28 @@ func _fill(column: VBoxContainer, people: Array[Creature],
 
 
 func _row(person: Creature, state: GameState) -> Control:
-	return Atoms.tinted(FightText.line(person, state),
-			FightText.colour(person))
+	return Atoms.wrapped(Atoms.tinted(FightText.line(person, state),
+			FightText.colour(person)))
 
 
 func _build() -> void:
 	if _left != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
+	var scroll := ScrollContainer.new()
+	Metrics.page_scroller(scroll)
+	add_child(scroll)
 	var column := Atoms.column(Metrics.TIGHT)
-	add_child(column)
+	scroll.add_child(column)
 
 	_title = Atoms.heading("")
 	column.add_child(_title)
 
-	var columns := Atoms.row(Metrics.WIDE)
+	_columns = BoxContainer.new()
+	_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_columns.add_theme_constant_override(&"separation", Metrics.WIDE)
+	_columns.vertical = Metrics.narrow(self)
+	var columns := _columns
 	column.add_child(columns)
 
 	_left = Atoms.column(Metrics.SNUG)
@@ -78,3 +86,8 @@ func _build() -> void:
 
 	_right = Atoms.column(Metrics.SNUG)
 	columns.add_child(_right)
+
+
+func compact(on: bool) -> void:
+	_build()
+	_columns.vertical = on
