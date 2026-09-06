@@ -1,20 +1,24 @@
 class_name PlayScreen
 extends Control
-## Owns one live game Session and routes presentation to the screen that fits
-## what the simulation is currently waiting for.
-##
-## The simulation remains completely unaware of screens. A shop is still a
-## CHOOSE_PURCHASE PendingIntent; this layer merely stops drawing that shop as
-## another box in the safehouse and gives it its own screen instead.
+## Owns one live Session and chooses the screen that represents what the player
+## is doing right now. Screens come and go; simulation state never does.
 
 signal finished
 
-const BASE_SCENE := "res://ui/screens/base_screen.tscn"
-const SHOP_SCENE := "res://ui/screens/shop_screen.tscn"
+const SCENES := {
+	&"base": "res://ui/screens/base_screen.tscn",
+	&"destination": "res://ui/screens/destination_screen.tscn",
+	&"shop": "res://ui/screens/shop_screen.tscn",
+	&"site": "res://ui/screens/site_screen.tscn",
+	&"combat": "res://ui/screens/combat_screen.tscn",
+	&"hospital": "res://ui/screens/hospital_screen.tscn",
+	&"newspaper": "res://ui/screens/newspaper_screen.tscn",
+}
 
 var _session: Session
 var _screen: Control
 var _kind: StringName = &""
+var _news_events: Array[Event] = []
 
 
 func setup(session: Session) -> void:
@@ -25,50 +29,106 @@ func setup(session: Session) -> void:
 func _process(_delta: float) -> void:
 	if _session == null:
 		return
-	# BaseScreen deliberately still knows how to render every Intent when it is
-	# opened by itself. The router watches the shared Session and promotes shop
-	# questions to their dedicated screen in the real game.
-	if _shop_waiting() and _kind != &"shop":
-		_show_shop()
-	elif not _shop_waiting() and _kind == &"shop":
-		_show_base()
+	var wanted: StringName = _kind_for()
+	if wanted != _kind:
+		_route()
 
 
 func _route() -> void:
 	if _session == null:
 		return
-	if _shop_waiting():
-		_show_shop()
-	else:
+	var wanted: StringName = _kind_for()
+	if wanted == _kind and _screen != null:
+		return
+	if wanted == &"base":
 		_show_base()
+	elif wanted == &"newspaper":
+		_show_newspaper()
+	else:
+		_show_focus(wanted)
 
 
-func _shop_waiting() -> bool:
+func _kind_for() -> StringName:
+	if not _news_events.is_empty():
+		return &"newspaper"
+	if _session.is_waiting():
+		var type: StringName = _session.pending().intent.type
+		if type == Intent.CHOOSE_DESTINATION:
+			return &"destination"
+		if type in [Intent.CHOOSE_PURCHASE, Intent.CHOOSE_ITEMS_TO_FENCE,
+				Intent.CHOOSE_SHOP_DEPARTMENT]:
+			return &"shop"
+		if _hospital_waiting():
+			return &"hospital"
+		if _combat_active():
+			return &"combat"
+	if _combat_active():
+		return &"combat"
+	if _session.state.mode == &"site" and _session.state.site.location != -1:
+		return &"site"
+	return &"base"
+
+
+func _hospital_waiting() -> bool:
 	if not _session.is_waiting():
 		return false
-	var type := _session.pending().intent.type
-	return type == Intent.CHOOSE_PURCHASE or type == Intent.CHOOSE_ITEMS_TO_FENCE
+	var context: Dictionary = _session.pending().intent.context
+	var location_id := int(context.get("location", -1))
+	var site: Location = _session.state.locations.get(location_id)
+	return site != null and site.type in [&"hospital_clinic", &"hospital_university"]
+
+
+func _combat_active() -> bool:
+	if FightPanel.has_a_fight(_session.state):
+		return true
+	if not _session.is_waiting():
+		return false
+	return _session.pending().intent.type in [
+		Intent.CHOOSE_ENCOUNTER_RESPONSE,
+		Intent.CHOOSE_ATTACK_TARGET,
+		Intent.CHOOSE_CHASE_ACTION,
+		Intent.CONFIRM_RETREAT,
+	]
 
 
 func _show_base() -> void:
-	if _kind == &"base":
-		return
 	_kind = &"base"
-	var screen := _swap(BASE_SCENE)
-	screen.setup(_session)
-	screen.finished.connect(func() -> void: finished.emit())
+	var screen: Control = _swap(SCENES[_kind])
+	screen.set(&"routed", true)
+	screen.call(&"setup", _session)
+	screen.connect(&"finished", func() -> void: finished.emit())
+	screen.connect(&"newspaper_ready", _on_newspaper)
 
 
-func _show_shop() -> void:
-	if _kind == &"shop":
-		return
-	_kind = &"shop"
-	var screen := _swap(SHOP_SCENE)
-	screen.setup(_session)
-	# Leaving a shop can finish the day or immediately uncover another pending
-	# decision. Route after the current signal stack has unwound so the screen
-	# that emitted it is never freed from inside its own callback.
-	screen.finished.connect(func() -> void: _route.call_deferred())
+func _show_focus(kind: StringName) -> void:
+	_kind = kind
+	var screen: Control = _swap(SCENES[kind])
+	screen.call(&"setup", _session)
+	screen.connect(&"finished", _after_focus)
+	if screen.has_signal(&"newspaper_ready"):
+		screen.connect(&"newspaper_ready", _on_newspaper)
+
+
+func _show_newspaper() -> void:
+	_kind = &"newspaper"
+	var screen: Control = _swap(SCENES[_kind])
+	screen.call(&"setup", _session, _news_events)
+	screen.connect(&"finished", _close_newspaper)
+
+
+func _after_focus() -> void:
+	_route.call_deferred()
+
+
+func _on_newspaper(events: Array[Event]) -> void:
+	_news_events.clear()
+	_news_events.append_array(events)
+	_route.call_deferred()
+
+
+func _close_newspaper() -> void:
+	_news_events.clear()
+	_route.call_deferred()
 
 
 func _swap(scene_path: String) -> Control:
