@@ -633,7 +633,7 @@ Acceptance checks for this work:
   routing; initialization cannot lose a screen's emitted events.
 - [x] Site visits continue taking actions until departure, keeping the daily
   continuation attached instead of stranding a site after its first action.
-- [ ] Full suite, rendered production walks at four sizes, and mainline integration.
+- [x] Full suite, rendered production walks at four sizes, and mainline integration.
 
 
 The simulation is no longer welded to terminal rendering. Exploit that rather
