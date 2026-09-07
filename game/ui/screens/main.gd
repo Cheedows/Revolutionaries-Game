@@ -17,14 +17,14 @@ func build() -> void:
 
 
 func _title() -> void:
-	Music.scene(&"titlemode")
+	get_node("/root/Music").scene(&"titlemode")
 	var screen: Control = _swap("res://ui/screens/title_screen.tscn")
 	screen.new_game_wanted.connect(_new_game)
 	screen.loaded.connect(_play)
 
 
 func _new_game() -> void:
-	Music.scene(&"activate")
+	get_node("/root/Music").scene(&"activate")
 	var screen: Control = _swap("res://ui/screens/new_game_screen.tscn")
 	screen.started.connect(_play)
 

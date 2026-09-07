@@ -25,6 +25,7 @@ signal recruit_chosen(recruiter: Creature, type: StringName)
 
 signal bulk_wanted(ids: Array[int])
 var _selected: Dictionary = {}
+var _assign: Button
 var _state: GameState
 var _sort := 0
 const SORTS := ["Code Name", "Health", "Juice", "Activity", "Location"]
@@ -75,13 +76,15 @@ func _build() -> void:
 			_selected[person.id] = true
 		refresh(_state))
 	tools.add_child(all)
-	var assign := Atoms.button("Assign Activities")
-	assign.pressed.connect(func() -> void:
+	_assign = Atoms.button("Assign Activities")
+	_assign.pressed.connect(func() -> void:
 		var ids: Array[int] = []
 		for id in _selected:
-			if _state.creatures.has(id): ids.append(int(id))
+			var person: Creature = _state.creatures.get(id)
+			if person != null and CreatureCondition.is_active_liberal(person, _state.locations.get(person.location)):
+				ids.append(int(id))
 		if not ids.is_empty(): bulk_wanted.emit(ids))
-	tools.add_child(assign)
+	tools.add_child(_assign)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -118,6 +121,9 @@ func compact(on: bool) -> void:
 func refresh(state: GameState) -> void:
 	_build()
 	_state = state
+	_assign.disabled = not _selected.keys().any(func(id: int) -> bool:
+		var person: Creature = state.creatures.get(id)
+		return person != null and CreatureCondition.is_active_liberal(person, state.locations.get(person.location)))
 	for child in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
@@ -134,6 +140,7 @@ func refresh(state: GameState) -> void:
 
 	for creature in members:
 		_rows.add_child(_row(creature, HostageWatch.candidates(state, creature)))
+	PressFeel.teach(self)
 
 
 func _row(creature: Creature, held: Array[Creature]) -> Control:

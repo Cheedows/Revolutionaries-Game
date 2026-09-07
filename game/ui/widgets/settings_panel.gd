@@ -32,9 +32,9 @@ func _refresh() -> void:
 		_body.remove_child(child)
 		child.queue_free()
 	_head.set_title("Settings")
-	var music := Atoms.button("Music: On" if Music.enabled else "Music: Off")
+	var music := Atoms.button("Music: On" if get_node("/root/Music").enabled else "Music: Off")
 	music.pressed.connect(func() -> void:
-		Music.enable(not Music.enabled)
+		get_node("/root/Music").enable(not get_node("/root/Music").enabled)
 		_refresh())
 	_body.add_child(music)
 

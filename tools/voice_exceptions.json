@@ -291,5 +291,6 @@
   "Music: On": "Visible state of the original music toggle.",
   "Music: Off": "Visible state of the original music toggle.",
   "Full map": "Touch label for the original M map screen.",
-  "@ Squad  D Door  W Wall  E Exit  U Unit  H Heavy unit  T Trap": "Legend for the original floor and siege masks in a draggable map."
+  "@ Squad  D Door  W Wall  E Exit  U Unit  H Heavy unit  T Trap": "Legend for the original floor and siege masks in a draggable map.",
+  "/root/Music": "Runtime node path to the music autoload, not player-facing prose."
 }
