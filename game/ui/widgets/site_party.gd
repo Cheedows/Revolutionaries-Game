@@ -10,7 +10,7 @@ func refresh(state: GameState) -> void:
 		add_child(_row)
 		vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		custom_minimum_size.y = Metrics.TOUCH_TARGET + Metrics.SNUG
-		Metrics.page_scroller(self)
+		set_meta(&"own_scroller", true)
 	for child in _row.get_children():
 		_row.remove_child(child)
 		child.queue_free()

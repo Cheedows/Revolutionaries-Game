@@ -11,7 +11,7 @@ extends PanelContainer
 ## How big one square is drawn, pointed at and poked at. A finger cannot hit a
 ## twelve-pixel square, so on a touchscreen the squares grow and fewer of them
 ## are shown — the plan is read closer in rather than smaller.
-const TILE := 48
+const TILE := 40
 const TOUCH_TILE := 48
 
 ## How much of the plan is shown around the squad, at each of those sizes.

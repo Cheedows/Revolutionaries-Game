@@ -24,7 +24,7 @@ func open(state: GameState) -> void:
 	column.add_child(_zoom)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	Metrics.page_scroller(scroll)
+	scroll.set_meta(&"own_scroller", true)
 	column.add_child(scroll)
 	_canvas = Control.new()
 	_canvas.mouse_filter = Control.MOUSE_FILTER_PASS

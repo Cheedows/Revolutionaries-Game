@@ -5,6 +5,17 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"full_party":
+			var squad := session.state.active_squad()
+			while session.state.squad_members(squad).size() < 6:
+				var person := session.state.add_creature(Creature.new())
+				person.name = "Another Liberal %d" % person.id
+				person.alignment = &"liberal"
+				person.squad_id = squad.id
+				squad.member_ids.append(person.id)
+			(play.get_child(0) as SiteScreen)._refresh()
+			await UiDriver.settle(tree)
+			return
 		"full_map":
 			button = UiDriver.button(play, "Map")
 		"bulk":

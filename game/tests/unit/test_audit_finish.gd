@@ -83,11 +83,20 @@ func test_playtest_full_map_and_party_preserve_turn() -> void:
 	viewport.size = Vector2i(360, 640)
 	tree.root.add_child(viewport)
 	var s := _site()
+	var squad := s.state.active_squad()
+	while s.state.squad_members(squad).size() < 6:
+		var person := s.state.add_creature(Creature.new())
+		person.name = "Another Liberal %d" % person.id
+		person.alignment = &"liberal"
+		person.squad_id = squad.id
+		squad.member_ids.append(person.id)
 	var screen := (load("res://ui/screens/site_screen.tscn") as PackedScene).instantiate() as SiteScreen
 	viewport.add_child(screen)
 	screen.setup(s)
 	await UiDriver.settle(tree)
 	check(screen._party.visible, "squad health remains on the site screen")
+	equal(screen._party.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO, "six members can scroll horizontally")
+	check(screen._party._row.size.x > screen._party.size.x, "six members remain in the scrollable strip")
 	var pending := s.pending()
 	var draws := s.rng.draws
 	await UiDriver.tap(tree, UiDriver.button(screen, "Map"))
