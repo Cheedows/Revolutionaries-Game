@@ -59,6 +59,7 @@ func _refresh() -> void:
 		says_nothing("No save files yet.")
 	for slot: String in slots:
 		_body.add_child(_slot_row(slot))
+	PressFeel.teach(self)
 
 
 func _slot_row(slot: String) -> Control:

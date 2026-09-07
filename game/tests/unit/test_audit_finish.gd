@@ -155,3 +155,21 @@ func test_contextual_soundtrack_loads_without_simulation_draws() -> void:
 	Music.follow(s, &"site")
 	equal(Music._track, &"alarmed", "alarm changes the soundtrack")
 	equal(s.rng.draws, draws, "presentation consumes no simulation randomness")
+
+func test_playtest_music_toggle_rebuilds_touch_controls() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var screen := (load("res://ui/screens/management_screen.tscn") as PackedScene).instantiate() as ManagementScreen
+	screen.kind = PanelStack.SETTINGS
+	tree.root.add_child(screen)
+	screen.setup(Commands.roll_a_game(6161))
+	await UiDriver.settle(tree)
+	var was_enabled: bool = Music.enabled
+	await UiDriver.tap(tree, UiDriver.button(screen, "Music: On" if was_enabled else "Music: Off"))
+	equal(Music.enabled, not was_enabled, "music toggle takes effect")
+	var rebuilt := UiDriver.button(screen, "Music: Off" if was_enabled else "Music: On")
+	check(rebuilt != null, "new button reflects the setting")
+	await UiDriver.tap(tree, rebuilt)
+	equal(Music.enabled, was_enabled, "rebuilt button remains operable")
+	tree.root.remove_child(screen)
+	screen.queue_free()
+	await UiDriver.settle(tree)

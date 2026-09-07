@@ -98,10 +98,11 @@ historical audit, rather than being rewritten to conceal the missing features.
   bodies. Approaching a door advances reactions/bodies before its question;
   declining it does not add a second body tick. Finished dialogue advances once.
 
-Evidence: eight focused audit-completion tests pass, covering copied reports,
+Evidence: nine focused audit-completion tests pass, covering copied reports,
 all 21 date-scene combinations, actual phone clicks for bulk assignment and map
 inspection, unavailable-member handling, cancellation/door timing, and loading
-contextual music without RNG draws. The 38 click regressions pass. Rendered CI
+contextual music without RNG draws, plus toggling music through rebuilt controls.
+The 38 click regressions pass. Rendered CI
 fixtures now include the bulk picker, full map, polling and financial reports.
 These are bounded checks of the audited repairs, not proof that every original
 combination of game states is equivalent.
