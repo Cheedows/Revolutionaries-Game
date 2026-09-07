@@ -280,5 +280,16 @@
   "Squad haul": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead.",
   "Nothing carried in the squad haul.": "User-requested site feedback and local inventory; the original uses its terminal equipment and pickup display instead.",
   " - Talk / Recruit": "Alignment is named next to the action in the new encounter list; the original colours terminal names.",
-  " (receptive)": "Expose the original talkreceptive rule alongside alignment, so colour does not promise recruitment success."
+  " (receptive)": "Expose the original talkreceptive rule alongside alignment, so colour does not promise recruitment success.",
+  " realizes they have committed to eating %d meals at once.": "Original completedate line, using singular they for the port neutral pronoun.",
+  "Financial Report": "Heading for the original fundreport screen, now a scrollable acknowledgement.",
+  "Total: $%d": "Original funding report totals, labeled for the stacked phone report.",
+  "Assign Activities": "Touch label for original activatebulk.",
+  "Sort: Code Name": "Touch label for original sorting_prompt.",
+  "Sort: ": "Touch label for the active roster sorting choice.",
+  "Select All": "Touch selection control for original bulk activity assignment.",
+  "Music: On": "Visible state of the original music toggle.",
+  "Music: Off": "Visible state of the original music toggle.",
+  "Full map": "Touch label for the original M map screen.",
+  "@ Squad  D Door  W Wall  E Exit  U Unit  H Heavy unit  T Trap": "Legend for the original floor and siege masks in a draggable map."
 }

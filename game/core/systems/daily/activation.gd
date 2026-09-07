@@ -103,7 +103,10 @@ static func run_one(state: GameState, rng: Rng, creature: Creature,
 		&"stealcars":
 			return _steal_a_car(state, rng, creature, catalog)
 		&"polls":
-			return PollingActivity.run(state, rng, creature)
+			var report := PollingActivity.run(state, rng, creature)
+			return PendingIntent.new(Intent.new(Intent.ACKNOWLEDGE_REPORT, [],
+					{"polling": report[0].data}, false),
+					func(_answer: Variant) -> Array[Event]: return [], report)
 		&"visit":
 			creature.activity = &"none"
 		&"none":

@@ -121,10 +121,11 @@ func test_surgery_returns_to_the_dossier_then_the_roster() -> void:
 	for step in ["roster", "dossier", "surgery"]:
 		await walk.press(tree, play, step)
 	equal(play.get("_kind"), &"surgery", "surgery is a full page")
+	var surgeon: Variant = (play.get_child(0) as ManagementScreen).subject
 	await UiDriver.tap(tree, UiDriver.button(play, "Back"))
 	equal(play.get("_kind"), &"dossier", "Back keeps the selected surgeon")
 	var screen := play.get_child(0) as ManagementScreen
-	check(screen.subject == session.state.members()[0], "the surgeon is still selected")
+	check(screen.subject == surgeon, "the surgeon is still selected")
 	await UiDriver.tap(tree, UiDriver.button(play, "Back"))
 	equal(play.get("_kind"), &"roster", "the next Back returns to the roster")
 	await _finish(tree, play)

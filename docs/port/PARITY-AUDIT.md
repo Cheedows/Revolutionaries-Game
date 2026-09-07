@@ -69,3 +69,39 @@ Repair combat/siege progression first, then hospital/day continuations,
 decision context and health/appointment visibility, squad management and field
 equipment, then reports, narrative and audio. Each closed item needs focused
 behavioral evidence; passing one fixture does not establish whole-system parity.
+
+
+## Repair completion — 2026-09-07
+
+The roadmap now closes all 18 identified items. The findings above remain the
+historical audit, rather than being rewritten to conceal the missing features.
+
+- A6: The roster supports individual selection, Select All, bulk activity
+  assignment, and sorting by code name, health, juice, activity and location.
+  Unavailable members are excluded from assignment by the existing condition
+  rules. Activity-specific choices remain available through each member's row.
+- A8: A persistent, horizontally swipeable squad condition strip remains on
+  the shared site/combat page. Tap a member to open squad inventory and records.
+- A14/A17: Polling displays its actual noisy survey, unknown figures, approval
+  and concern. Month-end accounts pause before the ledger resets; copied
+  income/expense figures remain readable in history after acknowledgement.
+- A15: Map opens the known current floor, with a draggable detail view and a
+  fitted overview. Both maps show siege units/heavy units/traps; the full map
+  also exposes the underfoot description on phones. Viewing it spends no turn.
+- A16: Dating retains the existing random draws and now carries their results
+  into the three original disaster scenes and seven humiliation endings.
+- A18: Contextual music and a persisted Music switch are present. Recordings
+  come from the committed original assets with attribution. The five recordings
+  excluded by LICENSING-NOTES are not shipped in Godot: trial uses defense,
+  sleepers use recruiting, victory uses conquer, and news uses base music.
+- A3 follow-up: A cancelled conversation or blocked wall does not advance
+  bodies. Approaching a door advances reactions/bodies before its question;
+  declining it does not add a second body tick. Finished dialogue advances once.
+
+Evidence: eight focused audit-completion tests pass, covering copied reports,
+all 21 date-scene combinations, actual phone clicks for bulk assignment and map
+inspection, unavailable-member handling, cancellation/door timing, and loading
+contextual music without RNG draws. The 38 click regressions pass. Rendered CI
+fixtures now include the bulk picker, full map, polling and financial reports.
+These are bounded checks of the audited repairs, not proof that every original
+combination of game states is equivalent.

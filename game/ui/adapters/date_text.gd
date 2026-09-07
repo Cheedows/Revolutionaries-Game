@@ -44,8 +44,7 @@ static func describe(event: Event, state: GameState) -> String:
 			return "%s was leaking to the police the whole time." % _who(state,
 					data.get("date", 0))
 		Event.DATE_DISASTER:
-			return NOT_SEDUCTIVE_ENOUGH % _who(state,
-					data.get("creature", 0)) + ANOTHER_RELATIONSHIP
+			return DateDisasterText.describe(data, state)
 		Event.DATE_HOLIDAY:
 			return "%s goes away with %s for %d days." % [
 				_who(state, data.get("creature", 0)),

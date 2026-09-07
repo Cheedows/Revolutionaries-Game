@@ -14,6 +14,7 @@ var _content: Control
 var _panels: PanelStack
 var _log: LogView
 var _notice: Label
+var _bulk: BulkRoster
 var _leaving := false
 var _was_narrow := false
 
@@ -66,6 +67,16 @@ func setup(session: Session) -> void:
 
 
 func _wire_roster(roster: Roster) -> void:
+	roster.bulk_wanted.connect(func(ids: Array[int]) -> void:
+		_bulk = BulkRoster.new()
+		add_child(_bulk)
+		_page.hide()
+		_bulk.closed.connect(func() -> void:
+			_bulk.queue_free()
+			_bulk = null
+			_page.show()
+			_refresh())
+		_bulk.open(_session, ids))
 	roster.activity_wanted.connect(func(who: Creature) -> void:
 		page_wanted.emit(PanelStack.ACTIVITY, who))
 	roster.dossier_wanted.connect(func(who: Creature) -> void:
@@ -142,6 +153,9 @@ func adapt() -> void:
 
 
 func _finish() -> void:
+	if _bulk != null:
+		_bulk.closed.emit()
+		return
 	if _leaving:
 		return
 	_leaving = true

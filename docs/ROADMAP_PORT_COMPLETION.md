@@ -12,22 +12,26 @@ The audit document records evidence; this checklist tracks repairs.
 
 - [x] A1: Siege defense continuation
 - [x] A2: Single enemy retaliation per Attack
-- [x] A3: Body progression on movement, Wait, pickup and reload (conversation/door turn semantics still require a separate review)
+- [x] A3: Body progression on movement, Wait, pickup and reload; cancelled talk/walls cost no turn, door approach advances before its question
 - [x] A4: Hospital return and duration units
 - [x] A5: Form, name, switch and transfer between squads; preserve an emptied squad's haul
-- [ ] A6: Bulk activities and roster sorting
+- [x] A6: Bulk activities and roster sorting
 - [x] A7: In-site weapon, armor and ammunition changes; one equipment turn on closing
-- [ ] A8: Full records/injuries now available in site inventory; persistent squad health display still pending
+- [x] A8: Persistent squad health strip with access to full records/injuries
 - [x] A9: Organ injury detail
 - [x] A10: Scheduled meeting/date counts in character records and recruitment decisions
 - [x] A11: Recruitment profile/eagerness and attendance checked before choices; original sixth/seventh-meeting RNG boundary restored
 - [x] A12: Date/interrogation context
 - [x] A13: Trial context and attorney fee
-- [ ] A14: Polling results
-- [ ] A15: Full-site map and siege overlays
-- [ ] A16: Later dating narrative
-- [ ] A17: Month-end financial report
-- [ ] A18: Contextual audio
+- [x] A14: Polling results
+- [x] A15: Full-site map and siege overlays
+- [x] A16: Later dating narrative
+- [x] A17: Month-end financial report
+- [x] A18: Contextual audio
+
+The remaining audit repairs were implemented on 2026-09-07; see the repair
+record in [PARITY-AUDIT.md](port/PARITY-AUDIT.md). Closing these identified
+gaps does not reinstate the withdrawn claim of exhaustive 100% parity.
 
 ## 2. Baseline already established
 

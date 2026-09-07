@@ -1,0 +1,24 @@
+class_name SiteParty
+extends ScrollContainer
+## Persistent squad condition; swipe along the party and tap for full records.
+signal inspect_wanted
+var _row: HBoxContainer
+
+func refresh(state: GameState) -> void:
+	if _row == null:
+		_row = Atoms.row(Metrics.TIGHT)
+		add_child(_row)
+		vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		custom_minimum_size.y = Metrics.TOUCH_TARGET + Metrics.SNUG
+		Metrics.page_scroller(self)
+	for child in _row.get_children():
+		_row.remove_child(child)
+		child.queue_free()
+	var squad := state.active_squad()
+	if squad == null: return
+	for person: Creature in state.squad_members(squad):
+		var button := Atoms.button(person.name + "\n" + ConditionText.of(person, true))
+		button.pressed.connect(func() -> void: inspect_wanted.emit())
+		button.add_theme_color_override(&"font_color", NameColours.of(person))
+		_row.add_child(button)
+	PressFeel.teach(self)

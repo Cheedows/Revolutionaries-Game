@@ -32,6 +32,11 @@ func _refresh() -> void:
 		_body.remove_child(child)
 		child.queue_free()
 	_head.set_title("Settings")
+	var music := Atoms.button("Music: On" if Music.enabled else "Music: Off")
+	music.pressed.connect(func() -> void:
+		Music.enable(not Music.enabled)
+		_refresh())
+	_body.add_child(music)
 
 	_heading("In what world will you pursue your Liberal Agenda?")
 	for line in SettingsText.switches(_session.state):

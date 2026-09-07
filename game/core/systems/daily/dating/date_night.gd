@@ -64,11 +64,13 @@ static func run(state: GameState, rng: Rng, plan: DatePlan,
 	if plan.date_ids.size() > 1 and rng.one_in(
 			CROWD_ODDS if plan.date_ids.size() > 2 else PAIR_ODDS):
 		# They all turn up at once, or they have compared notes.
-		rng.below(DISASTERS)
-		rng.below(HUMILIATIONS)
+		var disaster := rng.below(DISASTERS)
+		var humiliation := rng.below(HUMILIATIONS)
 		JuiceRules.add(state, dater, HUMILIATION_JUICE, HUMILIATION_FLOOR)
 		events.append(Event.new(Event.DATE_DISASTER, {
 			"creature": dater.id, "dates": plan.date_ids.size(),
+			"disaster": disaster, "humiliation": humiliation,
+			"partners": Array(plan.date_ids),
 		}))
 		return _finished(plan, events, true)
 

@@ -75,6 +75,10 @@ static func question(intent: Intent, state: GameState) -> String:
 ## A line under the question, when the context has something worth saying.
 static func detail(intent: Intent, state: GameState) -> String:
 	var context := intent.context
+	if context.has("polling"):
+		return ReportText.polling(context.polling, state)
+	if context.has("financial_report"):
+		return ReportText.finances(context.financial_report)
 	if context.get("recruit_missed", false):
 		return RecruitText.describe(Event.new(Event.RECRUIT_MISSED, context), state)
 	var lines := PackedStringArray(DecisionText.detail(intent, state))

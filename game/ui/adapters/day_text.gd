@@ -41,7 +41,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.LETTER_WRITTEN:
 			return _letter(state, data)
 		Event.POLLS_SURVEYED:
-			return "%s reads the polls." % _who(state, data.get("creature", 0))
+			return ReportText.polling(data, state)
 		Event.TROUBLE_CAUSED:
 			return _stunt(data)
 		Event.CAR_FOUND:

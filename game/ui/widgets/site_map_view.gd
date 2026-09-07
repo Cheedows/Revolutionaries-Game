@@ -28,6 +28,7 @@ const FLOOR := Color("30363f")
 ## Emitted when the player clicks a square next to the squad: the direction is
 ## one of [SiteLoop]'s move ids.
 signal step_wanted(direction: int)
+signal map_wanted
 
 var _grid: Control
 var _state: GameState
@@ -97,7 +98,13 @@ func _build() -> void:
 	add_child(column)
 
 	_heading = Atoms.wrapped(Atoms.heading("Current Location"))
-	column.add_child(_heading)
+	var heading_row := Atoms.row(Metrics.TIGHT)
+	column.add_child(heading_row)
+	_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading_row.add_child(_heading)
+	var full := Atoms.quiet("Map")
+	full.pressed.connect(func() -> void: map_wanted.emit())
+	heading_row.add_child(full)
 
 	_grid = Control.new()
 	_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -155,6 +162,8 @@ func _draw_grid() -> void:
 					symbol = "D"
 				elif flags & int(Tables.SITE_BLOCKS[&"exit"]) != 0:
 					symbol = "E"
+				var siege_symbol := SiteFullMap.glyph(map, x, y, z)
+				if siege_symbol in ["U", "H", "u", "T"]: symbol = siege_symbol
 				_mark(at, symbol)
 
 	# The squad, and whoever is in the room with them.
@@ -205,6 +214,9 @@ func _colour_of(map: LevelMap, x: int, y: int, z: int) -> Color:
 	var flags := map.get_flag(x, y, z)
 	if flags & int(Tables.SITE_BLOCKS[&"known"]) == 0:
 		return ROCK
+	var siege_mark := SiteFullMap.glyph(map, x, y, z)
+	if siege_mark in ["U", "H", "u"]: return Palette.CONSERVATIVE
+	if siege_mark == "T": return Palette.MODERATE
 	if flags & int(Tables.SITE_BLOCKS[&"block"]) != 0:
 		return Palette.TEXT_DIM.darkened(0.6)
 	if flags & int(Tables.SITE_BLOCKS[&"exit"]) != 0:

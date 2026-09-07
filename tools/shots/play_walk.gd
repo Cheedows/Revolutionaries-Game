@@ -5,6 +5,23 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"full_map":
+			button = UiDriver.button(play, "Map")
+		"bulk":
+			await UiDriver.tap(tree, UiDriver.button(play, "Select All"))
+			button = UiDriver.button(play, "Assign Activities")
+		"polling":
+			var who := session.state.members()[0]
+			who.activity = &"polls"
+			session.submit(DailyActivation.run_one(session.state, session.rng, who, session.catalog))
+			await UiDriver.settle(tree)
+			return
+		"finances":
+			session.state.ledger.add(123, &"donations")
+			session.state.calendar.month = 2
+			session.submit(MonthlyTurn.run(session.state, session.rng, session.catalog))
+			await UiDriver.settle(tree)
+			return
 		"field_equipment":
 			var inventory: SiteInventory = play.get_child(0)._inventory
 			var equip := UiDriver.button(inventory, "Equip")

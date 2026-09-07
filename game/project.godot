@@ -68,6 +68,7 @@ pointing/emulate_mouse_from_touch=true
 [autoload]
 
 Branding="*res://branding.gd"
+Music="*res://ui/audio/music.gd"
 
 [debug]
 

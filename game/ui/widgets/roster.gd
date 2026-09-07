@@ -23,6 +23,11 @@ signal hostage_chosen(keeper: Creature, hostage: Creature)
 ## Emitted when a recruiter has been told what kind of person to look for.
 signal recruit_chosen(recruiter: Creature, type: StringName)
 
+signal bulk_wanted(ids: Array[int])
+var _selected: Dictionary = {}
+var _state: GameState
+var _sort := 0
+const SORTS := ["Code Name", "Health", "Juice", "Activity", "Location"]
 var _rows: VBoxContainer
 
 ## The garments a tailor could be told to make, worked out from the state and
@@ -55,6 +60,28 @@ func _build() -> void:
 
 	var heading := Atoms.heading(Branding.ORG_MEMBERS)
 	column.add_child(heading)
+	var tools := Atoms.flow()
+	column.add_child(tools)
+	var sort := Atoms.button("Sort: Code Name")
+	sort.pressed.connect(func() -> void:
+		_sort = (_sort + 1) % SORTS.size()
+		sort.text = "Sort: " + SORTS[_sort]
+		refresh(_state))
+	tools.add_child(sort)
+	var all := Atoms.button("Select All")
+	all.pressed.connect(func() -> void:
+		_selected.clear()
+		for person: Creature in _state.members():
+			_selected[person.id] = true
+		refresh(_state))
+	tools.add_child(all)
+	var assign := Atoms.button("Assign Activities")
+	assign.pressed.connect(func() -> void:
+		var ids: Array[int] = []
+		for id in _selected:
+			if _state.creatures.has(id): ids.append(int(id))
+		if not ids.is_empty(): bulk_wanted.emit(ids))
+	tools.add_child(assign)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -90,11 +117,16 @@ func compact(on: bool) -> void:
 ## Redraws from [param state].
 func refresh(state: GameState) -> void:
 	_build()
+	_state = state
 	for child in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
 
 	var members := state.members()
+	members.sort_custom(func(a: Creature, b: Creature) -> bool:
+		var left: Variant = _sort_value(a)
+		var right: Variant = _sort_value(b)
+		return a.id < b.id if left == right else left < right)
 	if members.is_empty():
 		var empty := Atoms.nothing("Nobody yet.")
 		_rows.add_child(empty)
@@ -106,6 +138,12 @@ func refresh(state: GameState) -> void:
 
 func _row(creature: Creature, held: Array[Creature]) -> Control:
 	var row: Container = HFlowContainer.new() if _compact else HBoxContainer.new()
+	var select := Atoms.quiet("Selected" if _selected.has(creature.id) else "Select")
+	select.pressed.connect(func() -> void:
+		if _selected.has(creature.id): _selected.erase(creature.id)
+		else: _selected[creature.id] = true
+		refresh(_state))
+	row.add_child(select)
 	row.add_theme_constant_override(&"separation", Metrics.SNUG)
 	row.add_theme_constant_override(&"h_separation", Metrics.SNUG)
 	row.add_theme_constant_override(&"v_separation", Metrics.TIGHT)
@@ -237,3 +275,12 @@ func _condition(creature: Creature) -> String:
 	if creature.hiding > 0:
 		return "In Hiding"
 	return ConditionText.of(creature)
+
+
+func _sort_value(person: Creature) -> Variant:
+	match _sort:
+		1: return person.body.blood
+		2: return -person.juice
+		3: return String(person.activity)
+		4: return person.location
+	return person.name.to_lower()

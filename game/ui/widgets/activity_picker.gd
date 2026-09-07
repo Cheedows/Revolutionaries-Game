@@ -47,6 +47,7 @@ func _refresh() -> void:
 		_ask_which_kind()
 	else:
 		_ask_which_job()
+	PressFeel.teach(self)
 
 
 ## The first question: what sort of thing are they going to be doing.

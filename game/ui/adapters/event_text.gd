@@ -57,6 +57,8 @@ static func describe(event: Event, state: GameState) -> String:
 	if event.type in QUIET:
 		return ""
 	var data := event.data
+	if data.has("financial_report"):
+		return ReportText.finances(data.financial_report)
 
 	# Winning somebody over is a conversation with a lot of lines in it; they
 	# live together in RecruitText rather than swamping the match below.

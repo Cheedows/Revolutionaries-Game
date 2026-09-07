@@ -74,6 +74,20 @@ static func _rest_of_the_month(state: GameState, rng: Rng, catalog: Catalog,
 	events.append_array(GraffitiUpkeep.run(state, rng))
 	events.append_array(OpinionDrift.run(state, rng, liberal_power))
 	OpinionDrift.stipends(state)
+	if catalog != null and not state.disbanded:
+		var report := {"funds": state.ledger.funds,
+				"income": state.ledger.income.duplicate(),
+				"expense": state.ledger.expense.duplicate()}
+		events.append(Event.new(Event.MAJOR_EVENT, {"financial_report": report}))
+		return PendingIntent.new(Intent.new(Intent.ACKNOWLEDGE_REPORT, [],
+				{"financial_report": report}, false),
+				func(_answer: Variant) -> Variant:
+					return _politics(state, rng, catalog, [], laws_were), events)
+	return _politics(state, rng, catalog, events, laws_were)
+
+
+static func _politics(state: GameState, rng: Rng, catalog: Catalog,
+		events: Array[Event], laws_were: PackedInt32Array) -> Variant:
 	state.ledger.reset_monthly()
 
 	if state.calendar.month == ELECTION_MONTH:

@@ -106,11 +106,26 @@ static func _options(state: GameState, squad: Squad,
 static func _act(state: GameState, rng: Rng, squad: Squad, choice: int,
 		catalog: Catalog) -> Variant:
 	var from := Vector3i(state.site.x, state.site.y, state.site.z)
+	var step := false
+	if STEPS.has(choice):
+		var target := Vector2i(from.x, from.y) + Vector2i(STEPS[choice])
+		step = state.site.map.contains(target.x, target.y, from.z) and not (state.site.map.get_flag(target.x, target.y, from.z) & int(Tables.SITE_BLOCKS[&"block"]))
+	var before: Array[Event] = []
+	if step:
+		before.append_array(_react(state, rng, squad, catalog))
+		before.append_array(CombatAdvance.everyone(state, rng, squad,
+				{&"mode": &"site", &"catalog": catalog, &"squad": squad}))
+		if not state.squad_members(squad).any(func(person: Creature) -> bool: return person.alive):
+			return before
 	var result: Variant = _action(state, rng, squad, choice, catalog)
+	if result is PendingIntent: result.events.append_array(before)
+	else: result.append_array(before)
 	return PendingIntent.chain(result, func(events: Array[Event]) -> Variant:
 		if state.site.location == -1:
 			return events
-		return _settle(state, rng, squad, choice, from, events, catalog))
+		if (STEPS.has(choice) and not step) or (choice == TALK and events.is_empty()):
+			return events
+		return _settle(state, rng, squad, choice, from, events, catalog, step))
 
 
 static func _action(state: GameState, rng: Rng, squad: Squad, choice: int,
@@ -161,7 +176,7 @@ static func _reload(state: GameState, squad: Squad,
 ## in, everything that burns burns a little further — and if the squad is
 ## standing in the doorway, the visit ends.
 static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
-		from: Vector3i, events: Array[Event], catalog: Catalog) -> Variant:
+		from: Vector3i, events: Array[Event], catalog: Catalog, step: bool) -> Variant:
 	var moved := from != Vector3i(state.site.x, state.site.y, state.site.z)
 	if state.site.encounter_ids.is_empty():
 		state.site.encounter_timer = 0
@@ -169,9 +184,9 @@ static func _settle(state: GameState, rng: Rng, squad: Squad, choice: int,
 		state.site.encounter_timer += 1
 	var tail := events + _under_siege(state, rng, moved, catalog)
 	# Attack owns its retaliation and body tick. Reload has no enemy reaction.
-	if choice != FIGHT and choice != RELOAD:
+	if not step and choice != FIGHT and choice != RELOAD:
 		tail.append_array(_react(state, rng, squad, catalog))
-	if moved or choice in [WAIT, TAKE, RELOAD, EQUIP]:
+	if not step and (moved or choice in [WAIT, TAKE, RELOAD, EQUIP, TALK]):
 		tail.append_array(CombatAdvance.everyone(state, rng, squad,
 				{&"mode": &"site", &"catalog": catalog, &"squad": squad}))
 	# The way out is only taken by walking onto it: the squad comes in through

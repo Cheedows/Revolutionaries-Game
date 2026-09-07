@@ -13,6 +13,8 @@ var _people: SitePeople
 var _inventory: SiteInventory
 var _transcript: SiteTranscript
 var _exchange: Dictionary = {}
+var _party: SiteParty
+var _full_map: SiteFullMap
 
 
 func setup(session: Session) -> void:
@@ -27,9 +29,14 @@ func _build() -> void:
 	if _page != null:
 		return
 	frame()
+	_status.hide()
+	_party = SiteParty.new()
+	_party.inspect_wanted.connect(func() -> void: _on_answer(SiteActionDialog.INVENTORY))
+	_page.add_child(_party)
 	_map = SiteMapView.new()
 	_map.size_flags_vertical = Control.SIZE_FILL
 	_map.step_wanted.connect(_on_step)
+	_map.map_wanted.connect(_open_map)
 	_page.add_child(_map)
 	_people = SitePeople.new()
 	_people.talk_wanted.connect(_on_talk_to)
@@ -82,6 +89,7 @@ func _refresh() -> void:
 		_page.hide()
 		return
 	_status.refresh(_session.state)
+	_party.refresh(_session.state)
 	_map.refresh(_session.state)
 	var moving := _session.is_waiting() and _session.pending().intent.type == Intent.CHOOSE_SITE_MOVE
 	_map.allow_steps(moving)
@@ -123,6 +131,9 @@ func _on_talk_to(id: int) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _full_map != null:
+		if event.is_action_pressed(&"ui_cancel"): back()
+		return
 	if _transcript != null and _transcript.visible:
 		if event.is_action_pressed(&"ui_cancel"):
 			back()
@@ -178,9 +189,23 @@ func adapt() -> void:
 
 
 func back() -> void:
+	if _full_map != null:
+		_full_map.closed.emit()
+		return
 	if _transcript.visible:
 		_transcript.closed.emit()
 	elif _inventory.visible:
 		_inventory.closed.emit()
 	elif _session.is_waiting() and _session.pending().intent.cancellable:
 		_on_answer(null)
+
+
+func _open_map() -> void:
+	_full_map = SiteFullMap.new()
+	add_child(_full_map)
+	_page.hide()
+	_full_map.closed.connect(func() -> void:
+		_full_map.queue_free()
+		_full_map = null
+		_page.show())
+	_full_map.open(_session.state)
