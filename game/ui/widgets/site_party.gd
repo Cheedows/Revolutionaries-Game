@@ -2,6 +2,7 @@ class_name SiteParty
 extends ScrollContainer
 ## Persistent squad condition; swipe along the party and tap for full records.
 signal inspect_wanted
+signal map_wanted
 var _row: HBoxContainer
 
 func refresh(state: GameState) -> void:
@@ -14,6 +15,9 @@ func refresh(state: GameState) -> void:
 	for child in _row.get_children():
 		_row.remove_child(child)
 		child.queue_free()
+	var full := Atoms.quiet("Map")
+	full.pressed.connect(func() -> void: map_wanted.emit())
+	_row.add_child(full)
 	var squad := state.active_squad()
 	if squad == null: return
 	for person: Creature in state.squad_members(squad):

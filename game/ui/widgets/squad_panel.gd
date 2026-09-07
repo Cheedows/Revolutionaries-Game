@@ -140,7 +140,7 @@ func _build() -> void:
 	add_child(column)
 
 	var scroll := ScrollContainer.new()
-	Metrics.page_scroller(scroll)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
 	var content := Atoms.column(Metrics.SNUG)

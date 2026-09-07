@@ -47,7 +47,7 @@ func setup(session: Session) -> void:
 
 func _process(_delta: float) -> void:
 	if _session != null:
-		get_node("/root/Music").follow(_session, _kind)
+		if has_node("/root/Music"): get_node("/root/Music").follow(_session, _kind)
 	if _session != null and _kind_for() != _kind:
 		_route()
 

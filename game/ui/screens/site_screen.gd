@@ -36,7 +36,7 @@ func _build() -> void:
 	_map = SiteMapView.new()
 	_map.size_flags_vertical = Control.SIZE_FILL
 	_map.step_wanted.connect(_on_step)
-	_map.map_wanted.connect(_open_map)
+	_party.map_wanted.connect(_open_map)
 	_page.add_child(_map)
 	_people = SitePeople.new()
 	_people.talk_wanted.connect(_on_talk_to)

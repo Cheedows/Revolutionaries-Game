@@ -51,8 +51,14 @@ func _day_matches(sample: Dictionary) -> bool:
 		roster.append(person)
 
 	var result: Variant = DailyActivation.run(state, rng, _catalog)
-	if result is PendingIntent:
-		return _diverged(where, "questions", "none", "a question")
+	var reports: Array[Event] = []
+	while result is PendingIntent:
+		if result.intent.type != Intent.ACKNOWLEDGE_REPORT or not result.intent.context.has("polling"):
+			return _diverged(where, "questions", "poll report", "another question")
+		reports.append_array(result.events)
+		result = result.resume.call(null)
+	reports.append_array(result)
+	result = reports
 
 	if rng.draws != int(sample["draws"]):
 		return _diverged(where, "draws", sample["draws"], rng.draws)

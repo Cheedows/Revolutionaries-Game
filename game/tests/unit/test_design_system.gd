@@ -64,6 +64,7 @@ func test_the_screen_furniture_leaves_room_for_the_list() -> void:
 	for size: Vector2i in [Vector2i(360, 640), PHONE, Vector2i(412, 915), DESK]:
 		var held := _screen_in(size, "new_game_screen")
 		var screen: Control = held["screen"]
+		await UiDriver.settle(Engine.get_main_loop() as SceneTree)
 		var fixed := _fixed_height(screen)
 		if fixed > float(size.y) / 2.0:
 			fail("%s: the parts that do not scroll want %d of %d pixels,"

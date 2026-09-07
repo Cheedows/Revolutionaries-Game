@@ -93,19 +93,19 @@ func test_a_real_phone_screen_hands_the_layout_a_narrow_viewport() -> void:
 
 
 func test_a_phone_is_recognised_as_one_and_a_desk_is_not() -> void:
-	var phone := _screen_in(PHONE)
+	var phone := await _screen_in(PHONE)
 	check(Metrics.narrow(phone["screen"]), "400px across is narrow")
 	check(Metrics.touch(phone["screen"]), "and is sized for a fingertip")
 	_drop(phone)
 
-	var desk := _screen_in(DESK)
+	var desk := await _screen_in(DESK)
 	check(not Metrics.narrow(desk["screen"]), "1280px across is not narrow")
 	_drop(desk)
 
 
 func test_nothing_the_game_builds_runs_off_the_side_of_a_phone() -> void:
 	for scene in ["base_screen", "title_screen", "new_game_screen"]:
-		var held := _screen_in(PHONE, scene)
+		var held := await _screen_in(PHONE, scene)
 		var screen: Control = held["screen"]
 		var widest := _widest(screen, "")
 		check(widest["width"] <= float(PHONE.x),
@@ -115,7 +115,7 @@ func test_nothing_the_game_builds_runs_off_the_side_of_a_phone() -> void:
 
 
 func test_everything_you_can_press_is_big_enough_to_hit() -> void:
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	# The page itself, and then the list behind More — which is where eight of
 	# this screen's eleven buttons now live, and where a check that only looked
@@ -135,7 +135,7 @@ func test_everything_you_can_press_is_big_enough_to_hit() -> void:
 
 
 func test_every_panel_fits_on_a_phone() -> void:
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	var opened := 0
 	for entry: Array in BaseNav.PANEL_BUTTONS:
@@ -162,7 +162,7 @@ func test_every_panel_fits_on_a_phone() -> void:
 
 
 func test_somebodys_record_and_their_gear_fit_on_a_phone() -> void:
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	var session: Session = held["session"]
 	var roster := _find(screen, "Roster")
@@ -238,7 +238,7 @@ func test_a_chase_fits_on_a_phone() -> void:
 
 
 func test_a_year_can_be_played_on_a_phone_without_a_keyboard() -> void:
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	var session: Session = held["session"]
 	var wait: Button = _named(screen, "Wait a day")
@@ -269,7 +269,7 @@ func test_a_year_can_be_played_on_a_phone_without_a_keyboard() -> void:
 
 
 func test_a_building_can_be_walked_on_a_phone() -> void:
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	var session: Session = held["session"]
 	var squad := session.state.active_squad()
@@ -335,13 +335,13 @@ func _fits_and_can_be_hit(screen: Control, where: String) -> bool:
 ## a height of its own and scrolls inside it. See LogView.NARROW_HEIGHT.
 func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 	for scene in ["title_screen", "new_game_screen"]:
-		var opening := _screen_in(PHONE, scene)
+		var opening := await _screen_in(PHONE, scene)
 		var one := _scrollers(opening["screen"], true)
 		if one.size() != 1:
 			fail("%s has %d scrollers: %s" % [scene, one.size(), _names(one)])
 		_drop(opening)
 
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	if not _only_the_page_and_the_log(screen, "the safehouse"):
 		_drop(held)
@@ -364,7 +364,7 @@ func test_a_phone_has_exactly_one_thing_that_scrolls() -> void:
 
 	# A desk is the other way round: each pane keeps its own, and the page
 	# does not move under them.
-	var desk := _screen_in(DESK)
+	var desk := await _screen_in(DESK)
 	check(_scrollers(desk["screen"], true).size() > 1,
 			"a desk keeps a scroller per pane")
 	_drop(desk)
@@ -408,13 +408,12 @@ func _scrollers(control: Control, moving: bool = false) -> Array[Control]:
 func _names(controls: Array[Control]) -> String:
 	var said := PackedStringArray()
 	for control in controls:
-		said.append(_describe(control.get_parent() as Control)
-				if control.get_parent() is Control else "?")
+		said.append(str(control.get_path()))
 	return ", ".join(said)
 
 
 func test_the_country_is_reachable_on_a_phone() -> void:
-	var held := _screen_in(PHONE)
+	var held := await _screen_in(PHONE)
 	var screen: Control = held["screen"]
 	var laws := _find(screen, "LawList")
 	check(laws != null and not laws.visible,
@@ -429,7 +428,7 @@ func test_the_country_is_reachable_on_a_phone() -> void:
 	_drop(held)
 
 	# On a desk it is simply there, and the button is not.
-	var desk := _screen_in(DESK)
+	var desk := await _screen_in(DESK)
 	check(_find(desk["screen"], "LawList").visible, "on a desk it is up")
 	check(not (_named(desk["screen"], "The country") as Button).visible,
 			"and needs no button")
@@ -473,6 +472,7 @@ func _screen_in(size: Vector2i, which: String = "base_screen") -> Dictionary:
 		screen.call("build")
 	elif screen.has_method("begin"):
 		screen.call("begin", 4242)
+	await UiDriver.settle(tree)
 	return {"viewport": viewport, "screen": screen, "session": session}
 
 

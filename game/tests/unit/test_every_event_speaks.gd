@@ -133,7 +133,13 @@ func _fields(state: GameState, documented: String) -> Dictionary:
 		var parts := raw.split(":")
 		var key := parts[0].strip_edges()
 		var hint := parts[1].strip_edges() if parts.size() > 1 else ""
-		if hint == "index" or hint == "count":
+		if key == "survey":
+			var figures := PackedInt32Array()
+			figures.resize(Ids.VIEWS.size())
+			data[key] = figures
+		elif key == "concern":
+			data[key] = &"gay"
+		elif hint == "index" or hint == "count":
 			data[key] = 1
 		elif hint == "type":
 			data[key] = &"CREATURE_COP"

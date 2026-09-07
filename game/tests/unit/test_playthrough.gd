@@ -226,7 +226,7 @@ func _answer_everything(screen: PlayScreen, session: Session, day: int) -> bool:
 			_site_turns += 1
 			continue
 		var choice: Variant = _from_the_buttons(dialog, false)
-		if choice == null and not dialog.offered().is_empty():
+		if choice == null and not dialog.answerable().has(null) and not dialog.offered().is_empty():
 			fail("day %d: the active decision offered nothing answerable" % day)
 			return false
 		active.call("_on_answer", choice)

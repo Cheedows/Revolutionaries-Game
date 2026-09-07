@@ -28,7 +28,6 @@ const FLOOR := Color("30363f")
 ## Emitted when the player clicks a square next to the squad: the direction is
 ## one of [SiteLoop]'s move ids.
 signal step_wanted(direction: int)
-signal map_wanted
 
 var _grid: Control
 var _state: GameState
@@ -94,17 +93,11 @@ func _build() -> void:
 	if _grid != null:
 		return
 	add_theme_stylebox_override("panel", UiTheme.panel())
-	var column := Atoms.column(Metrics.SNUG)
+	var column := Atoms.column(Metrics.TIGHT)
 	add_child(column)
 
 	_heading = Atoms.wrapped(Atoms.heading("Current Location"))
-	var heading_row := Atoms.row(Metrics.TIGHT)
-	column.add_child(heading_row)
-	_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	heading_row.add_child(_heading)
-	var full := Atoms.quiet("Map")
-	full.pressed.connect(func() -> void: map_wanted.emit())
-	heading_row.add_child(full)
+	column.add_child(_heading)
 
 	_grid = Control.new()
 	_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER

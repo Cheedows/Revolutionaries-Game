@@ -102,7 +102,9 @@ Evidence: nine focused audit-completion tests pass, covering copied reports,
 all 21 date-scene combinations, actual phone clicks for bulk assignment and map
 inspection, unavailable-member handling, cancellation/door timing, and loading
 contextual music without RNG draws, plus toggling music through rebuilt controls.
-The 38 click regressions pass. Rendered CI
+The original activation/polling and dating comparisons pass, as does the
+year-long UI playthrough with monthly acknowledgements. The click regressions
+pass. Rendered CI
 fixtures now include the bulk picker, full map, polling and financial reports.
 These are bounded checks of the audited repairs, not proof that every original
 combination of game states is equivalent.
