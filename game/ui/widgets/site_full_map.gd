@@ -6,6 +6,7 @@ var _state: GameState
 var _canvas: Control
 var _tile := 20
 var _zoom: Button
+var _scroll: ScrollContainer
 
 func open(state: GameState) -> void:
 	_state = state
@@ -20,9 +21,11 @@ func open(state: GameState) -> void:
 	_zoom.pressed.connect(func() -> void:
 		_tile = maxi(3, int(size.x / LevelMap.WIDTH)) if _tile == 20 else 20
 		_canvas.custom_minimum_size = Vector2(LevelMap.WIDTH, LevelMap.HEIGHT) * _tile
-		_canvas.queue_redraw())
+		_canvas.queue_redraw()
+		_center.call_deferred())
 	column.add_child(_zoom)
 	var scroll := ScrollContainer.new()
+	_scroll = scroll
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.set_meta(&"own_scroller", true)
 	column.add_child(scroll)
@@ -36,6 +39,12 @@ func open(state: GameState) -> void:
 	column.add_child(back)
 	Metrics.enlarge(self, Metrics.touch(self))
 	PressFeel.teach(self)
+	_center.call_deferred()
+
+func _center() -> void:
+	await get_tree().process_frame
+	_scroll.scroll_horizontal = maxi(0, int((_state.site.x + 0.5) * _tile - _scroll.size.x / 2))
+	_scroll.scroll_vertical = maxi(0, int((_state.site.y + 0.5) * _tile - _scroll.size.y / 2))
 
 func _draw_map() -> void:
 	var map := _state.site.map

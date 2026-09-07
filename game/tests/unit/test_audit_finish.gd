@@ -101,6 +101,9 @@ func test_playtest_full_map_and_party_preserve_turn() -> void:
 	var draws := s.rng.draws
 	await UiDriver.tap(tree, UiDriver.button(screen, "Map"))
 	check(screen._full_map != null, "full floor map opens")
+	var full := screen._full_map
+	var squad_x := (s.state.site.x + 0.5) * full._tile
+	check(squad_x >= full._scroll.scroll_horizontal and squad_x < full._scroll.scroll_horizontal + full._scroll.size.x, "map opens with the squad visible")
 	await UiDriver.tap(tree, UiDriver.button(screen._full_map, "Overview"))
 	await UiDriver.tap(tree, UiDriver.button(screen._full_map, "Back"))
 	equal(s.pending(), pending, "map inspection preserves the exact pending turn")
