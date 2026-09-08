@@ -18,7 +18,6 @@ const PARTS := {
 ## What the blow did, worst first: the first flag that is set is the one worth
 ## saying.
 const WOUNDS: Array = [
-	[Wound.NASTY_OFF, "tears"], [Wound.CLEAN_OFF, "takes"],
 	[Wound.SHOT, "shoots"], [Wound.CUT, "cuts"], [Wound.BURNED, "burns"],
 	[Wound.TORN, "tears into"], [Wound.BRUISED, "bruises"],
 ]
@@ -48,8 +47,7 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.ATTACK_RESOLVED:
 			return ""  # the blow itself has already been described
 		Event.CREATURE_WOUNDED:
-			return "%s's %s is ruined." % [_who(state, data.get("creature", 0)),
-					String(data.get("organ", &"insides")).replace("_", " ")]
+			return ImpactText.organ(_who(state, data.get("creature", 0)), data)
 		Event.CREATURE_SHIELDED:
 			return _shielded(state, data)
 		Event.CREATURE_STUNNED:
@@ -96,13 +94,18 @@ static func _shielded(state: GameState, data: Dictionary) -> String:
 
 
 static func _swing(state: GameState, data: Dictionary) -> String:
+	var manner := int(data.get("unarmed_manner", -1))
+	if manner >= 0:
+		return "%s %s %s." % [_who(state, data.get("attacker", 0)), ImpactText.UNARMED[clampi(manner, 0, 6)], _who(state, data.get("target", 0))]
+	if data.has("description") and not bool(data.get("sneak", false)):
+		return "%s %s %s." % [_who(state, data.get("attacker", 0)), String(data.description), _who(state, data.get("target", 0))]
 	var weapon := String(data.get("weapon", &""))
 	var with := " with %s" % weapon.replace("_", " ").to_lower() \
 			if weapon != "" else " bare handed"
 	if bool(data.get("sneak", false)):
 		return "%s comes up behind %s%s." % [_who(state, data.get("attacker", 0)),
 				_who(state, data.get("target", 0)), with]
-	return "%s attacks %s%s." % [_who(state, data.get("attacker", 0)),
+	return "%s %s %s%s." % [_who(state, data.get("attacker", 0)), String(data.get("description", "attacks")),
 			_who(state, data.get("target", 0)), with]
 
 
@@ -130,7 +133,7 @@ static func _hit(state: GameState, data: Dictionary) -> String:
 	var through := String(data.get("through", &""))
 	var route := " through the %s" % CAR_PARTS.get(through, through) \
 			if through != "" else ""
-	return "%s %s %s in the %s%s." % [attacker, verb, target, part, route]
+	return ImpactText.hit(attacker, target, part, route, verb, data)
 
 
 ## Somebody dying, the way the fight found them.

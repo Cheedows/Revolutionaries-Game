@@ -47,6 +47,7 @@ func can_continue() -> bool:
 func _menu() -> void:
 	_listing = false
 	_body.text = ""
+	_body.hide()
 	var carry := SaveGame.describe(SaveGame.AUTOSAVE)
 	var options: Array[Dictionary] = [
 		{"id": NEW, "label": "NEW GAME"},
@@ -78,26 +79,10 @@ func _list_saves() -> void:
 
 
 func _show_scores() -> void:
-	var kept := ScoreFile.read()
-	var table: Array = kept["table"]
-	var lines := PackedStringArray()
-	if table.is_empty():
-		lines.append("No valid scores, press any button to return.")
-	for place in table.size():
-		var entry: Dictionary = table[place]
-		lines.append("%s  %d. %s  Martyrs: %d  Kills: %d" % [
-				String(entry.get("slogan", "")).strip_edges(),
-				int(entry.get("year", 0)),
-				String(entry.get("ending", "")).capitalize(),
-				int(entry.get("dead", 0)), int(entry.get("kills", 0))])
-	var lifetime: Dictionary = kept["lifetime"]
-	if not lifetime.is_empty():
-		lines.append("")
-		lines.append("Universal Liberal Statistics:")
-		lines.append("Recruits: %d  Martyrs: %d  Kills: %d  $ Taxed: %d"
-				% [int(lifetime.get("recruits", 0)), int(lifetime.get("dead", 0)),
-				int(lifetime.get("kills", 0)), int(lifetime.get("funds", 0))])
-	_body.text = "\n".join(lines)
+	_listing = false
+	_body.text = ScoreText.describe(ScoreFile.read())
+	_body.show()
+	_scroll.scroll_vertical = 0
 	_heading.text = "The Liberal ELITE"
 	_epigraph.visible = false
 	_dialog.ask(Intent.new(Intent.ACKNOWLEDGE_REPORT,
@@ -188,7 +173,10 @@ func _build() -> void:
 	page.add_child(_epigraph)
 
 	_body = RichTextLabel.new()
-	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_body.fit_content = true
+	_body.scroll_active = false
+	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.size_flags_vertical = Control.SIZE_FILL
 	_body.add_theme_color_override("default_color", Palette.TEXT_DIM)
 	page.add_child(_body)
 
@@ -207,7 +195,7 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		# The back of the title screen is out of the game, which is the one
 		# place the button still means what Android means by it.
-		if _listing:
+		if _listing or _body.visible:
 			_menu()
 		else:
 			get_tree().quit()
@@ -224,7 +212,7 @@ func _adapt() -> void:
 				_scroll.remove_meta(&"page_scroller")
 			_scroll.horizontal_scroll_mode = \
 					ScrollContainer.SCROLL_MODE_DISABLED
-			_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+			_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 		Metrics.unscroll(_scroll, narrow)
 	if _dialog != null:
 		_dialog.compact(Metrics.narrow(self))

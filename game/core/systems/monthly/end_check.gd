@@ -14,7 +14,7 @@ extends RefCounted
 ## Whether there is nobody left.
 static func is_lost(state: GameState) -> bool:
 	for creature: Creature in state.creatures.values():
-		if not creature.exists or not creature.alive:
+		if not creature.is_member() or not creature.exists or not creature.alive:
 			continue
 		if creature.alignment != &"liberal":
 			continue

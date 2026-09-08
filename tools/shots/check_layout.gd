@@ -25,6 +25,9 @@ extends SceneTree
 ## The screens to look at, and how to walk into them. A number presses that
 ## option in the list; "c" presses the first action in the bar.
 const WALKS: Array[Dictionary] = [
+	{"screen": "title_screen", "press": ["high_scores"]},
+	{"screen": "play_screen", "press": ["site", "armed_party"]},
+	{"screen": "play_screen", "press": ["site", "defeat"]},
 	{"screen": "play_screen", "press": ["site", "full_party"]},
 	{"screen": "play_screen", "press": ["roster", "bulk"]},
 	{"screen": "play_screen", "press": ["site", "full_map"]},
@@ -149,7 +152,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 
 	if screen is PlayScreen:
 		var last := "base" if walk["press"].is_empty() else str(walk["press"].back())
-		var expected: String = {"full_party": "site", "bulk": "roster", "full_map": "site", "polling": "decision", "finances": "decision","pawn": "shop", "travel": "destination",
+		var expected: String = {"armed_party": "site", "defeat": "ending", "full_party": "site", "bulk": "roster", "full_map": "site", "polling": "decision", "finances": "decision","pawn": "shop", "travel": "destination",
 				"department": "shop", "goods": "shop", "people": "site", "conversation": "site", "response": "site", "inventory": "site", "site_fight": "site",
 				"field_equipment": "site", "new_squad": "members", "paper": "newspaper", "vehicles": "squad", "trial": "decision", "appointment": "decision"}.get(last, last)
 		if str(screen.get("_kind")) != expected:
@@ -157,7 +160,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 	var where := "%s%s at %s" % [which,
 			"" if walk["press"].is_empty() else " after %s" % [walk["press"]],
 			size]
-	if screen is PlayScreen and OS.get_environment("LAYOUT_SHOTS") != "" \
+	if (screen is PlayScreen or walk["press"].has("high_scores")) and OS.get_environment("LAYOUT_SHOTS") != "" \
 			and DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		var out := OS.get_environment("LAYOUT_SHOTS")
@@ -287,6 +290,12 @@ func _a_session() -> Session:
 ## Answers whatever is being asked: a number takes that option from the list,
 ## "c" takes the first action in the bar.
 func _press(screen: Control, said: String) -> void:
+	if said == "high_scores":
+		screen._show_scores()
+		var entries := []
+		for i in 5: entries.append({"slogan": "A long slogan that must wrap on a phone", "ending": "dead", "year": 2010, "month": 5})
+		screen._body.text = ScoreText.describe({"table": entries, "lifetime": {"recruits": 25}})
+		return
 	if said == "dossier":
 		var who: Array = (screen.get("_session") as Session).state.members()
 		if not who.is_empty():

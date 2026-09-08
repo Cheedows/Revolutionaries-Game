@@ -46,7 +46,7 @@ func test_a_blow_reads_the_way_it_landed() -> void:
 			"a bullet in the leg")
 
 	shot.data["wound"] = Wound.SHOT | Wound.CLEAN_OFF
-	equal(CombatText.describe(shot, state), "Ada takes Bo in the left leg.",
+	equal(CombatText.describe(shot, state), "Ada shoots Bo in the left leg CUTTING IT OFF!",
 			"and one that takes the leg with it")
 
 	var stopped := Event.new(Event.ATTACK_HIT, {

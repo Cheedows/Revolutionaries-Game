@@ -26,6 +26,7 @@ const ENDINGS := {
 	&"dating": "The Liberal Crime Squad was on vacation",
 	&"hiding": "The Liberal Crime Squad was in permanent hiding",
 	&"disbanded": "The Liberal Crime Squad was hunted down",
+	&"disband_loss": "The Liberal Crime Squad was hunted down",
 	&"dispersed": "The Liberal Crime Squad was scattered",
 	&"ccs": "The Liberal Crime Squad was out-Crime Squadded",
 	&"firemen": "The Liberal Crime Squad was burned",

@@ -23,6 +23,8 @@ var _events: Array[Event] = []
 var _pending: PendingIntent = null
 
 var _next_sequence := 0
+var score_recorded := false
+var score_place := -1
 
 
 func _init(seed_value: int = 0) -> void:
@@ -67,6 +69,11 @@ func emit(events: Array[Event]) -> void:
 		event.sequence = _next_sequence
 		_next_sequence += 1
 		_events.append(event)
+	if events.any(func(event: Event) -> bool: return event.type == Event.CREATURE_DIED):
+		var ending := EndCheck.run(state)
+		if not ending.is_empty():
+			_pending = null
+			emit(ending)
 
 
 ## Takes whatever a system returned: events to record, or a question to park on.
@@ -77,7 +84,7 @@ func submit(result: Variant) -> void:
 	if result is PendingIntent:
 		var asked: PendingIntent = result
 		emit(asked.events)
-		ask(asked)
+		if state.endgame_state not in [&"lost", &"won"]: ask(asked)
 		return
 	if result is Array:
 		emit(result)

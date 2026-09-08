@@ -21,7 +21,8 @@ func refresh(state: GameState) -> void:
 	var squad := state.active_squad()
 	if squad == null: return
 	for person: Creature in state.squad_members(squad):
-		var button := Atoms.button(person.name + "\n" + ConditionText.of(person, true))
+		var button := Atoms.button(person.name + " · " + ConditionText.of(person, true) + "\n" + AmmoText.of(person, null, true))
+		button.tooltip_text = AmmoText.of(person)
 		button.pressed.connect(func() -> void: inspect_wanted.emit())
 		button.add_theme_color_override(&"font_color", NameColours.of(person))
 		_row.add_child(button)

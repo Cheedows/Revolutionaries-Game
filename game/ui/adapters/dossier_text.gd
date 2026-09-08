@@ -227,7 +227,7 @@ static func item_title(item: Item, catalog: Catalog) -> String:
 			var declared: Variant = entry.get(&"longname")
 			if declared != null and String(declared) != "":
 				name = String(declared)
-	if item is Weapon and (item as Weapon).ammo > 0:
+	if item is Weapon:
 		name += " (%d)" % (item as Weapon).ammo
 	if item.count > 1:
 		name += " x%d" % item.count

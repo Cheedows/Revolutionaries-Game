@@ -37,8 +37,9 @@ static func would_rather_argue(rng: Rng, attacker: Creature,
 ## Each rung is only rolled if the one before it came up short, and the last
 ## few ask for a random number below zero — which the generator answers with
 ## zero, so a skilled fighter always strikes gracefully.
-static func describe_unarmed(rng: Rng, attacker: Creature) -> void:
+static func describe_unarmed(rng: Rng, attacker: Creature) -> int:
 	var martial := attacker.skills.get_value(&"handtohand")
 	for rung in range(martial + 1, martial - 5, -1):
 		if rng.below(rung) == 0:
-			return
+			return martial + 1 - rung
+	return 6

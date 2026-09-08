@@ -53,8 +53,9 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 
 	# An unarmed attacker rolls for how they threw the punch. The result is
 	# only ever a word, but the draws are real.
+	var manner := -1
 	if not attacker.is_armed() and attacker.animal_gloss == &"none":
-		AttackManner.describe_unarmed(rng, attacker)
+		manner = AttackManner.describe_unarmed(rng, attacker)
 
 	var sneak := _sneaks_up(state, attacker, target, attack, context)
 	if attacker.is_armed():
@@ -71,6 +72,7 @@ static func resolve(state: GameState, rng: Rng, attacker: Creature,
 	events.append(Event.new(Event.ATTACK_MADE, {
 		"attacker": attacker.id, "target": target.id, "sneak": sneak,
 		"weapon": attacker.weapon.type if attacker.weapon != null else &"",
+		"description": attack.attack_description if attack != null else "attacks", "unarmed_manner": manner,
 	}))
 
 	var rolls := _roll(state, rng, attacker, target, attack, sneak, context)
@@ -242,6 +244,10 @@ static func _land(state: GameState, rng: Rng, attacker: Creature,
 		return glanced
 	var landed := Wounding.apply(state, rng, attacker, target, attack, part,
 			amount, kind, damage, sneak, context)
+	for event in landed:
+		if event.type == Event.ATTACK_HIT:
+			event.data["hits"] = hits
+			event.data["through"] = car_part
 	if car_part != &"" and not landed.is_empty():
 		# The shot went through the car to reach them, which a presentation
 		# wants to be able to say.

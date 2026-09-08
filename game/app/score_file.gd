@@ -48,6 +48,8 @@ static func record(session: Session, ending: StringName) -> int:
 ## Ends the game: the score goes in the book and the save is thrown away, which
 ## is what the original does before it shows you the table.
 static func finish(session: Session, ending: StringName) -> int:
-	var place := record(session, ending)
+	if session.score_recorded: return session.score_place
+	session.score_place = record(session, ending)
+	session.score_recorded = true
 	SaveGame.erase(SaveGame.AUTOSAVE)
-	return place
+	return session.score_place

@@ -88,7 +88,7 @@ func refresh(state: GameState) -> void:
 func _row(creature: Creature, inside: bool) -> Control:
 	var row := Atoms.row(Metrics.SNUG)
 
-	var name := Atoms.wrapped(Atoms.body(creature.name))
+	var name := Atoms.wrapped(Atoms.body(creature.name + "\n" + AmmoText.of(creature)))
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name.add_theme_color_override("font_color",
 			NameColours.of(creature))

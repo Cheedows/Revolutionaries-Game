@@ -292,5 +292,10 @@
   "Music: Off": "Visible state of the original music toggle.",
   "Full map": "Touch label for the original M map screen.",
   "@ Squad  D Door  W Wall  E Exit  U Unit  H Heavy unit  T Trap": "Legend for the original floor and siege masks in a draggable map.",
-  "/root/Music": "Runtime node path to the music autoload, not player-facing prose."
+  "/root/Music": "Runtime node path to the music autoload, not player-facing prose.",
+  "%s: %d loaded, %d spare clips": "Expose loaded ammunition and compatible carried magazines before combat.",
+  "%d loaded / %d clips": "Compact persistent squad ammunition status.",
+  " - Out of ammo": "Explicit empty firearm state with no compatible carried magazine.",
+  "%d of %s's teeth are ": "Original tooth-loss count in one format string.",
+  "%d of %s's ribs are broken!": "Original broken-rib count in one format string."
 }

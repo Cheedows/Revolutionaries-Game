@@ -14,7 +14,7 @@ static func line(person: Creature, state: GameState) -> String:
 		parts[0] += " %s" % StrangerText.age_and_gender(person)
 	parts.append(condition(person))
 	if person.weapon != null:
-		parts.append("with %s" % DossierText.item_title(person.weapon, null))
+		parts.append("with %s" % AmmoText.of(person))
 	elif person.animal_gloss == &"tank":
 		parts.append("Tank")
 	else:

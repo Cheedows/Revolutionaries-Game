@@ -5,6 +5,17 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"armed_party":
+			var who := session.state.squad_members(session.state.active_squad())[0]
+			who.weapon = Weapon.new(&"WEAPON_SEMIPISTOL_9MM")
+			(play.get_child(0) as SiteScreen)._refresh()
+			await UiDriver.settle(tree)
+			return
+		"defeat":
+			for who in session.state.members(): who.alive = false
+			session.emit([Event.new(Event.CREATURE_DIED, {})] as Array[Event])
+			await UiDriver.settle(tree)
+			return
 		"full_party":
 			var squad := session.state.active_squad()
 			while session.state.squad_members(squad).size() < 6:

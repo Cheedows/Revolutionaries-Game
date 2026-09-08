@@ -150,7 +150,10 @@ static func apply(state: GameState, rng: Rng, attacker: Creature,
 
 	events.append(Event.new(Event.ATTACK_HIT, {
 		"attacker": attacker.id, "target": victim.id, "part": part,
-		"damage": amount, "wound": kind,
+		"damage": amount, "wound": kind | (victim.body.get_wound(part) & Wound.SEVERED),
+		"hit_description": attack.hit_description if attack != null else "striking",
+		"punctuation": attack.hit_punctuation if attack != null else ".",
+		"always_describe": attack.always_describe_hit if attack != null else false,
 	}))
 
 	if _is_dead(victim):
@@ -170,10 +173,13 @@ static func apply(state: GameState, rng: Rng, attacker: Creature,
 	# Organs only come apart on somebody the wound left in one piece.
 	if (victim.body.get_wound(part) & Wound.SEVERED) == 0 \
 			and victim.animal_gloss == &"none":
+		var before := victim.body.special.duplicate()
 		var lost := OrganDamage.apply(rng, victim, part, amount, kind)
 		for organ: StringName in lost:
 			events.append(Event.new(Event.CREATURE_WOUNDED,
-					{"creature": victim.id, "part": part, "organ": organ}))
+					{"creature": victim.id, "part": part, "organ": organ, "wound": kind,
+					"before": before[Ids.SPECIAL_WOUNDS.find(organ)] if organ in [&"teeth", &"ribs"] else 1,
+					"count": before[Ids.SPECIAL_WOUNDS.find(organ)] - victim.body.get_special(organ) if organ in [&"teeth", &"ribs"] else 1}))
 	return events
 
 
