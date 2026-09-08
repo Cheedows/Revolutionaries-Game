@@ -114,6 +114,7 @@ func _open(slot: String) -> void:
 	var session := Session.new(0)
 	if not SaveGame.read(session, slot):
 		_body.text = "Failed to load %s!" % slot
+		_body.show()
 		return
 	_dialog.dismiss()
 	loaded.emit(session)
@@ -199,6 +200,12 @@ func _notification(what: int) -> void:
 			_menu()
 		else:
 			get_tree().quit()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"ui_cancel") and (_listing or _body.visible):
+		_menu()
+		get_viewport().set_input_as_handled()
 
 
 func _adapt() -> void:

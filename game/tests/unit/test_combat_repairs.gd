@@ -89,3 +89,9 @@ func test_site_defeat_preserves_the_siege_cause_before_departure() -> void:
 	equal(s.state.site.location, location.id, "no escape clears the defeat location")
 	equal(EndCheck.cause(s.state), &"cia", "score retains the siege cause")
 	check(not s.is_waiting(), "no door, escape or combat question follows defeat")
+
+func test_combat_defeat_is_not_described_as_political_decline() -> void:
+	var s := Commands.roll_a_game(6161)
+	for person in s.state.members(): person.alive = false
+	equal(EventText.describe(Event.new(Event.GAME_LOST, {"cause": &"dead"}), s.state),
+		"It is over.", "death is not mistaken for missing constitutional changes")

@@ -261,6 +261,8 @@ static func _major_line(data: Dictionary) -> String:
 ## src/monthly/endgame.cpp.
 static func _lost(state: GameState, data: Dictionary) -> String:
 	var how := "It is over."
+	if data.get("cause", &"") not in [&"reaganified", &"stalinized"]:
+		return how
 	match data.get("cause", &""):
 		&"reaganified":
 			how = "The Conservatives have made the world in their image."
