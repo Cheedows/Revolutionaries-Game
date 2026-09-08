@@ -103,6 +103,7 @@ func test_playtest_selects_prisoner_and_confirms_plan_on_phone() -> void:
 	screen.setup(s)
 	await UiDriver.settle(tree)
 	check(screen._dialog._detail.get_parsed_text().contains("Psychology Skill"), "original interrogator profile visible")
+	check(not screen._log.visible, "plan gives the space to the profile and tactics")
 	var confirm := UiDriver.button(screen, "Get on with it")
 	check(confirm != null, "confirmation is available")
 	await UiDriver.tap(tree, confirm)

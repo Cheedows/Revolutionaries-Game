@@ -39,7 +39,8 @@ func _settle() -> void:
 		newspaper_ready.emit(news)
 	_status.refresh(_session.state)
 	if _session.is_waiting():
-		_log.visible = not _session.pending().intent.context.has("interrogation_report")
+		_log.visible = _session.pending().intent.type != Intent.CHOOSE_INTERROGATION_TACTIC \
+				and not _session.pending().intent.context.has("interrogation_report")
 		_dialog.compact(Metrics.touch(self))
 		_dialog.ask(_session.pending().intent, _session.state)
 	else:
