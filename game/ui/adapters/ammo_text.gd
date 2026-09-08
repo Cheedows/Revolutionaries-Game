@@ -19,6 +19,8 @@ static func of(person: Creature, catalog: Catalog = null, compact: bool = false)
 	for clip: Clip in person.clips:
 		if compatible.has(clip.type): spare += clip.count
 	var text := "%s: %d loaded, %d spare clips" % [title, weapon.ammo, spare]
-	if compact: text = "%d loaded / %d clips" % [weapon.ammo, spare]
+	if compact:
+		if weapon.ammo == 0: return ("Reload (%d clips)" % spare) if spare > 0 else "Out of ammo (0 clips)"
+		return "%d loaded / %d clips" % [weapon.ammo, spare]
 	if weapon.ammo == 0: text += " - Reload" if spare > 0 else " - Out of ammo"
 	return text

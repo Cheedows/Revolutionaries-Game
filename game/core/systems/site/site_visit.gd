@@ -22,6 +22,8 @@ static func _continue(state: GameState, rng: Rng, squad: Squad,
 	var living := state.squad_members(squad).any(func(person: Creature) -> bool:
 		return person.alive and person.exists)
 	if not living:
+		events.append_array(EndCheck.run(state))
+		if state.endgame_state == &"lost": return events
 		return SiteDeparture.leave(state, rng, squad, events, catalog)
 	var next: PendingIntent = run(state, rng, squad, catalog)
 	return PendingIntent.new(next.intent, next.resume, events + next.events)

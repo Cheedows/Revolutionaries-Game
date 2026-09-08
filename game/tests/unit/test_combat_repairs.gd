@@ -71,3 +71,21 @@ func test_playtest_high_scores_wrap_and_return_on_phone() -> void:
 	tree.root.remove_child(viewport)
 	viewport.queue_free()
 	await UiDriver.settle(tree)
+
+func test_site_defeat_preserves_the_siege_cause_before_departure() -> void:
+	var s := Commands.roll_a_game(6161)
+	var squad := s.state.active_squad()
+	var location: Location = s.state.locations[s.state.members()[0].base]
+	s.state.site.location = location.id
+	var siege := Siege.new()
+	siege.active = true
+	siege.attacker = &"cia"
+	s.state.sieges[location.id] = siege
+	for person in s.state.members(): person.alive = false
+	var result: Variant = SiteVisit._continue(s.state, s.rng, squad, s.catalog,
+		[Event.new(Event.CREATURE_DIED, {})] as Array[Event])
+	s.submit(result)
+	equal(s.state.endgame_state, &"lost", "site ends immediately on defeat")
+	equal(s.state.site.location, location.id, "no escape clears the defeat location")
+	equal(EndCheck.cause(s.state), &"cia", "score retains the siege cause")
+	check(not s.is_waiting(), "no door, escape or combat question follows defeat")

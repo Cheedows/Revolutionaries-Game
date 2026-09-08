@@ -297,5 +297,7 @@
   "%d loaded / %d clips": "Compact persistent squad ammunition status.",
   " - Out of ammo": "Explicit empty firearm state with no compatible carried magazine.",
   "%d of %s's teeth are ": "Original tooth-loss count in one format string.",
-  "%d of %s's ribs are broken!": "Original broken-rib count in one format string."
+  "%d of %s's ribs are broken!": "Original broken-rib count in one format string.",
+  "Reload (%d clips)": "Short ammunition warning fitting the persistent phone squad strip.",
+  "Out of ammo (0 clips)": "Short empty weapon warning fitting the persistent phone squad strip."
 }
