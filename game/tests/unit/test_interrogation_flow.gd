@@ -141,3 +141,32 @@ func test_reported_kidnapping_does_not_offer_a_sleeper_role() -> void:
 	s.answer(InterrogationDay.GET_ON_WITH_IT)
 	check(held.brainwashed, "prisoner converted")
 	equal(s.pending().intent.type, Intent.ACKNOWLEDGE_REPORT, "reported kidnap stays at base, as in original")
+
+func test_every_tactic_combination_produces_renderable_results() -> void:
+	var catalog := Catalog.new()
+	catalog.load_all()
+	for mask in 64:
+		var state := GameState.new()
+		state.ledger.funds = 1000
+		var lead := state.add_creature(Creature.new())
+		lead.name = "Interrogator"
+		lead.alignment = &"liberal"
+		lead.location = 1
+		lead.activity = &"hostagetending"
+		lead.juice = 100
+		lead.skills.set_value(&"psychology", 10)
+		lead.skills.set_value(&"firstaid", 10)
+		var held := state.add_creature(Creature.new())
+		held.name = "Captive"
+		held.alignment = &"conservative"
+		held.location = 1
+		held.interrogation = Interrogation.new()
+		held.join_days = 8
+		lead.tending_id = held.id
+		var plan: Array[bool] = []
+		for bit in 6: plan.append((mask & (1 << bit)) != 0)
+		var result: Variant = InterrogationDay.run(state, Rng.new(100 + mask), held, catalog)
+		if result is PendingIntent: result = result.resume.call(plan)
+		check(result is Array, "plan returns events")
+		var text := InterrogationDialogue.report(result, state)
+		check(not text.is_empty(), "every completed session has readable output")
