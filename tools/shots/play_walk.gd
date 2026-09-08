@@ -55,7 +55,7 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 			return
 		"financial_totals":
 			var report: FinancialReport = play.get_child(0)._financial
-			var scroll := report._body.get_parent() as ScrollContainer
+			var scroll := report._inset.get_parent() as ScrollContainer
 			scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
 			await UiDriver.settle(tree)
 			return

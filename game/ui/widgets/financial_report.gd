@@ -3,8 +3,11 @@ extends VBoxContainer
 ## A scrolling ledger with a fixed acknowledgement, sized for a phone or desk.
 signal acknowledged
 var _body: VBoxContainer
+var _inset: MarginContainer
+var _number_rows: Array[BoxContainer] = []
 
 func show_report(data: Dictionary) -> void:
+	_number_rows.clear()
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -18,7 +21,10 @@ func show_report(data: Dictionary) -> void:
 	add_child(scroll)
 	_body = Atoms.column(Metrics.ROOM)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_body)
+	_inset = MarginContainer.new()
+	_inset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_inset)
+	_inset.add_child(_body)
 	for side in ["income", "expense"]:
 		var section := Atoms.column(Metrics.SNUG)
 		_body.add_child(section)
@@ -44,6 +50,7 @@ func show_report(data: Dictionary) -> void:
 	var carry := Atoms.primary("Carry on")
 	carry.pressed.connect(func() -> void: acknowledged.emit())
 	add_child(carry)
+	_reflow()
 	PressFeel.teach(self)
 
 func _table(parent: Node) -> GridContainer:
@@ -60,7 +67,8 @@ func _row(grid: GridContainer, title: String, amount: int, daily: Variant,
 	var label := Atoms.wrapped(Atoms.heading(title) if strong else Atoms.body(title))
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_child(label)
-	var numbers := Atoms.column(Metrics.TIGHT)
+	var numbers := Atoms.split(Metrics.SNUG)
+	_number_rows.append(numbers)
 	numbers.size_flags_horizontal = Control.SIZE_FILL
 	grid.add_child(numbers)
 	var value := Atoms.tinted(FundingText.money(amount, signed), _ink(amount))
@@ -73,3 +81,17 @@ func _row(grid: GridContainer, title: String, amount: int, daily: Variant,
 
 static func _ink(amount: int) -> Color:
 	return Palette.INCOME if amount > 0 else (Palette.EXPENSE if amount < 0 else Palette.TEXT_DIM)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and _inset != null:
+		_reflow.call_deferred()
+
+func _reflow() -> void:
+	if not is_instance_valid(_inset): return
+	# Keep a readable line length on a desktop and clear the scrollbar on phones.
+	var side := maxi(Metrics.ROOM, int((size.x - Metrics.PHONE_WIDTH) / 2))
+	_inset.add_theme_constant_override(&"margin_left", side)
+	_inset.add_theme_constant_override(&"margin_right", side)
+	for row in _number_rows:
+		Atoms.stack(row, Metrics.narrow(self))

@@ -38,7 +38,7 @@ func test_playtest_financial_report_scrolls_with_fixed_acknowledgement() -> void
 		"financial report has the whole page")
 	var carry := UiDriver.button(screen, "Carry on")
 	check(carry.get_global_rect().end.y <= viewport.size.y, "acknowledgement stays inside phone")
-	var scroll := screen._financial._body.get_parent() as ScrollContainer
+	var scroll := screen._financial._inset.get_parent() as ScrollContainer
 	check(scroll.get_v_scroll_bar().max_value > scroll.size.y, "long ledger can scroll")
 	for grid in screen._financial._body.find_children("*", "GridContainer", true, false):
 		check(grid.get_global_rect().end.x <= viewport.size.x, "amount columns fit phone width: %s min %s report %s" % [grid.get_global_rect(), grid.get_combined_minimum_size(), screen._financial.get_global_rect()])
