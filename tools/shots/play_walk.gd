@@ -53,8 +53,17 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 			session.submit(DailyActivation.run_one(session.state, session.rng, who, session.catalog))
 			await UiDriver.settle(tree)
 			return
+		"financial_totals":
+			var report: FinancialReport = play.get_child(0)._financial
+			var scroll := report._body.get_parent() as ScrollContainer
+			scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
+			await UiDriver.settle(tree)
+			return
 		"finances":
-			session.state.ledger.add(123, &"donations")
+			for key in FundingText.INCOME:
+				session.state.ledger.add(1234, key)
+			for key in FundingText.EXPENSE:
+				session.state.ledger.subtract(567, key)
 			session.state.calendar.month = 2
 			session.submit(MonthlyTurn.run(session.state, session.rng, session.catalog))
 			await UiDriver.settle(tree)

@@ -304,5 +304,7 @@
   "The Automaton is tied hands and feet to a metal chair in the middle of a back room.": "Original interrogation.cpp restraint introduction, joined across terminal line breaks.",
   ": The Automaton has been Enlightened!   Your Liberal ranks are swelling!": "Original conversion announcement prefixed with the prisoner name for multi-prisoner history.",
   "Tend to which hostage?": "Compact prisoner selector; original asks Which hostage will [name] be watching over?",
-  "No hostages here.": "Explains why tending cannot be assigned; original silently returns when the list is empty."
+  "No hostages here.": "Explains why tending cannot be assigned; original silently returns when the list is empty.",
+  "Total Income": "Subtotal added to the original funding ledger to make the two sections scannable.",
+  "Total Expenses": "Subtotal added to the original funding ledger to make the two sections scannable."
 }

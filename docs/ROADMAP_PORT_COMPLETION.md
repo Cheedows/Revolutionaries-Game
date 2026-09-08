@@ -26,7 +26,7 @@ The audit document records evidence; this checklist tracks repairs.
 - [x] A14: Polling results
 - [x] A15: Full-site map and siege overlays
 - [x] A16: Later dating narrative
-- [x] A17: Month-end financial report
+- [x] A17: Month-end financial report; restored category labels, aligned signed monthly/daily figures, net change, stored liquid assets, scrolling and fixed acknowledgement after player formatting feedback
 - [x] A18: Contextual audio
 - [x] A19: Captured-prisoner daily processing and old-save recovery; explicit tending target; conversion eligibility; original interrogation dialogue, rapport/profile and full-page results (reopened after player report)
 

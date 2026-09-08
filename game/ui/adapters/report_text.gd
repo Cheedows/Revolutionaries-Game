@@ -48,14 +48,17 @@ static func polling(data: Dictionary, state: GameState) -> String:
 	return "\n".join(lines)
 
 static func finances(data: Dictionary) -> String:
-	var lines: Array[String] = ["Financial Report"]
-	lines.append("In hand: $%d." % int(data.get("funds", 0)))
+	var lines: Array[String] = ["Liberal Crime Squad: Funding Report"]
 	for side in ["income", "expense"]:
-		var total := 0
-		lines.append("Coming in" if side == "income" else "Going out")
-		var book: Dictionary = data.get(side, {})
-		for key in book:
-			total += int(book[key])
-			lines.append("%s: $%d" % [String(key).replace("_", " "), int(book[key])])
-		lines.append("Total: $%d" % total)
+		var sign := 1 if side == "income" else -1
+		for row in FundingText.rows(data, side):
+			lines.append("%s: %s (%s today)" % [row.label,
+				FundingText.money(sign * int(row.month)), FundingText.money(sign * int(row.day))])
+	lines.append("Net Change This Month (Day): %s (%s)" % [
+		FundingText.money(FundingText.total(data.get("income", {})) - FundingText.total(data.get("expense", {}))),
+		FundingText.money(FundingText.total(data.get("daily_income", {})) - FundingText.total(data.get("daily_expense", {})))])
+	lines.append("Cash" + ": " + FundingText.money(int(data.get("funds", 0)), false))
+	for kind in FundingText.ASSETS:
+		lines.append(FundingText.ASSETS[kind] + ": " + FundingText.money(int(data.get("assets", {}).get(kind, 0)), false))
+	lines.append("Total Liquid Assets: " + FundingText.money(int(data.get("funds", 0)) + FundingText.total(data.get("assets", {})), false))
 	return "\n".join(lines)

@@ -35,6 +35,7 @@ const WALKS: Array[Dictionary] = [
 	{"screen": "play_screen", "press": ["site", "full_map"]},
 	{"screen": "play_screen", "press": ["polling"]},
 	{"screen": "play_screen", "press": ["finances"]},
+	{"screen": "play_screen", "press": ["finances", "financial_totals"]},
 	{"screen": "play_screen", "press": []},
 	{"screen": "play_screen", "press": ["roster"]},
 	{"screen": "play_screen", "press": ["roster", "dossier"]},
@@ -154,7 +155,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 
 	if screen is PlayScreen:
 		var last := "base" if walk["press"].is_empty() else str(walk["press"].back())
-		var expected: String = {"interrogation": "decision", "interrogation_result": "decision", "armed_party": "site", "defeat": "ending", "full_party": "site", "bulk": "roster", "full_map": "site", "polling": "decision", "finances": "decision","pawn": "shop", "travel": "destination",
+		var expected: String = {"financial_totals": "decision", "interrogation": "decision", "interrogation_result": "decision", "armed_party": "site", "defeat": "ending", "full_party": "site", "bulk": "roster", "full_map": "site", "polling": "decision", "finances": "decision","pawn": "shop", "travel": "destination",
 				"department": "shop", "goods": "shop", "people": "site", "conversation": "site", "response": "site", "inventory": "site", "site_fight": "site",
 				"field_equipment": "site", "new_squad": "members", "paper": "newspaper", "vehicles": "squad", "trial": "decision", "appointment": "decision"}.get(last, last)
 		if str(screen.get("_kind")) != expected:

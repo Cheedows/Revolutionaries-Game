@@ -75,9 +75,7 @@ static func _rest_of_the_month(state: GameState, rng: Rng, catalog: Catalog,
 	events.append_array(OpinionDrift.run(state, rng, liberal_power))
 	OpinionDrift.stipends(state)
 	if catalog != null and not state.disbanded:
-		var report := {"funds": state.ledger.funds,
-				"income": state.ledger.income.duplicate(),
-				"expense": state.ledger.expense.duplicate()}
+		var report := FundingReport.snapshot(state, catalog)
 		events.append(Event.new(Event.MAJOR_EVENT, {"financial_report": report}))
 		return PendingIntent.new(Intent.new(Intent.ACKNOWLEDGE_REPORT, [],
 				{"financial_report": report}, false),

@@ -30,7 +30,7 @@ func test_month_end_report_survives_reset() -> void:
 	equal(report.income.get(&"donations"), 123, "report retains the finished month's income")
 	s.answer(null)
 	check(s.state.ledger.income.is_empty(), "new month's ledger is cleared after acknowledgement")
-	check(ReportText.finances(report).contains("donations: $123"), "snapshot remains readable after reset")
+	check(ReportText.finances(report).contains("Donations: +$123"), "snapshot remains readable after reset")
 
 func test_all_original_date_disasters_and_humiliations_are_available() -> void:
 	var s := Commands.roll_a_game(6161)
