@@ -299,5 +299,10 @@
   "%d of %s's teeth are ": "Original tooth-loss count in one format string.",
   "%d of %s's ribs are broken!": "Original broken-rib count in one format string.",
   "Reload (%d clips)": "Short ammunition warning fitting the persistent phone squad strip.",
-  "Out of ammo (0 clips)": "Short empty weapon warning fitting the persistent phone squad strip."
+  "Out of ammo (0 clips)": "Short empty weapon warning fitting the persistent phone squad strip.",
+  "The Automaton is locked in a back room converted into a makeshift cell.": "Original interrogation.cpp restraint introduction, joined across terminal line breaks.",
+  "The Automaton is tied hands and feet to a metal chair in the middle of a back room.": "Original interrogation.cpp restraint introduction, joined across terminal line breaks.",
+  ": The Automaton has been Enlightened!   Your Liberal ranks are swelling!": "Original conversion announcement prefixed with the prisoner name for multi-prisoner history.",
+  "Tend to which hostage?": "Compact prisoner selector; original asks Which hostage will [name] be watching over?",
+  "No hostages here.": "Explains why tending cannot be assigned; original silently returns when the list is empty."
 }

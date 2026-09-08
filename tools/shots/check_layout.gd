@@ -25,6 +25,8 @@ extends SceneTree
 ## The screens to look at, and how to walk into them. A number presses that
 ## option in the list; "c" presses the first action in the bar.
 const WALKS: Array[Dictionary] = [
+	{"screen": "play_screen", "press": ["interrogation"]},
+	{"screen": "play_screen", "press": ["interrogation", "interrogation_result"]},
 	{"screen": "title_screen", "press": ["high_scores"]},
 	{"screen": "play_screen", "press": ["site", "armed_party"]},
 	{"screen": "play_screen", "press": ["site", "defeat"]},
@@ -152,7 +154,7 @@ func _look(walk: Dictionary, size: Vector2i) -> void:
 
 	if screen is PlayScreen:
 		var last := "base" if walk["press"].is_empty() else str(walk["press"].back())
-		var expected: String = {"armed_party": "site", "defeat": "ending", "full_party": "site", "bulk": "roster", "full_map": "site", "polling": "decision", "finances": "decision","pawn": "shop", "travel": "destination",
+		var expected: String = {"interrogation": "decision", "interrogation_result": "decision", "armed_party": "site", "defeat": "ending", "full_party": "site", "bulk": "roster", "full_map": "site", "polling": "decision", "finances": "decision","pawn": "shop", "travel": "destination",
 				"department": "shop", "goods": "shop", "people": "site", "conversation": "site", "response": "site", "inventory": "site", "site_fight": "site",
 				"field_equipment": "site", "new_squad": "members", "paper": "newspaper", "vehicles": "squad", "trial": "decision", "appointment": "decision"}.get(last, last)
 		if str(screen.get("_kind")) != expected:

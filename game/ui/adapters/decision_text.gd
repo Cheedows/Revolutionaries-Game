@@ -31,10 +31,8 @@ static func detail(intent: Intent, state: GameState) -> Array[String]:
 				lines.append_array(_profile(date, state))
 		Intent.CHOOSE_INTERROGATION_TACTIC:
 			lines.append(who.name + ": Day " + str(context.get("day", 0)))
-			lines.append_array(_profile(who, state))
 			var lead: Creature = state.creatures.get(int(context.get("interrogator", 0)))
-			if lead != null:
-				lines.append("Interrogator: %s" % lead.name)
+			lines.append_array(InterrogationDialogue.profile(who, lead))
 		Intent.CHOOSE_DEFENSE:
 			lines.append(who.name)
 			lines.append_array(_profile(who, state))

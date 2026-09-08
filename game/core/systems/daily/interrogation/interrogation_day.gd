@@ -17,8 +17,8 @@ const GET_ON_WITH_IT := -1
 
 ## What each technique is called on the screen, in [Interrogation]'s order.
 const TACTIC_NAMES: Array[String] = [
-	"Talk to them", "Keep them tied up", "Beat them",
-	"Show them the literature", "Give them hallucinogens", "Kill them",
+	"Attempt to Convert", "Physical Restraints", "Violently Beaten",
+	"Expensive Props ($250)", "Hallucinogenic Drugs ($50)", "Kill the Hostage",
 ]
 
 ## An unattended or unrestrained hostage tries the door, once they have been
@@ -102,12 +102,11 @@ static func _tactics(state: GameState, plan: Interrogation) -> Array[Dictionary]
 			affordable = state.ledger.funds >= DRUGS_COST
 		options.append({
 			"id": index,
-			"label": "%s %s" % ["[x]" if plan.techniques[index] else "[ ]",
-					TACTIC_NAMES[index]],
+			"label": TACTIC_NAMES[index], "toggle": true, "on": plan.techniques[index],
 			"enabled": affordable or plan.techniques[index],
 		})
 	options.append({"id": GET_ON_WITH_IT, "label": "Get on with it",
-			"enabled": true})
+			"enabled": true, "footer": true})
 	return options
 
 
@@ -227,6 +226,8 @@ static func _carry_out(state: GameState, rng: Rng, hostage: Creature,
 	if plan.techniques[Interrogation.RESTRAIN]:
 		session["attack"] = int(session["attack"]) + RESTRAINED
 
+	InterrogationTalk.record(events, hostage, session["lead"], &"restraint",
+			1 if plan.techniques[Interrogation.RESTRAIN] else 0)
 	InterrogationForce.drug(state, rng, hostage, session, catalog, events)
 	InterrogationForce.beat(state, rng, hostage, session, events)
 	InterrogationTalk.run(state, rng, hostage, session, events)
@@ -244,14 +245,14 @@ static func _carry_out(state: GameState, rng: Rng, hostage: Creature,
 ## ask.
 static func _in_what_capacity(state: GameState, hostage: Creature,
 		session: Dictionary, events: Array[Event]) -> Variant:
-	if not hostage.is_member() or hostage.sleeper \
+	if not bool(session.get("offer_sleeper", false)) or not hostage.alive or hostage.sleeper \
 			or not Enlistment.can_stay(state, hostage):
 		return events
 	var lead: Creature = session["lead"]
 	return PendingIntent.new(
 			Intent.new(Intent.CHOOSE_ENLISTMENT,
 					Enlistment.choices(state, hostage, lead),
-					{"creature": hostage.id, "by": lead.id}),
+					{"creature": hostage.id, "by": lead.id, "interrogation_report": events}),
 			func(capacity: Variant) -> Array[Event]:
 				if capacity != null:
 					events.append_array(Enlistment.enrol(state, hostage, lead,

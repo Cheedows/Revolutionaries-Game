@@ -45,7 +45,7 @@ static func close(state: GameState, rng: Rng, hostage: Creature,
 		return _died(state, rng, hostage, lead, events)
 
 	if bool(session["turned"]):
-		return _converted(state, rng, hostage, lead, events)
+		return _converted(state, rng, hostage, lead, events, session)
 
 	if hostage.alignment == &"liberal" or not hostage.alive:
 		_release_guards(state, hostage)
@@ -65,9 +65,11 @@ static func _despair(state: GameState, rng: Rng, hostage: Creature,
 	if rng.below(SUICIDE_ODDS) != 0 or restrained:
 		# Brooding, or — for somebody who is not tied down — worse.
 		var line := rng.below(DESPAIR_LINES - (1 if restrained else 0))
+		InterrogationTalk.record(events, hostage, session["lead"], &"despair", line)
 		if line == 4:
 			hostage.body.blood -= rng.below(SELF_HARM_SPREAD) + SELF_HARM_BASE
 		return
+	InterrogationTalk.record(events, hostage, session["lead"], &"despair", 5)
 	Mortality.die(state, hostage)
 
 
@@ -78,25 +80,27 @@ static func _died(state: GameState, rng: Rng, hostage: Creature,
 	Mortality.die(state, hostage)
 	state.kills += 1
 	events.append(Event.new(Event.HOSTAGE_DIED,
-			{"creature": hostage.id, "cause": &"interrogation"}))
+			{"creature": hostage.id, "by": lead.id, "cause": &"interrogation"}))
 
 	if lead != null:
 		# The original tests this roll for truth rather than for zero, so it
 		# is the interrogator with no heart at all who feels nothing.
 		if rng.below(AttributeRules.effective(lead, &"heart", false)) != 0:
 			lead.attributes.adjust(&"heart", -1)
-			rng.below(4)
+			InterrogationTalk.record(events, hostage, lead, &"remorse", rng.below(4))
 		elif rng.one_in(3):
 			lead.attributes.adjust(&"wisdom", 1)
+			InterrogationTalk.record(events, hostage, lead, &"colder")
 	_release_guards(state, hostage)
 	return events
 
 
 ## The Automaton has been Enlightened.
 static func _converted(state: GameState, rng: Rng, hostage: Creature,
-		lead: Creature, events: Array[Event]) -> Array[Event]:
+		lead: Creature, events: Array[Event], session: Dictionary) -> Array[Event]:
 	hostage.interrogation = null
 
+	var reported := hostage.kidnapped
 	# A conversion good enough, and the police stop looking for a kidnap
 	# victim at all.
 	if AttributeRules.effective(hostage, &"heart", true) > CONVINCING_HEART \
@@ -116,17 +120,18 @@ static func _converted(state: GameState, rng: Rng, hostage: Creature,
 	if work != null and (not work.mapped or work.hidden):
 		work.mapped = true
 		work.hidden = false
+		InterrogationTalk.record(events, hostage, lead, &"revealed", 0, {"location": work.id})
 
-	if hostage.missing and not hostage.kidnapped:
+	session["offer_sleeper"] = hostage.missing and not hostage.kidnapped
+	if session["offer_sleeper"]:
 		# Nobody has reported them gone, so they could stay where they work as
-		# a sleeper. Coming home is the answer with no rolls in it, and it is
-		# what they get: the port does not stop the interrogation to ask.
-		events.append_array(Enlistment.enrol(state, hostage, lead))
+		# a sleeper. Default to coming home until InterrogationDay asks.
+		Enlistment.enrol(state, hostage, lead)
 		hostage.missing = false
 	else:
 		hostage.enlisted = true
 	events.append(Event.new(Event.HOSTAGE_CONVERTED,
-			{"creature": hostage.id, "by": lead.id}))
+			{"creature": hostage.id, "by": lead.id, "cleared": reported and not hostage.kidnapped}))
 	return events
 
 

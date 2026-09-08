@@ -187,7 +187,8 @@ func _row(creature: Creature, held: Array[Creature]) -> Control:
 	# than a phone, inside a popup with a scrollbar a thumb cannot catch, and
 	# it flattens the original's own grouping into one run of names. Pressing
 	# this asks the way the original asks: kind of work first, then the job.
-	var activities := Atoms.button(ActivityText.of(creature.activity), false)
+	var activities := Atoms.button("Prisoner" if creature.alignment != &"liberal" else ActivityText.of(creature.activity), false)
+	activities.disabled = creature.alignment != &"liberal"
 	activities.custom_minimum_size = Vector2(_wide(190), 0)
 	activities.pressed.connect(func() -> void:
 		activity_wanted.emit(creature))
@@ -249,12 +250,13 @@ func _recruits(creature: Creature) -> Control:
 func _hostages(creature: Creature, held: Array[Creature]) -> Control:
 	var picker := OptionButton.new()
 	picker.custom_minimum_size = Vector2(_wide(180), 0)
+	picker.add_item("Tend to which hostage?")
 	for index in held.size():
-		picker.add_item(held[index].name, index)
+		picker.add_item(held[index].name, index + 1)
 		if creature.tending_id == held[index].id:
-			picker.select(index)
+			picker.select(index + 1)
 	picker.item_selected.connect(func(index: int) -> void:
-		hostage_chosen.emit(creature, held[index]))
+		if index > 0: hostage_chosen.emit(creature, held[index - 1]))
 	return picker
 
 

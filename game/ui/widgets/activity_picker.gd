@@ -97,5 +97,22 @@ func _went_for(key: StringName) -> void:
 
 
 func _settle(job: StringName) -> void:
+	if job == &"hostagetending":
+		var held := HostageWatch.candidates(_session.state, _creature)
+		empty()
+		_head.set_title("Tend to which hostage?")
+		if held.is_empty():
+			_body.add_child(Atoms.wrapped(Atoms.dim("No hostages here.")))
+		else:
+			for person: Creature in held:
+				var button := Atoms.wrapped_button(Atoms.button(person.name))
+				NameColours.paint_person(button, person)
+				button.pressed.connect(func() -> void:
+					if Commands.watch_hostage(_session, _creature, person):
+						chosen.emit(_creature, job)
+						closed.emit())
+				_body.add_child(button)
+		PressFeel.teach(self)
+		return
 	chosen.emit(_creature, job)
 	closed.emit()

@@ -28,7 +28,7 @@ const QUESTIONS := {
 	Intent.CONFIRM_FORCE_DOOR: "Break it down?",
 	Intent.CHOOSE_DATE_APPROACH: "How does the evening go?",
 	Intent.CHOOSE_DIALOGUE: "Which Liberal will speak?",
-	Intent.CHOOSE_INTERROGATION_TACTIC: "How do you ask?",
+	Intent.CHOOSE_INTERROGATION_TACTIC: "Selecting a Liberal Interrogation Plan",
 	Intent.CONFIRM_RECRUIT: "Bring them in?",
 	Intent.CHOOSE_CANDIDATE: "Who do they go and see?",
 	Intent.CHOOSE_ENLISTMENT: "In what capacity will they serve?",
@@ -75,6 +75,8 @@ static func question(intent: Intent, state: GameState) -> String:
 ## A line under the question, when the context has something worth saying.
 static func detail(intent: Intent, state: GameState) -> String:
 	var context := intent.context
+	if context.has("interrogation_report"):
+		return InterrogationDialogue.report(context.interrogation_report, state)
 	if context.has("polling"):
 		return ReportText.polling(context.polling, state)
 	if context.has("financial_report"):

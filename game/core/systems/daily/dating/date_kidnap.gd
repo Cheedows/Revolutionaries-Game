@@ -81,6 +81,8 @@ static func _take_them_home(state: GameState, rng: Rng, dater: Creature,
 		date.proper_name = date.name
 		date.named = true
 
+	date.enlisted = true
+	date.interrogation = Interrogation.new()
 	date.location = dater.location
 	date.base = dater.base
 	date.missing = true

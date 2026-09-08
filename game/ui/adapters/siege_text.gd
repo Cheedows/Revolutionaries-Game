@@ -66,19 +66,17 @@ static func describe(event: Event, state: GameState) -> String:
 		Event.HOSTAGE_ESCAPED:
 			return "%s has escaped!" % _who(state, data)
 		Event.HOSTAGE_EXECUTED:
-			return "%s is killed." % _who(state, data)
+			return InterrogationDialogue.execution(state, data)
 		Event.HOSTAGE_BEATEN:
 			return InterrogationText.beaten(state, data)
 		Event.HOSTAGE_DRUGGED:
-			return "%s is given hallucinogens%s." % [_who(state, data),
-					", and takes too much"
-					if bool(data.get("overdose", false)) else ""]
+			return "%s foams at the mouth and its eyes roll back in its skull." % _who(state, data) if data.get("overdose", false) else "It is subjected to dangerous hallucinogens."
 		Event.HOSTAGE_TALKED_TO:
-			return _talked(state, data)
+			return InterrogationDialogue.describe(state, data)
 		Event.HOSTAGE_CONVERTED:
-			return "%s has come round." % _who(state, data)
+			return _who(state, data) + ": The Automaton has been Enlightened!   Your Liberal ranks are swelling!" + ("\nThe conversion is convincing enough that the police no longer consider it a kidnapping." if data.get("cleared", false) else "")
 		Event.HOSTAGE_DIED:
-			return "%s did not survive it." % _who(state, data)
+			return "%s is dead under %s's interrogation." % [_who(state, data), _by(state, data)]
 		Event.HOSTAGE_THREATENED:
 			return _threatened(state, data)
 		Event.CREATURE_KIDNAPPED:
@@ -164,16 +162,6 @@ static func _warned(state: GameState, data: Dictionary) -> String:
 	for step in range(1, escalation + 1):
 		said += " " + ESCALATIONS[step]
 	return said
-
-
-## How a conversation with a prisoner went.
-static func _talked(state: GameState, data: Dictionary) -> String:
-	match data.get("result", &""):
-		&"turned_tables":
-			return "%s turns the conversation back on them." % _who(state, data)
-		&"persuaded":
-			return "%s is starting to listen." % _who(state, data)
-	return "%s is talked to." % _who(state, data)
 
 
 ## The six things somebody with a gun to a head shouts, from talkInCombat() in

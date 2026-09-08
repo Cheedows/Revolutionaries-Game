@@ -56,5 +56,6 @@ func _liberal(state: GameState, where: int) -> Creature:
 func _prisoner(state: GameState, where: int) -> Creature:
 	var creature := state.add_creature(Creature.new())
 	creature.alignment = &"conservative"
+	creature.enlisted = true
 	creature.location = where
 	return creature

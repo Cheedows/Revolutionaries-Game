@@ -102,6 +102,7 @@ static func kidnap_transfer(state: GameState, rng: Rng, victim: Creature,
 		victim.proper_name = victim.name
 		victim.named = true
 
+	victim.enlisted = true
 	victim.location = base
 	victim.base = base
 	victim.missing = true

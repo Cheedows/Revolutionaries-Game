@@ -17,7 +17,7 @@ static func candidates(state: GameState, keeper: Creature) -> Array[Creature]:
 	if keeper.location == -1:
 		return held
 	for creature: Creature in state.creatures.values():
-		if not creature.alive or creature.alignment == &"liberal":
+		if not is_held(creature):
 			continue
 		if creature.location == keeper.location:
 			held.append(creature)
@@ -36,9 +36,15 @@ static func watch(state: GameState, keeper: Creature,
 		if held.size() != 1:
 			return false
 		hostage = held[0]
-	elif not hostage.alive or hostage.alignment == &"liberal" \
-			or hostage.location != keeper.location:
+	elif not is_held(hostage) or hostage.location != keeper.location:
 		return false
 	keeper.activity = &"hostagetending"
 	keeper.tending_id = hostage.id
 	return true
+
+
+## Includes captures stranded by older saves, but excludes ordinary encounters.
+static func is_held(person: Creature) -> bool:
+	return person.exists and person.alive and person.alignment != &"liberal" \
+			and (person.is_member() or person.interrogation != null \
+			or (person.missing and person.base >= 0 and person.location == person.base))

@@ -5,6 +5,21 @@ static func press(tree: SceneTree, play: PlayScreen, said: String) -> void:
 	var session: Session = play.get("_session")
 	var button: Button
 	match said:
+		"interrogation":
+			var lead := session.state.members()[0]
+			var held := session.state.add_creature(Creature.new())
+			held.name = "Morgan"
+			held.named = true
+			held.alignment = &"conservative"
+			held.attributes.set_value(&"wisdom", 15)
+			Capture.kidnap_transfer(session.state, session.rng, held, lead.base)
+			Commands.watch_hostage(session, lead, held)
+			session.submit(HostageQueue.advance(session.state, session.rng, session.catalog))
+			await UiDriver.settle(tree)
+			return
+		"interrogation_result":
+			await UiDriver.tap(tree, UiDriver.button(play, "Get on with it"))
+			return
 		"armed_party":
 			var who := session.state.squad_members(session.state.active_squad())[0]
 			who.weapon = Weapon.new(&"WEAPON_SEMIPISTOL_9MM")

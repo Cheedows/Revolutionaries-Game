@@ -66,39 +66,41 @@ static func run(state: GameState, rng: Rng, hostage: Creature,
 
 	if plan.techniques[Interrogation.PROPS]:
 		session["attack"] = int(session["attack"]) + PROPS_BONUS
-		rng.below(9)         # which prop session
+		record(events, hostage, lead, &"props", rng.below(9))
 	else:
 		# Two of the four openings name an issue, which is rolled for.
 		var opening := rng.below(4)
+		var issue := -1
 		if opening == 0 or opening == 1:
-			rng.below(Ids.VIEWS.size() - 3)
+			issue = rng.below(Ids.VIEWS.size() - 3)
+		record(events, hostage, lead, &"opening", opening, {"issue": issue})
 
 	if plan.techniques[Interrogation.DRUGS]:
-		warmth = _hallucinate(rng, hostage, session, lead, warmth)
+		warmth = _hallucinate(rng, hostage, session, lead, warmth, events)
 
 	_argue(state, rng, hostage, session, lead, warmth, events)
 
 
 ## What the hostage sees instead of the interrogator.
 static func _hallucinate(rng: Rng, hostage: Creature, session: Dictionary,
-		lead: Creature, warmth: float) -> float:
+		lead: Creature, warmth: float, events: Array[Event]) -> float:
 	var plan := hostage.interrogation
 	if CheckRules.skill_check(rng, hostage, &"psychology",
 			Difficulty.CHALLENGING):
-		rng.below(4)
+		record(events, hostage, lead, &"grounded", rng.below(4))
 		return warmth
 	# A hostage who already trusts them sees an angel; one who does not sees
 	# a demon. The luck rolls are made whether or not the rapport reaches.
 	if (plan.toward(lead.id) > GOOD_TRIP_RAPPORT and rng.one_in(GOOD_TRIP_ODDS)) \
 			or rng.one_in(GOOD_TRIP_LUCK):
-		rng.below(4)
+		record(events, hostage, lead, &"angel", rng.below(4))
 		return ADORATION
 	if (plan.toward(lead.id) < BAD_TRIP_RAPPORT and rng.below(BAD_TRIP_ODDS) != 0) \
 			or rng.one_in(BAD_TRIP_LUCK):
 		session["attack"] = 0
-		rng.below(4)
+		record(events, hostage, lead, &"demon", rng.below(4))
 		return warmth
-	rng.below(4)
+	record(events, hostage, lead, &"colours", rng.below(4))
 	return warmth
 
 
@@ -111,7 +113,7 @@ static func _argue(state: GameState, rng: Rng, hostage: Creature,
 
 	if hostage.skills.get_value(&"psychology") \
 			> lead.skills.get_value(&"psychology"):
-		rng.below(4)
+		record(events, hostage, lead, &"psychology", rng.below(4))
 		return
 
 	if plan.techniques[Interrogation.BEAT] or warmth < -2:
@@ -123,7 +125,7 @@ static func _argue(state: GameState, rng: Rng, hostage: Creature,
 				> lead.skills.get_value(skill) \
 				+ lead.skills.get_value(&"psychology")
 		if untouchable and not plan.techniques[Interrogation.DRUGS]:
-			rng.below(4)
+			record(events, hostage, lead, skill, rng.below(4))
 			TrainRules.train(lead, skill,
 					hostage.skills.get_value(skill) * LESSON_FACTOR)
 			return
@@ -137,6 +139,7 @@ static func _argue(state: GameState, rng: Rng, hostage: Creature,
 			or plan.techniques[Interrogation.PROPS]:
 		# Not completely unproductive.
 		plan.adjust(lead.id, HELD_FIRM)
+		record(events, hostage, lead, &"held_firm")
 		return
 
 	# The hostage wins, and the interrogator is worse for it.
@@ -151,12 +154,12 @@ static func _argue(state: GameState, rng: Rng, hostage: Creature,
 static func _console(state: GameState, rng: Rng, hostage: Creature,
 		session: Dictionary, lead: Creature, events: Array[Event]) -> void:
 	var plan := hostage.interrogation
-	rng.below(7)          # how far gone they are
+	record(events, hostage, lead, &"alienated", rng.below(7))
 	if CheckRules.skill_check(rng, lead, &"seduction", Difficulty.CHALLENGING):
-		rng.below(7)      # what the kindness was
+		record(events, hostage, lead, &"consoled", rng.below(7))
 		plan.adjust(lead.id, CONSOLED)
 		if plan.toward(lead.id) > CLINGING:
-			rng.below(7)  # how they cling
+			record(events, hostage, lead, &"clinging", rng.below(7))
 			if plan.toward(lead.id) > DEVOTED:
 				session["turned"] = true
 	if AttributeRules.effective(hostage, &"heart", false) > 1:
@@ -181,10 +184,20 @@ static func _persuaded(state: GameState, rng: Rng, hostage: Creature,
 	if plan.toward(lead.id) > BEFRIENDED:
 		session["turned"] = true
 
-	rng.below(5)   # how they put it
+	record(events, hostage, lead, &"persuaded", rng.below(5))
 	var work: Location = state.locations.get(hostage.work_location)
 	if work != null and not work.mapped and rng.one_in(REVEAL_ODDS):
 		work.mapped = true
 		work.hidden = false
-	events.append(Event.new(Event.HOSTAGE_TALKED_TO,
-			{"creature": hostage.id, "by": lead.id, "result": &"persuaded"}))
+		record(events, hostage, lead, &"revealed", 0, {"location": work.id})
+
+
+## Narrative choices are data; presentation uses the original text tables.
+static func record(events: Array[Event], hostage: Creature, lead: Creature,
+		result: StringName, line: int = 0, extra: Dictionary = {}) -> void:
+	var data := {"creature": hostage.id, "by": lead.id, "result": result, "line": line}
+	if hostage.interrogation != null:
+		data["restrained"] = hostage.interrogation.techniques[Interrogation.RESTRAIN]
+		data["rapport"] = hostage.interrogation.toward(lead.id)
+	data.merge(extra)
+	events.append(Event.new(Event.HOSTAGE_TALKED_TO, data))

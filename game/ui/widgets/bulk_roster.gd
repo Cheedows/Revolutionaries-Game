@@ -20,7 +20,10 @@ func open(session: Session, ids: Array[int]) -> void:
 		for id in ids:
 			var person: Creature = session.state.creatures.get(id)
 			if person != null and CreatureCondition.is_active_liberal(person, session.state.locations.get(person.location)):
-				BaseOrders.assign(session, person, job))
+				if job == &"hostagetending":
+					Commands.watch_hostage(session, person, session.state.creatures.get(_who.tending_id))
+				else:
+					BaseOrders.assign(session, person, job))
 	_picker.closed.connect(func() -> void: closed.emit())
 	column.add_child(_picker)
 	_picker.show_creature(session, session.state.creatures.get(ids[0]))

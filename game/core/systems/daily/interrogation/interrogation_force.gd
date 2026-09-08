@@ -70,10 +70,10 @@ static func execute(state: GameState, rng: Rng, hostage: Creature,
 	hostage.interrogation = null
 	Mortality.die(state, hostage)
 	state.kills += 1
-	rng.below(5)   # how it was done
-	_reckon(state, rng, killer, events)
+	var method := rng.below(5)
 	events.append(Event.new(Event.HOSTAGE_EXECUTED,
-			{"creature": hostage.id, "by": killer.id}))
+			{"creature": hostage.id, "by": killer.id, "method": method}))
+	_reckon(state, rng, killer, hostage, events)
 
 	for creature: Creature in state.creatures.values():
 		if creature.alive and creature.activity == &"hostagetending" \
@@ -84,13 +84,14 @@ static func execute(state: GameState, rng: Rng, hostage: Creature,
 
 ## What killing somebody does to whoever did it: sick about it, or colder.
 static func _reckon(state: GameState, rng: Rng, killer: Creature,
-		events: Array[Event]) -> void:
+		hostage: Creature, events: Array[Event]) -> void:
 	if rng.below(AttributeRules.effective(killer, &"heart", false)) \
 			> rng.below(REMORSE_SPREAD):
 		killer.attributes.adjust(&"heart", -1)
-		rng.below(4)   # how they took it
+		InterrogationTalk.record(events, hostage, killer, &"remorse", rng.below(4))
 	elif rng.one_in(COLDER_ODDS):
 		killer.attributes.adjust(&"wisdom", 1)
+		InterrogationTalk.record(events, hostage, killer, &"colder")
 
 
 ## The hallucinogens.
@@ -100,6 +101,7 @@ static func drug(state: GameState, rng: Rng, hostage: Creature,
 	if not plan.techniques[Interrogation.DRUGS]:
 		return
 	var lead: Creature = session["lead"]
+	events.append(Event.new(Event.HOSTAGE_DRUGGED, {"creature": hostage.id}))
 	var bonus := DRUG_BONUS + InterrogationRules.drug_bonus(lead, catalog)
 
 	plan.drug_use += 1
@@ -123,6 +125,7 @@ static func _overdose(state: GameState, rng: Rng, hostage: Creature,
 	events.append(Event.new(Event.HOSTAGE_DRUGGED,
 			{"creature": hostage.id, "overdose": true}))
 	if AttributeRules.effective(hostage, &"health", false) <= 0 or best == 0:
+		InterrogationTalk.record(events, hostage, doctor, &"overdose_death", 0, {"skilled": best > 0})
 		Mortality.die(state, hostage)
 		return bonus
 
@@ -135,12 +138,14 @@ static func _overdose(state: GameState, rng: Rng, hostage: Creature,
 		hostage.interrogation.techniques[Interrogation.DRUGS] = false
 		hostage.interrogation.drug_use = 0
 		bonus = 0
+		InterrogationTalk.record(events, hostage, doctor, &"resuscitated", 0)
 	else:
 		TrainRules.train(doctor, &"firstaid", DEFIBRILLATOR_LESSON
 				* maxi(CLUMSY_CEILING - doctor.skills.get_value(&"firstaid"), 0),
 				CLUMSY_CEILING)
 		# Long enough under to meet somebody, and twice as suggestible after.
 		bonus *= 2
+		InterrogationTalk.record(events, hostage, doctor, &"resuscitated", 1)
 	hostage.interrogation.adjust(doctor.id, RESCUE_RAPPORT)
 	return bonus
 
@@ -197,8 +202,11 @@ static func beat(state: GameState, rng: Rng, hostage: Creature,
 		InterrogationBeating.take_it_badly(state, rng, hostage, session, force,
 				events)
 
+	else:
+		InterrogationTalk.record(events, hostage, lead, &"takes_it")
+
 	if tortured and hostage.alive:
-		_reckon(state, rng, lead, events)
+		_reckon(state, rng, lead, hostage, events)
 
 
 ## The guards doing it, so the log can name them as the original does: one

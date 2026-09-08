@@ -26,7 +26,8 @@ static func take_it_badly(state: GameState, rng: Rng, hostage: Creature,
 
 	if CheckRules.skill_check(rng, hostage, &"religion", force):
 		# They pray, and are no worse for it.
-		rng.below(2)
+		InterrogationTalk.record(events, hostage, session["lead"], &"prayer",
+				rng.below(2) + (2 if plan.techniques[Interrogation.DRUGS] else 0))
 	elif force > (AttributeRules.effective(hostage, &"wisdom", true)
 			+ AttributeRules.effective(hostage, &"heart", true)
 			+ AttributeRules.effective(hostage, &"health", true)) \
@@ -34,6 +35,7 @@ static func take_it_badly(state: GameState, rng: Rng, hostage: Creature,
 		_broken(state, rng, hostage, session, force, events)
 	else:
 		# Getting the message: standing first, then judgement.
+		InterrogationTalk.record(events, hostage, session["lead"], &"message")
 		if hostage.juice > 0:
 			hostage.juice = maxi(hostage.juice - force, 0)
 		if AttributeRules.effective(hostage, &"wisdom", false) > 1:
@@ -45,8 +47,10 @@ static func take_it_badly(state: GameState, rng: Rng, hostage: Creature,
 			force / LASTING_DIVISOR):
 		if AttributeRules.effective(hostage, &"health", false) > 1:
 			hostage.attributes.adjust(&"health", -1)
+			InterrogationTalk.record(events, hostage, session["lead"], &"hurt")
 		else:
 			hostage.attributes.set_value(&"health", 0)
+			InterrogationTalk.record(events, hostage, session["lead"], &"hurt", 1)
 			Mortality.die(state, hostage)
 
 
@@ -55,13 +59,17 @@ static func _broken(state: GameState, rng: Rng, hostage: Creature,
 		session: Dictionary, force: int, events: Array[Event]) -> void:
 	var plan := hostage.interrogation
 	# Which way they break, and — on the drugs — what they break into.
-	match rng.below(4):
+	var line := rng.below(4)
+	var odd := false
+	match line:
 		2:
 			if plan.techniques[Interrogation.DRUGS]:
-				rng.below(5)
+				odd = rng.below(5) == 0
 		3:
 			if plan.techniques[Interrogation.DRUGS]:
-				rng.below(3)
+				odd = rng.below(3) == 0
+	InterrogationTalk.record(events, hostage, session["lead"], &"broken", line,
+			{"odd": odd, "drugs": plan.techniques[Interrogation.DRUGS]})
 
 	if AttributeRules.effective(hostage, &"heart", false) > 1:
 		hostage.attributes.adjust(&"heart", -1)
@@ -79,7 +87,4 @@ static func _broken(state: GameState, rng: Rng, hostage: Creature,
 	if work != null and not work.mapped and rng.one_in(REVEAL_ODDS):
 		work.mapped = true
 		work.hidden = false
-		events.append(Event.new(Event.DATE_TALKED, {
-			"creature": session["lead"].id, "date": hostage.id,
-			"location": work.id,
-		}))
+		InterrogationTalk.record(events, hostage, session["lead"], &"revealed", 0, {"location": work.id})

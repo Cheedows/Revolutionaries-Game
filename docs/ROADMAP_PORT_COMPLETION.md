@@ -28,6 +28,7 @@ The audit document records evidence; this checklist tracks repairs.
 - [x] A16: Later dating narrative
 - [x] A17: Month-end financial report
 - [x] A18: Contextual audio
+- [x] A19: Captured-prisoner daily processing and old-save recovery; explicit tending target; conversion eligibility; original interrogation dialogue, rapport/profile and full-page results (reopened after player report)
 
 The remaining audit repairs were implemented on 2026-09-07; see the repair
 record in [PARITY-AUDIT.md](port/PARITY-AUDIT.md). Closing these identified

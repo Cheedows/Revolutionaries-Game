@@ -40,15 +40,23 @@ static func _hold(state: GameState, rng: Rng, catalog: Catalog,
 ## so each answer is followed up rather than assumed to be the last.
 static func _carry(state: GameState, rng: Rng, catalog: Catalog,
 		held: Array[Creature], index: int, events: Array[Event],
-		result: Variant) -> Variant:
+		result: Variant, shown: Array[Event] = []) -> Variant:
 	if result is PendingIntent:
 		var asked: PendingIntent = result
+		var already := shown + asked.events
 		return PendingIntent.new(asked.intent,
 				func(answer: Variant) -> Variant:
 					return _carry(state, rng, catalog, held, index, events,
-							asked.resume.call(answer)),
-				asked.events)
+							asked.resume.call(answer), already),
+				asks_not_shown(asked.events, shown))
 	events.append_array(result as Array[Event])
+	if not (result as Array).is_empty():
+		return PendingIntent.new(Intent.new(Intent.ACKNOWLEDGE_REPORT,
+				[{"id": null, "label": "Carry on", "footer": true}],
+				{"creature": held[index].id, "interrogation_report": result}, false),
+				func(_answer: Variant) -> Variant:
+					return _next(state, rng, catalog, held, index - 1, [] as Array[Event]),
+				asks_not_shown(events, shown))
 	return _next(state, rng, catalog, held, index - 1, events)
 
 
@@ -56,7 +64,12 @@ static func _carry(state: GameState, rng: Rng, catalog: Catalog,
 static func _held(state: GameState) -> Array[Creature]:
 	var people: Array[Creature] = []
 	for creature: Creature in state.creatures.values():
-		if creature.exists and creature.is_member():
+		if HostageWatch.is_held(creature):
+			creature.enlisted = true
 			people.append(creature)
 	people.sort_custom(func(a: Creature, b: Creature) -> bool: return a.id < b.id)
 	return people
+
+
+static func asks_not_shown(events: Array[Event], shown: Array[Event]) -> Array[Event]:
+	return events.filter(func(event: Event) -> bool: return not shown.has(event))
