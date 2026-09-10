@@ -61,10 +61,11 @@ func _check_title(size: Vector2i) -> void:
 		_wrong.append("title at %s: expected %d menu rows, found %d"
 				% [size, MENU_IDS.size(), buttons.size()])
 	for button: Button in buttons:
+		var full := button.get_global_rect()
 		var visible := _visible_rect(button, screen.get_viewport_rect())
-		if visible.size.x < 1.0 or visible.size.y < 1.0:
-			_wrong.append("title at %s: %s exists but is fully clipped"
-					% [size, button.text])
+		if visible.size.x < full.size.x - 1.0 or visible.size.y < full.size.y - 1.0:
+			_wrong.append("title at %s: %s is clipped (%s visible of %s)"
+					% [size, button.text, visible.size, full.size])
 
 	var expected_profile := Metrics.Profile.MOBILE if size.x < Metrics.PHONE_WIDTH \
 			else Metrics.Profile.DESKTOP
