@@ -9,6 +9,8 @@ extends SceneTree
 
 const SIZES: Array[Vector2i] = [Vector2i(400, 800), Vector2i(1280, 800)]
 const MENU_IDS: Array[StringName] = [&"new", &"continue", &"load", &"scores", &"quit"]
+const DESKTOP_MARKER := 101.0
+const MOBILE_MARKER := 202.0
 
 var _wrong: Array[String] = []
 
@@ -96,8 +98,8 @@ func _check_unscroll_restores_widget_policy() -> void:
 
 
 func _check_variant_host() -> void:
-	var desktop := _view_scene("DesktopView")
-	var mobile := _view_scene("MobileView")
+	var desktop := _view_scene("DesktopView", DESKTOP_MARKER)
+	var mobile := _view_scene("MobileView", MOBILE_MARKER)
 	if desktop == null or mobile == null:
 		return
 	var host := UiVariantHost.new()
@@ -108,22 +110,27 @@ func _check_variant_host() -> void:
 	root.add_child(host)
 	for _settle in 2:
 		await process_frame
-	if host.active_view() == null or host.active_view().name != "DesktopView":
-		_wrong.append("UiVariantHost did not select the desktop view")
+	if host.active_view() == null \
+			or not is_equal_approx(host.active_view().custom_minimum_size.x, DESKTOP_MARKER):
+		_wrong.append("UiVariantHost did not select the desktop view (profile %d)"
+				% host.active_profile())
 
 	_configure(Vector2i(400, 800))
 	for _settle in 3:
 		await process_frame
-	if host.active_view() == null or host.active_view().name != "MobileView":
-		_wrong.append("UiVariantHost did not swap to the mobile view")
+	if host.active_view() == null \
+			or not is_equal_approx(host.active_view().custom_minimum_size.x, MOBILE_MARKER):
+		_wrong.append("UiVariantHost did not swap to the mobile view (profile %d)"
+				% host.active_profile())
 	root.remove_child(host)
 	host.queue_free()
 	await process_frame
 
 
-func _view_scene(name: String) -> PackedScene:
+func _view_scene(name: String, marker: float) -> PackedScene:
 	var view := Control.new()
 	view.name = name
+	view.custom_minimum_size.x = marker
 	var scene := PackedScene.new()
 	var error := scene.pack(view)
 	view.free()
