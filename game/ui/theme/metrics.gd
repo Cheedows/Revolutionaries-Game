@@ -2,18 +2,18 @@ class_name Metrics
 extends RefCounted
 ## How big to draw things, and how much room there is to draw them in.
 ##
-## The interface is one interface: there is no phone build and no desktop
-## build, only a layout that reads the room it has been given. Everything that
-## needs to know whether it is being poked with a finger or pointed at with a
-## mouse asks here, so the answer is in one place and a test can change it by
-## resizing a viewport rather than by pretending to be Android.
+## A screen can stay responsive in one view or choose separate desktop/mobile
+## views. Either way this is the single place that decides which form factor it
+## is being drawn for, so a desktop resize can exercise the same boundary as a
+## phone. See [method profile] and [UiVariantHost].
 ##
-## Two questions, and they are not the same one. [method narrow] is about room:
-## a column that fits beside another on a desk does not fit beside it on a
-## phone. [method touch] is about accuracy: a finger is about nine millimetres
-## across and a mouse pointer is one pixel, so anything meant to be hit needs
-## to be bigger. A tablet is wide and still touched; a desktop window dragged
-## thin is narrow and still moused.
+## Layout and input accuracy remain separate questions. [method narrow] is
+## about room: a column that fits beside another on a desk does not fit beside
+## it on a phone. [method touch] is about accuracy: a finger is about nine
+## millimetres across and a mouse pointer is one pixel, so anything meant to be
+## hit needs to be bigger.
+
+enum Profile { DESKTOP, MOBILE }
 
 ## Below this many pixels across, the screen stops being two columns.
 const PHONE_WIDTH := 900
@@ -85,6 +85,10 @@ const WIDE := 16
 ## Between one section of a screen and the next, and around the edge of a page.
 const EDGE := 24
 
+## Private state used by [method unscroll] to restore a widget's own scrolling
+## policy after a narrow/mobile page temporarily takes scrolling away from it.
+const _UNSCROLL_MODE := &"metrics_unscroll_vertical_mode"
+
 
 ## Whether this build is running on something held in a hand.
 ##
@@ -93,6 +97,19 @@ const EDGE := 24
 ## dragged about.
 static func handheld() -> bool:
 	return OS.has_feature("mobile")
+
+
+## The UI implementation this surface should use.
+##
+## A handheld always gets the mobile view. A desktop window narrower than the
+## breakpoint gets it too: that keeps a squeezed window usable and, just as
+## importantly, lets the desktop layout harness exercise both implementations.
+static func profile(control: Control) -> Profile:
+	return Profile.MOBILE if handheld() or narrow(control) else Profile.DESKTOP
+
+
+static func mobile_ui(control: Control) -> bool:
+	return profile(control) == Profile.MOBILE
 
 
 ## Whether [param control] has enough width beside it for two columns.
@@ -164,9 +181,9 @@ static func column(control: Control, wide: int) -> int:
 ## themselves and the theme is left to say how they look.
 ##
 ## Cheap, idempotent and safe to run after anything rebuilds part of a screen.
-static func enlarge(root: Control, touch: bool) -> void:
+static func enlarge(root: Control, touch_size: bool) -> void:
 	for control in _pressable(root):
-		if touch:
+		if touch_size:
 			control.custom_minimum_size.y = maxf(
 					control.custom_minimum_size.y, float(TOUCH_TARGET))
 		elif is_equal_approx(control.custom_minimum_size.y, float(TOUCH_TARGET)):
@@ -199,6 +216,11 @@ static func _pressable(control: Control) -> Array[Control]:
 ## puts one scroller around the lot. Disabled is what makes a [ScrollContainer]
 ## report its content's height as its own, so the column simply gets longer.
 ##
+## The original mode is remembered before it is disabled and restored when the
+## page widens again. Never assume that desktop means AUTO: an unpinned
+## IntentDialog, for example, deliberately grows to its contents and therefore
+## owns a disabled scroller in both profiles.
+##
 ## Never touches the page's own scroller (see [method page_scroller]), nor one
 ## marked "own_scroller" — a widget whose content has no length the page can
 ## absorb, which in this game is the log and only the log. See
@@ -208,8 +230,13 @@ static func unscroll(root: Control, on: bool) -> void:
 		if scroll.has_meta(&"page_scroller") \
 				or scroll.has_meta(&"own_scroller"):
 			continue
-		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if on \
-				else ScrollContainer.SCROLL_MODE_AUTO
+		if on:
+			if not scroll.has_meta(_UNSCROLL_MODE):
+				scroll.set_meta(_UNSCROLL_MODE, scroll.vertical_scroll_mode)
+			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		elif scroll.has_meta(_UNSCROLL_MODE):
+			scroll.vertical_scroll_mode = int(scroll.get_meta(_UNSCROLL_MODE))
+			scroll.remove_meta(_UNSCROLL_MODE)
 
 
 ## Marks [param scroll] as the one scroller a screen keeps.

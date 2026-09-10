@@ -88,7 +88,9 @@ func compact(on: bool) -> void:
 ##
 ## For a screen the dialog fills on its own. Off by default, because where the
 ## dialog is one panel among several the screen owns the scrolling and the bar
-## rides at the end of the list like anything else.
+## rides at the end of the list like anything else. In that unpinned mode the
+## inner ScrollContainer is deliberately disabled so it contributes the full
+## height of its choices instead of collapsing to an empty viewport.
 func pin(on: bool) -> void:
 	_pinned = on
 	size_flags_vertical = Control.SIZE_EXPAND_FILL if on else Control.SIZE_FILL
@@ -98,8 +100,10 @@ func pin(on: bool) -> void:
 		# The one scroller on the screen, so Metrics.unscroll() leaves it alone
 		# and the list keeps scrolling under the pinned bar.
 		Metrics.page_scroller(_scroll)
-	elif _scroll.has_meta(&"page_scroller"):
-		_scroll.remove_meta(&"page_scroller")
+	else:
+		if _scroll.has_meta(&"page_scroller"):
+			_scroll.remove_meta(&"page_scroller")
+		_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 
 ## Shows [param intent]. The dialog stays up until an option is taken.
 func ask(intent: Intent, state: GameState) -> void:
@@ -280,6 +284,11 @@ func _build() -> void:
 
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# An unpinned dialog belongs to its screen's scroller. If this inner
+	# scroller is AUTO with no explicit height, a desktop VBox is free to give
+	# it zero pixels and every choice exists but is clipped — exactly the title
+	# screen failure this invariant prevents.
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(_scroll)
 

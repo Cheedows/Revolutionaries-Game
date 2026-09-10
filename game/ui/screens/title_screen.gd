@@ -186,10 +186,9 @@ func _build() -> void:
 	page.add_child(_dialog)
 
 
-## Lays the screen out for the room it has been given.
-##
-## The interface is one interface at two sizes; [Metrics] decides which, from
-## how wide the surface being drawn on actually is. See ui/theme/metrics.gd.
+## Lays the screen out for the current UI profile. Simple screens can adapt in
+## place like this one; screens whose desktop/mobile trees truly differ should
+## put those two views behind UiVariantHost instead.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and _dialog != null:
 		_adapt()
@@ -209,10 +208,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _adapt() -> void:
+	var mobile := Metrics.mobile_ui(self)
 	theme = UiTheme.build(Metrics.touch(self))
-	var narrow := Metrics.narrow(self)
 	if _scroll != null:
-		if narrow:
+		if mobile:
 			Metrics.page_scroller(_scroll)
 		else:
 			if _scroll.has_meta(&"page_scroller"):
@@ -220,8 +219,8 @@ func _adapt() -> void:
 			_scroll.horizontal_scroll_mode = \
 					ScrollContainer.SCROLL_MODE_DISABLED
 			_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		Metrics.unscroll(_scroll, narrow)
+		Metrics.unscroll(_scroll, mobile)
 	if _dialog != null:
-		_dialog.compact(Metrics.narrow(self))
+		_dialog.compact(mobile)
 	Metrics.enlarge(self, Metrics.touch(self))
 	PressFeel.teach(self)
