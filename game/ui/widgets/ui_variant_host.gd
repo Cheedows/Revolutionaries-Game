@@ -24,8 +24,12 @@ func _ready() -> void:
 		viewport.size_changed.connect(_surface_changed)
 	_select_view()
 	# A Window can finish applying canvas stretch after this Control becomes
-	# ready. Re-check once that logical viewport size has settled.
-	call_deferred("_select_view")
+	# ready. A deferred call still runs in the same frame, before that settles,
+	# so re-check on the next frame as well. This also makes a host added just
+	# after its parent was resized pick the current profile instead of the old
+	# viewport size whose change signal it necessarily missed.
+	await get_tree().process_frame
+	_select_view()
 
 
 func _notification(what: int) -> void:
