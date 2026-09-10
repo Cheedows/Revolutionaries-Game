@@ -212,8 +212,10 @@ func _restore() -> void:
 
 ## ScrollContainer does not inherit the minimum height of its child. When this
 ## dialog is unpinned its inner scroller is only a layout wrapper, so mirror the
-## content minimum explicitly. Without this the panel can collapse to its title
-## row while every choice exists below a zero-height clipped scroll viewport.
+## content minimum explicitly. This is intentionally updated only at the known
+## mutation/profile points above. Listening to minimum_size_changed here creates
+## a feedback loop through ScrollContainer/Container relayout on desktop and can
+## prevent the first frame from being drawn.
 func _sync_unpinned_height() -> void:
 	if _scroll == null or _content == null:
 		return
@@ -246,7 +248,6 @@ func _build() -> void:
 	_scroll.add_child(_content)
 	_content.add_child(_detail)
 	_content.add_child(_options)
-	_content.minimum_size_changed.connect(_sync_unpinned_height)
 
 	_bar = ActionBar.new()
 	_bar.visible = false
