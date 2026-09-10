@@ -1,24 +1,12 @@
 class_name IntentDialog
 extends PanelContainer
-## Renders any question the simulation asks, whatever it is about.
-##
-## Every system in core/ parks on a [PendingIntent] rather than blocking, and
-## every one of those carries the same shape: a type, some context and a list
-## of options. So one widget can render all of them, and a screen only needs a
-## bespoke one where a list of buttons is genuinely not enough.
-##
-## The options themselves are [OptionRow]s and [ToggleRow]s, and the ways out
-## live in an [ActionBar]; this decides which of them a question needs and
-## keeps track of what the player can currently answer.
-##
-## Emits [signal chosen] with the option's id, or [signal declined] when the
-## player backs out of a question that allows it.
+## Renders simulation questions as rows plus an action bar.
+## Screens need a bespoke dialog only when that shared shape is not enough.
 
 signal chosen(id: Variant)
 signal declined
 
-## The number keys pick the first nine options, as the original's letters pick
-## its own. Past nine there is no key for it and the list is walked instead.
+## Number keys pick the first nine listed options.
 const SHORTCUTS := 9
 
 var _title: Label
@@ -28,23 +16,15 @@ var _scroll: ScrollContainer
 var _bar: ActionBar
 var _refuse: Button
 
-## The option each button stands for, so the buttons stay the only thing that
-## knows about layout and the ids stay data.
+## Button -> option id, keeping ids independent of layout.
 var _ids: Dictionary = {}
-
-## How many of them are in the numbered list, which is what the next one's
-## number is. Counted rather than taken from _ids, because the bar's buttons
-## are in there too and are not numbered.
+## Count listed rows only; action-bar buttons are not numbered.
 var _listed := 0
-
 ## Last answer, so rebuilt choices restore keyboard focus.
 var _last: Variant = null
-
 ## Whether the options are being sized for a fingertip.
 var _touch := false
-
-## Whether the bar is held against the bottom of the dialog rather than
-## trailing the list. See [method pin].
+## Whether the bar is pinned below a scrolling list.
 var _pinned := false
 
 
@@ -53,8 +33,7 @@ func _init() -> void:
 	_build()
 
 
-## The keyboard: a number picks that option, escape backs out of a question
-## that allows it, and the arrow keys walk the list on their own.
+## Number keys answer; escape declines a cancellable question.
 func _gui_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
@@ -73,32 +52,21 @@ func _gui_input(event: InputEvent) -> void:
 	accept_event()
 
 
-## Sizes the options for a finger, or back for a pointer.
-##
-## Takes effect on the next question rather than immediately: the options are
-## rebuilt every time one is asked, and a question already on screen should not
-## reshuffle itself under the thumb about to answer it.
+## Sizes the next set of options for a finger or pointer.
 func compact(on: bool) -> void:
 	_touch = on
 	_bar.adapt(on)
 
 
-## Holds the ways out against the bottom of the dialog, with the options
-## scrolling behind them.
-##
-## For a screen the dialog fills on its own. Off by default, because where the
-## dialog is one panel among several the screen owns the scrolling and the bar
-## rides at the end of the list like anything else. In that unpinned mode the
-## inner ScrollContainer is deliberately disabled so it contributes the full
-## height of its choices instead of collapsing to an empty viewport.
+## Pins the action bar while the choices scroll. Unpinned dialogs instead
+## contribute their full choice height to the screen's own scroller.
 func pin(on: bool) -> void:
 	_pinned = on
 	size_flags_vertical = Control.SIZE_EXPAND_FILL if on else Control.SIZE_FILL
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL if on \
 			else Control.SIZE_FILL
 	if on:
-		# The one scroller on the screen, so Metrics.unscroll() leaves it alone
-		# and the list keeps scrolling under the pinned bar.
+		# The one scroller on the screen; Metrics.unscroll() leaves it alone.
 		Metrics.page_scroller(_scroll)
 	else:
 		if _scroll.has_meta(&"page_scroller"):
@@ -155,13 +123,7 @@ func ask(intent: Intent, state: GameState) -> void:
 	PressFeel.teach(self)
 
 
-## The ids a player could take right now, in the order they would reach them:
-## down the list, then along the ways out under it.
-##
-## The buttons stay private, but something has to be able to ask what is on
-## offer without knowing where each one is drawn — a test driving the game
-## through the interface, most of all, which would otherwise have to be
-## rewritten every time the layout moves.
+## Answerable ids in player order: listed rows, then the action bar.
 func answerable() -> Array:
 	var ids: Array = []
 	for button in _listed_buttons():
@@ -172,15 +134,7 @@ func answerable() -> Array:
 			ids.append(_ids.get(button))
 	return ids
 
-## Every option the question put up, and whether it can be taken.
-##
-## The companion to [method answerable], which reports only what is live: a
-## test proving an option is *offered and refused* — a saved game to carry on
-## with when there is none — needs the disabled ones too. Both exist so that
-## nothing outside walks the buttons. Four tests used to, and all four broke
-## silently the day the rows stopped being wrapped in a container: the loop
-## found nothing, and the assertion that should have failed errored instead
-## and was counted as a pass.
+## Every offered id and whether it is enabled, including refused choices.
 func offered() -> Dictionary:
 	var found := {}
 	for button in _listed_buttons():
@@ -204,15 +158,12 @@ func _answer(id: Variant) -> void:
 func _add(label: String, note: String, enabled: bool, id: Variant,
 		toggle: bool, on: bool, under: bool = false) -> void:
 	_listed += 1
-	# The number is only drawn where there is a keyboard to type it. On a phone
-	# it is a number nobody can enter, in front of every line in the game.
+	# Numbers are keyboard affordances, so phone rows do not draw them.
 	var place := 0 if _touch else (_listed if _listed <= SHORTCUTS else 0)
 	var button: Button
 	if toggle:
 		var switch := ToggleRow.new(label, note, place, _touch)
-		# Refused before it is set, so a switch that is both on and refused —
-		# which is what the original leaves behind when Classic Mode is turned
-		# on over the top of it — draws as refused rather than as on.
+		# Refused wins over "on", matching the classic-mode override.
 		switch.disabled = not enabled
 		switch.set_on(on)
 		button = switch
@@ -232,22 +183,7 @@ func _listed_buttons() -> Array[Button]:
 	return found
 
 
-## Which option the keyboard should be sitting on, or null for none at all.
-##
-## Kept apart from the act of focusing it so that it can be asked. Godot will
-## not move focus onto a control that is not inside a live tree, and this
-## suite runs without one — so a test that watched for the ring would be
-## watching an engine refusal rather than this decision, and would go on
-## passing whatever this decided.
-##
-## Null on a phone. Focus draws a ring; the first option of every list was
-## wearing it; and a ring around the first of six identical switches reads as
-## the one already chosen. Nothing on a touchscreen has moved it there, so
-## nothing should be wearing it.
-##
-## Otherwise the option last answered, while it is still on offer. The switches
-## screen rebuilds its whole list after every press, and starting at the top
-## each time means six presses to reach the sixth switch, every time.
+## The keyboard target: none on touch, otherwise the last answer if reachable.
 func keyboard_lands_on() -> Variant:
 	if _touch or Metrics.handheld():
 		return null
@@ -284,10 +220,7 @@ func _build() -> void:
 
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	# An unpinned dialog belongs to its screen's scroller. If this inner
-	# scroller is AUTO with no explicit height, a desktop VBox is free to give
-	# it zero pixels and every choice exists but is clipped — exactly the title
-	# screen failure this invariant prevents.
+	# Unpinned dialogs belong to the screen scroller and must expose full height.
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(_scroll)
