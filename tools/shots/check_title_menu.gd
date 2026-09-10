@@ -103,12 +103,21 @@ func _check_variant_host() -> void:
 	var mobile := _view_scene("MobileView", MOBILE_MARKER)
 	if desktop == null or mobile == null:
 		return
+
+	# Do not use the root Window for this seam test. The project deliberately
+	# stretches a 400x800 logical canvas, so changing the OS window to 1280x800
+	# does not guarantee that a child sees 1280 layout pixels. UiVariantHost is
+	# specified in terms of the viewport it is actually drawn into, so give it
+	# one whose size is explicit and independent of the project's window stretch.
+	var surface := SubViewport.new()
+	surface.disable_3d = true
+	surface.size = Vector2i(1280, 800)
+	root.add_child(surface)
+
 	var host := UiVariantHost.new()
 	host.desktop_scene = desktop
 	host.mobile_scene = mobile
-
-	_configure(Vector2i(1280, 800))
-	root.add_child(host)
+	surface.add_child(host)
 	for _settle in PROFILE_SETTLE_FRAMES:
 		await process_frame
 	if host.active_view() == null \
@@ -116,15 +125,16 @@ func _check_variant_host() -> void:
 		_wrong.append("UiVariantHost did not select the desktop view (profile %d)"
 				% host.active_profile())
 
-	_configure(Vector2i(400, 800))
+	surface.size = Vector2i(400, 800)
 	for _settle in PROFILE_SETTLE_FRAMES:
 		await process_frame
 	if host.active_view() == null \
 			or not is_equal_approx(host.active_view().custom_minimum_size.x, MOBILE_MARKER):
 		_wrong.append("UiVariantHost did not swap to the mobile view (profile %d)"
 				% host.active_profile())
-	root.remove_child(host)
-	host.queue_free()
+
+	root.remove_child(surface)
+	surface.queue_free()
 	await process_frame
 
 
