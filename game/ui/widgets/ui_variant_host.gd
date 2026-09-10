@@ -23,12 +23,13 @@ func _ready() -> void:
 	if viewport != null and not viewport.size_changed.is_connected(_surface_changed):
 		viewport.size_changed.connect(_surface_changed)
 	_select_view()
-	# A Window can finish applying canvas stretch after this Control becomes
-	# ready. A deferred call still runs in the same frame, before that settles,
-	# so re-check on the next frame as well. This also makes a host added just
-	# after its parent was resized pick the current profile instead of the old
-	# viewport size whose change signal it necessarily missed.
-	await get_tree().process_frame
+
+
+## Canvas stretch can settle a few frames after a Window resize. Checking the
+## profile is deliberately cheap — it only instantiates when the selected
+## scene/profile actually changes — so keep the host synchronized instead of
+## guessing which resize notification will be the last one.
+func _process(_delta: float) -> void:
 	_select_view()
 
 
