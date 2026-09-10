@@ -46,7 +46,7 @@ Enforced mechanically:
 
 ### The design system
 
-Six rules, each of which exists because breaking it shipped:
+These rules exist because breaking them shipped:
 
 1. **Nothing below a screen names a colour or a number.** Widgets ask `Atoms`
    for a control and `Metrics` for a size. Colours come from `Palette`, which
@@ -95,16 +95,28 @@ Six rules, each of which exists because breaking it shipped:
     routing history; dialogue preserves the original opening, argument and reply.
     Presentation records existing reply rolls without drawing extra randomness.
     Rejected contacts obey the original talk eligibility and use disabled ink.
+12. **Desktop and mobile may have different views, never different game logic.**
+    `Metrics.profile(control)` is the single UI form-factor decision: a narrow
+    surface or a handheld device selects the mobile profile; a roomy surface
+    selects desktop. A screen may keep one responsive view when that is simple,
+    or put separate desktop/mobile `PackedScene` views behind `UiVariantHost`
+    when the layouts genuinely differ. The screen/controller owns state,
+    navigation and signals; the two views expose the same player-facing
+    contract. Do not scatter `OS.has_feature("mobile")` or ad-hoc width checks
+    through screens, and never fork `app/` or `core/` behavior by form factor.
+    Because the decision is width-aware, resizing a desktop window can exercise
+    both views and the rendered layout checks must cover both profiles.
 
 The components, in the order a screen reaches for them: `Sheet` (what is in
 front), `Card` (a panel: head, notice, scrolling body, action bar),
 `PanelHeader`, `ActionBar`, `IntentDialog`, `ListRow`, `ToggleRow` /
 `OptionRow` over `RowButton`, `ConfirmButton`, and `Atoms` for everything
-smaller. A button is one of four weights — `primary` (the one action on the
-screen), `button` (the default), `quiet` (Close, Back), `danger` (destroys
-something). `PressFeel` gives every one of them a press to feel, because a
-touchscreen has no hover and a tap with no response reads as a tap that
-missed.
+smaller. `UiVariantHost` is the optional boundary around separate desktop and
+mobile view scenes. A button is one of four weights — `primary` (the one action
+on the screen), `button` (the default), `quiet` (Close, Back), `danger`
+(destroys something). `PressFeel` gives every one of them a press to feel,
+because a touchscreen has no hover and a tap with no response reads as a tap
+that missed.
 
 If a rule needs breaking, the rule changes in this file first, in its own commit.
 
