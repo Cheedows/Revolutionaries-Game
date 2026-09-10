@@ -135,31 +135,95 @@ func test_the_whole_thing_starts_at_the_title() -> void:
 
 
 func test_a_question_can_be_answered_with_the_number_keys() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
 	var dialog := IntentDialog.new()
-	var intent := Intent.new(Intent.CHOOSE_BASE_ACTION,
-			[{"id": &"one", "label": "One"}, {"id": &"two", "label": "Two"}],
-			{}, true)
-	dialog.ask(intent, GameState.new())
-	var picked: Array = []
-	dialog.chosen.connect(func(id: Variant) -> void: picked.append(id))
-	var key := InputEventKey.new()
-	key.pressed = true
-	key.keycode = KEY_2
-	dialog.call("_gui_input", key)
-	equal(picked, [&"two"], "the second key picks the second option")
-	dialog.free()
+	tree.root.add_child(dialog)
+	var options: Array[Dictionary] = [
+		{"id": &"first", "label": "Do the first thing"},
+		{"id": &"second", "label": "Do the second thing"},
+	]
+	dialog.ask(Intent.new(Intent.CHOOSE_BASE_ACTION, options, {}, true),
+			GameState.new())
+
+	var taken: Array = []
+	dialog.chosen.connect(func(id: Variant) -> void: taken.append(id))
+	dialog.call("_gui_input", _key(KEY_2))
+	equal(taken.size(), 1, "the second key took the second option")
+	equal(taken[0], &"second", "which is the one it says")
+
+	var backed := [false]
+	dialog.declined.connect(func() -> void: backed[0] = true)
+	dialog.call("_gui_input", _key(KEY_ESCAPE))
+	check(backed[0], "and escape backs out of a question that allows it")
+
+	tree.root.remove_child(dialog)
+	dialog.queue_free()
 
 
+## The switches on the new-game screen are things you flip; Continue is the one
+## thing that leaves. Rendering it as another numbered row made seven equal
+## options out of six toggles and a way out, so it goes under the list instead.
 func test_a_way_out_of_a_list_is_not_another_item_in_it() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
 	var dialog := IntentDialog.new()
-	var intent := Intent.new(Intent.CHOOSE_BASE_ACTION,
-			[{"id": &"one", "label": "One"},
-			{"id": &"back", "label": "Back", "footer": true}], {}, true)
-	dialog.ask(intent, GameState.new())
-	equal(dialog.answerable(), [&"one", &"back"], "both answers can be taken")
-	var buttons: Array[Button] = []
-	for child in dialog.get_children():
-		if child is Button:
-			buttons.append(child)
-	check(buttons.size() <= 1, "the footer is not another numbered row")
-	dialog.free()
+	tree.root.add_child(dialog)
+	var options: Array[Dictionary] = [
+		{"id": &"one", "label": "Classic Mode", "toggle": true, "on": false},
+		{"id": &"two", "label": "Nightmare Mode", "toggle": true, "on": true},
+		{"id": &"done", "label": "Continue", "footer": true},
+	]
+	dialog.ask(Intent.new(Intent.CONFIRM_NEW_GAME, options, {}, false),
+			GameState.new())
+
+	var taken: Array = []
+	dialog.chosen.connect(func(id: Variant) -> void: taken.append(id))
+
+	# The numbers reach the switches and stop there.
+	dialog.call("_gui_input", _key(KEY_2))
+	equal(taken, [&"two"], "the second key still takes the second switch")
+	dialog.call("_gui_input", _key(KEY_3))
+	equal(taken.size(), 1, "and there is no third number to press")
+
+	# The list holds the switches; the way out is in the bar under it, and the
+	# order answerable() reports them in is the order a player reaches them.
+	equal(dialog.answerable(), [&"one", &"two", &"done"],
+			"two switches, then the way out")
+	var listed: Array[Button] = dialog.call("_listed_buttons")
+	equal(listed.size(), 2, "two switches in the list")
+	for button in listed:
+		check(button is ToggleRow, "a switch is drawn as a switch")
+
+	# The switch carries its own state, rather than the state being two
+	# characters of punctuation inside the label.
+	check(not listed[0].button_pressed, "the first switch is off")
+	check(listed[1].button_pressed, "and the second is on")
+
+	var bar: ActionBar = dialog.get("_bar")
+	var footed := bar.buttons()
+	equal(footed.size(), 1, "one way out")
+	check(footed[0].text == "Continue", "and it is Continue, unnumbered")
+
+	footed[0].pressed.emit()
+	equal(taken, [&"two", &"done"], "pressing it answers the question")
+
+	tree.root.remove_child(dialog)
+	dialog.queue_free()
+
+
+## A game far enough along to hand to a screen that wants one.
+func _a_session() -> Session:
+	var session := Session.new(4242)
+	var choosing := Founder.begin(session.rng)
+	var outcome := {}
+	for question in FounderBackgrounds.QUESTIONS:
+		Founder.suggestion(session.rng)
+		Founder.answer(session.state, choosing, question, 0, outcome)
+	NewGame.begin(session.state, session.rng, choosing, outcome, session.catalog)
+	return session
+
+
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = true
+	return event
