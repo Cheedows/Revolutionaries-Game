@@ -35,12 +35,18 @@ fi
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 status=0
-run --script res://../tools/shots/check_layout.gd 2>&1 | tee "$log" || status=$?
-run --script res://../tools/shots/check_title_menu.gd 2>&1 | tee -a "$log" || status=$?
+# The focused form-factor/title regression is cheap, so run it first. A broken
+# desktop/mobile seam should fail in seconds rather than after the full sweep.
+run --script res://../tools/shots/check_title_menu.gd 2>&1 | tee "$log" || status=$?
+if [ "$status" -eq 0 ]; then
+	run --script res://../tools/shots/check_layout.gd 2>&1 | tee -a "$log" || status=$?
+fi
 if grep -q "SCRIPT ERROR" "$log"; then
 	echo "FAILED: the layout check hit a runtime error" >&2
 	exit 1
 fi
-grep -qF "Every screen is laid out inside itself" "$log" || status=1
 grep -qF "Title choices are visible in desktop and mobile UI profiles" "$log" || status=1
+if [ "$status" -eq 0 ]; then
+	grep -qF "Every screen is laid out inside itself" "$log" || status=1
+fi
 exit $status
