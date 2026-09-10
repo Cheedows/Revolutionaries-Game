@@ -13,6 +13,7 @@ var _title: Label
 var _detail: NameText
 var _options: Container
 var _scroll: ScrollContainer
+var _content: Container
 var _bar: ActionBar
 var _refuse: Button
 
@@ -56,6 +57,7 @@ func _gui_input(event: InputEvent) -> void:
 func compact(on: bool) -> void:
 	_touch = on
 	_bar.adapt(on)
+	_sync_unpinned_height()
 
 
 ## Pins the action bar while the choices scroll. Unpinned dialogs instead
@@ -72,6 +74,7 @@ func pin(on: bool) -> void:
 		if _scroll.has_meta(&"page_scroller"):
 			_scroll.remove_meta(&"page_scroller")
 		_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_sync_unpinned_height()
 
 ## Shows [param intent]. The dialog stays up until an option is taken.
 func ask(intent: Intent, state: GameState) -> void:
@@ -118,6 +121,7 @@ func ask(intent: Intent, state: GameState) -> void:
 	_bar.visible = _bar.filled()
 	_bar.adapt(_touch)
 	NameColours.paint_choices(_options, _ids, state)
+	_sync_unpinned_height()
 	visible = true
 	_restore()
 	PressFeel.teach(self)
@@ -206,6 +210,17 @@ func _restore() -> void:
 			return
 
 
+## ScrollContainer does not inherit the minimum height of its child. When this
+## dialog is unpinned its inner scroller is only a layout wrapper, so mirror the
+## content minimum explicitly. Without this the panel can collapse to its title
+## row while every choice exists below a zero-height clipped scroll viewport.
+func _sync_unpinned_height() -> void:
+	if _scroll == null or _content == null:
+		return
+	_scroll.custom_minimum_size.y = 0.0 if _pinned \
+			else _content.get_combined_minimum_size().y
+
+
 func _build() -> void:
 	# The dialog takes the keyboard so its shortcuts work wherever focus is.
 	focus_mode = Control.FOCUS_ALL
@@ -227,10 +242,11 @@ func _build() -> void:
 
 	_options = Atoms.column(Metrics.TIGHT)
 	_options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var content := Atoms.column(Metrics.TIGHT)
-	_scroll.add_child(content)
-	content.add_child(_detail)
-	content.add_child(_options)
+	_content = Atoms.column(Metrics.TIGHT)
+	_scroll.add_child(_content)
+	_content.add_child(_detail)
+	_content.add_child(_options)
+	_content.minimum_size_changed.connect(_sync_unpinned_height)
 
 	_bar = ActionBar.new()
 	_bar.visible = false
