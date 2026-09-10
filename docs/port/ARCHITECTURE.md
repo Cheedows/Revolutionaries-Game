@@ -12,7 +12,7 @@ Locked decisions:
 
 ## 1. Layer rule
 
-Four layers. Dependencies point **down only**. A CI check greps for violations.
+Four layers. Dependencies point **down only**.
 
 ```
   ui/        Godot scenes, Controls, input.       May read core/ state, may send Intents.
@@ -46,7 +46,7 @@ Enforced mechanically:
 
 ### The design system
 
-These rules exist because breaking them shipped:
+Six rules, each of which exists because breaking it shipped:
 
 1. **Nothing below a screen names a colour or a number.** Widgets ask `Atoms`
    for a control and `Metrics` for a size. Colours come from `Palette`, which
@@ -134,8 +134,8 @@ game/
       site_map.gd       law_def.gd      activity_def.gd
     creatures/*.tres            # generated from art/creatures.xml
     weapons/*.tres              # art/weapons.xml
-    armor/*.tres                # art/armors.xml, art/masks.xml
-    vehicles/*.tres             # art/vehicles.xml
+    armor/*.tres                 # art/armors.xml, art/masks.xml
+    vehicles/*.tres              # art/vehicles.xml
     augments/*.tres  clips/*.tres  loot/*.tres
     shops/*.tres                # armsdealer, deptstore, pawnshop, oubliette
     sitemaps/*.tres             # mapCSV_*_Tiles + _Specials
@@ -177,8 +177,11 @@ game/
 
   ui/
     theme/                      # palette, scale, theme, and atoms — the design system
-    screens/                    # safehouse, squad, site, chase, news, politics, review
-    widgets/                    # creature_card, skill_bar, item_row, log_view, map_view
+    screens/                    # controllers/entry scenes: state, navigation, signals
+    views/<screen>/             # optional presentation-only split when layouts differ
+      desktop.tscn              # roomy pointer-oriented implementation
+      mobile.tscn               # narrow/handheld touch-oriented implementation
+    widgets/                    # shared controls, including UiVariantHost
     adapters/                   # Event -> widget calls. The ONLY place that knows both.
 
 tests/
@@ -188,6 +191,13 @@ tools/
   extract_data.py               # art/*.xml + mapCSV_* -> data/*.tres
   trace_harness/                # patched C++ build: fixed seed, scripted input, JSONL dump
 ```
+
+A split screen keeps its controller/entry scene under `ui/screens/` and places
+only the two replaceable presentation trees under `ui/views/<screen>/`. Both
+view roots are `Control`s and expose the same methods/signals the controller
+uses. This keeps switching layouts a scene replacement instead of a second game
+flow, and makes it obvious where a designer can change desktop without touching
+mobile (or vice versa).
 
 ## 3. System file contract
 
