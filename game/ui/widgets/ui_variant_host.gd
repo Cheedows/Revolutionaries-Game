@@ -13,29 +13,45 @@ signal view_changed(view: Control)
 @export var mobile_scene: PackedScene
 
 var _profile := -1
+var _scene: PackedScene
 var _view: Control
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	refresh()
+	var viewport := get_viewport()
+	if viewport != null and not viewport.size_changed.is_connected(_surface_changed):
+		viewport.size_changed.connect(_surface_changed)
+	_select_view()
+	# A Window can finish applying canvas stretch after this Control becomes
+	# ready. Re-check once that logical viewport size has settled.
+	call_deferred("_select_view")
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and is_inside_tree():
-		refresh()
+		_select_view()
 
 
-## Re-evaluates the form factor and swaps views only when the profile changes.
-## Call this after replacing either exported scene at runtime.
-func refresh() -> void:
+## Re-evaluates the form factor. Call after replacing either exported scene.
+func adapt() -> void:
+	_select_view()
+
+
+func _surface_changed() -> void:
+	_select_view()
+
+
+func _select_view() -> void:
+	if not is_inside_tree():
+		return
 	var wanted := int(Metrics.profile(self))
 	var scene := mobile_scene if wanted == Metrics.Profile.MOBILE else desktop_scene
 	if scene == null:
 		scene = desktop_scene if wanted == Metrics.Profile.MOBILE else mobile_scene
 	if scene == null:
 		return
-	if _view != null and _profile == wanted:
+	if _view != null and _profile == wanted and _scene == scene:
 		return
 
 	var next := scene.instantiate() as Control
@@ -48,6 +64,7 @@ func refresh() -> void:
 	add_child(next)
 	next.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_view = next
+	_scene = scene
 	_profile = wanted
 	view_changed.emit(_view)
 
