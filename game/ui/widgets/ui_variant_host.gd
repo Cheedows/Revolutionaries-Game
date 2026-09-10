@@ -55,8 +55,8 @@ func _select_view() -> void:
 		return
 
 	var next := scene.instantiate() as Control
+	assert(next != null)
 	if next == null:
-		push_error("UiVariantHost views must have a Control root.")
 		return
 	if _view != null:
 		remove_child(_view)
