@@ -11,6 +11,7 @@ const SIZES: Array[Vector2i] = [Vector2i(400, 800), Vector2i(1280, 800)]
 const MENU_IDS: Array[StringName] = [&"new", &"continue", &"load", &"scores", &"quit"]
 const DESKTOP_MARKER := 101.0
 const MOBILE_MARKER := 202.0
+const PROFILE_SETTLE_FRAMES := 6
 
 var _wrong: Array[String] = []
 
@@ -42,7 +43,7 @@ func _check_title(size: Vector2i) -> void:
 	_configure(size)
 	var screen := (load("res://ui/screens/title_screen.tscn") as PackedScene).instantiate() as Control
 	root.add_child(screen)
-	for _settle in 4:
+	for _settle in PROFILE_SETTLE_FRAMES:
 		await process_frame
 
 	var dialog := _find_dialog(screen)
@@ -108,7 +109,7 @@ func _check_variant_host() -> void:
 
 	_configure(Vector2i(1280, 800))
 	root.add_child(host)
-	for _settle in 2:
+	for _settle in PROFILE_SETTLE_FRAMES:
 		await process_frame
 	if host.active_view() == null \
 			or not is_equal_approx(host.active_view().custom_minimum_size.x, DESKTOP_MARKER):
@@ -116,7 +117,7 @@ func _check_variant_host() -> void:
 				% host.active_profile())
 
 	_configure(Vector2i(400, 800))
-	for _settle in 3:
+	for _settle in PROFILE_SETTLE_FRAMES:
 		await process_frame
 	if host.active_view() == null \
 			or not is_equal_approx(host.active_view().custom_minimum_size.x, MOBILE_MARKER):
